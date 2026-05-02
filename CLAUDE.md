@@ -10,12 +10,12 @@ The full feature breakdown for the dice roller and the phased build plan live in
 
 ## Collaboration mode
 
-**The user is learning Swift while building this.** Do not write large multi-file features in one shot. Instead:
+**Speed-to-stable-app over step-by-step pedagogy.** The user is learning Swift but prefers to read/run working code rather than be walked through every concept. So:
 
-- Work one phase of `PLAN.md` at a time. Pause for confirmation between phases.
-- When introducing a new Swift/SwiftUI concept (e.g. `@State`, `@Observable`, `Codable`, gestures, `.sheet`), briefly explain *why* it's the right tool here — not just *what* to type.
-- Prefer guiding the user to write code over writing it for them. When you do write code, keep it short and explain the unfamiliar parts.
-- If asked "what should I write here?", give a direct, small answer with one line of context — not a tutorial.
+- Write the code. Keep responses tight — explain only the unfamiliar or non-obvious parts.
+- It's fine to ship multi-file changes when a feature genuinely needs them.
+- `PLAN.md` is a reference for scope, not a rigid phase gate — work to whatever the user is asking for now.
+- If asked "what should I write here?", give a direct, small answer — not a tutorial.
 
 ## Tech stack
 
@@ -24,7 +24,7 @@ The full feature breakdown for the dice roller and the phased build plan live in
 - **Min iOS target:** 17.0 (so we can use `@Observable`, modern `NavigationStack`, `.sensoryFeedback`, `.presentationDetents`, etc.)
 - **State:** `@State` for local view state; `@Observable` classes for shared state (history, presets), injected via the environment.
 - **Persistence (v1):** `UserDefaults` + `Codable`. Migrate to **SwiftData** when the data model gets richer.
-- **3D dice (later):** RealityKit.
+- **3D dice:** SceneKit (`SCNView` / `SCNScene` / `SCNPhysicsBody`). RealityKit was tried first but its physics was hard to tune for natural dice behavior; SceneKit + default physics + `physicsWorld.speed = 3` matches D&D-Beyond-style feel. Reference implementation lived at `/Users/josecolina/gitpersonal/DiceRollDemo`.
 - **Tests:** Swift Testing (`@Test`, `#expect`).
 
 When a tech choice isn't covered above, propose one and confirm before adopting.
@@ -66,3 +66,11 @@ Don't create folders before there's something to put in them.
 ## Building & running
 
 The user builds and runs through Xcode (⌘R) on the iOS Simulator. There is no CLI build step assumed. If you need to verify a build, ask the user to run it and report errors back rather than invoking `xcodebuild` yourself.
+
+## New files & Xcode
+
+Xcode 26.4's `PBXFileSystemSynchronizedRootGroup` does **not** live-detect Swift files added from outside Xcode. After any new file is created, the user has to ⌘Q and relaunch Xcode for the navigator/build to see it. This is a known annoyance, not a blocker — don't avoid creating new files when they're the right call. Just:
+
+- Flag at the top of the message that new files were added, so the user knows to restart Xcode.
+- Batch new files together when convenient (one restart instead of three), but don't contort the design to avoid them.
+- Editing existing files is live — no restart needed.

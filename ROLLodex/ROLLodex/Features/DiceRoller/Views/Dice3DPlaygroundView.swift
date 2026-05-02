@@ -6,8 +6,11 @@ import simd
 
 struct Dice3DPlaygroundView: View {
     @State private var controller = DiceSceneController()
-    @State private var resultFace: Int?
+    @State private var diceCount = 1
+    @State private var results: [Int?] = [nil]
     @State private var isRolling = false
+
+    private let maxDice = 10
 
     var body: some View {
         NavigationStack {
@@ -17,23 +20,36 @@ struct Dice3DPlaygroundView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
 
-                    if let face = resultFace {
-                        Text("\(face)")
+                    if let total = totalResult {
+                        Text("\(total)")
                             .font(.system(size: 56, weight: .heavy, design: .rounded))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 24)
                             .padding(.vertical, 10)
                             .background(.black.opacity(0.55), in: Capsule())
                             .padding(.top, 20)
+                            .contentTransition(.numericText())
                             .transition(.scale.combined(with: .opacity))
                     }
                 }
                 .frame(maxHeight: .infinity)
 
+                HStack {
+                    Text("Dice")
+                        .font(.headline)
+                    Spacer()
+                    Stepper("\(diceCount)", value: $diceCount, in: 1...maxDice)
+                        .labelsHidden()
+                    Text("\(diceCount)")
+                        .font(.headline.monospacedDigit())
+                        .frame(minWidth: 24)
+                }
+                .disabled(isRolling)
+
                 Button {
-                    rollD6()
+                    rollAll()
                 } label: {
-                    Label(isRolling ? "Rolling…" : "Roll d6", systemImage: "dice.fill")
+                    Label(isRolling ? "Rolling…" : "Roll \(diceCount)d6", systemImage: "dice.fill")
                         .font(.headline)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 4)
@@ -45,17 +61,32 @@ struct Dice3DPlaygroundView: View {
             .padding()
             .navigationTitle("3D Dice (sandbox)")
             .navigationBarTitleDisplayMode(.inline)
-            .animation(.snappy, value: resultFace)
+            .animation(.snappy, value: results)
+            .onAppear {
+                controller.setDieCount(diceCount)
+                controller.onDieSettled = { @MainActor index, face in
+                    guard results.indices.contains(index) else { return }
+                    results[index] = face
+                }
+            }
+            .onChange(of: diceCount) { _, new in
+                controller.setDieCount(new)
+                results = Array(repeating: nil, count: new)
+            }
         }
     }
 
-    private func rollD6() {
-        resultFace = nil
+    private func rollAll() {
+        results = Array(repeating: nil, count: diceCount)
         isRolling = true
-        controller.rollDie { @MainActor face in
-            resultFace = face
+        controller.rollAll { @MainActor _ in
             isRolling = false
         }
+    }
+
+    private var totalResult: Int? {
+        let settled = results.compactMap { $0 }
+        return settled.isEmpty ? nil : settled.reduce(0, +)
     }
 }
 
@@ -79,19 +110,29 @@ private struct SceneKitView: UIViewRepresentable {
 @MainActor
 final class DiceSceneController: NSObject {
 
+    /// Fires once per die as it comes to rest. `(dieIndex, faceValue)`.
+    var onDieSettled: (@MainActor (Int, Int) -> Void)?
+
     private weak var scnView: SCNView?
     private var scene: SCNScene!
-    private var dieNode: SCNNode!
 
-    private var settledCallback: (@MainActor (Int) -> Void)?
+    private struct ManagedDie {
+        let node: SCNNode
+        var hasSettled: Bool
+        var stillFrameCount: Int
+        var rolledFace: Int?
+    }
+
+    private var dice: [ManagedDie] = []
+
+    private var allSettledCallback: (@MainActor ([Int]) -> Void)?
     private var isAwaitingRest = false
-    private var stillFrameCount = 0
     private var rollStartTime: TimeInterval = 0
+
     private let restSpeedThreshold: Float = 0.10
     private let restAngularThreshold: Float = 0.25     // rad/sec — catches still-spinning cubes
     private let restFramesRequired = 12                // ~192ms of continuous stillness
     private let minRollDuration: TimeInterval = 0.30
-    private let maxRollDuration: TimeInterval = 5.0
 
     private var restPollTask: Task<Void, Never>?
 
@@ -144,7 +185,6 @@ final class DiceSceneController: NSObject {
         setupCamera()
         setupLighting()
         setupTray()
-        setupDie()
     }
 
     private func setupCamera() {
@@ -219,6 +259,31 @@ final class DiceSceneController: NSObject {
             faceImages: [woodImage], fallback: woodColor
         ))
 
+        // Invisible containment walls. The visible wood walls stop at y=wallHeight (3);
+        // a hard-thrown die can clip over them into the gap below the ceiling and
+        // escape the tray laterally. These extend the walls upward so that can't happen.
+        let invisibleWallHeight: Float = 20
+        let invisibleWallY = wallHeight + invisibleWallHeight / 2
+
+        let invisibleWalls: [(size: SCNVector3, position: SCNVector3)] = [
+            (SCNVector3(wallThick, invisibleWallHeight, outerSpan),
+             SCNVector3(-trayHalf - wallThick / 2, invisibleWallY, 0)),
+            (SCNVector3(wallThick, invisibleWallHeight, outerSpan),
+             SCNVector3( trayHalf + wallThick / 2, invisibleWallY, 0)),
+            (SCNVector3(trayHalf * 2, invisibleWallHeight, wallThick),
+             SCNVector3(0, invisibleWallY, -trayHalf - wallThick / 2)),
+            (SCNVector3(trayHalf * 2, invisibleWallHeight, wallThick),
+             SCNVector3(0, invisibleWallY,  trayHalf + wallThick / 2))
+        ]
+        for spec in invisibleWalls {
+            scene.rootNode.addChildNode(makeBox(
+                size: spec.size,
+                position: spec.position,
+                faceImages: [nil],
+                fallback: .clear
+            ))
+        }
+
         let ceiling = SCNNode(geometry: SCNPlane(width: 60, height: 60))
         ceiling.geometry?.firstMaterial?.diffuse.contents = UIColor.clear
         ceiling.geometry?.firstMaterial?.isDoubleSided = true
@@ -254,14 +319,9 @@ final class DiceSceneController: NSObject {
         return node
     }
 
-    // MARK: Die — body cube + 6 plane children for textures
+    // MARK: Dice — body cube + 6 plane children for textures
 
-    private func setupDie() {
-        dieNode = createDie()
-        scene.rootNode.addChildNode(dieNode)
-    }
-
-    private func createDie() -> SCNNode {
+    private func createDieNode() -> SCNNode {
         let cubeSizeCG = CGFloat(cubeSize)
         let geometry = SCNBox(width: cubeSizeCG, height: cubeSizeCG, length: cubeSizeCG, chamferRadius: 0.11)
 
@@ -273,7 +333,6 @@ final class DiceSceneController: NSObject {
 
         let node = SCNNode(geometry: geometry)
         node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: nil)
-        node.position = SCNVector3(0, 4, 0)
 
         // Add a plane child for each face. The plane's diffuse content is the face's
         // texture (currently a generated pip pattern; later swap for skin images).
@@ -340,39 +399,99 @@ final class DiceSceneController: NSObject {
         }
     }
 
+    // MARK: Population
+
+    /// Add or remove dice to match the requested count. Existing dice keep their state.
+    func setDieCount(_ count: Int) {
+        let target = max(0, count)
+
+        while dice.count > target {
+            let removed = dice.removeLast()
+            removed.node.removeFromParentNode()
+        }
+
+        while dice.count < target {
+            let node = createDieNode()
+            node.position = findEmptyTrayPosition()
+            // Random yaw so newly added dice don't all face the same way.
+            node.simdOrientation = simd_quatf(angle: Float.random(in: 0..<2 * .pi), axis: [0, 1, 0])
+            scene.rootNode.addChildNode(node)
+            dice.append(ManagedDie(node: node, hasSettled: true, stillFrameCount: 0, rolledFace: nil))
+        }
+    }
+
+    /// Picks a spot inside the tray that doesn't overlap any existing die. If the tray
+    /// is too crowded to find a clear spot, drops the new die in higher up so physics
+    /// can resolve any soft contact naturally.
+    private func findEmptyTrayPosition() -> SCNVector3 {
+        let margin = cubeSize
+        let bound = trayHalf - margin
+        let minSpacing = cubeSize * 1.5
+
+        for _ in 0..<30 {
+            let x = Float.random(in: -bound...bound)
+            let z = Float.random(in: -bound...bound)
+            let tooClose = dice.contains { existing in
+                let p = existing.node.position
+                let dx = p.x - x, dz = p.z - z
+                return sqrt(dx * dx + dz * dz) < minSpacing
+            }
+            if !tooClose {
+                return SCNVector3(x, cubeHalfSize + 0.02, z)
+            }
+        }
+        // Tray is crowded — spawn higher so the new die can settle on top of others
+        // without intersecting them.
+        return SCNVector3(
+            Float.random(in: -bound...bound),
+            cubeHalfSize + 4.0,
+            Float.random(in: -bound...bound)
+        )
+    }
+
     // MARK: Roll
 
-    func rollDie(onSettled: @escaping @MainActor (Int) -> Void) {
-        guard let body = dieNode.physicsBody else { return }
+    /// Roll every die in the scene. `onAllSettled` fires once when all dice are at rest,
+    /// with their face values in die-index order. `onDieSettled` fires per-die as each one rests.
+    func rollAll(onAllSettled: @escaping @MainActor ([Int]) -> Void) {
+        guard !dice.isEmpty else { onAllSettled([]); return }
 
-        body.velocity = SCNVector3Zero
-        body.angularVelocity = SCNVector4Zero
+        for i in dice.indices {
+            dice[i].hasSettled = false
+            dice[i].stillFrameCount = 0
+            dice[i].rolledFace = nil
 
-        dieNode.position = SCNVector3(
-            Float.random(in: -1.0...1.0),
-            5,
-            Float.random(in: -1.0...1.0)
-        )
-        dieNode.simdOrientation = randomOrientation()
+            let node = dice[i].node
+            guard let body = node.physicsBody else { continue }
+            body.velocity = SCNVector3Zero
+            body.angularVelocity = SCNVector4Zero
 
-        let torque = SCNVector4(
-            Float.random(in: -2...2),
-            Float.random(in: -3...3),
-            Float.random(in: -2...2),
-            Float.random(in: 1.5...3.0)
-        )
-        body.applyTorque(torque, asImpulse: true)
+            // Spawn slightly staggered so dice don't all start coincident.
+            node.position = SCNVector3(
+                Float.random(in: -1.5...1.5),
+                5 + Float(i) * 0.25,
+                Float.random(in: -1.5...1.5)
+            )
+            node.simdOrientation = randomOrientation()
 
-        let force = SCNVector3(
-            Float.random(in: -3...3),
-            Float.random(in: 18...26),
-            Float.random(in: -3...3)
-        )
-        body.applyForce(force, asImpulse: true)
+            let torque = SCNVector4(
+                Float.random(in: -2...2),
+                Float.random(in: -3...3),
+                Float.random(in: -2...2),
+                Float.random(in: 1.5...3.0)
+            )
+            body.applyTorque(torque, asImpulse: true)
 
-        settledCallback = onSettled
+            let force = SCNVector3(
+                Float.random(in: -3...3),
+                Float.random(in: 18...26),
+                Float.random(in: -3...3)
+            )
+            body.applyForce(force, asImpulse: true)
+        }
+
+        allSettledCallback = onAllSettled
         isAwaitingRest = true
-        stillFrameCount = 0
         rollStartTime = CACurrentMediaTime()
     }
 
@@ -388,63 +507,62 @@ final class DiceSceneController: NSObject {
     // MARK: Rest detection
 
     private func tickRestDetection() {
-        guard isAwaitingRest, let dieNode, let body = dieNode.physicsBody else { return }
+        guard isAwaitingRest, !dice.isEmpty else { return }
         let elapsed = CACurrentMediaTime() - rollStartTime
-
-        if elapsed > maxRollDuration {
-            finishRoll()
-            return
-        }
         guard elapsed > minRollDuration else { return }
 
-        // Trust SceneKit's `isResting` as the authoritative signal — the solver only sets
-        // it to true once the body has actually been still long enough to be put to sleep.
-        // The manual velocity fallback only kicks in if the body genuinely never sleeps,
-        // and even then we require all three motion signals to be quiet plus the cube to
-        // be near the floor (not mid-bounce).
-        if body.isResting {
-            stillFrameCount += 1
-            if stillFrameCount >= restFramesRequired {
-                finishRoll()
+        for i in dice.indices {
+            if dice[i].hasSettled { continue }
+            guard let body = dice[i].node.physicsBody else { continue }
+
+            // Trust SceneKit's `isResting` when set; manual fallback for the cases where
+            // it never sleeps. Both paths require a continuous-still streak so we don't
+            // settle mid-bounce.
+            if body.isResting {
+                dice[i].stillFrameCount += 1
+                if dice[i].stillFrameCount >= restFramesRequired {
+                    settleDie(at: i)
+                }
+                continue
             }
-            return
+
+            let v = body.velocity
+            let speed = sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
+            let angularSpeed = abs(body.angularVelocity.w)
+            let yPos = dice[i].node.presentation.position.y
+            let nearFloor = yPos < cubeHalfSize + 0.6
+
+            if speed < restSpeedThreshold
+                && angularSpeed < restAngularThreshold
+                && nearFloor {
+                dice[i].stillFrameCount += 1
+                if dice[i].stillFrameCount >= restFramesRequired * 2 {
+                    settleDie(at: i)
+                }
+            } else {
+                dice[i].stillFrameCount = 0
+            }
         }
 
-        let v = body.velocity
-        let speed = sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
-        let angularSpeed = abs(body.angularVelocity.w)
-        let yPos = dieNode.presentation.position.y
-        let nearFloor = yPos < cubeHalfSize + 0.6
-
-        if speed < restSpeedThreshold
-            && angularSpeed < restAngularThreshold
-            && nearFloor {
-            stillFrameCount += 1
-            // Manual fallback needs longer continuity to be safe.
-            if stillFrameCount >= restFramesRequired * 2 {
-                finishRoll()
-            }
-        } else {
-            stillFrameCount = 0
+        if dice.allSatisfy(\.hasSettled) {
+            isAwaitingRest = false
+            let cb = allSettledCallback
+            allSettledCallback = nil
+            cb?(dice.map { $0.rolledFace ?? 1 })
         }
     }
 
-    private func finishRoll() {
-        isAwaitingRest = false
-        let cb = settledCallback
-        settledCallback = nil
-
-        // No snap — read the actual rest orientation. Whichever face's normal is most
-        // aligned with world-up after rotation is the face whose center has the
-        // highest Y, i.e. the face the user sees on top.
-        cb?(detectTopFace())
+    private func settleDie(at index: Int) {
+        let face = detectTopFace(of: dice[index].node)
+        dice[index].hasSettled = true
+        dice[index].rolledFace = face
+        onDieSettled?(index, face)
     }
 
     /// Returns the face whose outward normal, after the cube's current rotation, points
     /// most directly upward in world space. Equivalent to "which face's center is highest".
-    private func detectTopFace() -> Int {
-        guard let dieNode else { return 1 }
-        let q = dieNode.presentation.simdOrientation     // what's actually rendered
+    private func detectTopFace(of node: SCNNode) -> Int {
+        let q = node.presentation.simdOrientation
         let upWorld = simd_float3(0, 1, 0)
 
         var best = 1
