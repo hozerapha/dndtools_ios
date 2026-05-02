@@ -11,12 +11,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		31752F742FA632B700CE247D /* Features */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			name = Features;
-			path = ROLLodex/Features;
-			sourceTree = "<group>";
-		};
 		317BC0032FA596A000B43F42 /* ROLLodex */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ROLLodex;
@@ -40,7 +34,6 @@
 			children = (
 				317BC0032FA596A000B43F42 /* ROLLodex */,
 				317BC0022FA596A000B43F42 /* Products */,
-				31752F742FA632B700CE247D /* Features */,
 			);
 			sourceTree = "<group>";
 		};
@@ -68,7 +61,6 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				31752F742FA632B700CE247D /* Features */,
 				317BC0032FA596A000B43F42 /* ROLLodex */,
 			);
 			name = ROLLodex;
