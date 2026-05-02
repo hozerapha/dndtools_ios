@@ -8,7 +8,7 @@ struct DiePickerView: View {
             ForEach(DieKind.allCases) { kind in
                 DiePickerButton(
                     kind: kind,
-                    count: formula.counts[kind, default: 0],
+                    count: formula.count(of: kind),
                     onTap:       { formula.add(kind) },
                     onLongPress: { formula.remove(kind) }
                 )

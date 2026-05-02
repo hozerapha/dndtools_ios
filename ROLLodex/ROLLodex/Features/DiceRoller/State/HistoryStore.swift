@@ -7,7 +7,7 @@ final class HistoryStore {
     private(set) var rolls: [RollResult] = []
 
     private let storage: UserDefaults
-    private let key = "history.rolls.v1"
+    private let key = "history.rolls.v2"
     private let maxEntries = 200
 
     init(storage: UserDefaults = .standard) {

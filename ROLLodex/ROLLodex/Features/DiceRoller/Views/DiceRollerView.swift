@@ -6,43 +6,32 @@ struct DiceRollerView: View {
     @State private var mode: RollMode = .normal
     @State private var showHistory = false
     @State private var showSavePreset = false
+    @State private var isRolling = false
+    @State private var animationTick = 0
 
     @Environment(HistoryStore.self) private var history
     @Environment(PresetStore.self) private var presets
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 14) {
-                    FormulaBarView(formula: formula, mode: mode) { parsed in
-                        formula = parsed
-                    }
-
-                    DiceTrayView(result: lastResult)
-
-                    if !presets.presets.isEmpty {
-                        PresetRowView(formula: $formula)
-                    }
-
-                    if formula.supportsAdvantage {
-                        Picker("Mode", selection: $mode) {
-                            ForEach(RollMode.allCases) { m in
-                                Text(m.label).tag(m)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
-
-                    modifierRow
-
-                    DiePickerView(formula: $formula)
-
-                    actionRow
+            VStack(spacing: 12) {
+                FormulaBarView(formula: formula, mode: mode) { parsed in
+                    formula = parsed
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 24)
+
+                DiceTrayView(
+                    formula: formula,
+                    mode: mode,
+                    result: lastResult,
+                    isRolling: isRolling,
+                    animationTick: animationTick
+                )
+                .frame(maxHeight: .infinity)
+
+                bottomControls
             }
+            .padding(.horizontal)
+            .padding(.bottom, 8)
             .navigationTitle("ROLLodex")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -71,6 +60,29 @@ struct DiceRollerView: View {
                 if !supports { mode = .normal }
             }
             .animation(.snappy, value: formula.supportsAdvantage)
+        }
+    }
+
+    @ViewBuilder
+    private var bottomControls: some View {
+        VStack(spacing: 10) {
+            if !presets.presets.isEmpty {
+                PresetRowView(formula: $formula)
+            }
+
+            if formula.supportsAdvantage {
+                Picker("Mode", selection: $mode) {
+                    ForEach(RollMode.allCases) { m in
+                        Text(m.label).tag(m)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            modifierRow
+            DiePickerView(formula: $formula)
+            actionRow
         }
     }
 
@@ -108,6 +120,7 @@ struct DiceRollerView: View {
                 Label("Clear", systemImage: "xmark.circle")
             }
             .buttonStyle(.bordered)
+            .disabled(isRolling)
 
             Button {
                 showSavePreset = true
@@ -115,12 +128,12 @@ struct DiceRollerView: View {
                 Label("Save", systemImage: "bookmark")
             }
             .buttonStyle(.bordered)
-            .disabled(formula.totalDiceCount == 0)
+            .disabled(isRolling || formula.totalDiceCount == 0)
 
             Spacer()
 
             Button {
-                roll()
+                Task { await roll() }
             } label: {
                 Label("Roll", systemImage: "dice.fill")
                     .font(.headline)
@@ -128,12 +141,24 @@ struct DiceRollerView: View {
                     .padding(.vertical, 2)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(formula.totalDiceCount == 0)
+            .disabled(isRolling || formula.totalDiceCount == 0)
         }
     }
 
-    private func roll() {
+    @MainActor
+    private func roll() async {
+        guard !isRolling, formula.totalDiceCount > 0 else { return }
         let result = DiceRoller().roll(formula, mode: mode)
+        isRolling = true
+        animationTick = 0
+
+        let frames = 14  // ~50ms each → ~700ms total
+        for tick in 1...frames {
+            try? await Task.sleep(for: .milliseconds(50))
+            animationTick = tick
+        }
+
+        isRolling = false
         lastResult = result
         history.record(result)
     }

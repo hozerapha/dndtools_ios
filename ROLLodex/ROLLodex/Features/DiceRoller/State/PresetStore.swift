@@ -7,7 +7,7 @@ final class PresetStore {
     private(set) var presets: [Preset] = []
 
     private let storage: UserDefaults
-    private let key = "presets.v1"
+    private let key = "presets.v2"
 
     init(storage: UserDefaults = .standard) {
         self.storage = storage
