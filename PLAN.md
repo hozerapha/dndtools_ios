@@ -26,11 +26,11 @@ We'll confirm each choice before adopting it, but these are the defaults.
 **Goal:** A buildable, runnable empty SwiftUI app on the simulator.
 
 1. Create the Xcode project in Xcode (`File > New > Project > iOS > App`).
-   - Product Name: `DnDTools`
+   - Product Name: `ROLLodex`
    - Interface: SwiftUI
    - Language: Swift
    - Storage: None (we'll add SwiftData later)
-   - Save it inside this repo at `./DnDTools/`.
+   - Save it inside this repo at `./ROLLodex/`.
 2. Set min deployment target to iOS 17.0.
 3. Run on the simulator — verify the default "Hello, world!" screen launches.
 4. Commit.

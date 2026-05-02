@@ -4,7 +4,7 @@ Guidance for Claude when working in this repository.
 
 ## Project
 
-`dndtools_ios` — a SwiftUI iOS app that will become a toolset for tabletop RPG (D&D 5e-flavored) players. The first feature is a **dice roller**; more tools (initiative tracker, character sheet, spell lookup, etc.) will be added later, so the app shell is built around a `TabView` with room to grow.
+**ROLLodex** (repo: `dndtools_ios`) — a SwiftUI iOS app that will become a toolset for tabletop RPG (D&D 5e-flavored) players. The name puns on Rolodex (a rotating index of cards) + ROLL (dice). The first feature is a **dice roller**; more tools (initiative tracker, character sheet, spell lookup, etc.) will be added later, so the app shell is built around a `TabView` with room to grow.
 
 The full feature breakdown for the dice roller and the phased build plan live in [PLAN.md](PLAN.md). Read it before suggesting structural changes.
 
@@ -32,8 +32,8 @@ When a tech choice isn't covered above, propose one and confirm before adopting.
 ## Project layout (target)
 
 ```
-DnDTools/                  # Xcode project lives here
-  DnDTools/
+ROLLodex/                  # Xcode project lives here
+  ROLLodex/
     App/                   # @main App, RootView, TabView shell
     Features/
       DiceRoller/
@@ -41,7 +41,7 @@ DnDTools/                  # Xcode project lives here
         Views/             # DiceRollerView, DiceTrayView, DieTokenView, ...
         State/             # HistoryStore, PresetStore (@Observable)
     Shared/                # cross-feature utilities (when they appear)
-  DnDToolsTests/
+  ROLLodexTests/
 ```
 
 Don't create folders before there's something to put in them.
