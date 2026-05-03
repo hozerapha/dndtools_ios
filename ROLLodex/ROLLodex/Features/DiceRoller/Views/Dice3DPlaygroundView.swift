@@ -10,6 +10,7 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
     case d8
     case d10
     case d12
+    case d20
 
     var id: String { rawValue }
     var label: String { rawValue.uppercased() }
@@ -20,6 +21,7 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
         case .d8:  return 8
         case .d10: return 10
         case .d12: return 12
+        case .d20: return 20
         }
     }
 
@@ -32,6 +34,7 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
         case .d8:  self = .d8
         case .d10: self = .d10
         case .d12: self = .d12
+        case .d20: self = .d20
         default:   return nil
         }
     }
@@ -306,6 +309,13 @@ final class DiceSceneController: NSObject {
     // cubeSize/2: at unit scale the inradius is ≈1.378, so d12Scale ≈ 0.85/1.378.
     private let d12Scale: Float = 0.62
 
+    // d20 — regular icosahedron. 12 vertices: (0, ±1, ±φ), (±1, ±φ, 0),
+    // (±φ, 0, ±1), all scaled by d20Scale. Faces are 20 equilateral triangles
+    // whose outward normals point through the 20 dodecahedron vertex directions
+    // (icosahedron and dodecahedron are duals). Inradius at unit scale ≈ 1.512,
+    // so d20Scale ≈ 0.85/1.512 keeps the face-to-face distance close to d6's.
+    private let d20Scale: Float = 0.56
+
     /// Each face stores its number and its outward normal in die-local frame.
     private struct FaceSpec {
         let number: Int
@@ -407,6 +417,53 @@ final class DiceSceneController: NSObject {
                 FaceSpec(number:  6, normal: SIMD3(-p,  0,  one)),
                 FaceSpec(number:  7, normal: SIMD3( p,  0, -one)),
                 FaceSpec(number:  8, normal: SIMD3(-p,  0, -one))
+            ]
+        case .d20:
+            // 20 face normals point through the 20 dodecahedron vertex directions
+            // (icosahedron's dual): 8 "cube corner" directions (±1, ±1, ±1) and 12
+            // "edge" directions on three coordinate planes — (0, ±φ, ±1/φ),
+            // (±1/φ, 0, ±φ), (±φ, ±1/φ, 0). The LARGE component (φ) and the
+            // SMALL component (1/φ) must be on the right axes — getting these
+            // swapped produces face normals that don't correspond to actual
+            // icosahedron face centroids, so the top-3-by-projection hits ties
+            // between two vertices that don't share a face, picks one of them,
+            // and ends up double-mapping some real faces while missing others.
+            // Numbering puts opposite faces summing to 21 (standard d20).
+            let phi = (1 + sqrtf(5)) / 2
+            let invPhi: Float = 1 / phi
+            let cubeN: Float = 1 / sqrtf(3)                          // for (±1, ±1, ±1)
+            let edgeMag: Float = sqrtf(invPhi * invPhi + phi * phi)  // = √3
+            let small = invPhi / edgeMag                             // ≈ 0.357
+            let large = phi / edgeMag                                // ≈ 0.934
+            // Numbers chosen to match a "standard" balanced d20 layout — high and
+            // low numbers spread across both cube-corner and edge faces so adjacent
+            // faces don't cluster (i.e. NOT a spindown). Each pair still sums to 21.
+            return [
+                // 8 cube-corner directions
+                FaceSpec(number:  1, normal: SIMD3( cubeN,  cubeN,  cubeN)),
+                FaceSpec(number: 20, normal: SIMD3(-cubeN, -cubeN, -cubeN)),
+                FaceSpec(number: 14, normal: SIMD3( cubeN,  cubeN, -cubeN)),
+                FaceSpec(number:  7, normal: SIMD3(-cubeN, -cubeN,  cubeN)),
+                FaceSpec(number: 17, normal: SIMD3( cubeN, -cubeN,  cubeN)),
+                FaceSpec(number:  4, normal: SIMD3(-cubeN,  cubeN, -cubeN)),
+                FaceSpec(number:  2, normal: SIMD3( cubeN, -cubeN, -cubeN)),
+                FaceSpec(number: 19, normal: SIMD3(-cubeN,  cubeN,  cubeN)),
+                // 12 edge directions
+                // Plane x=0: (0, ±large, ±small)
+                FaceSpec(number: 13, normal: SIMD3(0,  large,  small)),
+                FaceSpec(number:  8, normal: SIMD3(0, -large, -small)),
+                FaceSpec(number:  6, normal: SIMD3(0,  large, -small)),
+                FaceSpec(number: 15, normal: SIMD3(0, -large,  small)),
+                // Plane z=0: (±large, ±small, 0)
+                FaceSpec(number:  9, normal: SIMD3( large,  small, 0)),
+                FaceSpec(number: 12, normal: SIMD3(-large, -small, 0)),
+                FaceSpec(number: 16, normal: SIMD3( large, -small, 0)),
+                FaceSpec(number:  5, normal: SIMD3(-large,  small, 0)),
+                // Plane y=0: (±small, 0, ±large)
+                FaceSpec(number: 11, normal: SIMD3( small, 0,  large)),
+                FaceSpec(number: 10, normal: SIMD3(-small, 0, -large)),
+                FaceSpec(number: 18, normal: SIMD3( small, 0, -large)),
+                FaceSpec(number:  3, normal: SIMD3(-small, 0,  large))
             ]
         }
     }
@@ -595,6 +652,7 @@ final class DiceSceneController: NSObject {
         case .d8:  return createD8Node()
         case .d10: return createD10Node()
         case .d12: return createD12Node()
+        case .d20: return createD20Node()
         }
     }
 
@@ -1210,6 +1268,155 @@ final class DiceSceneController: NSObject {
         return node
     }
 
+    /// Builds a regular icosahedron — 12 vertices at the golden-ratio coords
+    /// (0, ±1, ±φ), (±1, ±φ, 0), (±φ, 0, ±1), all scaled by d20Scale, and 20
+    /// equilateral triangular faces. Same body+children pattern as d12: one
+    /// ivory body geometry handles convex-hull physics and base color, then 20
+    /// textured triangle child nodes overlay each face.
+    ///
+    /// Faces are discovered procedurally — for each of the 20 face-normal
+    /// directions (which equal the 20 dodecahedron vertex directions, since
+    /// icosahedron and dodecahedron are duals), the 3 icosahedron vertices with
+    /// the highest projection onto that normal lie on that face. Those 3 are
+    /// then sorted by angle in the face plane to give a CCW outward winding.
+    private func createD20Node() -> SCNNode {
+        let s = d20Scale
+        let phi: Float = (1 + sqrtf(5)) / 2
+        let invPhi: Float = 1 / phi
+
+        // 12 vertices.
+        var verts: [SIMD3<Float>] = []
+        for sa: Float in [-1, 1] {
+            for sb: Float in [-1, 1] {
+                verts.append(SIMD3(0, sa, sb * phi) * s)
+                verts.append(SIMD3(sa, sb * phi, 0) * s)
+                verts.append(SIMD3(sa * phi, 0, sb) * s)
+            }
+        }
+
+        // 20 face-normal directions and numbers, in the SAME order as
+        // faceSpecs(.d20). Numbers chosen so opposite faces sum to 21.
+        // Numbers must match faceSpecs(.d20) exactly so detection and rendering agree.
+        let faceDefs: [(normal: SIMD3<Float>, number: Int)] = [
+            // 8 cube-corner directions
+            (SIMD3( 1,  1,  1),  1), (SIMD3(-1, -1, -1), 20),
+            (SIMD3( 1,  1, -1), 14), (SIMD3(-1, -1,  1),  7),
+            (SIMD3( 1, -1,  1), 17), (SIMD3(-1,  1, -1),  4),
+            (SIMD3( 1, -1, -1),  2), (SIMD3(-1,  1,  1), 19),
+            // 12 edge directions
+            // Plane x=0: (0, ±φ, ±1/φ)
+            (SIMD3(0,  phi,  invPhi), 13), (SIMD3(0, -phi, -invPhi),  8),
+            (SIMD3(0,  phi, -invPhi),  6), (SIMD3(0, -phi,  invPhi), 15),
+            // Plane z=0: (±φ, ±1/φ, 0)
+            (SIMD3( phi,  invPhi, 0),  9), (SIMD3(-phi, -invPhi, 0), 12),
+            (SIMD3( phi, -invPhi, 0), 16), (SIMD3(-phi,  invPhi, 0),  5),
+            // Plane y=0: (±1/φ, 0, ±φ)
+            (SIMD3( invPhi, 0,  phi), 11), (SIMD3(-invPhi, 0, -phi), 10),
+            (SIMD3( invPhi, 0, -phi), 18), (SIMD3(-invPhi, 0,  phi),  3)
+        ]
+
+        // UV layout: triangle inscribed in unit square with apex at top-center
+        // and base at bottom corners — same convention as d4 and d8 fallbacks.
+        let triangleUVs: [CGPoint] = [
+            CGPoint(x: 0.5, y: 0.0),  // 0: apex (top-center)
+            CGPoint(x: 0.0, y: 1.0),  // 1: bottom-left
+            CGPoint(x: 1.0, y: 1.0)   // 2: bottom-right
+        ]
+
+        struct ResolvedFace {
+            let verts: [SIMD3<Float>]   // 3 vertices in CCW-from-outside order
+            let normal: SIMD3<Float>    // unit outward normal
+            let number: Int
+        }
+        let resolved: [ResolvedFace] = faceDefs.map { def in
+            let n = simd_normalize(def.normal)
+            let projected = verts.enumerated()
+                .map { ($0.offset, simd_dot($0.element, def.normal)) }
+                .sorted { $0.1 > $1.1 }
+                .prefix(3)
+                .map { verts[$0.0] }
+            // Build an orthonormal (u, v) basis in the face plane to sort by angle.
+            var u = SIMD3<Float>(1, 0, 0)
+            if abs(simd_dot(u, n)) > 0.9 { u = SIMD3<Float>(0, 1, 0) }
+            u = simd_normalize(u - simd_dot(u, n) * n)
+            let vAxis = simd_cross(n, u)
+            let center = projected.reduce(SIMD3<Float>(0, 0, 0), +) / 3
+            let sorted = projected
+                .map { v -> (vert: SIMD3<Float>, angle: Float) in
+                    let d = v - center
+                    return (v, atan2f(simd_dot(d, vAxis), simd_dot(d, u)))
+                }
+                .sorted { $0.angle < $1.angle }
+                .map { $0.vert }
+            return ResolvedFace(verts: sorted, normal: n, number: def.number)
+        }
+
+        // Body geometry — single ivory mesh, 1 triangle per face. SceneKit infers
+        // convex-hull physics from the unique vertex positions.
+        var bodyPositions: [SCNVector3] = []
+        var bodyNormals: [SCNVector3] = []
+        for face in resolved {
+            let nv = SCNVector3(face.normal)
+            bodyPositions += [
+                SCNVector3(face.verts[0]),
+                SCNVector3(face.verts[1]),
+                SCNVector3(face.verts[2])
+            ]
+            bodyNormals += [nv, nv, nv]
+        }
+        let bodyPosSource = SCNGeometrySource(vertices: bodyPositions)
+        let bodyNormSource = SCNGeometrySource(normals: bodyNormals)
+        let bodyIndices: [Int32] = (0..<Int32(bodyPositions.count)).map { $0 }
+        let bodyElement = SCNGeometryElement(indices: bodyIndices, primitiveType: .triangles)
+        let bodyGeometry = SCNGeometry(sources: [bodyPosSource, bodyNormSource], elements: [bodyElement])
+
+        let bodyMat = SCNMaterial()
+        bodyMat.diffuse.contents = ivoryColor
+        bodyMat.roughness.contents = 0.40
+        bodyGeometry.materials = [bodyMat]
+
+        let node = SCNNode(geometry: bodyGeometry)
+        node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: nil)
+
+        // One textured triangle child per face. Slight outward offset prevents
+        // z-fighting with the body underneath; inset 1.02 gives a small overshoot
+        // so trimming imperfections in hand-drawn assets don't show as ivory.
+        let outwardOffset: Float = 0.005
+        let inset: Float = 1.02
+
+        for face in resolved {
+            let center = face.verts.reduce(SIMD3<Float>(0, 0, 0), +) / 3
+            let shifted = face.verts.map { v -> SIMD3<Float> in
+                center + (v - center) * inset + face.normal * outwardOffset
+            }
+            let positions = shifted.map { SCNVector3($0) }
+            let normals: [SCNVector3] = Array(repeating: SCNVector3(face.normal), count: 3)
+
+            let posSource = SCNGeometrySource(vertices: positions)
+            let normSource = SCNGeometrySource(normals: normals)
+            let uvSource = SCNGeometrySource(textureCoordinates: triangleUVs)
+            let element = SCNGeometryElement(
+                indices: [Int32(0), Int32(1), Int32(2)],
+                primitiveType: .triangles
+            )
+            let faceGeometry = SCNGeometry(
+                sources: [posSource, normSource, uvSource],
+                elements: [element]
+            )
+
+            let mat = SCNMaterial()
+            mat.diffuse.contents = UIImage(named: String(format: "d20-face-%02d", face.number))
+                ?? Self.makeD20FallbackImage(number: face.number)
+            mat.roughness.contents = 0.45
+            mat.isDoubleSided = false
+            faceGeometry.materials = [mat]
+
+            node.addChildNode(SCNNode(geometry: faceGeometry))
+        }
+
+        return node
+    }
+
     /// Rotation that maps SCNPlane's default +Z normal to `target`.
     private static func rotationFromZ(to target: SIMD3<Float>) -> simd_quatf {
         let from: SIMD3<Float> = [0, 0, 1]
@@ -1321,6 +1528,31 @@ final class DiceSceneController: NSObject {
             str.draw(at: CGPoint(
                 x: (pixelSize - size.width) / 2,
                 y: pixelSize * digitV - size.height / 2
+            ))
+        }
+    }
+
+    /// Placeholder d20 face texture used until the user adds `d20-face-NN` assets.
+    /// Square canvas with the triangle UV layout (apex at top-center, base at the
+    /// bottom corners). The digit sits at the triangle's geometric centroid
+    /// (v ≈ 0.667 — apex y=0, base y=1, so centroid is 2/3 of the way down) so it
+    /// reads visually centered on the equilateral face rather than image-centred.
+    private static func makeD20FallbackImage(number: Int) -> UIImage {
+        let pixelSize: CGFloat = 256
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: pixelSize, height: pixelSize))
+        return renderer.image { ctx in
+            UIColor(red: 0.97, green: 0.96, blue: 0.92, alpha: 1).setFill()
+            ctx.fill(CGRect(origin: .zero, size: CGSize(width: pixelSize, height: pixelSize)))
+
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 90, weight: .heavy),
+                .foregroundColor: UIColor(white: 0.08, alpha: 1)
+            ]
+            let str = NSAttributedString(string: "\(number)", attributes: attrs)
+            let size = str.size()
+            str.draw(at: CGPoint(
+                x: (pixelSize - size.width) / 2,
+                y: pixelSize * 2 / 3 - size.height / 2
             ))
         }
     }
@@ -1702,7 +1934,7 @@ final class DiceSceneController: NSObject {
         let target: SIMD3<Float>
         switch die.kind {
         case .d4:              target = [0, -1, 0]   // bottom face = result (no top face — vertex up)
-        case .d6, .d8, .d10, .d12:   target = [0,  1, 0]   // top face = result (parallel face up)
+        case .d6, .d8, .d10, .d12, .d20:   target = [0,  1, 0]   // top face = result (parallel face up)
         }
 
         var best = 1
