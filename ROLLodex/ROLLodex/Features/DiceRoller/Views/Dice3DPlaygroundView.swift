@@ -16,6 +16,29 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
         case .d6: return 6
         }
     }
+
+    /// Bridges from the project-wide `DieKind` (which spans d4–d100) to the subset
+    /// the 3D scene currently knows how to model. Returns nil for unsupported kinds.
+    init?(_ kind: DieKind) {
+        switch kind {
+        case .d4: self = .d4
+        case .d6: self = .d6
+        default:  return nil
+        }
+    }
+}
+
+extension DieKind {
+    /// True if this die kind has a 3D model + textures wired up.
+    var has3DModel: Bool { Dice3DKind(self) != nil }
+}
+
+extension DiceFormula {
+    /// True if every die kind in the formula has a 3D model. The Dice tab uses
+    /// this to gate the roll button while only a subset of kinds is in 3D.
+    var allKinds3DSupported: Bool {
+        groups.allSatisfy(\.kind.has3DModel)
+    }
 }
 
 // MARK: - SwiftUI
@@ -119,13 +142,16 @@ struct Dice3DPlaygroundView: View {
     }
 }
 
-private struct SceneKitView: UIViewRepresentable {
+struct SceneKitView: UIViewRepresentable {
     let controller: DiceSceneController
 
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
         view.autoenablesDefaultLighting = true
-        view.backgroundColor = UIColor(red: 0.05, green: 0.04, blue: 0.03, alpha: 1)
+        // Transparent so the SwiftUI/system background shows through behind the
+        // tray — meshes with both light and dark mode without hard-coding a color.
+        view.backgroundColor = .clear
+        view.isOpaque = false
         view.isPlaying = true
         // Pinch to zoom, one-finger drag to orbit, two-finger drag to pan. Useful for
         // troubleshooting; harmless because no app logic depends on camera state.
@@ -135,6 +161,27 @@ private struct SceneKitView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: SCNView, context: Context) {}
+}
+
+// MARK: - Async wrappers for callback APIs
+
+extension DiceSceneController {
+    /// Async version of `rollAll` for use from a SwiftUI Task. Resumes once every
+    /// die has settled and its face value has been read (after `settleDelay`).
+    @MainActor
+    func rollAllAsync() async -> [Int] {
+        await withCheckedContinuation { continuation in
+            self.rollAll { values in continuation.resume(returning: values) }
+        }
+    }
+
+    /// Async version of `rethrowDice`. Resumes when the rethrown dice have settled.
+    @MainActor
+    func rethrowDiceAsync(at formulaIndices: Set<Int>) async -> [Int] {
+        await withCheckedContinuation { continuation in
+            self.rethrowDice(at: formulaIndices) { values in continuation.resume(returning: values) }
+        }
+    }
 }
 
 // MARK: - Scene controller
@@ -148,18 +195,28 @@ final class DiceSceneController: NSObject {
     private weak var scnView: SCNView?
     private var scene: SCNScene!
     private var cameraNode: SCNNode!
-    private let defaultCameraPosition = SCNVector3(0, 26, 9)
+    private let defaultCameraPosition = SCNVector3(0, 22, 7.5)
     private let defaultCameraTarget   = SCNVector3(0, 0, 0)
 
     private struct ManagedDie {
         let node: SCNNode
         let kind: Dice3DKind
+        /// Position of this die in the formula's flat dice list (groups expanded
+        /// in order). Used by callers to map roll results back to formula slots
+        /// when applying modifiers. -1 for dice created via the legacy
+        /// `setDice(count:kind:)` API where the concept doesn't apply.
+        var formulaIndex: Int
         var hasSettled: Bool
         var stillFrameCount: Int
         var rolledFace: Int?
     }
 
     private var dice: [ManagedDie] = []
+
+    /// Number of dice currently in the scene. Lets callers do idempotent setup
+    /// (e.g. only call `setDice(formula:)` on the first view appearance) without
+    /// peeking at the private collection.
+    var diceCount: Int { dice.count }
 
     private var allSettledCallback: (@MainActor ([Int]) -> Void)?
     private var isAwaitingRest = false
@@ -243,7 +300,9 @@ final class DiceSceneController: NSObject {
 
     private func setupScene() {
         scene = SCNScene()
-        scene.background.contents = UIColor(red: 0.05, green: 0.04, blue: 0.03, alpha: 1)
+        // Leave the scene background unset — combined with `view.isOpaque = false`
+        // and `view.backgroundColor = .clear` in SceneKitView, the void around the
+        // tray is fully transparent and the SwiftUI layer behind shows through.
         scene.physicsWorld.speed = 3.0
 
         setupCamera()
@@ -279,8 +338,8 @@ final class DiceSceneController: NSObject {
         scene.rootNode.addChildNode(ambient)
     }
 
-    private let trayHalf: Float = 7
-    private let wallHeight: Float = 3
+    private let trayHalf: Float = 7.5
+    private let wallHeight: Float = 1.5
     private let wallThick: Float = 0.5
     private let floorThick: Float = 0.4
 
@@ -290,8 +349,13 @@ final class DiceSceneController: NSObject {
         let feltColor = UIColor(red: 0.10, green: 0.30, blue: 0.18, alpha: 1)
         let woodColor = UIColor(red: 0.36, green: 0.21, blue: 0.10, alpha: 1)
 
+        // Slightly oversize the floor so it tucks under the wall's inner face. Without
+        // this, both boxes' chamfered edges curve away from the seam at y=0 and leave
+        // a hairline gap that the (now transparent) background bleeds through.
+        let floorOverhang: Float = 0.15
+        let floorSpan = (trayHalf + floorOverhang) * 2
         let floor = makeBox(
-            size: SCNVector3(trayHalf * 2, floorThick, trayHalf * 2),
+            size: SCNVector3(floorSpan, floorThick, floorSpan),
             position: SCNVector3(0, -floorThick / 2, 0),
             faceImages: [woodImage, woodImage, woodImage, woodImage, feltImage, woodImage],
             fallback: feltColor
@@ -347,13 +411,19 @@ final class DiceSceneController: NSObject {
             ))
         }
 
-        let ceiling = SCNNode(geometry: SCNPlane(width: 60, height: 60))
-        ceiling.geometry?.firstMaterial?.diffuse.contents = UIColor.clear
-        ceiling.geometry?.firstMaterial?.isDoubleSided = true
-        ceiling.position = SCNVector3(0, 9, 0)
-        ceiling.eulerAngles = SCNVector3(Float.pi / 2, 0, 0)
-        ceiling.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
-        scene.rootNode.addChildNode(ceiling)
+        // Solid invisible ceiling sitting flush on top of the invisible walls.
+        // Using a thick SCNBox (rather than the previous SCNPlane) so collisions
+        // are reliable when many dice slam into it during a chaotic roll —
+        // SCNPlane's single-thickness physics shape was occasionally letting fast
+        // dice slip through and escape into the void.
+        let ceilingThick: Float = 0.5
+        let ceilingY = wallHeight + invisibleWallHeight + ceilingThick / 2
+        scene.rootNode.addChildNode(makeBox(
+            size: SCNVector3(outerSpan, ceilingThick, outerSpan),
+            position: SCNVector3(0, ceilingY, 0),
+            faceImages: [nil],
+            fallback: .clear
+        ))
     }
 
     private func makeBox(
@@ -674,7 +744,37 @@ final class DiceSceneController: NSObject {
             node.position = findEmptyTrayPosition()
             node.simdOrientation = simd_quatf(angle: Float.random(in: 0..<2 * .pi), axis: [0, 1, 0])
             scene.rootNode.addChildNode(node)
-            dice.append(ManagedDie(node: node, kind: kind, hasSettled: true, stillFrameCount: 0, rolledFace: nil))
+            dice.append(ManagedDie(node: node, kind: kind, formulaIndex: -1, hasSettled: true, stillFrameCount: 0, rolledFace: nil))
+        }
+    }
+
+    /// Formula-driven population. Clears the existing dice and rebuilds one node per
+    /// die in the formula, tagging each with its position in the flat dice list
+    /// (groups expanded in order). Groups whose kind isn't supported in 3D are
+    /// silently skipped — callers should pre-validate via `Dice3DKind(_:)`.
+    func setDice(formula: DiceFormula) {
+        for die in dice { die.node.removeFromParentNode() }
+        dice.removeAll()
+
+        var formulaIndex = 0
+        for group in formula.groups {
+            guard let kind = Dice3DKind(group.kind) else {
+                // Skip unsupported kinds. Caller is expected to have filtered these out
+                // already, but we tolerate them here so a stale formula can't crash.
+                formulaIndex += group.count
+                continue
+            }
+            for _ in 0..<group.count {
+                let node = createDieNode(kind: kind)
+                node.position = findEmptyTrayPosition()
+                node.simdOrientation = simd_quatf(angle: Float.random(in: 0..<2 * .pi), axis: [0, 1, 0])
+                scene.rootNode.addChildNode(node)
+                dice.append(ManagedDie(
+                    node: node, kind: kind, formulaIndex: formulaIndex,
+                    hasSettled: true, stillFrameCount: 0, rolledFace: nil
+                ))
+                formulaIndex += 1
+            }
         }
     }
 
@@ -719,38 +819,82 @@ final class DiceSceneController: NSObject {
             dice[i].hasSettled = false
             dice[i].stillFrameCount = 0
             dice[i].rolledFace = nil
-
-            let node = dice[i].node
-            guard let body = node.physicsBody else { continue }
-            body.velocity = SCNVector3Zero
-            body.angularVelocity = SCNVector4Zero
-
-            node.position = SCNVector3(
-                Float.random(in: -1.5...1.5),
-                5 + Float(i) * 0.25,
-                Float.random(in: -1.5...1.5)
-            )
-            node.simdOrientation = randomOrientation()
-
-            let torque = SCNVector4(
-                Float.random(in: -2...2),
-                Float.random(in: -3...3),
-                Float.random(in: -2...2),
-                Float.random(in: 1.5...3.0)
-            )
-            body.applyTorque(torque, asImpulse: true)
-
-            let force = SCNVector3(
-                Float.random(in: -10...10),
-                Float.random(in: 18...26),
-                Float.random(in: -10...10)
-            )
-            body.applyForce(force, asImpulse: true)
+            // Reset opacity in case the die was dimmed by a previous roll's modifier.
+            dice[i].node.opacity = 1.0
+            throwDieImpulse(at: i)
         }
 
         allSettledCallback = onAllSettled
         isAwaitingRest = true
         rollStartTime = CACurrentMediaTime()
+    }
+
+    /// Re-throw a subset of dice (identified by their `formulaIndex`). Dice not in the
+    /// set keep their existing rolled-face values; once the re-thrown dice settle,
+    /// `onAllSettled` fires with the updated full result array in formula order.
+    /// Used to implement the `r2` (reroll-once-if-at-most) modifier physically.
+    func rethrowDice(at formulaIndices: Set<Int>, onAllSettled: @escaping @MainActor ([Int]) -> Void) {
+        guard !formulaIndices.isEmpty else {
+            onAllSettled(dice.map { $0.rolledFace ?? 0 })
+            return
+        }
+        currentRollId += 1
+
+        for i in dice.indices {
+            guard formulaIndices.contains(dice[i].formulaIndex) else { continue }
+            dice[i].hasSettled = false
+            dice[i].stillFrameCount = 0
+            dice[i].rolledFace = nil
+            dice[i].node.opacity = 1.0
+            throwDieImpulse(at: i)
+        }
+
+        allSettledCallback = onAllSettled
+        isAwaitingRest = true
+        rollStartTime = CACurrentMediaTime()
+    }
+
+    /// Animate dice opacity to mark a kept/dropped state for keep/drop modifiers.
+    /// Pass the set of formula indices that should be dimmed; everything else snaps
+    /// back to fully opaque. Animated over 0.2s for a soft fade.
+    func setDimmed(formulaIndices: Set<Int>, dimOpacity: CGFloat = 0.25) {
+        SCNTransaction.begin()
+        SCNTransaction.animationDuration = 0.2
+        for die in dice {
+            die.node.opacity = formulaIndices.contains(die.formulaIndex) ? dimOpacity : 1.0
+        }
+        SCNTransaction.commit()
+    }
+
+    /// Per-die throw impulse — extracted so it can be reused by both `rollAll` (for the
+    /// whole tray) and `rethrowDice` (for the subset that triggered a reroll modifier).
+    private func throwDieImpulse(at index: Int) {
+        let node = dice[index].node
+        guard let body = node.physicsBody else { return }
+        body.velocity = SCNVector3Zero
+        body.angularVelocity = SCNVector4Zero
+
+        node.position = SCNVector3(
+            Float.random(in: -1.5...1.5),
+            5 + Float(index) * 0.25,
+            Float.random(in: -1.5...1.5)
+        )
+        node.simdOrientation = randomOrientation()
+
+        let torque = SCNVector4(
+            Float.random(in: -2...2),
+            Float.random(in: -3...3),
+            Float.random(in: -2...2),
+            Float.random(in: 1.5...3.0)
+        )
+        body.applyTorque(torque, asImpulse: true)
+
+        let force = SCNVector3(
+            Float.random(in: -10...10),
+            Float.random(in: 18...26),
+            Float.random(in: -10...10)
+        )
+        body.applyForce(force, asImpulse: true)
     }
 
     private func randomOrientation() -> simd_quatf {

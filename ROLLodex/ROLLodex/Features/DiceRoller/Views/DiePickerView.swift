@@ -5,7 +5,9 @@ struct DiePickerView: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            ForEach(DieKind.allCases) { kind in
+            // Only kinds with a 3D model wired up. Other kinds (d8/d10/d12/d20/d100)
+            // come back as we add their geometry + textures.
+            ForEach(DieKind.allCases.filter(\.has3DModel)) { kind in
                 DiePickerButton(
                     kind: kind,
                     count: formula.count(of: kind),

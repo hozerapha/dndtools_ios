@@ -7,7 +7,7 @@ struct DiceRollerView: View {
     @State private var showHistory = false
     @State private var showSavePreset = false
     @State private var isRolling = false
-    @State private var animationTick = 0
+    @State private var controller = DiceSceneController()
 
     @Environment(HistoryStore.self) private var history
     @Environment(PresetStore.self) private var presets
@@ -18,17 +18,13 @@ struct DiceRollerView: View {
                 FormulaBarView(formula: formula, mode: mode) { parsed in
                     formula = parsed
                 }
+                .disabled(isRolling)
 
-                DiceTrayView(
-                    formula: formula,
-                    mode: mode,
-                    result: lastResult,
-                    isRolling: isRolling,
-                    animationTick: animationTick
-                )
-                .frame(maxHeight: .infinity)
+                tray
+                    .frame(maxHeight: .infinity)
 
                 bottomControls
+                    .disabled(isRolling)
             }
             .padding(.horizontal)
             .padding(.bottom, 8)
@@ -56,11 +52,61 @@ struct DiceRollerView: View {
                     .presentationDetents([.medium])
             }
             .sensoryFeedback(.impact(weight: .heavy), trigger: lastResult?.id)
+            .onAppear {
+                // Only seed the tray if the controller is empty — re-entering the tab
+                // shouldn't reset dice that are already showing a previous roll.
+                if controller.diceCount == 0 && formula.totalDiceCount > 0 {
+                    controller.setDice(formula: formula)
+                }
+            }
+            .onChange(of: formula) { _, new in
+                // Reset the visible tray + last result whenever the formula changes
+                // (picker tap, paste into the bar, history tap, preset tap, etc.).
+                guard !isRolling else { return }
+                controller.setDice(formula: new)
+                lastResult = nil
+            }
             .onChange(of: formula.supportsAdvantage) { _, supports in
                 if !supports { mode = .normal }
             }
             .animation(.snappy, value: formula.supportsAdvantage)
         }
+    }
+
+    @ViewBuilder
+    private var tray: some View {
+        ZStack(alignment: .top) {
+            SceneKitView(controller: controller)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+
+            if isRolling {
+                Text("Rolling…")
+                    .font(.system(.title3, design: .rounded, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .background(.black.opacity(0.6), in: Capsule())
+                    .padding(.top, 16)
+                    .transition(.opacity)
+            } else if let result = lastResult {
+                Text("\(result.total)")
+                    .font(.system(size: 56, weight: .heavy, design: .rounded))
+                    .foregroundStyle(totalColor(for: result))
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 8)
+                    .background(.black.opacity(0.55), in: Capsule())
+                    .padding(.top, 16)
+                    .contentTransition(.numericText())
+                    .transition(.scale.combined(with: .opacity))
+            }
+        }
+    }
+
+    private func totalColor(for result: RollResult) -> Color {
+        if result.hasCriticalSuccess { return .green }
+        if result.hasCriticalFail { return .red }
+        return .white
     }
 
     @ViewBuilder
@@ -141,25 +187,42 @@ struct DiceRollerView: View {
                     .padding(.vertical, 2)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(isRolling || formula.totalDiceCount == 0)
+            .disabled(isRolling || formula.totalDiceCount == 0 || !formula.allKinds3DSupported)
         }
     }
 
     @MainActor
     private func roll() async {
-        guard !isRolling, formula.totalDiceCount > 0 else { return }
-        let result = DiceRoller().roll(formula, mode: mode)
+        guard !isRolling,
+              formula.totalDiceCount > 0,
+              formula.allKinds3DSupported else { return }
         isRolling = true
-        animationTick = 0
+        lastResult = nil
 
-        let frames = 14  // ~50ms each → ~700ms total
-        for tick in 1...frames {
-            try? await Task.sleep(for: .milliseconds(50))
-            animationTick = tick
+        let dr = DiceRoller()
+
+        // 1. Physics-roll every die. Values come back in formula order.
+        var values = await controller.rollAllAsync()
+
+        // 2. r2 modifier: physically rethrow any dice that need it. Updated values
+        //    replace the originals at the same formula indices.
+        let rerollIndices = dr.rerollIndices(formula: formula, values: values)
+        if !rerollIndices.isEmpty {
+            values = await controller.rethrowDiceAsync(at: Set(rerollIndices))
         }
 
-        isRolling = false
+        // 3. Build the RollResult — applies kh/kl/dh/dl per group to mark kept/dropped.
+        let result = dr.resultFrom(formula: formula, values: values, mode: mode)
+
+        // 4. Visually dim the dropped dice. Done after the result is computed so the
+        //    fade kicks in once everything has settled and we know what's kept.
+        let droppedFormulaIndices = Set(
+            result.dieRolls.enumerated().compactMap { i, roll in roll.isKept ? nil : i }
+        )
+        controller.setDimmed(formulaIndices: droppedFormulaIndices)
+
         lastResult = result
         history.record(result)
+        isRolling = false
     }
 }
