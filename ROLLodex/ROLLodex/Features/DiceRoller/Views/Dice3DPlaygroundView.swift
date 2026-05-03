@@ -7,6 +7,7 @@ import simd
 enum Dice3DKind: String, CaseIterable, Identifiable {
     case d4
     case d6
+    case d8
 
     var id: String { rawValue }
     var label: String { rawValue.uppercased() }
@@ -14,6 +15,7 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
         switch self {
         case .d4: return 4
         case .d6: return 6
+        case .d8: return 8
         }
     }
 
@@ -23,6 +25,7 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
         switch kind {
         case .d4: self = .d4
         case .d6: self = .d6
+        case .d8: self = .d8
         default:  return nil
         }
     }
@@ -245,6 +248,11 @@ final class DiceSceneController: NSObject {
     // Picked so the d4 has a similar bounding sphere to the d6.
     private let d4Scale: Float = 0.85
 
+    // d8 geometry constant — vertices on the axes at ±d8Scale (regular octahedron).
+    // Picked so the d8 has a face-to-face (inradius) distance similar to the d6
+    // cube: 2·d8Scale/√3 ≈ d6's cubeSize when d8Scale ≈ cubeSize·√3/2.
+    private let d8Scale: Float = 1.5
+
     /// Each face stores its number and its outward normal in die-local frame.
     private struct FaceSpec {
         let number: Int
@@ -273,6 +281,21 @@ final class DiceSceneController: NSObject {
                 FaceSpec(number: 5, normal: [-1,  0,  0]),
                 FaceSpec(number: 3, normal: [ 0,  0,  1]),
                 FaceSpec(number: 4, normal: [ 0,  0, -1])
+            ]
+        case .d8:
+            // Outward normals for the 8 faces of a regular octahedron — each face
+            // points into one of the 8 (±X, ±Y, ±Z) octants. Numbered so opposite
+            // faces sum to 9 (standard d8 convention: 1↔8, 2↔7, 3↔6, 4↔5).
+            let inv = 1.0 / sqrtf(3)
+            return [
+                FaceSpec(number: 1, normal: SIMD3( inv,  inv,  inv)),
+                FaceSpec(number: 2, normal: SIMD3( inv, -inv,  inv)),
+                FaceSpec(number: 3, normal: SIMD3( inv, -inv, -inv)),
+                FaceSpec(number: 4, normal: SIMD3( inv,  inv, -inv)),
+                FaceSpec(number: 5, normal: SIMD3(-inv, -inv,  inv)),
+                FaceSpec(number: 6, normal: SIMD3(-inv,  inv,  inv)),
+                FaceSpec(number: 7, normal: SIMD3(-inv,  inv, -inv)),
+                FaceSpec(number: 8, normal: SIMD3(-inv, -inv, -inv))
             ]
         }
     }
@@ -458,6 +481,7 @@ final class DiceSceneController: NSObject {
         switch kind {
         case .d4: return createD4Node()
         case .d6: return createD6Node()
+        case .d8: return createD8Node()
         }
     }
 
@@ -608,6 +632,114 @@ final class DiceSceneController: NSObject {
         return node
     }
 
+    /// Builds a regular octahedron with 6 vertices on the axes at ±d8Scale. Same
+    /// pattern as createD4Node — one ivory body geometry handles physics + base
+    /// color, and 8 child triangle nodes overlay each face with its own UV-mapped
+    /// texture. d8 result-detection is "top face up" (parallel face on top), so
+    /// face textures show a single number that reads upright when that face is
+    /// facing the camera.
+    private func createD8Node() -> SCNNode {
+        let s = d8Scale
+        // 6 vertices, one on each end of the three axes.
+        let v: [SIMD3<Float>] = [
+            SIMD3( 1,  0,  0) * s,  // 0
+            SIMD3(-1,  0,  0) * s,  // 1
+            SIMD3( 0,  1,  0) * s,  // 2
+            SIMD3( 0, -1,  0) * s,  // 3
+            SIMD3( 0,  0,  1) * s,  // 4
+            SIMD3( 0,  0, -1) * s   // 5
+        ]
+        // 8 faces, each picking one X-axis, one Y-axis, and one Z-axis vertex.
+        // Numbering matches faceSpecs(for: .d8) so detection lines up with rendering.
+        // Winding gives outward-facing normals (verified by cross product sign).
+        let faces: [(verts: [Int], number: Int)] = [
+            (verts: [0, 2, 4], number: 1),  // outward (+,+,+)
+            (verts: [0, 4, 3], number: 2),  // outward (+,-,+)
+            (verts: [0, 3, 5], number: 3),  // outward (+,-,-)
+            (verts: [0, 5, 2], number: 4),  // outward (+,+,-)
+            (verts: [1, 3, 4], number: 5),  // outward (-,-,+)
+            (verts: [1, 4, 2], number: 6),  // outward (-,+,+)
+            (verts: [1, 2, 5], number: 7),  // outward (-,+,-)
+            (verts: [1, 5, 3], number: 8)   // outward (-,-,-)
+        ]
+
+        // Body geometry — single element, single ivory material. Convex-hull
+        // physics inferred from the 6 unique vertex positions.
+        var bodyPositions: [SCNVector3] = []
+        var bodyNormals: [SCNVector3] = []
+        for face in faces {
+            let p0 = v[face.verts[0]]
+            let p1 = v[face.verts[1]]
+            let p2 = v[face.verts[2]]
+            let n = simd_normalize(simd_cross(p1 - p0, p2 - p0))
+            bodyPositions += [SCNVector3(p0), SCNVector3(p1), SCNVector3(p2)]
+            bodyNormals   += [SCNVector3(n), SCNVector3(n), SCNVector3(n)]
+        }
+        let bodyPosSource = SCNGeometrySource(vertices: bodyPositions)
+        let bodyNormSource = SCNGeometrySource(normals: bodyNormals)
+        let bodyIndices: [Int32] = (0..<Int32(bodyPositions.count)).map { $0 }
+        let bodyElement = SCNGeometryElement(indices: bodyIndices, primitiveType: .triangles)
+        let bodyGeometry = SCNGeometry(sources: [bodyPosSource, bodyNormSource], elements: [bodyElement])
+
+        let bodyMat = SCNMaterial()
+        bodyMat.diffuse.contents = ivoryColor
+        bodyMat.roughness.contents = 0.40
+        bodyGeometry.materials = [bodyMat]
+
+        let node = SCNNode(geometry: bodyGeometry)
+        node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: nil)
+
+        // One textured triangle child per face, sitting just outside the body face
+        // along its outward normal. Same UV layout as d4 (apex at image top-center,
+        // base verts at image bottom corners) so designers can use a similar art
+        // template for both kinds.
+        let outwardOffset: Float = 0.005
+        let inset: Float = 1.02
+
+        for face in faces {
+            let p0 = v[face.verts[0]]
+            let p1 = v[face.verts[1]]
+            let p2 = v[face.verts[2]]
+            let outNormal = simd_normalize(simd_cross(p1 - p0, p2 - p0))
+            let centroid = (p0 + p1 + p2) / 3.0
+            let q0 = centroid + (p0 - centroid) * inset + outNormal * outwardOffset
+            let q1 = centroid + (p1 - centroid) * inset + outNormal * outwardOffset
+            let q2 = centroid + (p2 - centroid) * inset + outNormal * outwardOffset
+
+            let positions: [SCNVector3] = [SCNVector3(q0), SCNVector3(q1), SCNVector3(q2)]
+            let normals:   [SCNVector3] = Array(repeating: SCNVector3(outNormal), count: 3)
+            let uvs: [CGPoint] = [
+                CGPoint(x: 0.5, y: 0.0),
+                CGPoint(x: 0.0, y: 1.0),
+                CGPoint(x: 1.0, y: 1.0)
+            ]
+            let posSource = SCNGeometrySource(vertices: positions)
+            let normSource = SCNGeometrySource(normals: normals)
+            let uvSource = SCNGeometrySource(textureCoordinates: uvs)
+            let element = SCNGeometryElement(
+                indices: [Int32(0), Int32(1), Int32(2)],
+                primitiveType: .triangles
+            )
+            let faceGeometry = SCNGeometry(
+                sources: [posSource, normSource, uvSource],
+                elements: [element]
+            )
+
+            let mat = SCNMaterial()
+            // Prefer hand-designed face textures from the asset catalog; fall back to
+            // a simple centered-digit image until those textures are added.
+            mat.diffuse.contents = UIImage(named: "d8-face-\(face.number)")
+                ?? Self.makeD8FallbackImage(number: face.number)
+            mat.roughness.contents = 0.45
+            mat.isDoubleSided = false
+            faceGeometry.materials = [mat]
+
+            node.addChildNode(SCNNode(geometry: faceGeometry))
+        }
+
+        return node
+    }
+
     /// Rotation that maps SCNPlane's default +Z normal to `target`.
     private static func rotationFromZ(to target: SIMD3<Float>) -> simd_quatf {
         let from: SIMD3<Float> = [0, 0, 1]
@@ -637,6 +769,31 @@ final class DiceSceneController: NSObject {
                 )
                 ctx.cgContext.fillEllipse(in: r)
             }
+        }
+    }
+
+    /// Placeholder d8 face texture used until the user adds `d8-face-N` assets.
+    /// Single digit, centered in the visible triangle (~2/3 down the image to land
+    /// near the inscribed-triangle centroid in image space).
+    private static func makeD8FallbackImage(number: Int) -> UIImage {
+        let pixelSize: CGFloat = 256
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: pixelSize, height: pixelSize))
+        return renderer.image { ctx in
+            UIColor(red: 0.97, green: 0.96, blue: 0.92, alpha: 1).setFill()
+            ctx.fill(CGRect(origin: .zero, size: CGSize(width: pixelSize, height: pixelSize)))
+
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 110, weight: .heavy),
+                .foregroundColor: UIColor(white: 0.08, alpha: 1)
+            ]
+            let str = NSAttributedString(string: "\(number)", attributes: attrs)
+            let size = str.size()
+            // Triangle's centroid in image space is roughly (0.5W, 2H/3) given the
+            // UV mapping (apex at image top-center, base verts at image bottom corners).
+            str.draw(at: CGPoint(
+                x: (pixelSize - size.width) / 2,
+                y: pixelSize * 2 / 3 - size.height / 2
+            ))
         }
     }
 
@@ -896,7 +1053,7 @@ final class DiceSceneController: NSObject {
 
         let force = SCNVector3(
             Float.random(in: -10...10),
-            Float.random(in: 18...26),
+            Float.random(in: 8...14),
             Float.random(in: -10...10)
         )
         body.applyForce(force, asImpulse: true)
@@ -989,8 +1146,8 @@ final class DiceSceneController: NSObject {
         let q = die.node.presentation.simdOrientation
         let target: SIMD3<Float>
         switch die.kind {
-        case .d4: target = [0, -1, 0]   // bottom face = result
-        case .d6: target = [0,  1, 0]   // top face = result
+        case .d4:        target = [0, -1, 0]   // bottom face = result (no top face — vertex up)
+        case .d6, .d8:   target = [0,  1, 0]   // top face = result (parallel face up)
         }
 
         var best = 1
