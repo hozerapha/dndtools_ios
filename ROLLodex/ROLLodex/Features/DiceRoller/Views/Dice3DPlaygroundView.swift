@@ -473,12 +473,17 @@ final class DiceSceneController: NSObject {
         let node = SCNNode(geometry: geometry)
         node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: nil)
 
-        // Plane child per face — same approach as before, ivory background + pip pattern.
-        let planeSize = CGFloat(cubeSize) * 0.85
+        // Plane child per face. Sized to match the cube face exactly so hand-designed
+        // textures (512×512 in the asset catalog) cover the whole visible face without
+        // an ivory border. The 0.005 outward offset hides z-fighting against the body.
+        let planeSize = CGFloat(cubeSize) * 1.02
         for face in Self.faceSpecs(for: .d6) {
             let plane = SCNPlane(width: planeSize, height: planeSize)
             let mat = SCNMaterial()
-            mat.diffuse.contents = Self.makePipImage(faceNumber: face.number)
+            // Prefer hand-designed face textures from the asset catalog; fall back
+            // to the runtime pip generator for any face whose asset isn't present.
+            mat.diffuse.contents = UIImage(named: "d6-face-\(face.number)")
+                ?? Self.makePipImage(faceNumber: face.number)
             mat.roughness.contents = 0.45
             plane.materials = [mat]
 
