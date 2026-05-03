@@ -11,33 +11,54 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
     case d10
     case d12
     case d20
+    case d100
 
     var id: String { rawValue }
     var label: String { rawValue.uppercased() }
     var sides: Int {
         switch self {
-        case .d4:  return 4
-        case .d6:  return 6
-        case .d8:  return 8
-        case .d10: return 10
-        case .d12: return 12
-        case .d20: return 20
+        case .d4:   return 4
+        case .d6:   return 6
+        case .d8:   return 8
+        case .d10:  return 10
+        case .d12:  return 12
+        case .d20:  return 20
+        case .d100: return 100
         }
     }
+
+    /// Compound kinds expand to multiple physical dice in the 3D scene rather
+    /// than rendering as a single die. d100 is a real-world pair of d10s (a "ones"
+    /// die labeled 0–9 and a "tens" die labeled 00–90), so each d100 in the
+    /// formula spawns two d10 nodes that share a formula slot. Standalone kinds
+    /// render as one physical die per formula entry.
+    var isStandalone: Bool { self != .d100 }
 
     /// Bridges from the project-wide `DieKind` (which spans d4–d100) to the subset
     /// the 3D scene currently knows how to model. Returns nil for unsupported kinds.
     init?(_ kind: DieKind) {
         switch kind {
-        case .d4:  self = .d4
-        case .d6:  self = .d6
-        case .d8:  self = .d8
-        case .d10: self = .d10
-        case .d12: self = .d12
-        case .d20: self = .d20
-        default:   return nil
+        case .d4:   self = .d4
+        case .d6:   self = .d6
+        case .d8:   self = .d8
+        case .d10:  self = .d10
+        case .d12:  self = .d12
+        case .d20:  self = .d20
+        case .d100: self = .d100
+        default:    return nil
         }
     }
+}
+
+/// What role a physical die plays in the formula. `.standard` for everything
+/// except d100 components; d100s spawn one `.d100Ones` (a normal d10 read 0–9)
+/// and one `.d100Tens` (read 00–90) that share a formula slot. The role decides
+/// which texture set to load and how the face value contributes to the combined
+/// d100 result.
+enum DieRole {
+    case standard
+    case d100Ones
+    case d100Tens
 }
 
 extension DieKind {
@@ -87,7 +108,10 @@ struct Dice3DPlaygroundView: View {
                 .frame(maxHeight: .infinity)
 
                 Picker("Kind", selection: $diceKind) {
-                    ForEach(Dice3DKind.allCases) { kind in
+                    // Compound kinds (d100) need formula context to spawn pairs and
+                    // wire connectors, so the legacy playground picker only offers
+                    // standalone kinds. The main DiceRollerView still surfaces d100.
+                    ForEach(Dice3DKind.allCases.filter(\.isStandalone)) { kind in
                         Text(kind.label).tag(kind)
                     }
                 }
@@ -208,16 +232,26 @@ final class DiceSceneController: NSObject {
     private weak var scnView: SCNView?
     private var scene: SCNScene!
     private var cameraNode: SCNNode!
+    /// Parent node holding all d100 pair connector lines. Lives directly under
+    /// the scene root so we can clear all connectors with one
+    /// `childNodes.forEach { $0.removeFromParentNode() }`. Connectors are drawn
+    /// inside `settleAllDice` once every die is at rest and cleared whenever the
+    /// dice are about to move (rollAll, rethrowDice) or the formula changes.
+    private var connectorContainer: SCNNode!
     private let defaultCameraPosition = SCNVector3(0, 22, 7.5)
     private let defaultCameraTarget   = SCNVector3(0, 0, 0)
 
     private struct ManagedDie {
         let node: SCNNode
+        /// The physical 3D kind that's actually rendered. For d100 components this
+        /// is `.d10` — d100s render as a pair of d10s, not as a single d100 node.
         let kind: Dice3DKind
+        /// Most dice are `.standard`. d100 components are `.d100Ones` (read 0–9)
+        /// or `.d100Tens` (read 00–90); a d100 pair shares one `formulaIndex`.
+        let role: DieRole
         /// Position of this die in the formula's flat dice list (groups expanded
-        /// in order). Used by callers to map roll results back to formula slots
-        /// when applying modifiers. -1 for dice created via the legacy
-        /// `setDice(count:kind:)` API where the concept doesn't apply.
+        /// in order). For d100 the two physical dice in a pair share the same
+        /// `formulaIndex` — the result-combining loop pairs them up by it.
         var formulaIndex: Int
         var rolledFace: Int?
         /// Snapshot from the previous rest-detection tick. `nil` immediately after a
@@ -465,6 +499,13 @@ final class DiceSceneController: NSObject {
                 FaceSpec(number: 18, normal: SIMD3( small, 0, -large)),
                 FaceSpec(number:  3, normal: SIMD3(-small, 0,  large))
             ]
+        case .d100:
+            // Unreachable — d100 is compound and rendered as a pair of d10 nodes,
+            // each tagged kind=.d10. faceSpecs is only ever queried via the
+            // physical kind, so this branch is here just to keep the switch
+            // exhaustive. Returning the d10 layout keeps downstream callers safe
+            // if it does get invoked.
+            return faceSpecs(for: .d10)
         }
     }
 
@@ -499,6 +540,9 @@ final class DiceSceneController: NSObject {
         setupCamera()
         setupLighting()
         setupTray()
+
+        connectorContainer = SCNNode()
+        scene.rootNode.addChildNode(connectorContainer)
     }
 
     private func setupCamera() {
@@ -645,14 +689,20 @@ final class DiceSceneController: NSObject {
 
     // MARK: Die geometry
 
-    private func createDieNode(kind: Dice3DKind) -> SCNNode {
+    private func createDieNode(kind: Dice3DKind, role: DieRole = .standard) -> SCNNode {
         switch kind {
-        case .d4:  return createD4Node()
-        case .d6:  return createD6Node()
-        case .d8:  return createD8Node()
-        case .d10: return createD10Node()
-        case .d12: return createD12Node()
-        case .d20: return createD20Node()
+        case .d4:   return createD4Node()
+        case .d6:   return createD6Node()
+        case .d8:   return createD8Node()
+        case .d10:  return createD10Node(role: role)
+        case .d12:  return createD12Node()
+        case .d20:  return createD20Node()
+        case .d100:
+            // d100 is a compound kind — `setDice(formula:)` expands each d100 in
+            // the formula to two d10 nodes (one .d100Ones, one .d100Tens) before
+            // calling here, so this branch shouldn't be reached. Fall back to a
+            // standard d10 if it ever is, just so we don't crash.
+            return createD10Node(role: role)
         }
     }
 
@@ -918,7 +968,7 @@ final class DiceSceneController: NSObject {
     /// along its long pole-to-far diagonal; UVs map the 4 kite verts to the four
     /// edge-midpoints of the texture (rotated-square inscribed in a unit square),
     /// so a designer can use a 512×512 square asset with the digit centered.
-    private func createD10Node() -> SCNNode {
+    private func createD10Node(role: DieRole = .standard) -> SCNNode {
         let R = d10R, e = d10e, H = d10H
         let beta = Float.pi / 5  // 36°
 
@@ -1074,8 +1124,20 @@ final class DiceSceneController: NSObject {
             )
 
             let mat = SCNMaterial()
-            mat.diffuse.contents = UIImage(named: String(format: "d10-face-%02d", kite.number))
-                ?? Self.makeD10FallbackImage(number: kite.number)
+            // Texture lookup branches on role: a `.d100Tens` die loads the
+            // `d100-face-NN` set (NN = multiples of 10, where kite.number K maps to
+            // (K * 10) % 100, so K=1→10, K=9→90, K=10→00); ones and standard d10s
+            // both use the regular `d10-face-NN` set. Same kite geometry / detection
+            // either way — only the rendered art differs.
+            switch role {
+            case .d100Tens:
+                let tensValue = (kite.number * 10) % 100
+                mat.diffuse.contents = UIImage(named: String(format: "d100-face-%02d", tensValue))
+                    ?? Self.makeD100TensFallbackImage(value: tensValue)
+            case .standard, .d100Ones:
+                mat.diffuse.contents = UIImage(named: String(format: "d10-face-%02d", kite.number))
+                    ?? Self.makeD10FallbackImage(number: kite.number)
+            }
             mat.roughness.contents = 0.45
             mat.isDoubleSided = false
             faceGeometry.materials = [mat]
@@ -1503,6 +1565,33 @@ final class DiceSceneController: NSObject {
         }
     }
 
+    /// Placeholder d100 "tens" face texture used until the user adds the
+    /// `d100-face-NN` assets (NN = multiples of 10 from 00 to 90). Renders the
+    /// printed value (e.g. "30", "00") at the kite centroid the same way the d10
+    /// fallback does — `value` is the on-face label the user would draw, not the
+    /// kite-number.
+    private static func makeD100TensFallbackImage(value: Int) -> UIImage {
+        let pixelHeight: CGFloat = 256
+        let pixelWidth: CGFloat = 189
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: pixelWidth, height: pixelHeight))
+        return renderer.image { ctx in
+            UIColor(red: 0.97, green: 0.96, blue: 0.92, alpha: 1).setFill()
+            ctx.fill(CGRect(origin: .zero, size: CGSize(width: pixelWidth, height: pixelHeight)))
+
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 64, weight: .heavy),
+                .foregroundColor: UIColor(white: 0.08, alpha: 1)
+            ]
+            let str = NSAttributedString(string: String(format: "%02d", value), attributes: attrs)
+            let size = str.size()
+            let centroidV: CGFloat = 0.655
+            str.draw(at: CGPoint(
+                x: (pixelWidth - size.width) / 2,
+                y: pixelHeight * centroidV - size.height / 2
+            ))
+        }
+    }
+
     /// Placeholder d12 face texture used until the user adds `d12-face-NN` assets.
     /// Square canvas with the pentagon UV layout (top vertex at v=0, bottom edge at
     /// v=0.905). The digit sits at the pentagon's BBOX MIDPOINT (v ≈ 0.453), NOT
@@ -1647,12 +1736,14 @@ final class DiceSceneController: NSObject {
 
     /// Add or remove dice to match the requested count and kind. Switching kinds clears
     /// all existing dice and recreates them in the new shape; same-kind changes
-    /// add/remove only the delta.
+    /// add/remove only the delta. The legacy playground entry — doesn't support
+    /// compound kinds (d100), so callers should filter those out before calling.
     func setDice(count: Int, kind: Dice3DKind) {
         if dice.contains(where: { $0.kind != kind }) {
             for die in dice { die.node.removeFromParentNode() }
             dice.removeAll()
         }
+        clearConnectors()
 
         let target = max(0, count)
 
@@ -1662,12 +1753,15 @@ final class DiceSceneController: NSObject {
         }
 
         while dice.count < target {
-            let node = createDieNode(kind: kind)
+            let node = createDieNode(kind: kind, role: .standard)
             node.position = findEmptyTrayPosition()
             node.simdOrientation = simd_quatf(angle: Float.random(in: 0..<2 * .pi), axis: [0, 1, 0])
             scene.rootNode.addChildNode(node)
+            // Sequential formulaIndex so each playground die is its own slot —
+            // makes the per-formula-slot result-grouping in `settleAllDice` work
+            // even though there's no actual formula here.
             dice.append(ManagedDie(
-                node: node, kind: kind, formulaIndex: -1,
+                node: node, kind: kind, role: .standard, formulaIndex: dice.count,
                 rolledFace: nil, lastPosition: nil, lastOrientation: nil
             ))
         }
@@ -1677,9 +1771,15 @@ final class DiceSceneController: NSObject {
     /// die in the formula, tagging each with its position in the flat dice list
     /// (groups expanded in order). Groups whose kind isn't supported in 3D are
     /// silently skipped — callers should pre-validate via `Dice3DKind(_:)`.
+    ///
+    /// d100 is COMPOUND — each d100 in the formula spawns TWO physical d10 nodes
+    /// (one `.d100Ones` and one `.d100Tens`) that share the same `formulaIndex`.
+    /// `settleAllDice` later pairs them up by index and combines their face values
+    /// into the 1–100 result that the formula layer sees.
     func setDice(formula: DiceFormula) {
         for die in dice { die.node.removeFromParentNode() }
         dice.removeAll()
+        clearConnectors()
 
         var formulaIndex = 0
         for group in formula.groups {
@@ -1690,16 +1790,44 @@ final class DiceSceneController: NSObject {
                 continue
             }
             for _ in 0..<group.count {
-                let node = createDieNode(kind: kind)
-                node.position = findEmptyTrayPosition()
-                node.simdOrientation = simd_quatf(angle: Float.random(in: 0..<2 * .pi), axis: [0, 1, 0])
-                scene.rootNode.addChildNode(node)
-                dice.append(ManagedDie(
-                    node: node, kind: kind, formulaIndex: formulaIndex,
-                    rolledFace: nil, lastPosition: nil, lastOrientation: nil
-                ))
+                if kind == .d100 {
+                    spawnD100Pair(formulaIndex: formulaIndex)
+                } else {
+                    spawnStandardDie(kind: kind, formulaIndex: formulaIndex)
+                }
                 formulaIndex += 1
             }
+        }
+    }
+
+    /// Adds one standard die (any kind except d100) to the scene at a random
+    /// empty tray position with a random Y-axis rotation.
+    private func spawnStandardDie(kind: Dice3DKind, formulaIndex: Int) {
+        let node = createDieNode(kind: kind, role: .standard)
+        node.position = findEmptyTrayPosition()
+        node.simdOrientation = simd_quatf(angle: Float.random(in: 0..<2 * .pi), axis: [0, 1, 0])
+        scene.rootNode.addChildNode(node)
+        dice.append(ManagedDie(
+            node: node, kind: kind, role: .standard, formulaIndex: formulaIndex,
+            rolledFace: nil, lastPosition: nil, lastOrientation: nil
+        ))
+    }
+
+    /// Adds one d100 pair to the scene — a `.d100Ones` and a `.d100Tens` d10,
+    /// each at its own random empty tray position. Both share `formulaIndex` so
+    /// the result-combining loop pairs them up. Spawn positions are independent
+    /// (no proximity bias) — the connector line drawn after settling is what
+    /// communicates the pairing visually.
+    private func spawnD100Pair(formulaIndex: Int) {
+        for role in [DieRole.d100Ones, DieRole.d100Tens] {
+            let node = createDieNode(kind: .d10, role: role)
+            node.position = findEmptyTrayPosition()
+            node.simdOrientation = simd_quatf(angle: Float.random(in: 0..<2 * .pi), axis: [0, 1, 0])
+            scene.rootNode.addChildNode(node)
+            dice.append(ManagedDie(
+                node: node, kind: .d10, role: role, formulaIndex: formulaIndex,
+                rolledFace: nil, lastPosition: nil, lastOrientation: nil
+            ))
         }
     }
 
@@ -1738,6 +1866,7 @@ final class DiceSceneController: NSObject {
     func rollAll(onAllSettled: @escaping @MainActor ([Int]) -> Void) {
         guard !dice.isEmpty else { onAllSettled([]); return }
         currentRollId += 1
+        clearConnectors()
 
         for i in dice.indices {
             dice[i].rolledFace = nil
@@ -1761,10 +1890,11 @@ final class DiceSceneController: NSObject {
     /// the `r2` (reroll-once-if-at-most) modifier physically.
     func rethrowDice(at formulaIndices: Set<Int>, onAllSettled: @escaping @MainActor ([Int]) -> Void) {
         guard !formulaIndices.isEmpty else {
-            onAllSettled(dice.map { $0.rolledFace ?? 0 })
+            onAllSettled(formulaSlotValuesFromCurrentFaces())
             return
         }
         currentRollId += 1
+        clearConnectors()
 
         for i in dice.indices {
             // Snapshots get reset for ALL dice — even ones we're not re-throwing —
@@ -1906,21 +2036,185 @@ final class DiceSceneController: NSObject {
     /// All dice have been completely still for the required duration — snapshot
     /// each face value in one pass and fire the all-settled callback. Called only
     /// from `tickRestDetection`; do not call directly.
+    ///
+    /// The values returned are PER FORMULA SLOT, not per physical die — for d100
+    /// pairs the two physical face values get combined into a single 1–100 result
+    /// before being placed in the values array, and only the d100 slot's
+    /// formulaIndex appears in the output. This matches what
+    /// `DiceRoller.resultFrom(formula:values:mode:)` expects.
     private func settleAllDice() {
         isAwaitingRest = false
         allStillSince = nil
 
-        var values: [Int] = []
         for i in dice.indices {
             let face = detectResult(of: dice[i])
             dice[i].rolledFace = face
             onDieSettled?(i, face)
-            values.append(face)
         }
+
+        drawD100Connectors()
 
         let cb = allSettledCallback
         allSettledCallback = nil
-        cb?(values)
+        cb?(formulaSlotValuesFromCurrentFaces())
+    }
+
+    /// Builds the values-array the formula layer expects from the dice array's
+    /// current `rolledFace` snapshot. One entry per formula slot, in slot order;
+    /// d100 pairs are combined into their 1–100 value here. Used both by
+    /// `settleAllDice` (after a fresh roll) and by `rethrowDice` (when a no-op
+    /// rethrow needs to return the previous values without re-throwing anything).
+    private func formulaSlotValuesFromCurrentFaces() -> [Int] {
+        let grouped = Dictionary(grouping: dice.indices, by: { dice[$0].formulaIndex })
+        return grouped
+            .sorted { $0.key < $1.key }
+            .map { _, indices -> Int in
+                if indices.count == 2,
+                   let oI = indices.first(where: { dice[$0].role == .d100Ones }),
+                   let tI = indices.first(where: { dice[$0].role == .d100Tens }) {
+                    return combineD100(
+                        onesFace: dice[oI].rolledFace ?? 0,
+                        tensFace: dice[tI].rolledFace ?? 0
+                    )
+                }
+                // Standalone die — single physical face value IS the formula value.
+                return dice[indices[0]].rolledFace ?? 0
+            }
+    }
+
+    /// Combines two d10 face values (each 1–10 from the kite geometry) into a
+    /// single d100 result (1–100). The d10 textures are labeled 0–9 with the
+    /// face that the geometry numbers as 10 carrying the "0" art, so we mod-10
+    /// each input to recover the printed digit, then add `tens * 10 + ones`.
+    /// `0 + 00` is the conventional read for 100, so we promote that case.
+    private func combineD100(onesFace: Int, tensFace: Int) -> Int {
+        let onesDigit = onesFace % 10                    // 1..9 stay; 10 → 0
+        let tensDigit = tensFace % 10                    // same mapping for the tens die
+        let result = tensDigit * 10 + onesDigit
+        return result == 0 ? 100 : result
+    }
+
+    // MARK: - d100 pair connector lines
+
+    /// Removes every connector line currently in the scene. Called whenever the
+    /// dice are about to move (rollAll, rethrowDice) or the formula changes —
+    /// connectors are stale at any moment that isn't "all dice resting at their
+    /// post-settle positions", and we'd rather show none than show wrong ones.
+    private func clearConnectors() {
+        for child in connectorContainer.childNodes {
+            child.removeFromParentNode()
+        }
+    }
+
+    /// Adds one connector node per d100 pair currently in the scene, drawn from
+    /// each die's upper polar apex (the kite-trapezohedron tip facing UP after
+    /// settling — the one not touching the felt). Called from `settleAllDice`
+    /// after the all-still gate has fired, so positions won't shift again until
+    /// the next roll and we can read the orientations safely.
+    private func drawD100Connectors() {
+        let grouped = Dictionary(grouping: dice.indices, by: { dice[$0].formulaIndex })
+        for (_, indices) in grouped {
+            guard indices.count == 2,
+                  let oI = indices.first(where: { dice[$0].role == .d100Ones }),
+                  let tI = indices.first(where: { dice[$0].role == .d100Tens })
+            else { continue }
+            let onesApex = upperApexWorldPosition(of: dice[oI])
+            let tensApex = upperApexWorldPosition(of: dice[tI])
+            connectorContainer.addChildNode(makeConnectorNode(from: onesApex, to: tensApex))
+        }
+    }
+
+    /// World-space position of a d10's UPPER polar apex (the vertex that's pointing
+    /// up after settling). The kite trapezohedron has two polar vertices at
+    /// die-local `(0, ±d10H, 0)`; we apply the die's current orientation to both
+    /// and pick the one with the higher world-Y. Used to anchor the connector
+    /// line at the visible tip rather than at the die's geometric center.
+    private func upperApexWorldPosition(of die: ManagedDie) -> SCNVector3 {
+        let pres = die.node.presentation
+        let center = SIMD3<Float>(pres.position)
+        let q = pres.simdOrientation
+        let topWorld    = center + q.act(SIMD3<Float>(0,  d10H, 0))
+        let bottomWorld = center + q.act(SIMD3<Float>(0, -d10H, 0))
+        return SCNVector3(topWorld.y > bottomWorld.y ? topWorld : bottomWorld)
+    }
+
+    /// Builds an arched, semi-translucent connector between two world-space
+    /// points. The curve is a quadratic Bézier with a control point lifted above
+    /// the chord midpoint — height scales with chord length (with a small floor
+    /// so very-close pairs still arch visibly). Sampled into ~24 short cylinder
+    /// segments, each parented to a single returned node so the whole connector
+    /// can be removed in one `removeFromParentNode()` call.
+    private func makeConnectorNode(from a: SCNVector3, to b: SCNVector3) -> SCNNode {
+        let parent = SCNNode()
+
+        let dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z
+        let chord = sqrtf(dx * dx + dy * dy + dz * dz)
+        let archHeight = max(chord * 0.30, 1.2)
+
+        // Control point sits directly above the chord midpoint — keeps the arch
+        // in a vertical plane so it reads as "lifted off the tray" from any
+        // camera angle, not skewed sideways.
+        let control = SCNVector3(
+            (a.x + b.x) / 2,
+            (a.y + b.y) / 2 + archHeight,
+            (a.z + b.z) / 2
+        )
+
+        let segments = 24
+        var prev = a
+        for i in 1...segments {
+            let t = Float(i) / Float(segments)
+            let next = quadraticBezier(a: a, c: control, b: b, t: t)
+            parent.addChildNode(makeConnectorSegment(from: prev, to: next))
+            prev = next
+        }
+        return parent
+    }
+
+    /// One straight cylinder segment of a connector, semi-translucent ivory-gold.
+    /// Lighting is `.constant` so the segment color stays even from the side
+    /// (we want a flat glow, not a shaded tube), and `blendMode = .alpha` plus
+    /// `transparency` < 1 give the see-through look.
+    private func makeConnectorSegment(from a: SCNVector3, to b: SCNVector3) -> SCNNode {
+        let dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z
+        let length = sqrtf(dx * dx + dy * dy + dz * dz)
+
+        let cylinder = SCNCylinder(radius: 0.06, height: CGFloat(length))
+        let mat = SCNMaterial()
+        mat.diffuse.contents  = UIColor(red: 1.00, green: 0.84, blue: 0.20, alpha: 0.45)
+        mat.emission.contents = UIColor(red: 1.00, green: 0.55, blue: 0.10, alpha: 0.45)
+        mat.transparency = 0.55
+        mat.blendMode = .alpha
+        mat.lightingModel = .constant
+        mat.writesToDepthBuffer = false   // adjacent segments shouldn't punch holes through each other
+        cylinder.materials = [mat]
+
+        let node = SCNNode(geometry: cylinder)
+        node.position = SCNVector3((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2)
+
+        let dir = simd_normalize(SIMD3<Float>(dx, dy, dz))
+        let from: SIMD3<Float> = [0, 1, 0]
+        let dot = simd_dot(from, dir)
+        if dot < 0.9999 {
+            if dot < -0.9999 {
+                node.simdOrientation = simd_quatf(angle: .pi, axis: [1, 0, 0])
+            } else {
+                let axis = simd_normalize(simd_cross(from, dir))
+                node.simdOrientation = simd_quatf(angle: acos(dot), axis: axis)
+            }
+        }
+        return node
+    }
+
+    /// Quadratic Bézier sample at `t ∈ [0, 1]`. `a` and `b` are endpoints, `c` is
+    /// the lifted control point.
+    private func quadraticBezier(a: SCNVector3, c: SCNVector3, b: SCNVector3, t: Float) -> SCNVector3 {
+        let u = 1 - t
+        return SCNVector3(
+            u * u * a.x + 2 * u * t * c.x + t * t * b.x,
+            u * u * a.y + 2 * u * t * c.y + t * t * b.y,
+            u * u * a.z + 2 * u * t * c.z + t * t * b.z
+        )
     }
 
     /// Computes the rolled value from the die's rest orientation. For a d6 the result
@@ -1935,6 +2229,7 @@ final class DiceSceneController: NSObject {
         switch die.kind {
         case .d4:              target = [0, -1, 0]   // bottom face = result (no top face — vertex up)
         case .d6, .d8, .d10, .d12, .d20:   target = [0,  1, 0]   // top face = result (parallel face up)
+        case .d100:            target = [0,  1, 0]   // unreachable — d100 dice carry kind=.d10
         }
 
         var best = 1
