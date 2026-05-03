@@ -9,6 +9,7 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
     case d6
     case d8
     case d10
+    case d12
 
     var id: String { rawValue }
     var label: String { rawValue.uppercased() }
@@ -18,6 +19,7 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
         case .d6:  return 6
         case .d8:  return 8
         case .d10: return 10
+        case .d12: return 12
         }
     }
 
@@ -29,6 +31,7 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
         case .d6:  self = .d6
         case .d8:  self = .d8
         case .d10: self = .d10
+        case .d12: self = .d12
         default:   return nil
         }
     }
@@ -296,6 +299,13 @@ final class DiceSceneController: NSObject {
     private let d10e: Float = 0.114
     private let d10H: Float = 1.089
 
+    // d12 — regular dodecahedron. 20 vertices in three groups: 8 cube corners
+    // (±1, ±1, ±1) and 12 "edge" vertices on three rings — (0, ±φ, ±1/φ),
+    // (±1/φ, 0, ±φ), (±φ, ±1/φ, 0) — all scaled by d12Scale. φ is the golden
+    // ratio. Picked so the inscribed sphere radius (face-to-face / 2) ≈
+    // cubeSize/2: at unit scale the inradius is ≈1.378, so d12Scale ≈ 0.85/1.378.
+    private let d12Scale: Float = 0.62
+
     /// Each face stores its number and its outward normal in die-local frame.
     private struct FaceSpec {
         let number: Int
@@ -375,6 +385,29 @@ final class DiceSceneController: NSObject {
                 ))
             }
             return specs
+        case .d12:
+            // 12 face normals point through the 12 vertices of an icosahedron — the
+            // dodecahedron's dual — so they're (0, ±1, ±φ), (±1, ±φ, 0), (±φ, 0, ±1)
+            // up to normalization by √(1+φ²). Numbering puts opposite faces summing
+            // to 13 (the standard d12 convention: 1↔12, 2↔11, 3↔10, 4↔9, 5↔8, 6↔7).
+            let phi = (1 + sqrtf(5)) / 2
+            let denom = sqrtf(1 + phi * phi)
+            let p = phi / denom
+            let one: Float = 1 / denom
+            return [
+                FaceSpec(number:  1, normal: SIMD3( 0,  one,  p  )),
+                FaceSpec(number:  2, normal: SIMD3( 0, -one,  p  )),
+                FaceSpec(number: 11, normal: SIMD3( 0,  one, -p  )),
+                FaceSpec(number: 12, normal: SIMD3( 0, -one, -p  )),
+                FaceSpec(number:  3, normal: SIMD3( one,  p,  0 )),
+                FaceSpec(number:  4, normal: SIMD3(-one,  p,  0 )),
+                FaceSpec(number:  9, normal: SIMD3( one, -p,  0 )),
+                FaceSpec(number: 10, normal: SIMD3(-one, -p,  0 )),
+                FaceSpec(number:  5, normal: SIMD3( p,  0,  one)),
+                FaceSpec(number:  6, normal: SIMD3(-p,  0,  one)),
+                FaceSpec(number:  7, normal: SIMD3( p,  0, -one)),
+                FaceSpec(number:  8, normal: SIMD3(-p,  0, -one))
+            ]
         }
     }
 
@@ -561,6 +594,7 @@ final class DiceSceneController: NSObject {
         case .d6:  return createD6Node()
         case .d8:  return createD8Node()
         case .d10: return createD10Node()
+        case .d12: return createD12Node()
         }
     }
 
@@ -994,6 +1028,188 @@ final class DiceSceneController: NSObject {
         return node
     }
 
+    /// Builds a regular dodecahedron — 20 vertices (8 cube corners + 12 edge
+    /// vertices on three rings) and 12 pentagonal faces. Same body+children pattern
+    /// as the other kinds: one ivory body geometry handles the convex-hull physics
+    /// and base color, then 12 textured triangle-fan child nodes overlay each face
+    /// with its own UV-mapped pentagon.
+    ///
+    /// The 5 vertices of each face are discovered procedurally: for each of the 12
+    /// face-normal directions (which equal the 12 icosahedron vertex directions —
+    /// dodecahedron and icosahedron are duals), the 5 vertices with the highest
+    /// projection onto that normal lie on that face. Those 5 are then sorted by
+    /// angle in the face's plane to produce a counter-clockwise (outward-facing)
+    /// winding for triangulation.
+    private func createD12Node() -> SCNNode {
+        let s = d12Scale
+        let phi: Float = (1 + sqrtf(5)) / 2
+        let invPhi: Float = 1 / phi
+
+        // 20 vertices.
+        var verts: [SIMD3<Float>] = []
+        for sx: Float in [-1, 1] {
+            for sy: Float in [-1, 1] {
+                for sz: Float in [-1, 1] {
+                    verts.append(SIMD3(sx, sy, sz) * s)
+                }
+            }
+        }
+        for sa: Float in [-1, 1] {
+            for sb: Float in [-1, 1] {
+                verts.append(SIMD3(0, sa * phi, sb * invPhi) * s)
+                verts.append(SIMD3(sa * invPhi, 0, sb * phi) * s)
+                verts.append(SIMD3(sa * phi, sb * invPhi, 0) * s)
+            }
+        }
+
+        // 12 face-normal directions (un-normalized — only direction matters here)
+        // and the corresponding face number, in the SAME order as faceSpecs(.d12)
+        // so detection and rendering agree.
+        let faceDefs: [(normal: SIMD3<Float>, number: Int)] = [
+            (SIMD3( 0,  1,  phi), 1),  (SIMD3( 0, -1,  phi), 2),
+            (SIMD3( 0,  1, -phi), 11), (SIMD3( 0, -1, -phi), 12),
+            (SIMD3( 1,  phi,  0), 3),  (SIMD3(-1,  phi,  0), 4),
+            (SIMD3( 1, -phi,  0), 9),  (SIMD3(-1, -phi,  0), 10),
+            (SIMD3( phi,  0,  1), 5),  (SIMD3(-phi,  0,  1), 6),
+            (SIMD3( phi,  0, -1), 7),  (SIMD3(-phi,  0, -1), 8)
+        ]
+
+        // UV layout for one pentagonal face: vertex-up regular pentagon, vertices
+        // listed in counter-clockwise order from the top to match the cyclic 3D sort.
+        //
+        // The hand-drawn PNG assets have a transparent margin between the image edge
+        // and the pentagon — the top vertex sits ~16 px below the top of a 512² PNG
+        // rather than at y=0 — so a UV of (0.5, 0) at the body's top vertex pulls
+        // a transparent pixel and the body ivory leaks through. Shifting every v
+        // down by `topMarginV` re-aligns the sampling to the actual artwork.
+        // Adjust this constant if asset margins change.
+        let topMarginV: CGFloat = 28.0 / 512.0
+        let pentagonUVs: [CGPoint] = [
+            CGPoint(x: 0.5,   y: 0.0   + topMarginV),  // 0: top
+            CGPoint(x: 0.024, y: 0.346 + topMarginV),  // 1: upper-left
+            CGPoint(x: 0.206, y: 0.905 + topMarginV),  // 2: lower-left
+            CGPoint(x: 0.794, y: 0.905 + topMarginV),  // 3: lower-right
+            CGPoint(x: 0.976, y: 0.346 + topMarginV)   // 4: upper-right
+        ]
+
+        // Resolve the 5 vertices of each face and put them in CCW (outward) order.
+        // We compute once and reuse for both the body geometry and the textured
+        // child nodes so winding stays consistent.
+        struct ResolvedFace {
+            let verts: [SIMD3<Float>]   // 5 vertices in CCW-from-outside order
+            let normal: SIMD3<Float>    // unit outward normal
+            let number: Int
+        }
+        let resolved: [ResolvedFace] = faceDefs.map { def in
+            let n = simd_normalize(def.normal)
+            let projected = verts.enumerated()
+                .map { ($0.offset, simd_dot($0.element, def.normal)) }
+                .sorted { $0.1 > $1.1 }
+                .prefix(5)
+                .map { verts[$0.0] }
+            // Build an orthonormal (u, v) basis in the face plane to sort by angle.
+            var u = SIMD3<Float>(1, 0, 0)
+            if abs(simd_dot(u, n)) > 0.9 { u = SIMD3<Float>(0, 1, 0) }
+            u = simd_normalize(u - simd_dot(u, n) * n)
+            let vAxis = simd_cross(n, u)
+            let center = projected.reduce(SIMD3<Float>(0, 0, 0), +) / 5
+            let sorted = projected
+                .map { v -> (vert: SIMD3<Float>, angle: Float) in
+                    let d = v - center
+                    return (v, atan2f(simd_dot(d, vAxis), simd_dot(d, u)))
+                }
+                .sorted { $0.angle < $1.angle }
+                .map { $0.vert }
+            return ResolvedFace(verts: sorted, normal: n, number: def.number)
+        }
+
+        // Body geometry — fan-triangulate each pentagon (3 tris per face).
+        var bodyPositions: [SCNVector3] = []
+        var bodyNormals: [SCNVector3] = []
+        for face in resolved {
+            let nv = SCNVector3(face.normal)
+            for i in 1..<4 {
+                bodyPositions += [
+                    SCNVector3(face.verts[0]),
+                    SCNVector3(face.verts[i]),
+                    SCNVector3(face.verts[i + 1])
+                ]
+                bodyNormals += [nv, nv, nv]
+            }
+        }
+        let bodyPosSource = SCNGeometrySource(vertices: bodyPositions)
+        let bodyNormSource = SCNGeometrySource(normals: bodyNormals)
+        let bodyIndices: [Int32] = (0..<Int32(bodyPositions.count)).map { $0 }
+        let bodyElement = SCNGeometryElement(indices: bodyIndices, primitiveType: .triangles)
+        let bodyGeometry = SCNGeometry(sources: [bodyPosSource, bodyNormSource], elements: [bodyElement])
+
+        let bodyMat = SCNMaterial()
+        bodyMat.diffuse.contents = ivoryColor
+        bodyMat.roughness.contents = 0.40
+        bodyGeometry.materials = [bodyMat]
+
+        let node = SCNNode(geometry: bodyGeometry)
+        node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: nil)
+
+        // One textured pentagon child per face. Inset = 1.0 (texture child the same
+        // size as the body face, NOT 1.02 like the other dice) — with fan-triangulation
+        // through vertex 0 a 1.02 inset makes body vertices land *inside* the texture
+        // child's triangles, so each body vertex samples a UV ~1% biased toward the
+        // texture's centroid instead of at the pentagon corner you set. For the d12
+        // specifically that meant a thin border drawn at the image edge wasn't
+        // visible at the body's perimeter (border lived in the overhang ring outside
+        // the visible face) and the body's edge ivory leaked through. With inset=1.0
+        // body vertex N samples exactly pentagonUVs[N], so a border drawn at the
+        // image edge in the PNG renders at the face's edge.
+        // outwardOffset bumped to compensate for the lost overhang — the texture sits
+        // further forward so the dodecahedron's ridge ivory hides behind it from
+        // typical viewing angles.
+        let outwardOffset: Float = 0.005
+        let inset: Float = 1.02
+
+        for face in resolved {
+            let center = face.verts.reduce(SIMD3<Float>(0, 0, 0), +) / 5
+            let shifted = face.verts.map { v -> SIMD3<Float> in
+                center + (v - center) * inset + face.normal * outwardOffset
+            }
+            var positions: [SCNVector3] = []
+            var uvs: [CGPoint] = []
+            for i in 1..<4 {
+                positions += [
+                    SCNVector3(shifted[0]),
+                    SCNVector3(shifted[i]),
+                    SCNVector3(shifted[i + 1])
+                ]
+                uvs += [pentagonUVs[0], pentagonUVs[i], pentagonUVs[i + 1]]
+            }
+            let normals: [SCNVector3] = Array(repeating: SCNVector3(face.normal),
+                                              count: positions.count)
+
+            let posSource = SCNGeometrySource(vertices: positions)
+            let normSource = SCNGeometrySource(normals: normals)
+            let uvSource = SCNGeometrySource(textureCoordinates: uvs)
+            let element = SCNGeometryElement(
+                indices: (0..<Int32(positions.count)).map { $0 },
+                primitiveType: .triangles
+            )
+            let faceGeometry = SCNGeometry(
+                sources: [posSource, normSource, uvSource],
+                elements: [element]
+            )
+
+            let mat = SCNMaterial()
+            mat.diffuse.contents = UIImage(named: String(format: "d12-face-%02d", face.number))
+                ?? Self.makeD12FallbackImage(number: face.number)
+            mat.roughness.contents = 0.45
+            mat.isDoubleSided = false
+            faceGeometry.materials = [mat]
+
+            node.addChildNode(SCNNode(geometry: faceGeometry))
+        }
+
+        return node
+    }
+
     /// Rotation that maps SCNPlane's default +Z normal to `target`.
     private static func rotationFromZ(to target: SIMD3<Float>) -> simd_quatf {
         let from: SIMD3<Float> = [0, 0, 1]
@@ -1076,6 +1292,35 @@ final class DiceSceneController: NSObject {
             str.draw(at: CGPoint(
                 x: (pixelWidth - size.width) / 2,
                 y: pixelHeight * centroidV - size.height / 2
+            ))
+        }
+    }
+
+    /// Placeholder d12 face texture used until the user adds `d12-face-NN` assets.
+    /// Square canvas with the pentagon UV layout (top vertex at v=0, bottom edge at
+    /// v=0.905). The digit sits at the pentagon's BBOX MIDPOINT (v ≈ 0.453), NOT
+    /// its geometric centroid (v=0.5) — for a vertex-up pentagon the centroid is
+    /// biased downward (the top half of the face, apex→centroid, is taller than
+    /// the bottom half, centroid→bottom-edge), so a digit drawn at the centroid
+    /// reads as sitting low. Splitting the difference between top vertex and
+    /// bottom edge looks visually centered.
+    private static func makeD12FallbackImage(number: Int) -> UIImage {
+        let pixelSize: CGFloat = 256
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: pixelSize, height: pixelSize))
+        return renderer.image { ctx in
+            UIColor(red: 0.97, green: 0.96, blue: 0.92, alpha: 1).setFill()
+            ctx.fill(CGRect(origin: .zero, size: CGSize(width: pixelSize, height: pixelSize)))
+
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 86, weight: .heavy),
+                .foregroundColor: UIColor(white: 0.08, alpha: 1)
+            ]
+            let str = NSAttributedString(string: "\(number)", attributes: attrs)
+            let size = str.size()
+            let digitV: CGFloat = 0.453   // (0 + 0.905) / 2 — pentagon bbox midpoint
+            str.draw(at: CGPoint(
+                x: (pixelSize - size.width) / 2,
+                y: pixelSize * digitV - size.height / 2
             ))
         }
     }
@@ -1457,7 +1702,7 @@ final class DiceSceneController: NSObject {
         let target: SIMD3<Float>
         switch die.kind {
         case .d4:              target = [0, -1, 0]   // bottom face = result (no top face — vertex up)
-        case .d6, .d8, .d10:   target = [0,  1, 0]   // top face = result (parallel face up)
+        case .d6, .d8, .d10, .d12:   target = [0,  1, 0]   // top face = result (parallel face up)
         }
 
         var best = 1
