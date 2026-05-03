@@ -180,6 +180,11 @@ struct Dice3DPlaygroundView: View {
 
 struct SceneKitView: UIViewRepresentable {
     let controller: DiceSceneController
+    /// Pinch to zoom / drag to orbit / two-finger pan. Useful in the playground
+    /// for inspecting geometry, but the main DiceRollerView turns it off so the
+    /// press-and-hold magnifier gesture isn't fighting SCNView's own pan
+    /// recognizer for the same touches.
+    var allowsCameraControl: Bool = true
 
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
@@ -189,10 +194,37 @@ struct SceneKitView: UIViewRepresentable {
         view.backgroundColor = .clear
         view.isOpaque = false
         view.isPlaying = true
-        // Pinch to zoom, one-finger drag to orbit, two-finger drag to pan. Useful for
-        // troubleshooting; harmless because no app logic depends on camera state.
-        view.allowsCameraControl = true
+        view.allowsCameraControl = allowsCameraControl
         controller.attach(to: view)
+        return view
+    }
+
+    func updateUIView(_ uiView: SCNView, context: Context) {}
+}
+
+/// Renders the same `SCNScene` as `SceneKitView` but viewed through one of the
+/// controller's magnifier cameras — a pointOfView positioned above the tapped
+/// die looking straight down. Designed to be hosted inside a circular SwiftUI
+/// clip shape for the "shopping-site magnifier" effect.
+///
+/// `slot` selects which magnifier camera to use; with a d100 pair we host TWO
+/// of these side-by-side (slot 0 = tens, slot 1 = ones) so the user sees both
+/// halves of the result at once. For standalone dice only slot 0 is used. The
+/// caller is responsible for calling `controller.positionMagnifier(slot:
+/// forDieIndex:)` for each slot before rendering — `MagnifierView` itself just
+/// reads whatever camera state the controller currently holds.
+struct MagnifierView: UIViewRepresentable {
+    let controller: DiceSceneController
+    var slot: Int = 0
+
+    func makeUIView(context: Context) -> SCNView {
+        let view = SCNView()
+        view.autoenablesDefaultLighting = true
+        view.backgroundColor = .clear
+        view.isOpaque = false
+        view.isPlaying = true
+        view.allowsCameraControl = false
+        controller.attachMagnifier(to: view, slot: slot)
         return view
     }
 
@@ -238,6 +270,16 @@ final class DiceSceneController: NSObject {
     /// inside `settleAllDice` once every die is at rest and cleared whenever the
     /// dice are about to move (rollAll, rethrowDice) or the formula changes.
     private var connectorContainer: SCNNode!
+    /// Cameras used by the press-and-hold magnifier. Each lives in the same scene
+    /// as the tray camera; a separate `SCNView` rendering the same scene with one
+    /// of these as its `pointOfView` shows the inspected die from straight above.
+    /// Sized for the largest formula slot we ever magnify — 2 cameras covers the
+    /// d100 pair case, where a single tap on either die opens TWO overlays so the
+    /// user can read the full ones+tens result. Standalone slots use only the
+    /// first camera; the second sits unused. Repositioned per-press by
+    /// `positionMagnifier(slot:forDieIndex:)` — no per-frame follow needed since
+    /// the dice are settled when the magnifier is open.
+    private var magnifierCameras: [SCNNode] = []
     private let defaultCameraPosition = SCNVector3(0, 22, 7.5)
     private let defaultCameraTarget   = SCNVector3(0, 0, 0)
 
@@ -350,52 +392,99 @@ final class DiceSceneController: NSObject {
     // so d20Scale ≈ 0.85/1.512 keeps the face-to-face distance close to d6's.
     private let d20Scale: Float = 0.56
 
-    /// Each face stores its number and its outward normal in die-local frame.
+    /// Each face stores its number, outward normal, and the direction the digit's
+    /// "top" points — all in die-local frame. `digitUp` lies in the face plane
+    /// (perpendicular to `normal`); the magnifier camera uses it to orient the
+    /// rolled face right-side-up by aligning its world projection with screen-up.
     private struct FaceSpec {
         let number: Int
         let normal: SIMD3<Float>
+        let digitUp: SIMD3<Float>
     }
 
     /// Face layout for a kind. The visual texture/plane sits along the face's outward
-    /// normal. Instance method (rather than static) so the d10 case can read this
-    /// scene's d10R/d10e/d10H — the kite face normals' tilt depends on those.
+    /// normal. `digitUp` is the body-local direction the digit's "top" points on each
+    /// face — derived from each kind's UV layout (the texture vertex that maps to
+    /// image-top): for d4/d8/d20 it's the triangle apex (`verts[0]`), for d10 the
+    /// kite pole, for d12 the pentagon's first cyclic-sorted vertex, for d6 the
+    /// SCNPlane's local +Y rotated through `rotationFromZ`. Instance method (rather
+    /// than static) so the d10 case can read this scene's d10R/d10e/d10H — the kite
+    /// face normals' tilt depends on those.
     private func faceSpecs(for kind: Dice3DKind) -> [FaceSpec] {
         switch kind {
         case .d4:
             // Outward normals for the 4 faces of a tetrahedron with vertices at the
             // alternating corners of a cube ((±1,±1,±1) with even sign-parity). Each
             // normal is the negation of the opposite vertex direction, normalized.
-            let inv = 1.0 / sqrtf(3)
-            return [
-                FaceSpec(number: 1, normal: SIMD3(-inv, -inv, -inv)),
-                FaceSpec(number: 2, normal: SIMD3(-inv,  inv,  inv)),
-                FaceSpec(number: 3, normal: SIMD3( inv, -inv,  inv)),
-                FaceSpec(number: 4, normal: SIMD3( inv,  inv, -inv))
+            // digitUp is computed from the actual face triangle — the texture maps
+            // verts[0] (the face's first vertex) to image top-center, so digit-up
+            // points from the face centroid toward verts[0].
+            let v: [SIMD3<Float>] = [
+                SIMD3( 1,  1,  1) * d4Scale,
+                SIMD3( 1, -1, -1) * d4Scale,
+                SIMD3(-1,  1, -1) * d4Scale,
+                SIMD3(-1, -1,  1) * d4Scale
             ]
+            let faces: [(verts: [Int], number: Int)] = [
+                ([1, 3, 2], 1),
+                ([0, 2, 3], 2),
+                ([0, 3, 1], 3),
+                ([0, 1, 2], 4)
+            ]
+            return faces.map { face in
+                let p0 = v[face.verts[0]]
+                let p1 = v[face.verts[1]]
+                let p2 = v[face.verts[2]]
+                let normal = simd_normalize(simd_cross(p1 - p0, p2 - p0))
+                let centroid = (p0 + p1 + p2) / 3
+                let digitUp = simd_normalize(p0 - centroid)
+                return FaceSpec(number: face.number, normal: normal, digitUp: digitUp)
+            }
         case .d6:
-            return [
-                FaceSpec(number: 1, normal: [ 0,  1,  0]),
-                FaceSpec(number: 6, normal: [ 0, -1,  0]),
-                FaceSpec(number: 2, normal: [ 1,  0,  0]),
-                FaceSpec(number: 5, normal: [-1,  0,  0]),
-                FaceSpec(number: 3, normal: [ 0,  0,  1]),
-                FaceSpec(number: 4, normal: [ 0,  0, -1])
+            // SCNPlane lies in its local XY plane with +Z out and +Y "up" of the
+            // texture — and createD6Node orients each plane via rotationFromZ(to:
+            // face.normal). Applying the same rotation to (0, 1, 0) gives the
+            // texture's image-up direction in body coords.
+            let normals: [(Int, SIMD3<Float>)] = [
+                (1, [ 0,  1,  0]),
+                (6, [ 0, -1,  0]),
+                (2, [ 1,  0,  0]),
+                (5, [-1,  0,  0]),
+                (3, [ 0,  0,  1]),
+                (4, [ 0,  0, -1])
             ]
+            return normals.map { number, normal in
+                let q = Self.rotationFromZ(to: normal)
+                let digitUp = q.act(SIMD3<Float>(0, 1, 0))
+                return FaceSpec(number: number, normal: normal, digitUp: digitUp)
+            }
         case .d8:
-            // Outward normals for the 8 faces of a regular octahedron — each face
-            // points into one of the 8 (±X, ±Y, ±Z) octants. Numbered so opposite
-            // faces sum to 9 (standard d8 convention: 1↔8, 2↔7, 3↔6, 4↔5).
-            let inv = 1.0 / sqrtf(3)
-            return [
-                FaceSpec(number: 1, normal: SIMD3( inv,  inv,  inv)),
-                FaceSpec(number: 2, normal: SIMD3( inv, -inv,  inv)),
-                FaceSpec(number: 3, normal: SIMD3( inv, -inv, -inv)),
-                FaceSpec(number: 4, normal: SIMD3( inv,  inv, -inv)),
-                FaceSpec(number: 5, normal: SIMD3(-inv, -inv,  inv)),
-                FaceSpec(number: 6, normal: SIMD3(-inv,  inv,  inv)),
-                FaceSpec(number: 7, normal: SIMD3(-inv,  inv, -inv)),
-                FaceSpec(number: 8, normal: SIMD3(-inv, -inv, -inv))
+            // Same body+children pattern as d4: each face's verts[0] (apex of the
+            // triangle, mapped to the texture's image-top) drives digit-up.
+            let s = d8Scale
+            let v: [SIMD3<Float>] = [
+                SIMD3( 1,  0,  0) * s,
+                SIMD3(-1,  0,  0) * s,
+                SIMD3( 0,  1,  0) * s,
+                SIMD3( 0, -1,  0) * s,
+                SIMD3( 0,  0,  1) * s,
+                SIMD3( 0,  0, -1) * s
             ]
+            let faces: [(verts: [Int], number: Int)] = [
+                ([0, 2, 4], 1), ([0, 4, 3], 2),
+                ([0, 3, 5], 3), ([0, 5, 2], 4),
+                ([1, 3, 4], 5), ([1, 4, 2], 6),
+                ([1, 2, 5], 7), ([1, 5, 3], 8)
+            ]
+            return faces.map { face in
+                let p0 = v[face.verts[0]]
+                let p1 = v[face.verts[1]]
+                let p2 = v[face.verts[2]]
+                let normal = simd_normalize(simd_cross(p1 - p0, p2 - p0))
+                let centroid = (p0 + p1 + p2) / 3
+                let digitUp = simd_normalize(p0 - centroid)
+                return FaceSpec(number: face.number, normal: normal, digitUp: digitUp)
+            }
         case .d10:
             // 10 kite faces in two zig-zag rings of 5. Each upper kite uses the top
             // apex T and points outward at angle (2k+1)·36° in XZ, tilted up by a Y
@@ -407,98 +496,151 @@ final class DiceSceneController: NSObject {
             // opposite Lower_{(k+2) mod 5}, so Lower numbers are
             // [Lower_0..Lower_4] = [11-(Upper_3), 11-(Upper_4), 11-(Upper_0),
             //                       11-(Upper_1), 11-(Upper_2)] = [7, 6, 10, 9, 8].
+            //
+            // digitUp points from the kite centroid toward its pole (T or B) — the
+            // texture maps the pole to image top-center, so the digit's "up" lies
+            // along the kite's long diagonal away from the equator.
+            let R = d10R, e = d10e, H = d10H
             let beta = Float.pi / 5
-            let denom = sqrtf((d10e + d10H) * (d10e + d10H) + d10R * d10R)
-            let horiz = (d10e + d10H) / denom
-            let vert  = d10R / denom
+            let T = SIMD3<Float>(0,  H, 0)
+            let B = SIMD3<Float>(0, -H, 0)
+            var U: [SIMD3<Float>] = []
+            var L: [SIMD3<Float>] = []
+            for k in 0..<5 {
+                let aU = Float(2 * k) * beta
+                let aL = Float(2 * k + 1) * beta
+                U.append(SIMD3(R * cosf(aU),  e, R * sinf(aU)))
+                L.append(SIMD3(R * cosf(aL), -e, R * sinf(aL)))
+            }
             let upperNumbers = [1, 2, 3, 4, 5]
             let lowerNumbers = [7, 6, 10, 9, 8]
             var specs: [FaceSpec] = []
             for k in 0..<5 {
-                let angle = Float(2 * k + 1) * beta
-                specs.append(FaceSpec(
-                    number: upperNumbers[k],
-                    normal: SIMD3(horiz * cosf(angle), vert, horiz * sinf(angle))
-                ))
+                let pole = T, wing1 = U[k], far = L[k], wing2 = U[(k + 1) % 5]
+                let centroid = (pole + wing1 + far + wing2) / 4
+                let normal = simd_normalize(simd_cross(far - pole, wing1 - pole))
+                let digitUp = simd_normalize(pole - centroid)
+                specs.append(FaceSpec(number: upperNumbers[k], normal: normal, digitUp: digitUp))
             }
             for k in 0..<5 {
-                let angle = Float(2 * k + 2) * beta
-                specs.append(FaceSpec(
-                    number: lowerNumbers[k],
-                    normal: SIMD3(horiz * cosf(angle), -vert, horiz * sinf(angle))
-                ))
+                let pole = B, wing1 = L[k], far = U[(k + 1) % 5], wing2 = L[(k + 1) % 5]
+                let centroid = (pole + wing1 + far + wing2) / 4
+                let normal = simd_normalize(simd_cross(wing1 - pole, far - pole))
+                let digitUp = simd_normalize(pole - centroid)
+                specs.append(FaceSpec(number: lowerNumbers[k], normal: normal, digitUp: digitUp))
             }
             return specs
         case .d12:
             // 12 face normals point through the 12 vertices of an icosahedron — the
             // dodecahedron's dual — so they're (0, ±1, ±φ), (±1, ±φ, 0), (±φ, 0, ±1)
-            // up to normalization by √(1+φ²). Numbering puts opposite faces summing
-            // to 13 (the standard d12 convention: 1↔12, 2↔11, 3↔10, 4↔9, 5↔8, 6↔7).
-            let phi = (1 + sqrtf(5)) / 2
-            let denom = sqrtf(1 + phi * phi)
-            let p = phi / denom
-            let one: Float = 1 / denom
-            return [
-                FaceSpec(number:  1, normal: SIMD3( 0,  one,  p  )),
-                FaceSpec(number:  2, normal: SIMD3( 0, -one,  p  )),
-                FaceSpec(number: 11, normal: SIMD3( 0,  one, -p  )),
-                FaceSpec(number: 12, normal: SIMD3( 0, -one, -p  )),
-                FaceSpec(number:  3, normal: SIMD3( one,  p,  0 )),
-                FaceSpec(number:  4, normal: SIMD3(-one,  p,  0 )),
-                FaceSpec(number:  9, normal: SIMD3( one, -p,  0 )),
-                FaceSpec(number: 10, normal: SIMD3(-one, -p,  0 )),
-                FaceSpec(number:  5, normal: SIMD3( p,  0,  one)),
-                FaceSpec(number:  6, normal: SIMD3(-p,  0,  one)),
-                FaceSpec(number:  7, normal: SIMD3( p,  0, -one)),
-                FaceSpec(number:  8, normal: SIMD3(-p,  0, -one))
+            // up to normalization. Numbering puts opposite faces summing to 13.
+            //
+            // digitUp requires resolving each face's 5 vertices and the cyclic-sort
+            // order createD12Node uses (so we agree with the texture's image-top
+            // mapping at pentagonUVs[0]). The math here mirrors createD12Node — if
+            // the resolution algorithm changes there, mirror it here too.
+            let phi: Float = (1 + sqrtf(5)) / 2
+            let invPhi: Float = 1 / phi
+            let s = d12Scale
+            var verts: [SIMD3<Float>] = []
+            for sx: Float in [-1, 1] {
+                for sy: Float in [-1, 1] {
+                    for sz: Float in [-1, 1] {
+                        verts.append(SIMD3(sx, sy, sz) * s)
+                    }
+                }
+            }
+            for sa: Float in [-1, 1] {
+                for sb: Float in [-1, 1] {
+                    verts.append(SIMD3(0, sa * phi, sb * invPhi) * s)
+                    verts.append(SIMD3(sa * invPhi, 0, sb * phi) * s)
+                    verts.append(SIMD3(sa * phi, sb * invPhi, 0) * s)
+                }
+            }
+            let faceDefs: [(normal: SIMD3<Float>, number: Int)] = [
+                (SIMD3( 0,  1,  phi), 1),  (SIMD3( 0, -1,  phi), 2),
+                (SIMD3( 0,  1, -phi), 11), (SIMD3( 0, -1, -phi), 12),
+                (SIMD3( 1,  phi,  0), 3),  (SIMD3(-1,  phi,  0), 4),
+                (SIMD3( 1, -phi,  0), 9),  (SIMD3(-1, -phi,  0), 10),
+                (SIMD3( phi,  0,  1), 5),  (SIMD3(-phi,  0,  1), 6),
+                (SIMD3( phi,  0, -1), 7),  (SIMD3(-phi,  0, -1), 8)
             ]
+            return faceDefs.map { def in
+                let n = simd_normalize(def.normal)
+                let projected = verts.enumerated()
+                    .map { ($0.offset, simd_dot($0.element, def.normal)) }
+                    .sorted { $0.1 > $1.1 }
+                    .prefix(5)
+                    .map { verts[$0.0] }
+                var u = SIMD3<Float>(1, 0, 0)
+                if abs(simd_dot(u, n)) > 0.9 { u = SIMD3<Float>(0, 1, 0) }
+                u = simd_normalize(u - simd_dot(u, n) * n)
+                let vAxis = simd_cross(n, u)
+                let center = projected.reduce(SIMD3<Float>(0, 0, 0), +) / 5
+                let sorted = projected
+                    .map { v -> (vert: SIMD3<Float>, angle: Float) in
+                        let d = v - center
+                        return (v, atan2f(simd_dot(d, vAxis), simd_dot(d, u)))
+                    }
+                    .sorted { $0.angle < $1.angle }
+                    .map { $0.vert }
+                let digitUp = simd_normalize(sorted[0] - center)
+                return FaceSpec(number: def.number, normal: n, digitUp: digitUp)
+            }
         case .d20:
             // 20 face normals point through the 20 dodecahedron vertex directions
             // (icosahedron's dual): 8 "cube corner" directions (±1, ±1, ±1) and 12
-            // "edge" directions on three coordinate planes — (0, ±φ, ±1/φ),
-            // (±1/φ, 0, ±φ), (±φ, ±1/φ, 0). The LARGE component (φ) and the
-            // SMALL component (1/φ) must be on the right axes — getting these
-            // swapped produces face normals that don't correspond to actual
-            // icosahedron face centroids, so the top-3-by-projection hits ties
-            // between two vertices that don't share a face, picks one of them,
-            // and ends up double-mapping some real faces while missing others.
-            // Numbering puts opposite faces summing to 21 (standard d20).
-            let phi = (1 + sqrtf(5)) / 2
+            // "edge" directions. Numbering puts opposite faces summing to 21.
+            //
+            // digitUp requires the same procedural face resolution as createD20Node:
+            // for each face normal, the 3 vertices with the highest projection are
+            // the face triangle, sorted cyclically so sorted[0] maps to the texture's
+            // apex (UV (0.5, 0)). digit-up points from face center toward sorted[0].
+            let phi: Float = (1 + sqrtf(5)) / 2
             let invPhi: Float = 1 / phi
-            let cubeN: Float = 1 / sqrtf(3)                          // for (±1, ±1, ±1)
-            let edgeMag: Float = sqrtf(invPhi * invPhi + phi * phi)  // = √3
-            let small = invPhi / edgeMag                             // ≈ 0.357
-            let large = phi / edgeMag                                // ≈ 0.934
-            // Numbers chosen to match a "standard" balanced d20 layout — high and
-            // low numbers spread across both cube-corner and edge faces so adjacent
-            // faces don't cluster (i.e. NOT a spindown). Each pair still sums to 21.
-            return [
-                // 8 cube-corner directions
-                FaceSpec(number:  1, normal: SIMD3( cubeN,  cubeN,  cubeN)),
-                FaceSpec(number: 20, normal: SIMD3(-cubeN, -cubeN, -cubeN)),
-                FaceSpec(number: 14, normal: SIMD3( cubeN,  cubeN, -cubeN)),
-                FaceSpec(number:  7, normal: SIMD3(-cubeN, -cubeN,  cubeN)),
-                FaceSpec(number: 17, normal: SIMD3( cubeN, -cubeN,  cubeN)),
-                FaceSpec(number:  4, normal: SIMD3(-cubeN,  cubeN, -cubeN)),
-                FaceSpec(number:  2, normal: SIMD3( cubeN, -cubeN, -cubeN)),
-                FaceSpec(number: 19, normal: SIMD3(-cubeN,  cubeN,  cubeN)),
-                // 12 edge directions
-                // Plane x=0: (0, ±large, ±small)
-                FaceSpec(number: 13, normal: SIMD3(0,  large,  small)),
-                FaceSpec(number:  8, normal: SIMD3(0, -large, -small)),
-                FaceSpec(number:  6, normal: SIMD3(0,  large, -small)),
-                FaceSpec(number: 15, normal: SIMD3(0, -large,  small)),
-                // Plane z=0: (±large, ±small, 0)
-                FaceSpec(number:  9, normal: SIMD3( large,  small, 0)),
-                FaceSpec(number: 12, normal: SIMD3(-large, -small, 0)),
-                FaceSpec(number: 16, normal: SIMD3( large, -small, 0)),
-                FaceSpec(number:  5, normal: SIMD3(-large,  small, 0)),
-                // Plane y=0: (±small, 0, ±large)
-                FaceSpec(number: 11, normal: SIMD3( small, 0,  large)),
-                FaceSpec(number: 10, normal: SIMD3(-small, 0, -large)),
-                FaceSpec(number: 18, normal: SIMD3( small, 0, -large)),
-                FaceSpec(number:  3, normal: SIMD3(-small, 0,  large))
+            let s = d20Scale
+            var verts: [SIMD3<Float>] = []
+            for sa: Float in [-1, 1] {
+                for sb: Float in [-1, 1] {
+                    verts.append(SIMD3(0, sa, sb * phi) * s)
+                    verts.append(SIMD3(sa, sb * phi, 0) * s)
+                    verts.append(SIMD3(sa * phi, 0, sb) * s)
+                }
+            }
+            let faceDefs: [(normal: SIMD3<Float>, number: Int)] = [
+                (SIMD3( 1,  1,  1),  1), (SIMD3(-1, -1, -1), 20),
+                (SIMD3( 1,  1, -1), 14), (SIMD3(-1, -1,  1),  7),
+                (SIMD3( 1, -1,  1), 17), (SIMD3(-1,  1, -1),  4),
+                (SIMD3( 1, -1, -1),  2), (SIMD3(-1,  1,  1), 19),
+                (SIMD3(0,  phi,  invPhi), 13), (SIMD3(0, -phi, -invPhi),  8),
+                (SIMD3(0,  phi, -invPhi),  6), (SIMD3(0, -phi,  invPhi), 15),
+                (SIMD3( phi,  invPhi, 0),  9), (SIMD3(-phi, -invPhi, 0), 12),
+                (SIMD3( phi, -invPhi, 0), 16), (SIMD3(-phi,  invPhi, 0),  5),
+                (SIMD3( invPhi, 0,  phi), 11), (SIMD3(-invPhi, 0, -phi), 10),
+                (SIMD3( invPhi, 0, -phi), 18), (SIMD3(-invPhi, 0,  phi),  3)
             ]
+            return faceDefs.map { def in
+                let n = simd_normalize(def.normal)
+                let projected = verts.enumerated()
+                    .map { ($0.offset, simd_dot($0.element, def.normal)) }
+                    .sorted { $0.1 > $1.1 }
+                    .prefix(3)
+                    .map { verts[$0.0] }
+                var u = SIMD3<Float>(1, 0, 0)
+                if abs(simd_dot(u, n)) > 0.9 { u = SIMD3<Float>(0, 1, 0) }
+                u = simd_normalize(u - simd_dot(u, n) * n)
+                let vAxis = simd_cross(n, u)
+                let center = projected.reduce(SIMD3<Float>(0, 0, 0), +) / 3
+                let sorted = projected
+                    .map { v -> (vert: SIMD3<Float>, angle: Float) in
+                        let d = v - center
+                        return (v, atan2f(simd_dot(d, vAxis), simd_dot(d, u)))
+                    }
+                    .sorted { $0.angle < $1.angle }
+                    .map { $0.vert }
+                let digitUp = simd_normalize(sorted[0] - center)
+                return FaceSpec(number: def.number, normal: n, digitUp: digitUp)
+            }
         case .d100:
             // Unreachable — d100 is compound and rendered as a pair of d10 nodes,
             // each tagged kind=.d10. faceSpecs is only ever queried via the
@@ -538,11 +680,34 @@ final class DiceSceneController: NSObject {
         scene.physicsWorld.speed = 3.0
 
         setupCamera()
+        setupMagnifierCameras()
         setupLighting()
         setupTray()
 
         connectorContainer = SCNNode()
         scene.rootNode.addChildNode(connectorContainer)
+    }
+
+    /// Builds the magnifier camera nodes and parks them in the scene root. Two
+    /// cameras to cover the d100 pair case (ones + tens shown side-by-side);
+    /// standalone dice use only the first. Position and orientation get set
+    /// per-press by `positionMagnifier(slot:forDieIndex:)` — initial values here
+    /// just need to be valid (any orientation works since the cameras aren't
+    /// rendered until the magnifier overlay is shown).
+    private func setupMagnifierCameras() {
+        for _ in 0..<2 {
+            let camera = SCNCamera()
+            // Narrow FOV keeps perspective foreshortening minimal on the rolled face,
+            // so a slightly tilted face (e.g. d10) still reads close to flat.
+            camera.fieldOfView = 25
+            camera.zNear = 0.1
+            camera.zFar = 50
+            let node = SCNNode()
+            node.camera = camera
+            node.position = SCNVector3(0, 5, 0)
+            scene.rootNode.addChildNode(node)
+            magnifierCameras.append(node)
+        }
     }
 
     private func setupCamera() {
@@ -2215,6 +2380,105 @@ final class DiceSceneController: NSObject {
             u * u * a.y + 2 * u * t * c.y + t * t * b.y,
             u * u * a.z + 2 * u * t * c.z + t * t * b.z
         )
+    }
+
+    // MARK: - Press-and-hold magnifier
+
+    /// Hit-test a press location (in `scnView` coordinates) and return the dice
+    /// array indices of EVERY die in the formula slot under the finger, ordered
+    /// for left-to-right display. Walks up the parent chain so taps on textured
+    /// face children resolve back to their owning die node, then expands to the
+    /// full formula slot — for a d100 the tens die comes first (left, reads
+    /// naturally as the "tens" digit of a 2-digit number) and the ones die
+    /// second; for any standalone kind the result is just `[index]`. Returns
+    /// `[]` for taps on empty space or on dice that haven't settled (no rolled
+    /// face yet to magnify).
+    func diceInSlot(at point: CGPoint) -> [Int] {
+        guard let scnView else { return [] }
+        let hits = scnView.hitTest(point, options: nil)
+        for hit in hits {
+            var current: SCNNode? = hit.node
+            while let node = current {
+                if let tappedIdx = dice.firstIndex(where: { $0.node === node }) {
+                    guard dice[tappedIdx].rolledFace != nil else { return [] }
+                    let slot = dice[tappedIdx].formulaIndex
+                    let group = dice.indices.filter { dice[$0].formulaIndex == slot }
+                    // Tens-then-ones puts the tens digit on the left so the pair
+                    // reads as a 2-digit number (e.g. "30" + "7" → thirty-seven).
+                    // For standalone slots there's only one die, so the sort is a
+                    // no-op.
+                    return group.sorted { lhs, rhs in
+                        let lTens = dice[lhs].role == .d100Tens
+                        let rTens = dice[rhs].role == .d100Tens
+                        if lTens != rTens { return lTens }
+                        return lhs < rhs
+                    }
+                }
+                current = node.parent
+            }
+        }
+        return []
+    }
+
+    /// Snaps the magnifier camera at `slot` directly above the die at `index`,
+    /// looking straight down, with screen-up aligned to the rolled face's
+    /// digit-up direction (transformed through the die's rest orientation and
+    /// flattened onto the horizontal plane).
+    ///
+    /// The face the camera orients to is the one whose outward normal is most
+    /// aligned with world +Y — for d6/d8/d10/d12/d20 this is the rolled face on
+    /// top; for d4 the rolled face is the bottom (hidden), so this picks one
+    /// of the three visible side faces, which all carry the result digit at
+    /// their image-apex anyway. The pick is deterministic but somewhat
+    /// arbitrary for d4 — only one of the three side digits ends up upright,
+    /// the other two are rotated 120°/240° in screen space.
+    func positionMagnifier(slot: Int, forDieIndex index: Int) {
+        guard magnifierCameras.indices.contains(slot),
+              dice.indices.contains(index) else { return }
+        let die = dice[index]
+        let pres = die.node.presentation
+        let dieOrient = pres.simdOrientation
+        let dieCenter = SIMD3<Float>(pres.position)
+
+        var bestFace: FaceSpec?
+        var bestY: Float = -2
+        for face in faceSpecs(for: die.kind) {
+            let world = dieOrient.act(face.normal)
+            if world.y > bestY {
+                bestY = world.y
+                bestFace = face
+            }
+        }
+
+        // Default fallback: world -Z. Rarely used — only triggers if the chosen
+        // face's digit-up happens to be perfectly vertical in world space.
+        var cameraUp = SIMD3<Float>(0, 0, -1)
+        if let face = bestFace {
+            let worldDigitUp = dieOrient.act(face.digitUp)
+            let horizontal = SIMD3<Float>(worldDigitUp.x, 0, worldDigitUp.z)
+            let len = simd_length(horizontal)
+            if len > 0.001 {
+                cameraUp = horizontal / len
+            }
+        }
+
+        let cameraHeight: Float = 5.0
+        let camera = magnifierCameras[slot]
+        camera.simdPosition = dieCenter + SIMD3<Float>(0, cameraHeight, 0)
+        // SCNCamera's local "forward" is -Z, so localFront = (0, 0, -1).
+        camera.simdLook(
+            at: dieCenter,
+            up: cameraUp,
+            localFront: SIMD3<Float>(0, 0, -1)
+        )
+    }
+
+    /// Wires an external `SCNView` (the magnifier overlay) to render this same
+    /// scene through the camera at `slot`. Called from `MagnifierView.makeUIView`.
+    func attachMagnifier(to view: SCNView, slot: Int) {
+        guard magnifierCameras.indices.contains(slot) else { return }
+        view.scene = scene
+        view.pointOfView = magnifierCameras[slot]
     }
 
     /// Computes the rolled value from the die's rest orientation. For a d6 the result

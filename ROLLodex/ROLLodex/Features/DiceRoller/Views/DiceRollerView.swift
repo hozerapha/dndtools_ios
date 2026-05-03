@@ -8,6 +8,13 @@ struct DiceRollerView: View {
     @State private var showSavePreset = false
     @State private var isRolling = false
     @State private var controller = DiceSceneController()
+    /// Indices in the controller's `dice` array currently being magnified
+    /// (press-and-hold). Empty when no finger is pressing a settled die. One
+    /// element for standalone kinds, two for a d100 (tens then ones) — the
+    /// SwiftUI overlay walks this and stamps one circular `MagnifierView` per
+    /// element. Set on the first onChanged of the magnifier gesture, cleared
+    /// on release / new roll / formula change.
+    @State private var magnifyingDieIndices: [Int] = []
 
     @Environment(HistoryStore.self) private var history
     @Environment(PresetStore.self) private var presets
@@ -65,6 +72,7 @@ struct DiceRollerView: View {
                 guard !isRolling else { return }
                 controller.setDice(formula: new)
                 lastResult = nil
+                magnifyingDieIndices = []
             }
             .onChange(of: formula.supportsAdvantage) { _, supports in
                 if !supports { mode = .normal }
@@ -76,9 +84,10 @@ struct DiceRollerView: View {
     @ViewBuilder
     private var tray: some View {
         ZStack(alignment: .top) {
-            SceneKitView(controller: controller)
+            SceneKitView(controller: controller, allowsCameraControl: false)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+                .gesture(magnifierPressGesture)
 
             if isRolling {
                 Text("Rolling…")
@@ -100,7 +109,48 @@ struct DiceRollerView: View {
                     .contentTransition(.numericText())
                     .transition(.scale.combined(with: .opacity))
             }
+
+            if !magnifyingDieIndices.isEmpty {
+                HStack(spacing: 8) {
+                    ForEach(Array(magnifyingDieIndices.enumerated()), id: \.offset) { offset, _ in
+                        MagnifierView(controller: controller, slot: offset)
+                            .frame(width: 130, height: 130)
+                            .clipShape(Circle())
+                            .overlay(Circle().strokeBorder(.white.opacity(0.7), lineWidth: 2))
+                            .shadow(color: .black.opacity(0.4), radius: 6, y: 2)
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                // The magnifier sits on top of the tray and must NOT capture the
+                // press — otherwise sliding a finger over it would cancel the
+                // gesture and the magnifier would flicker.
+                .allowsHitTesting(false)
+                .transition(.scale(scale: 0.8).combined(with: .opacity))
+            }
         }
+        .animation(.snappy(duration: 0.18), value: magnifyingDieIndices.isEmpty)
+    }
+
+    /// Press-and-hold on the tray: hit-test once at the press start, snap one
+    /// magnifier camera per die in the tapped formula slot (1 for standalone,
+    /// 2 for a d100 pair), and show those overlays until release.
+    /// `minimumDistance: 0` so it fires immediately on touch-down rather than
+    /// waiting for movement.
+    private var magnifierPressGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                guard !isRolling, magnifyingDieIndices.isEmpty else { return }
+                let indices = controller.diceInSlot(at: value.startLocation)
+                guard !indices.isEmpty else { return }
+                for (slot, idx) in indices.enumerated() {
+                    controller.positionMagnifier(slot: slot, forDieIndex: idx)
+                }
+                magnifyingDieIndices = indices
+            }
+            .onEnded { _ in
+                magnifyingDieIndices = []
+            }
     }
 
     private func totalColor(for result: RollResult) -> Color {
@@ -198,6 +248,7 @@ struct DiceRollerView: View {
               formula.allKinds3DSupported else { return }
         isRolling = true
         lastResult = nil
+        magnifyingDieIndices = []
 
         let dr = DiceRoller()
 
