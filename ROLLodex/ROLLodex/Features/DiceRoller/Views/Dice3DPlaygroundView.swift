@@ -261,30 +261,40 @@ final class DiceSceneController: NSObject {
 
     private var restPollTask: Task<Void, Never>?
 
-    // d6 geometry constants
-    private let cubeSize: Float = 1.7
+    // Real-world polyhedral dice have very different edge lengths per kind
+    // (d4 ~22mm, d6 16mm, d8 ~16mm, d10 ~12mm). We anchor on the d6 (cubeSize)
+    // and scale every other kind so its edge length is in the right physical
+    // proportion to the d6 — otherwise mixed-die scenes look "wonky" (e.g. an
+    // octahedron the same edge length as the cube would otherwise dwarf it).
+
+    // d6 geometry constants — the size anchor for the proportions below.
+    // Real d6 ≈ 16mm edge, so cubeSize ↔ 16mm.
+    private let cubeSize: Float = 1.615
     private var cubeHalfSize: Float { cubeSize / 2 }
 
-    // d4 geometry constants — vertices at scale·(±1,±1,±1) alternating-corners-of-cube,
-    // giving a regular tetrahedron with circumscribed-sphere radius scale·√3.
-    // Picked so the d4 has a similar bounding sphere to the d6.
-    private let d4Scale: Float = 0.85
+    // d4 — vertices at d4Scale·(±1,±1,±1) on alternating cube corners, giving a
+    // regular tetrahedron with edge length 2·d4Scale·√2. Real d4 ≈ 22mm edge,
+    // so we want edge ≈ 1.375·cubeSize ≈ 2.22. d4Scale = cubeSize·1.375/(2√2).
+    private let d4Scale: Float = 0.79
 
-    // d8 geometry constant — vertices on the axes at ±d8Scale (regular octahedron).
-    // Picked so the d8 has a face-to-face (inradius) distance similar to the d6
-    // cube: 2·d8Scale/√3 ≈ d6's cubeSize when d8Scale ≈ cubeSize·√3/2.
-    private let d8Scale: Float = 1.5
+    // d8 — vertices on the axes at ±d8Scale (regular octahedron) with edge
+    // length d8Scale·√2. Real d8 ≈ 16mm edge (same as d6), so we want edge
+    // ≈ cubeSize. d8Scale = cubeSize/√2.
+    private let d8Scale: Float = 1.14
 
-    // d10 geometry — pentagonal trapezohedron. 12 vertices: top apex at +d10H,
-    // bottom apex at -d10H, plus two zig-zag rings of 5 equatorial vertices at
-    // radius d10R and heights ±d10e (offset 36° between rings). The H/e ratio is
-    // CONSTRAINED: for the 10 kite faces to be planar (which is what makes it a
-    // proper pentagonal trapezohedron), H/e must equal (1+cos β)/(1−cos β) where
-    // β = π/5 ≈ 36°. That works out to ≈9.47, so d10H ≈ 9.47 · d10e. Bounding box
-    // ≈ 1.7 wide × 1.9 tall — close to the d6 cube width.
-    private let d10R: Float = 0.85
-    private let d10e: Float = 0.10
-    private let d10H: Float = 0.95
+    // d10 — pentagonal trapezohedron. 12 vertices: top apex at +d10H, bottom
+    // apex at -d10H, plus two zig-zag rings of 5 equatorial vertices at radius
+    // d10R and heights ±d10e (offset 36° between rings). The H/e ratio is
+    // CONSTRAINED: for the 10 kite faces to be planar (a proper pentagonal
+    // trapezohedron), H/e must equal (1+cos β)/(1−cos β) where β = π/5 ≈ 36°.
+    // That works out to ≈9.47, so d10H ≈ 9.47 · d10e.
+    //
+    // Real d10 long-kite-edge ≈ 13–14mm (vs d6 16mm), so we want the long edge
+    // (apex→equator) ≈ 0.85·cubeSize ≈ 1.37. Long edge = √(d10R² + (d10H−d10e)²);
+    // with d10H − d10e = d10R the long edge collapses to d10R·√2, so d10R ≈ 0.974.
+    private let d10R: Float = 0.974
+    private let d10e: Float = 0.114
+    private let d10H: Float = 1.089
 
     /// Each face stores its number and its outward normal in die-local frame.
     private struct FaceSpec {
