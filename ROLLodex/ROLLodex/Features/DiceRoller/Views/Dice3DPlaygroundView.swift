@@ -2,11 +2,28 @@ import SwiftUI
 import SceneKit
 import simd
 
+// MARK: - Dice kinds
+
+enum Dice3DKind: String, CaseIterable, Identifiable {
+    case d4
+    case d6
+
+    var id: String { rawValue }
+    var label: String { rawValue.uppercased() }
+    var sides: Int {
+        switch self {
+        case .d4: return 4
+        case .d6: return 6
+        }
+    }
+}
+
 // MARK: - SwiftUI
 
 struct Dice3DPlaygroundView: View {
     @State private var controller = DiceSceneController()
     @State private var diceCount = 1
+    @State private var diceKind: Dice3DKind = .d6
     @State private var results: [Int?] = [nil]
     @State private var isRolling = false
 
@@ -34,6 +51,14 @@ struct Dice3DPlaygroundView: View {
                 }
                 .frame(maxHeight: .infinity)
 
+                Picker("Kind", selection: $diceKind) {
+                    ForEach(Dice3DKind.allCases) { kind in
+                        Text(kind.label).tag(kind)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .disabled(isRolling)
+
                 HStack {
                     Text("Dice")
                         .font(.headline)
@@ -49,7 +74,7 @@ struct Dice3DPlaygroundView: View {
                 Button {
                     rollAll()
                 } label: {
-                    Label(isRolling ? "Rolling…" : "Roll \(diceCount)d6", systemImage: "dice.fill")
+                    Label(isRolling ? "Rolling…" : "Roll \(diceCount)\(diceKind.rawValue)", systemImage: "dice.fill")
                         .font(.headline)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 4)
@@ -63,15 +88,19 @@ struct Dice3DPlaygroundView: View {
             .navigationBarTitleDisplayMode(.inline)
             .animation(.snappy, value: results)
             .onAppear {
-                controller.setDieCount(diceCount)
+                controller.setDice(count: diceCount, kind: diceKind)
                 controller.onDieSettled = { @MainActor index, face in
                     guard results.indices.contains(index) else { return }
                     results[index] = face
                 }
             }
             .onChange(of: diceCount) { _, new in
-                controller.setDieCount(new)
+                controller.setDice(count: new, kind: diceKind)
                 results = Array(repeating: nil, count: new)
+            }
+            .onChange(of: diceKind) { _, new in
+                controller.setDice(count: diceCount, kind: new)
+                results = Array(repeating: nil, count: diceCount)
             }
         }
     }
@@ -98,6 +127,9 @@ private struct SceneKitView: UIViewRepresentable {
         view.autoenablesDefaultLighting = true
         view.backgroundColor = UIColor(red: 0.05, green: 0.04, blue: 0.03, alpha: 1)
         view.isPlaying = true
+        // Pinch to zoom, one-finger drag to orbit, two-finger drag to pan. Useful for
+        // troubleshooting; harmless because no app logic depends on camera state.
+        view.allowsCameraControl = true
         controller.attach(to: view)
         return view
     }
@@ -115,9 +147,13 @@ final class DiceSceneController: NSObject {
 
     private weak var scnView: SCNView?
     private var scene: SCNScene!
+    private var cameraNode: SCNNode!
+    private let defaultCameraPosition = SCNVector3(0, 26, 9)
+    private let defaultCameraTarget   = SCNVector3(0, 0, 0)
 
     private struct ManagedDie {
         let node: SCNNode
+        let kind: Dice3DKind
         var hasSettled: Bool
         var stillFrameCount: Int
         var rolledFace: Int?
@@ -128,33 +164,61 @@ final class DiceSceneController: NSObject {
     private var allSettledCallback: (@MainActor ([Int]) -> Void)?
     private var isAwaitingRest = false
     private var rollStartTime: TimeInterval = 0
+    /// Bumped on every `rollAll` so any in-flight settle-delay tasks from a prior
+    /// roll know to bail out instead of writing stale face values.
+    private var currentRollId: Int = 0
+    /// Grace period after physics rest before snapshotting each die's face. d4s
+    /// can balance precariously on an edge for a moment before tipping; reading
+    /// the orientation too early picks the wrong face.
+    private let settleDelay: TimeInterval = 0.3
 
     private let restSpeedThreshold: Float = 0.10
-    private let restAngularThreshold: Float = 0.25     // rad/sec — catches still-spinning cubes
+    private let restAngularThreshold: Float = 0.25     // rad/sec — catches still-spinning dice
     private let restFramesRequired = 12                // ~192ms of continuous stillness
     private let minRollDuration: TimeInterval = 0.30
 
     private var restPollTask: Task<Void, Never>?
 
-    // Cube geometry constants
+    // d6 geometry constants
     private let cubeSize: Float = 1.7
     private var cubeHalfSize: Float { cubeSize / 2 }
 
-    /// Each face stores its number and its outward normal in cube-local frame.
-    /// The visual texture sits on a plane child positioned along that normal.
+    // d4 geometry constants — vertices at scale·(±1,±1,±1) alternating-corners-of-cube,
+    // giving a regular tetrahedron with circumscribed-sphere radius scale·√3.
+    // Picked so the d4 has a similar bounding sphere to the d6.
+    private let d4Scale: Float = 0.85
+
+    /// Each face stores its number and its outward normal in die-local frame.
     private struct FaceSpec {
         let number: Int
         let normal: SIMD3<Float>
     }
 
-    private static let faceSpecs: [FaceSpec] = [
-        FaceSpec(number: 1, normal: [ 0,  1,  0]),
-        FaceSpec(number: 6, normal: [ 0, -1,  0]),
-        FaceSpec(number: 2, normal: [ 1,  0,  0]),
-        FaceSpec(number: 5, normal: [-1,  0,  0]),
-        FaceSpec(number: 3, normal: [ 0,  0,  1]),
-        FaceSpec(number: 4, normal: [ 0,  0, -1])
-    ]
+    /// Face layout for a kind. The visual texture/plane sits along the face's outward normal.
+    private static func faceSpecs(for kind: Dice3DKind) -> [FaceSpec] {
+        switch kind {
+        case .d4:
+            // Outward normals for the 4 faces of a tetrahedron with vertices at the
+            // alternating corners of a cube ((±1,±1,±1) with even sign-parity). Each
+            // normal is the negation of the opposite vertex direction, normalized.
+            let inv = 1.0 / sqrtf(3)
+            return [
+                FaceSpec(number: 1, normal: SIMD3(-inv, -inv, -inv)),
+                FaceSpec(number: 2, normal: SIMD3(-inv,  inv,  inv)),
+                FaceSpec(number: 3, normal: SIMD3( inv, -inv,  inv)),
+                FaceSpec(number: 4, normal: SIMD3( inv,  inv, -inv))
+            ]
+        case .d6:
+            return [
+                FaceSpec(number: 1, normal: [ 0,  1,  0]),
+                FaceSpec(number: 6, normal: [ 0, -1,  0]),
+                FaceSpec(number: 2, normal: [ 1,  0,  0]),
+                FaceSpec(number: 5, normal: [-1,  0,  0]),
+                FaceSpec(number: 3, normal: [ 0,  0,  1]),
+                FaceSpec(number: 4, normal: [ 0,  0, -1])
+            ]
+        }
+    }
 
     deinit {
         restPollTask?.cancel()
@@ -191,14 +255,13 @@ final class DiceSceneController: NSObject {
         let cameraNode = SCNNode()
         cameraNode.camera = SCNCamera()
         cameraNode.camera?.fieldOfView = 55
-        cameraNode.position = SCNVector3(0, 26, 9)
-
-        let target = SCNNode()
-        target.position = SCNVector3(0, 0, 0)
-        scene.rootNode.addChildNode(target)
-        cameraNode.constraints = [SCNLookAtConstraint(target: target)]
-
+        cameraNode.position = defaultCameraPosition
+        // One-shot orientation toward the tray instead of a SCNLookAtConstraint —
+        // the constraint would keep snapping the camera back every frame and
+        // prevent the user from orbiting via SCNView.allowsCameraControl.
+        cameraNode.look(at: defaultCameraTarget)
         scene.rootNode.addChildNode(cameraNode)
+        self.cameraNode = cameraNode
     }
 
     private func setupLighting() {
@@ -319,25 +382,30 @@ final class DiceSceneController: NSObject {
         return node
     }
 
-    // MARK: Dice — body cube + 6 plane children for textures
+    // MARK: Die geometry
 
-    private func createDieNode() -> SCNNode {
+    private func createDieNode(kind: Dice3DKind) -> SCNNode {
+        switch kind {
+        case .d4: return createD4Node()
+        case .d6: return createD6Node()
+        }
+    }
+
+    private func createD6Node() -> SCNNode {
         let cubeSizeCG = CGFloat(cubeSize)
         let geometry = SCNBox(width: cubeSizeCG, height: cubeSizeCG, length: cubeSizeCG, chamferRadius: 0.11)
 
-        // Body — single ivory material on all sides; chamfered edges visible behind plane skins.
         let bodyMat = SCNMaterial()
-        bodyMat.diffuse.contents = UIColor(red: 0.97, green: 0.96, blue: 0.92, alpha: 1)
+        bodyMat.diffuse.contents = ivoryColor
         bodyMat.roughness.contents = 0.40
         geometry.materials = [bodyMat]
 
         let node = SCNNode(geometry: geometry)
         node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: nil)
 
-        // Add a plane child for each face. The plane's diffuse content is the face's
-        // texture (currently a generated pip pattern; later swap for skin images).
+        // Plane child per face — same approach as before, ivory background + pip pattern.
         let planeSize = CGFloat(cubeSize) * 0.85
-        for face in Self.faceSpecs {
+        for face in Self.faceSpecs(for: .d6) {
             let plane = SCNPlane(width: planeSize, height: planeSize)
             let mat = SCNMaterial()
             mat.diffuse.contents = Self.makePipImage(faceNumber: face.number)
@@ -353,6 +421,118 @@ final class DiceSceneController: NSObject {
         return node
     }
 
+    /// Builds a regular tetrahedron with vertex coords at d4Scale·(alternating-corners
+    /// of a cube). The body is one ivory geometry handling shape + physics; on top of
+    /// each face sits a child triangle node with its own UV-mapped texture showing the
+    /// three corner digits (matching the standard d4 convention where each face omits
+    /// its OWN number, and each visible face shows the result at its apex).
+    ///
+    /// Splitting the textured faces into separate child geometries (rather than a single
+    /// multi-element geometry) sidesteps SceneKit's multi-element/multi-material rendering,
+    /// which wasn't applying per-face textures correctly here.
+    private func createD4Node() -> SCNNode {
+        let s = d4Scale
+        let v: [SIMD3<Float>] = [
+            SIMD3( 1,  1,  1) * s,  // 0 — number 1
+            SIMD3( 1, -1, -1) * s,  // 1 — number 2
+            SIMD3(-1,  1, -1) * s,  // 2 — number 3
+            SIMD3(-1, -1,  1) * s   // 3 — number 4
+        ]
+        // Vertex i carries number (i+1). The face opposite vertex i has RESULT (i+1) —
+        // when the die rests on it, vertex i is the apex.
+        let faces: [(verts: [Int], number: Int)] = [
+            (verts: [1, 3, 2], number: 1),  // opposite v0; outward = (-,-,-)
+            (verts: [0, 2, 3], number: 2),  // opposite v1; outward = (-,+,+)
+            (verts: [0, 3, 1], number: 3),  // opposite v2; outward = (+,-,+)
+            (verts: [0, 1, 2], number: 4)   // opposite v3; outward = (+,+,-)
+        ]
+
+        // Body geometry — single element, single ivory material. Used for the convex-hull
+        // physics shape and as the opaque base color behind the textured face overlays.
+        var bodyPositions: [SCNVector3] = []
+        var bodyNormals: [SCNVector3] = []
+        for face in faces {
+            let p0 = v[face.verts[0]]
+            let p1 = v[face.verts[1]]
+            let p2 = v[face.verts[2]]
+            let n = simd_normalize(simd_cross(p1 - p0, p2 - p0))
+            bodyPositions += [SCNVector3(p0), SCNVector3(p1), SCNVector3(p2)]
+            bodyNormals   += [SCNVector3(n), SCNVector3(n), SCNVector3(n)]
+        }
+        let bodyPosSource = SCNGeometrySource(vertices: bodyPositions)
+        let bodyNormSource = SCNGeometrySource(normals: bodyNormals)
+        let bodyIndices: [Int32] = (0..<Int32(bodyPositions.count)).map { $0 }
+        let bodyElement = SCNGeometryElement(indices: bodyIndices, primitiveType: .triangles)
+        let bodyGeometry = SCNGeometry(sources: [bodyPosSource, bodyNormSource], elements: [bodyElement])
+
+        let bodyMat = SCNMaterial()
+        bodyMat.diffuse.contents = ivoryColor
+        bodyMat.roughness.contents = 0.40
+        bodyGeometry.materials = [bodyMat]
+
+        let node = SCNNode(geometry: bodyGeometry)
+        node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: nil)
+
+        // One textured triangle child per face. Each is a 3-vertex single-element
+        // geometry sitting just outside the body face along its outward normal.
+        let outwardOffset: Float = 0.005
+        let inset: Float = 1.02  // slight overshoot past the body face so trimming imperfections in the asset don't show as an ivory sliver
+
+        for face in faces {
+            let p0 = v[face.verts[0]]
+            let p1 = v[face.verts[1]]
+            let p2 = v[face.verts[2]]
+            let outNormal = simd_normalize(simd_cross(p1 - p0, p2 - p0))
+            let centroid = (p0 + p1 + p2) / 3.0
+            let q0 = centroid + (p0 - centroid) * inset + outNormal * outwardOffset
+            let q1 = centroid + (p1 - centroid) * inset + outNormal * outwardOffset
+            let q2 = centroid + (p2 - centroid) * inset + outNormal * outwardOffset
+
+            let positions: [SCNVector3] = [SCNVector3(q0), SCNVector3(q1), SCNVector3(q2)]
+            let normals:   [SCNVector3] = Array(repeating: SCNVector3(outNormal), count: 3)
+            // The asset images are sized so the triangle vertices sit on the image
+            // edges (apex at top-center, base verts at the bottom corners). Y is
+            // flipped from the "obvious" Y-up mapping because SceneKit samples the
+            // UIImage texture with the image's Y axis pointing down here.
+            let uvs: [CGPoint] = [
+                CGPoint(x: 0.5, y: 0.0),  // verts[0] → 3D apex (image top-center)
+                CGPoint(x: 0.0, y: 1.0),  // verts[1] → 3D bottom-left (image bottom-left)
+                CGPoint(x: 1.0, y: 1.0)   // verts[2] → 3D bottom-right (image bottom-right)
+            ]
+            let posSource = SCNGeometrySource(vertices: positions)
+            let normSource = SCNGeometrySource(normals: normals)
+            let uvSource = SCNGeometrySource(textureCoordinates: uvs)
+            let element = SCNGeometryElement(
+                indices: [Int32(0), Int32(1), Int32(2)],
+                primitiveType: .triangles
+            )
+            let faceGeometry = SCNGeometry(
+                sources: [posSource, normSource, uvSource],
+                elements: [element]
+            )
+
+            let mat = SCNMaterial()
+            // Prefer hand-designed face textures from the asset catalog; fall back to
+            // the runtime generator for any face whose asset isn't in place yet.
+            if let assetImage = UIImage(named: "d4-face-\(face.number)") {
+                mat.diffuse.contents = assetImage
+            } else {
+                mat.diffuse.contents = Self.makeD4FaceImage(
+                    top:         face.verts[0] + 1,
+                    bottomLeft:  face.verts[1] + 1,
+                    bottomRight: face.verts[2] + 1
+                )
+            }
+            mat.roughness.contents = 0.45
+            mat.isDoubleSided = false
+            faceGeometry.materials = [mat]
+
+            node.addChildNode(SCNNode(geometry: faceGeometry))
+        }
+
+        return node
+    }
+
     /// Rotation that maps SCNPlane's default +Z normal to `target`.
     private static func rotationFromZ(to target: SIMD3<Float>) -> simd_quatf {
         let from: SIMD3<Float> = [0, 0, 1]
@@ -361,6 +541,10 @@ final class DiceSceneController: NSObject {
         if d < -0.9999 { return simd_quatf(angle: .pi, axis: [0, 1, 0]) }
         let axis = simd_normalize(simd_cross(from, target))
         return simd_quatf(angle: acos(d), axis: axis)
+    }
+
+    private var ivoryColor: UIColor {
+        UIColor(red: 0.97, green: 0.96, blue: 0.92, alpha: 1)
     }
 
     private static func makePipImage(faceNumber: Int) -> UIImage {
@@ -379,6 +563,74 @@ final class DiceSceneController: NSObject {
                 ctx.cgContext.fillEllipse(in: r)
             }
         }
+    }
+
+    /// Paints the three numbers that belong on a d4 face — one per corner, each
+    /// rotated so its "top" points outward toward its corner. UV layout in
+    /// `createD4Node` maps verts[0]→top, verts[1]→bottom-left, verts[2]→bottom-right.
+    ///
+    /// Rotated text is drawn by first rendering the digit to a small bitmap (upright),
+    /// then re-drawing that bitmap with a CGAffineTransform. This avoids the brittle
+    /// interaction between NSAttributedString.draw and a transformed CGContext.
+    private static func makeD4FaceImage(top: Int, bottomLeft: Int, bottomRight: Int) -> UIImage {
+        let pixelSize: CGFloat = 256
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: pixelSize, height: pixelSize))
+        return renderer.image { ctx in
+            // Ivory background. Only the inscribed equilateral triangle is sampled
+            // onto the face; pixels outside the triangle never render.
+            UIColor(red: 0.97, green: 0.96, blue: 0.92, alpha: 1).setFill()
+            ctx.fill(CGRect(origin: .zero, size: CGSize(width: pixelSize, height: pixelSize)))
+
+            // 70% of the way from triangle centroid to each corner, in image pixels.
+            // Rotations make each digit's "top" point outward toward its corner so it
+            // reads upright when that vertex is the apex of the die at rest.
+            let entries: [(digit: Int, position: CGPoint, rotation: CGFloat)] = [
+                (top,         CGPoint(x: pixelSize * 0.50, y: pixelSize * 0.30),  0),
+                (bottomLeft,  CGPoint(x: pixelSize * 0.15, y: pixelSize * 0.91),  2 * .pi / 3),
+                (bottomRight, CGPoint(x: pixelSize * 0.85, y: pixelSize * 0.91), -2 * .pi / 3)
+            ]
+
+            for entry in entries {
+                let glyph = makeDigitGlyphImage(digit: entry.digit)
+                drawImage(glyph, centeredAt: entry.position, rotation: entry.rotation, in: ctx.cgContext)
+            }
+        }
+    }
+
+    /// Renders a single digit as an upright bitmap on a transparent background. Sized
+    /// to a square so the bitmap can be rotated about its center cleanly.
+    private static func makeDigitGlyphImage(digit: Int) -> UIImage {
+        let glyphSize: CGFloat = 96
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: glyphSize, height: glyphSize))
+        return renderer.image { _ in
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 70, weight: .heavy),
+                .foregroundColor: UIColor(white: 0.08, alpha: 1)
+            ]
+            let str = NSAttributedString(string: "\(digit)", attributes: attrs)
+            let size = str.size()
+            str.draw(at: CGPoint(x: (glyphSize - size.width) / 2,
+                                 y: (glyphSize - size.height) / 2))
+        }
+    }
+
+    /// Draws a UIImage centered at `position`, rotated about that center by `rotation`
+    /// radians (CGContext convention: positive = visual clockwise in Y-down image space).
+    private static func drawImage(_ image: UIImage, centeredAt position: CGPoint, rotation: CGFloat, in cg: CGContext) {
+        cg.saveGState()
+        cg.translateBy(x: position.x, y: position.y)
+        cg.rotate(by: rotation)
+        let size = image.size
+        let rect = CGRect(x: -size.width / 2, y: -size.height / 2, width: size.width, height: size.height)
+        if let cgImage = image.cgImage {
+            // CGContext.draw flips Y, which is corrected here so the bitmap appears upright.
+            cg.saveGState()
+            cg.translateBy(x: 0, y: rect.midY * 2)
+            cg.scaleBy(x: 1, y: -1)
+            cg.draw(cgImage, in: rect)
+            cg.restoreGState()
+        }
+        cg.restoreGState()
     }
 
     private static func pipPositions(count: Int, side: CGFloat) -> [CGPoint] {
@@ -401,8 +653,15 @@ final class DiceSceneController: NSObject {
 
     // MARK: Population
 
-    /// Add or remove dice to match the requested count. Existing dice keep their state.
-    func setDieCount(_ count: Int) {
+    /// Add or remove dice to match the requested count and kind. Switching kinds clears
+    /// all existing dice and recreates them in the new shape; same-kind changes
+    /// add/remove only the delta.
+    func setDice(count: Int, kind: Dice3DKind) {
+        if dice.contains(where: { $0.kind != kind }) {
+            for die in dice { die.node.removeFromParentNode() }
+            dice.removeAll()
+        }
+
         let target = max(0, count)
 
         while dice.count > target {
@@ -411,12 +670,11 @@ final class DiceSceneController: NSObject {
         }
 
         while dice.count < target {
-            let node = createDieNode()
+            let node = createDieNode(kind: kind)
             node.position = findEmptyTrayPosition()
-            // Random yaw so newly added dice don't all face the same way.
             node.simdOrientation = simd_quatf(angle: Float.random(in: 0..<2 * .pi), axis: [0, 1, 0])
             scene.rootNode.addChildNode(node)
-            dice.append(ManagedDie(node: node, hasSettled: true, stillFrameCount: 0, rolledFace: nil))
+            dice.append(ManagedDie(node: node, kind: kind, hasSettled: true, stillFrameCount: 0, rolledFace: nil))
         }
     }
 
@@ -440,8 +698,6 @@ final class DiceSceneController: NSObject {
                 return SCNVector3(x, cubeHalfSize + 0.02, z)
             }
         }
-        // Tray is crowded — spawn higher so the new die can settle on top of others
-        // without intersecting them.
         return SCNVector3(
             Float.random(in: -bound...bound),
             cubeHalfSize + 4.0,
@@ -455,6 +711,9 @@ final class DiceSceneController: NSObject {
     /// with their face values in die-index order. `onDieSettled` fires per-die as each one rests.
     func rollAll(onAllSettled: @escaping @MainActor ([Int]) -> Void) {
         guard !dice.isEmpty else { onAllSettled([]); return }
+        // Invalidate any pending settle-delay tasks from a prior roll so they
+        // don't write stale face values into the new roll's state.
+        currentRollId += 1
 
         for i in dice.indices {
             dice[i].hasSettled = false
@@ -466,7 +725,6 @@ final class DiceSceneController: NSObject {
             body.velocity = SCNVector3Zero
             body.angularVelocity = SCNVector4Zero
 
-            // Spawn slightly staggered so dice don't all start coincident.
             node.position = SCNVector3(
                 Float.random(in: -1.5...1.5),
                 5 + Float(i) * 0.25,
@@ -515,9 +773,6 @@ final class DiceSceneController: NSObject {
             if dice[i].hasSettled { continue }
             guard let body = dice[i].node.physicsBody else { continue }
 
-            // Trust SceneKit's `isResting` when set; manual fallback for the cases where
-            // it never sleeps. Both paths require a continuous-still streak so we don't
-            // settle mid-bounce.
             if body.isResting {
                 dice[i].stillFrameCount += 1
                 if dice[i].stillFrameCount >= restFramesRequired {
@@ -530,6 +785,7 @@ final class DiceSceneController: NSObject {
             let speed = sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
             let angularSpeed = abs(body.angularVelocity.w)
             let yPos = dice[i].node.presentation.position.y
+            // Threshold accommodates both d6 (rests at y≈0.85) and d4 (rests at y≈0.49).
             let nearFloor = yPos < cubeHalfSize + 0.6
 
             if speed < restSpeedThreshold
@@ -544,32 +800,55 @@ final class DiceSceneController: NSObject {
             }
         }
 
-        if dice.allSatisfy(\.hasSettled) {
-            isAwaitingRest = false
-            let cb = allSettledCallback
-            allSettledCallback = nil
-            cb?(dice.map { $0.rolledFace ?? 1 })
+    }
+
+    /// Mark the die as settled immediately so the tick loop stops processing it,
+    /// then wait `settleDelay` before snapshotting its face — both because d4s can
+    /// balance on an edge briefly before tipping, and because the user wants the
+    /// total to update only after a beat of stillness. The all-settled callback
+    /// fires from inside the delayed task once every die has a face value.
+    private func settleDie(at index: Int) {
+        dice[index].hasSettled = true
+        let nodeRef = dice[index].node
+        let rollId = currentRollId
+        let delay = settleDelay
+
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            guard let self, self.currentRollId == rollId else { return }
+            guard let i = self.dice.firstIndex(where: { $0.node === nodeRef }) else { return }
+
+            let face = self.detectResult(of: self.dice[i])
+            self.dice[i].rolledFace = face
+            self.onDieSettled?(i, face)
+
+            if self.dice.allSatisfy({ $0.rolledFace != nil }) {
+                self.isAwaitingRest = false
+                let cb = self.allSettledCallback
+                self.allSettledCallback = nil
+                cb?(self.dice.compactMap { $0.rolledFace })
+            }
         }
     }
 
-    private func settleDie(at index: Int) {
-        let face = detectTopFace(of: dice[index].node)
-        dice[index].hasSettled = true
-        dice[index].rolledFace = face
-        onDieSettled?(index, face)
-    }
-
-    /// Returns the face whose outward normal, after the cube's current rotation, points
-    /// most directly upward in world space. Equivalent to "which face's center is highest".
-    private func detectTopFace(of node: SCNNode) -> Int {
-        let q = node.presentation.simdOrientation
-        let upWorld = simd_float3(0, 1, 0)
+    /// Computes the rolled value from the die's rest orientation. For a d6 the result
+    /// is the face whose normal points most upward in world space (the visible top
+    /// face). For a d4 there is no top face — the cube rests on a face with a vertex
+    /// pointing up — so the result is the face on the BOTTOM (whose normal points
+    /// most downward in world space).
+    private func detectResult(of die: ManagedDie) -> Int {
+        let q = die.node.presentation.simdOrientation
+        let target: SIMD3<Float>
+        switch die.kind {
+        case .d4: target = [0, -1, 0]   // bottom face = result
+        case .d6: target = [0,  1, 0]   // top face = result
+        }
 
         var best = 1
         var bestDot: Float = -2
-        for face in Self.faceSpecs {
+        for face in Self.faceSpecs(for: die.kind) {
             let world = q.act(face.normal)
-            let d = simd_dot(world, upWorld)
+            let d = simd_dot(world, target)
             if d > bestDot {
                 bestDot = d
                 best = face.number
