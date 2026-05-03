@@ -741,9 +741,9 @@ final class DiceSceneController: NSObject {
             body.applyTorque(torque, asImpulse: true)
 
             let force = SCNVector3(
-                Float.random(in: -3...3),
+                Float.random(in: -10...10),
                 Float.random(in: 18...26),
-                Float.random(in: -3...3)
+                Float.random(in: -10...10)
             )
             body.applyForce(force, asImpulse: true)
         }
