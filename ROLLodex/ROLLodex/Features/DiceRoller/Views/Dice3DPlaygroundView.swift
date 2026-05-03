@@ -8,14 +8,16 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
     case d4
     case d6
     case d8
+    case d10
 
     var id: String { rawValue }
     var label: String { rawValue.uppercased() }
     var sides: Int {
         switch self {
-        case .d4: return 4
-        case .d6: return 6
-        case .d8: return 8
+        case .d4:  return 4
+        case .d6:  return 6
+        case .d8:  return 8
+        case .d10: return 10
         }
     }
 
@@ -23,10 +25,11 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
     /// the 3D scene currently knows how to model. Returns nil for unsupported kinds.
     init?(_ kind: DieKind) {
         switch kind {
-        case .d4: self = .d4
-        case .d6: self = .d6
-        case .d8: self = .d8
-        default:  return nil
+        case .d4:  self = .d4
+        case .d6:  self = .d6
+        case .d8:  self = .d8
+        case .d10: self = .d10
+        default:   return nil
         }
     }
 }
@@ -170,7 +173,8 @@ struct SceneKitView: UIViewRepresentable {
 
 extension DiceSceneController {
     /// Async version of `rollAll` for use from a SwiftUI Task. Resumes once every
-    /// die has settled and its face value has been read (after `settleDelay`).
+    /// die has been at rest for `requiredAllStillDuration` and face values have
+    /// been read.
     @MainActor
     func rollAllAsync() async -> [Int] {
         await withCheckedContinuation { continuation in
@@ -209,9 +213,13 @@ final class DiceSceneController: NSObject {
         /// when applying modifiers. -1 for dice created via the legacy
         /// `setDice(count:kind:)` API where the concept doesn't apply.
         var formulaIndex: Int
-        var hasSettled: Bool
-        var stillFrameCount: Int
         var rolledFace: Int?
+        /// Snapshot from the previous rest-detection tick. `nil` immediately after a
+        /// (re)throw; populated on the first tick afterward. Compared frame-to-frame
+        /// to detect ANY positional or rotational change — even sub-physics-threshold
+        /// drift counts as motion and resets the all-still streak.
+        var lastPosition: SCNVector3?
+        var lastOrientation: simd_quatf?
     }
 
     private var dice: [ManagedDie] = []
@@ -224,18 +232,32 @@ final class DiceSceneController: NSObject {
     private var allSettledCallback: (@MainActor ([Int]) -> Void)?
     private var isAwaitingRest = false
     private var rollStartTime: TimeInterval = 0
-    /// Bumped on every `rollAll` so any in-flight settle-delay tasks from a prior
-    /// roll know to bail out instead of writing stale face values.
+    /// Bumped on every `rollAll`/`rethrowDice` so any in-flight async work from a
+    /// prior roll knows to bail out instead of writing stale face values.
     private var currentRollId: Int = 0
-    /// Grace period after physics rest before snapshotting each die's face. d4s
-    /// can balance precariously on an edge for a moment before tipping; reading
-    /// the orientation too early picks the wrong face.
-    private let settleDelay: TimeInterval = 0.3
 
-    private let restSpeedThreshold: Float = 0.10
-    private let restAngularThreshold: Float = 0.25     // rad/sec — catches still-spinning dice
-    private let restFramesRequired = 12                // ~192ms of continuous stillness
+    // MARK: - Rest detection thresholds
+    //
+    // We require every die in the scene to register as still — both by physics
+    // velocity AND by frame-to-frame coordinate change — continuously for
+    // `requiredAllStillDuration` before snapshotting any face values. Per-die
+    // settling was previously used, but it could lock in a die's orientation
+    // moments before a still-rolling neighbour bumped it, leaving the displayed
+    // value out of sync with the visible face. The all-still gate trades a small
+    // extra wait for guaranteed agreement between read and visual state.
+    private let requiredAllStillDuration: TimeInterval = 0.5
+    private let restSpeedThreshold: Float = 0.05
+    private let restAngularThreshold: Float = 0.10
+    private let posStillEpsilon: Float = 0.0005
+    /// |dot(q, q_prev)| above this means the orientation hasn't changed perceptibly
+    /// (≈0.014 rad / 0.8°). Quaternions q and -q describe the same rotation, hence
+    /// the abs.
+    private let orientStillDotThreshold: Float = 0.99999
     private let minRollDuration: TimeInterval = 0.30
+
+    /// Timestamp at which the current "all dice still" streak began. `nil` whenever
+    /// at least one die failed the still check on the most recent tick.
+    private var allStillSince: TimeInterval?
 
     private var restPollTask: Task<Void, Never>?
 
@@ -253,14 +275,27 @@ final class DiceSceneController: NSObject {
     // cube: 2·d8Scale/√3 ≈ d6's cubeSize when d8Scale ≈ cubeSize·√3/2.
     private let d8Scale: Float = 1.5
 
+    // d10 geometry — pentagonal trapezohedron. 12 vertices: top apex at +d10H,
+    // bottom apex at -d10H, plus two zig-zag rings of 5 equatorial vertices at
+    // radius d10R and heights ±d10e (offset 36° between rings). The H/e ratio is
+    // CONSTRAINED: for the 10 kite faces to be planar (which is what makes it a
+    // proper pentagonal trapezohedron), H/e must equal (1+cos β)/(1−cos β) where
+    // β = π/5 ≈ 36°. That works out to ≈9.47, so d10H ≈ 9.47 · d10e. Bounding box
+    // ≈ 1.7 wide × 1.9 tall — close to the d6 cube width.
+    private let d10R: Float = 0.85
+    private let d10e: Float = 0.10
+    private let d10H: Float = 0.95
+
     /// Each face stores its number and its outward normal in die-local frame.
     private struct FaceSpec {
         let number: Int
         let normal: SIMD3<Float>
     }
 
-    /// Face layout for a kind. The visual texture/plane sits along the face's outward normal.
-    private static func faceSpecs(for kind: Dice3DKind) -> [FaceSpec] {
+    /// Face layout for a kind. The visual texture/plane sits along the face's outward
+    /// normal. Instance method (rather than static) so the d10 case can read this
+    /// scene's d10R/d10e/d10H — the kite face normals' tilt depends on those.
+    private func faceSpecs(for kind: Dice3DKind) -> [FaceSpec] {
         switch kind {
         case .d4:
             // Outward normals for the 4 faces of a tetrahedron with vertices at the
@@ -297,6 +332,39 @@ final class DiceSceneController: NSObject {
                 FaceSpec(number: 7, normal: SIMD3(-inv,  inv, -inv)),
                 FaceSpec(number: 8, normal: SIMD3(-inv, -inv, -inv))
             ]
+        case .d10:
+            // 10 kite faces in two zig-zag rings of 5. Each upper kite uses the top
+            // apex T and points outward at angle (2k+1)·36° in XZ, tilted up by a Y
+            // component determined by the (e+H):R aspect ratio. Lower kites mirror
+            // across the equator with a 36° rotational offset.
+            //
+            // Numbering puts 1..5 on the upper ring; lower ring is arranged so
+            // opposite faces sum to 11 (standard 1–10 d10 convention). Upper_k is
+            // opposite Lower_{(k+2) mod 5}, so Lower numbers are
+            // [Lower_0..Lower_4] = [11-(Upper_3), 11-(Upper_4), 11-(Upper_0),
+            //                       11-(Upper_1), 11-(Upper_2)] = [7, 6, 10, 9, 8].
+            let beta = Float.pi / 5
+            let denom = sqrtf((d10e + d10H) * (d10e + d10H) + d10R * d10R)
+            let horiz = (d10e + d10H) / denom
+            let vert  = d10R / denom
+            let upperNumbers = [1, 2, 3, 4, 5]
+            let lowerNumbers = [7, 6, 10, 9, 8]
+            var specs: [FaceSpec] = []
+            for k in 0..<5 {
+                let angle = Float(2 * k + 1) * beta
+                specs.append(FaceSpec(
+                    number: upperNumbers[k],
+                    normal: SIMD3(horiz * cosf(angle), vert, horiz * sinf(angle))
+                ))
+            }
+            for k in 0..<5 {
+                let angle = Float(2 * k + 2) * beta
+                specs.append(FaceSpec(
+                    number: lowerNumbers[k],
+                    normal: SIMD3(horiz * cosf(angle), -vert, horiz * sinf(angle))
+                ))
+            }
+            return specs
         }
     }
 
@@ -479,9 +547,10 @@ final class DiceSceneController: NSObject {
 
     private func createDieNode(kind: Dice3DKind) -> SCNNode {
         switch kind {
-        case .d4: return createD4Node()
-        case .d6: return createD6Node()
-        case .d8: return createD8Node()
+        case .d4:  return createD4Node()
+        case .d6:  return createD6Node()
+        case .d8:  return createD8Node()
+        case .d10: return createD10Node()
         }
     }
 
@@ -501,7 +570,7 @@ final class DiceSceneController: NSObject {
         // textures (512×512 in the asset catalog) cover the whole visible face without
         // an ivory border. The 0.005 outward offset hides z-fighting against the body.
         let planeSize = CGFloat(cubeSize) * 1.02
-        for face in Self.faceSpecs(for: .d6) {
+        for face in faceSpecs(for: .d6) {
             let plane = SCNPlane(width: planeSize, height: planeSize)
             let mat = SCNMaterial()
             // Prefer hand-designed face textures from the asset catalog; fall back
@@ -740,6 +809,181 @@ final class DiceSceneController: NSObject {
         return node
     }
 
+    /// Builds a pentagonal trapezohedron (10 kite faces in two zig-zag rings of 5).
+    /// Same body+children pattern as createD4Node / createD8Node — one ivory body
+    /// geometry handles the convex-hull physics and base color, then 10 textured
+    /// child nodes overlay each kite face. Each kite is triangulated into 2 tris
+    /// along its long pole-to-far diagonal; UVs map the 4 kite verts to the four
+    /// edge-midpoints of the texture (rotated-square inscribed in a unit square),
+    /// so a designer can use a 512×512 square asset with the digit centered.
+    private func createD10Node() -> SCNNode {
+        let R = d10R, e = d10e, H = d10H
+        let beta = Float.pi / 5  // 36°
+
+        // 12 vertices: 2 polar + 5 upper-ring + 5 lower-ring (offset 36° between rings).
+        let T = SIMD3<Float>(0,  H, 0)
+        let B = SIMD3<Float>(0, -H, 0)
+        var U: [SIMD3<Float>] = []
+        var L: [SIMD3<Float>] = []
+        for k in 0..<5 {
+            let aU = Float(2 * k) * beta       // 0°, 72°, 144°, 216°, 288°
+            let aL = Float(2 * k + 1) * beta   // 36°, 108°, 180°, 252°, 324°
+            U.append(SIMD3(R * cosf(aU),  e, R * sinf(aU)))
+            L.append(SIMD3(R * cosf(aL), -e, R * sinf(aL)))
+        }
+
+        // 10 kite faces. Each kite has a "pole" (T or B), a "far" vertex on the
+        // opposite ring, and two "wings" — adjacent equator vertices on the pole's
+        // ring. Numbers chosen so opposite faces sum to 11; see faceSpecs(.d10).
+        struct Kite {
+            let pole: SIMD3<Float>
+            let wing1: SIMD3<Float>
+            let far: SIMD3<Float>
+            let wing2: SIMD3<Float>
+            let number: Int
+            let isUpper: Bool
+        }
+        let upperNumbers = [1, 2, 3, 4, 5]
+        let lowerNumbers = [7, 6, 10, 9, 8]
+        var kites: [Kite] = []
+        for k in 0..<5 {
+            kites.append(Kite(
+                pole:  T,           wing1: U[k],
+                far:   L[k],        wing2: U[(k + 1) % 5],
+                number: upperNumbers[k], isUpper: true
+            ))
+        }
+        for k in 0..<5 {
+            kites.append(Kite(
+                pole:  B,           wing1: L[k],
+                far:   U[(k + 1) % 5], wing2: L[(k + 1) % 5],
+                number: lowerNumbers[k], isUpper: false
+            ))
+        }
+
+        // Outward triangle winding differs between upper and lower kites because the
+        // perimeter order (pole → wing1 → far → wing2) wraps opposite ways relative
+        // to each kite's outward normal.
+        func outwardNormal(of kite: Kite) -> SIMD3<Float> {
+            kite.isUpper
+                ? simd_normalize(simd_cross(kite.far - kite.pole, kite.wing1 - kite.pole))
+                : simd_normalize(simd_cross(kite.wing1 - kite.pole, kite.far - kite.pole))
+        }
+
+        // Body geometry — single ivory mesh, two triangles per kite, all 60 vertex
+        // entries laid out flat (each face shares one normal across its 6 entries
+        // for flat shading). SceneKit infers convex-hull physics from these positions.
+        var bodyPositions: [SCNVector3] = []
+        var bodyNormals: [SCNVector3] = []
+        for kite in kites {
+            let n = outwardNormal(of: kite)
+            let nv = SCNVector3(n)
+            if kite.isUpper {
+                bodyPositions += [SCNVector3(kite.pole), SCNVector3(kite.far),  SCNVector3(kite.wing1)]
+                bodyPositions += [SCNVector3(kite.pole), SCNVector3(kite.wing2), SCNVector3(kite.far)]
+            } else {
+                bodyPositions += [SCNVector3(kite.pole), SCNVector3(kite.wing1), SCNVector3(kite.far)]
+                bodyPositions += [SCNVector3(kite.pole), SCNVector3(kite.far),   SCNVector3(kite.wing2)]
+            }
+            bodyNormals += Array(repeating: nv, count: 6)
+        }
+        let bodyPosSource = SCNGeometrySource(vertices: bodyPositions)
+        let bodyNormSource = SCNGeometrySource(normals: bodyNormals)
+        let bodyIndices: [Int32] = (0..<Int32(bodyPositions.count)).map { $0 }
+        let bodyElement = SCNGeometryElement(indices: bodyIndices, primitiveType: .triangles)
+        let bodyGeometry = SCNGeometry(sources: [bodyPosSource, bodyNormSource], elements: [bodyElement])
+
+        let bodyMat = SCNMaterial()
+        bodyMat.diffuse.contents = ivoryColor
+        bodyMat.roughness.contents = 0.40
+        bodyGeometry.materials = [bodyMat]
+
+        let node = SCNNode(geometry: bodyGeometry)
+        node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: nil)
+
+        // One textured child per kite, sitting just outside the body face along its
+        // outward normal. UV layout is GEOMETRY-AWARE — for any planar pentagonal
+        // trapezohedron the wings sit ≈81% down the long diagonal (cos 36° rooted),
+        // not at its midpoint. Texture assets are expected to match the kite's
+        // bounding-box aspect ratio (short:long ≈ 0.74:1, so a 378×512 PNG fills
+        // the kite edge-to-edge with no padding). With that convention the long
+        // diagonal spans the full image height (pole at v=0, far at v=1) AND the
+        // short diagonal spans the full image width (wings at u=0 / u=1), so the
+        // texture maps onto the face without horizontal or vertical stretch.
+        let longDiagSq = d10R * d10R + (d10e + d10H) * (d10e + d10H)
+        let wingV = (d10R * d10R * cosf(beta) + d10H * d10H - d10e * d10e) / longDiagSq
+        let outwardOffset: Float = 0.005
+        let inset: Float = 1.02
+
+        let uvPole  = CGPoint(x: 0.5, y: 0.0)
+        let uvWing1 = CGPoint(x: 1.0, y: CGFloat(wingV))
+        let uvFar   = CGPoint(x: 0.5, y: 1.0)
+        let uvWing2 = CGPoint(x: 0.0, y: CGFloat(wingV))
+
+        for kite in kites {
+            let outNormal = outwardNormal(of: kite)
+            let centroid = (kite.pole + kite.wing1 + kite.far + kite.wing2) / 4.0
+            func shift(_ v: SIMD3<Float>) -> SIMD3<Float> {
+                centroid + (v - centroid) * inset + outNormal * outwardOffset
+            }
+            let qPole  = shift(kite.pole)
+            let qWing1 = shift(kite.wing1)
+            let qFar   = shift(kite.far)
+            let qWing2 = shift(kite.wing2)
+
+            let positions: [SCNVector3]
+            let uvs: [CGPoint]
+            if kite.isUpper {
+                positions = [
+                    SCNVector3(qPole), SCNVector3(qFar),   SCNVector3(qWing1),
+                    SCNVector3(qPole), SCNVector3(qWing2), SCNVector3(qFar)
+                ]
+                uvs = [
+                    uvPole, uvFar,   uvWing1,
+                    uvPole, uvWing2, uvFar
+                ]
+            } else {
+                positions = [
+                    SCNVector3(qPole), SCNVector3(qWing1), SCNVector3(qFar),
+                    SCNVector3(qPole), SCNVector3(qFar),   SCNVector3(qWing2)
+                ]
+                // Lower kites are mirrored across the equator relative to upper
+                // kites, so their perimeter order winds the opposite way: wing1
+                // (L_k) sits on the visual LEFT and wing2 (L_{k+1}) on the RIGHT
+                // when viewing the face from outside, the reverse of upper kites.
+                // Swap the wing UVs here so 6–10 don't render horizontally flipped.
+                uvs = [
+                    uvPole, uvWing2, uvFar,
+                    uvPole, uvFar,   uvWing1
+                ]
+            }
+            let normals: [SCNVector3] = Array(repeating: SCNVector3(outNormal), count: 6)
+
+            let posSource = SCNGeometrySource(vertices: positions)
+            let normSource = SCNGeometrySource(normals: normals)
+            let uvSource = SCNGeometrySource(textureCoordinates: uvs)
+            let element = SCNGeometryElement(
+                indices: (0..<Int32(positions.count)).map { $0 },
+                primitiveType: .triangles
+            )
+            let faceGeometry = SCNGeometry(
+                sources: [posSource, normSource, uvSource],
+                elements: [element]
+            )
+
+            let mat = SCNMaterial()
+            mat.diffuse.contents = UIImage(named: String(format: "d10-face-%02d", kite.number))
+                ?? Self.makeD10FallbackImage(number: kite.number)
+            mat.roughness.contents = 0.45
+            mat.isDoubleSided = false
+            faceGeometry.materials = [mat]
+
+            node.addChildNode(SCNNode(geometry: faceGeometry))
+        }
+
+        return node
+    }
+
     /// Rotation that maps SCNPlane's default +Z normal to `target`.
     private static func rotationFromZ(to target: SIMD3<Float>) -> simd_quatf {
         let from: SIMD3<Float> = [0, 0, 1]
@@ -793,6 +1037,35 @@ final class DiceSceneController: NSObject {
             str.draw(at: CGPoint(
                 x: (pixelSize - size.width) / 2,
                 y: pixelSize * 2 / 3 - size.height / 2
+            ))
+        }
+    }
+
+    /// Placeholder d10 face texture used until the user adds `d10-face-N` assets.
+    /// Canvas matches the kite's bounding-box aspect ratio (~189×256, the same
+    /// 0.74:1 short-to-long-diagonal ratio as a 378×512 hand-drawn asset) so the
+    /// digit isn't horizontally squashed or vertically stretched on the face.
+    /// The digit sits at the kite's actual centroid (v ≈ 0.655), not the image
+    /// center, since the kite is bottom-heavy — a dead-centre digit looks shifted
+    /// upward on the face.
+    private static func makeD10FallbackImage(number: Int) -> UIImage {
+        let pixelHeight: CGFloat = 256
+        let pixelWidth: CGFloat = 189   // ≈ pixelHeight × 0.74 (kite aspect ratio)
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: pixelWidth, height: pixelHeight))
+        return renderer.image { ctx in
+            UIColor(red: 0.97, green: 0.96, blue: 0.92, alpha: 1).setFill()
+            ctx.fill(CGRect(origin: .zero, size: CGSize(width: pixelWidth, height: pixelHeight)))
+
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 86, weight: .heavy),
+                .foregroundColor: UIColor(white: 0.08, alpha: 1)
+            ]
+            let str = NSAttributedString(string: "\(number)", attributes: attrs)
+            let size = str.size()
+            let centroidV: CGFloat = 0.655
+            str.draw(at: CGPoint(
+                x: (pixelWidth - size.width) / 2,
+                y: pixelHeight * centroidV - size.height / 2
             ))
         }
     }
@@ -906,7 +1179,10 @@ final class DiceSceneController: NSObject {
             node.position = findEmptyTrayPosition()
             node.simdOrientation = simd_quatf(angle: Float.random(in: 0..<2 * .pi), axis: [0, 1, 0])
             scene.rootNode.addChildNode(node)
-            dice.append(ManagedDie(node: node, kind: kind, formulaIndex: -1, hasSettled: true, stillFrameCount: 0, rolledFace: nil))
+            dice.append(ManagedDie(
+                node: node, kind: kind, formulaIndex: -1,
+                rolledFace: nil, lastPosition: nil, lastOrientation: nil
+            ))
         }
     }
 
@@ -933,7 +1209,7 @@ final class DiceSceneController: NSObject {
                 scene.rootNode.addChildNode(node)
                 dice.append(ManagedDie(
                     node: node, kind: kind, formulaIndex: formulaIndex,
-                    hasSettled: true, stillFrameCount: 0, rolledFace: nil
+                    rolledFace: nil, lastPosition: nil, lastOrientation: nil
                 ))
                 formulaIndex += 1
             }
@@ -969,18 +1245,17 @@ final class DiceSceneController: NSObject {
 
     // MARK: Roll
 
-    /// Roll every die in the scene. `onAllSettled` fires once when all dice are at rest,
-    /// with their face values in die-index order. `onDieSettled` fires per-die as each one rests.
+    /// Roll every die in the scene. `onAllSettled` fires once every die has been
+    /// continuously at rest for `requiredAllStillDuration`, with face values in
+    /// die-index order. `onDieSettled` fires for each die at that same moment.
     func rollAll(onAllSettled: @escaping @MainActor ([Int]) -> Void) {
         guard !dice.isEmpty else { onAllSettled([]); return }
-        // Invalidate any pending settle-delay tasks from a prior roll so they
-        // don't write stale face values into the new roll's state.
         currentRollId += 1
 
         for i in dice.indices {
-            dice[i].hasSettled = false
-            dice[i].stillFrameCount = 0
             dice[i].rolledFace = nil
+            dice[i].lastPosition = nil
+            dice[i].lastOrientation = nil
             // Reset opacity in case the die was dimmed by a previous roll's modifier.
             dice[i].node.opacity = 1.0
             throwDieImpulse(at: i)
@@ -988,13 +1263,15 @@ final class DiceSceneController: NSObject {
 
         allSettledCallback = onAllSettled
         isAwaitingRest = true
+        allStillSince = nil
         rollStartTime = CACurrentMediaTime()
     }
 
-    /// Re-throw a subset of dice (identified by their `formulaIndex`). Dice not in the
-    /// set keep their existing rolled-face values; once the re-thrown dice settle,
-    /// `onAllSettled` fires with the updated full result array in formula order.
-    /// Used to implement the `r2` (reroll-once-if-at-most) modifier physically.
+    /// Re-throw a subset of dice (identified by their `formulaIndex`). All dice in
+    /// the scene must subsequently be still for `requiredAllStillDuration` —
+    /// including any neighbours nudged by the rethrown dice — before `onAllSettled`
+    /// fires with the updated full result array in formula order. Used to implement
+    /// the `r2` (reroll-once-if-at-most) modifier physically.
     func rethrowDice(at formulaIndices: Set<Int>, onAllSettled: @escaping @MainActor ([Int]) -> Void) {
         guard !formulaIndices.isEmpty else {
             onAllSettled(dice.map { $0.rolledFace ?? 0 })
@@ -1003,9 +1280,13 @@ final class DiceSceneController: NSObject {
         currentRollId += 1
 
         for i in dice.indices {
+            // Snapshots get reset for ALL dice — even ones we're not re-throwing —
+            // so the all-still streak restarts from a clean slate. A neighbour bumped
+            // by a re-thrown die needs to fail its first stillness check, not pass it
+            // because its old snapshot still happens to match.
+            dice[i].lastPosition = nil
+            dice[i].lastOrientation = nil
             guard formulaIndices.contains(dice[i].formulaIndex) else { continue }
-            dice[i].hasSettled = false
-            dice[i].stillFrameCount = 0
             dice[i].rolledFace = nil
             dice[i].node.opacity = 1.0
             throwDieImpulse(at: i)
@@ -1013,6 +1294,7 @@ final class DiceSceneController: NSObject {
 
         allSettledCallback = onAllSettled
         isAwaitingRest = true
+        allStillSince = nil
         rollStartTime = CACurrentMediaTime()
     }
 
@@ -1070,89 +1352,107 @@ final class DiceSceneController: NSObject {
 
     // MARK: Rest detection
 
+    /// Per-tick check: each die's current position+orientation are compared to the
+    /// previous tick's snapshot, AND its physics velocities are checked against the
+    /// rest thresholds. A die is "still" only if BOTH agree it hasn't moved.
+    /// Once EVERY die in the scene has been still continuously for
+    /// `requiredAllStillDuration`, all face values are read in one pass.
+    ///
+    /// Per-die settling was tried first but kept locking in values for dice that a
+    /// still-rolling neighbour later bumped, leaving the displayed total out of sync
+    /// with the visible dice. Waiting for global stillness costs a small extra beat
+    /// but guarantees what the player sees matches what the app records.
     private func tickRestDetection() {
         guard isAwaitingRest, !dice.isEmpty else { return }
-        let elapsed = CACurrentMediaTime() - rollStartTime
-        guard elapsed > minRollDuration else { return }
+        let now = CACurrentMediaTime()
+        guard now - rollStartTime > minRollDuration else { return }
 
+        var allStill = true
         for i in dice.indices {
-            if dice[i].hasSettled { continue }
-            guard let body = dice[i].node.physicsBody else { continue }
+            let pres = dice[i].node.presentation
+            let pos = pres.position
+            let orient = pres.simdOrientation
 
-            if body.isResting {
-                dice[i].stillFrameCount += 1
-                if dice[i].stillFrameCount >= restFramesRequired {
-                    settleDie(at: i)
-                }
-                continue
-            }
-
-            let v = body.velocity
-            let speed = sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
-            let angularSpeed = abs(body.angularVelocity.w)
-            let yPos = dice[i].node.presentation.position.y
-            // Threshold accommodates both d6 (rests at y≈0.85) and d4 (rests at y≈0.49).
-            let nearFloor = yPos < cubeHalfSize + 0.6
-
-            if speed < restSpeedThreshold
-                && angularSpeed < restAngularThreshold
-                && nearFloor {
-                dice[i].stillFrameCount += 1
-                if dice[i].stillFrameCount >= restFramesRequired * 2 {
-                    settleDie(at: i)
+            var dieStill = true
+            if let prevPos = dice[i].lastPosition, let prevOrient = dice[i].lastOrientation {
+                let dx = pos.x - prevPos.x
+                let dy = pos.y - prevPos.y
+                let dz = pos.z - prevPos.z
+                let posDelta = sqrtf(dx * dx + dy * dy + dz * dz)
+                let orientDot = abs(simd_dot(orient.vector, prevOrient.vector))
+                if posDelta > posStillEpsilon || orientDot < orientStillDotThreshold {
+                    dieStill = false
                 }
             } else {
-                dice[i].stillFrameCount = 0
+                // No prior snapshot — first tick after a (re)throw, treat as moving
+                // so the streak doesn't start on stale state.
+                dieStill = false
             }
+
+            if dieStill, let body = dice[i].node.physicsBody {
+                let v = body.velocity
+                let speed = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z)
+                let angularSpeed = abs(body.angularVelocity.w)
+                if speed > restSpeedThreshold || angularSpeed > restAngularThreshold {
+                    dieStill = false
+                }
+            }
+
+            // Update snapshot every tick regardless — next tick compares against this.
+            dice[i].lastPosition = pos
+            dice[i].lastOrientation = orient
+
+            if !dieStill { allStill = false }
         }
 
+        if allStill {
+            if allStillSince == nil {
+                allStillSince = now
+            } else if now - allStillSince! >= requiredAllStillDuration {
+                settleAllDice()
+            }
+        } else {
+            allStillSince = nil
+        }
     }
 
-    /// Mark the die as settled immediately so the tick loop stops processing it,
-    /// then wait `settleDelay` before snapshotting its face — both because d4s can
-    /// balance on an edge briefly before tipping, and because the user wants the
-    /// total to update only after a beat of stillness. The all-settled callback
-    /// fires from inside the delayed task once every die has a face value.
-    private func settleDie(at index: Int) {
-        dice[index].hasSettled = true
-        let nodeRef = dice[index].node
-        let rollId = currentRollId
-        let delay = settleDelay
+    /// All dice have been completely still for the required duration — snapshot
+    /// each face value in one pass and fire the all-settled callback. Called only
+    /// from `tickRestDetection`; do not call directly.
+    private func settleAllDice() {
+        isAwaitingRest = false
+        allStillSince = nil
 
-        Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(delay))
-            guard let self, self.currentRollId == rollId else { return }
-            guard let i = self.dice.firstIndex(where: { $0.node === nodeRef }) else { return }
-
-            let face = self.detectResult(of: self.dice[i])
-            self.dice[i].rolledFace = face
-            self.onDieSettled?(i, face)
-
-            if self.dice.allSatisfy({ $0.rolledFace != nil }) {
-                self.isAwaitingRest = false
-                let cb = self.allSettledCallback
-                self.allSettledCallback = nil
-                cb?(self.dice.compactMap { $0.rolledFace })
-            }
+        var values: [Int] = []
+        for i in dice.indices {
+            let face = detectResult(of: dice[i])
+            dice[i].rolledFace = face
+            onDieSettled?(i, face)
+            values.append(face)
         }
+
+        let cb = allSettledCallback
+        allSettledCallback = nil
+        cb?(values)
     }
 
     /// Computes the rolled value from the die's rest orientation. For a d6 the result
     /// is the face whose normal points most upward in world space (the visible top
     /// face). For a d4 there is no top face — the cube rests on a face with a vertex
     /// pointing up — so the result is the face on the BOTTOM (whose normal points
-    /// most downward in world space).
+    /// most downward in world space). d10 always rests on a kite with its parallel
+    /// kite on top, so it follows the same top-face-up rule as d6/d8.
     private func detectResult(of die: ManagedDie) -> Int {
         let q = die.node.presentation.simdOrientation
         let target: SIMD3<Float>
         switch die.kind {
-        case .d4:        target = [0, -1, 0]   // bottom face = result (no top face — vertex up)
-        case .d6, .d8:   target = [0,  1, 0]   // top face = result (parallel face up)
+        case .d4:              target = [0, -1, 0]   // bottom face = result (no top face — vertex up)
+        case .d6, .d8, .d10:   target = [0,  1, 0]   // top face = result (parallel face up)
         }
 
         var best = 1
         var bestDot: Float = -2
-        for face in Self.faceSpecs(for: die.kind) {
+        for face in faceSpecs(for: die.kind) {
             let world = q.act(face.normal)
             let d = simd_dot(world, target)
             if d > bestDot {
