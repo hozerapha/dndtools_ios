@@ -116,14 +116,3 @@ private struct CharacterRow: View {
         contentStore.speciesDefinition(id: character.speciesID)?.name ?? "Unknown"
     }
 }
-
-// MARK: - Placeholder sheet view
-
-struct CharacterSheetView: View {
-    let character: Character
-
-    var body: some View {
-        Text(character.name)
-            .navigationTitle(character.name)
-    }
-}
