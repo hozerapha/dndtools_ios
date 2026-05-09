@@ -1,11 +1,11 @@
 import Foundation
 
-struct ClassEntry: Codable, Equatable {
+struct ClassEntry: Codable, Equatable, Hashable {
     let classID: String
     let level: Int
 }
 
-struct Character: Codable, Identifiable, Equatable {
+struct Character: Codable, Identifiable, Equatable, Hashable {
     let id: UUID
     var name: String
     var level: Int

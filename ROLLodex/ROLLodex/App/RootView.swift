@@ -1,19 +1,29 @@
 import SwiftUI
 
+enum AppTab: String, Hashable {
+    case dice, characters
+}
+
 struct RootView: View {
     @State private var history = HistoryStore()
     @State private var presets = PresetStore()
     @State private var contentStore = ContentStore()
     @State private var characterStore = CharacterStore()
+    @State private var selectedTab: AppTab = .dice
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             DiceRollerView()
                 .tabItem {
                     Label("Dice", systemImage: "dice")
                 }
+                .tag(AppTab.dice)
 
-            // Future tabs (initiative, character sheet, etc.) plug in here.
+            CharacterListView()
+                .tabItem {
+                    Label("Characters", systemImage: "person.2")
+                }
+                .tag(AppTab.characters)
         }
         .environment(history)
         .environment(presets)

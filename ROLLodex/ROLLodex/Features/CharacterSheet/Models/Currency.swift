@@ -1,6 +1,6 @@
 import Foundation
 
-struct Currency: Codable, Equatable {
+struct Currency: Codable, Equatable, Hashable {
     var cp: Int = 0
     var sp: Int = 0
     var ep: Int = 0

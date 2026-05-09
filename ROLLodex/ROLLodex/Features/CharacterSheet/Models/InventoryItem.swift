@@ -1,6 +1,6 @@
 import Foundation
 
-struct InventoryItem: Codable, Identifiable, Equatable {
+struct InventoryItem: Codable, Identifiable, Equatable, Hashable {
     let id: UUID
     var itemID: String
     var quantity: Int
