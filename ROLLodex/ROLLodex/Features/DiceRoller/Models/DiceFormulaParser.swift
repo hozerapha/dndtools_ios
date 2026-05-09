@@ -137,7 +137,7 @@ struct DiceFormulaParser {
         switch first {
         case "k", "d":
             // Keep / drop. Forms accepted: kh3, k3h, kl3, k3l, dh1, d1h, dl1, d1l.
-            var direction: Character?
+            var direction: Swift.Character?
             var nString = ""
             for c in chars.dropFirst() {
                 if c == "h" || c == "l" {

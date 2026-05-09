@@ -1,0 +1,12 @@
+{
+  "id": "soldier",
+  "name": "Soldier",
+  "abilityScoreIncreases": {
+    "strength": 2,
+    "constitution": 1
+  },
+  "skillProficiencies": ["athletics", "intimidation"],
+  "feat": "savage_attacker",
+  "toolProficiency": "gaming_set",
+  "equipment": ["common_clothes", "insignia_of_rank", "gaming_set"]
+}

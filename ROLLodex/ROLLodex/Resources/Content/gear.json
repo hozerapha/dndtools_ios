@@ -1,0 +1,58 @@
+[
+  {
+    "id": "backpack",
+    "name": "Backpack",
+    "description": "A leather bag for carrying gear.",
+    "cost": 200,
+    "weight": 5,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "bedroll",
+    "name": "Bedroll",
+    "description": "A padded roll for sleeping.",
+    "cost": 100,
+    "weight": 7,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "rope",
+    "name": "Rope, Hempen (50 feet)",
+    "description": "Strong hemp rope.",
+    "cost": 100,
+    "weight": 10,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "torch",
+    "name": "Torch",
+    "description": "A wooden stick with an oil-soaked head.",
+    "cost": 1,
+    "weight": 1,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "rations",
+    "name": "Rations (1 day)",
+    "description": "Dried food suitable for travel.",
+    "cost": 50,
+    "weight": 2,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "waterskin",
+    "name": "Waterskin",
+    "description": "A leather pouch for holding water.",
+    "cost": 20,
+    "weight": 5,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "healing_potion",
+    "name": "Potion of Healing",
+    "description": "A potion that restores 2d4 + 2 Hit Points.",
+    "cost": 5000,
+    "weight": 0.5,
+    "category": "consumable"
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "id": "chain_mail",
+  "name": "Chain Mail",
+  "description": "Heavy armor made of interlocking metal rings.",
+  "cost": 7500,
+  "weight": 55.0,
+  "category": "armor",
+  "armorCategory": "heavy",
+  "acBase": 16,
+  "dexCap": 0,
+  "stealthDisadvantage": true,
+  "strengthRequirement": 13
+}

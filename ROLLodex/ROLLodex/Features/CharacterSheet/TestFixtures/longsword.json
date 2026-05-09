@@ -1,0 +1,31 @@
+{
+  "id": "longsword",
+  "name": "Longsword",
+  "description": "A versatile blade suitable for one or two hands.",
+  "cost": 1500,
+  "weight": 3.0,
+  "category": "weapon",
+  "weaponCategory": "martial",
+  "damage": "1d8",
+  "damageType": "slashing",
+  "damageAbility": "strength",
+  "properties": ["versatile"],
+  "versatileDamage": "1d10",
+  "masteryProperty": "sap",
+  "actionRecipes": [
+    {
+      "type": "weaponAttack",
+      "finesse": false
+    },
+    {
+      "type": "weaponDamage",
+      "addAbility": true,
+      "versatile": false
+    },
+    {
+      "type": "weaponDamage",
+      "addAbility": true,
+      "versatile": true
+    }
+  ]
+}

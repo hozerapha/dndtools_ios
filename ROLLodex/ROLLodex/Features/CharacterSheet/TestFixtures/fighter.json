@@ -1,0 +1,34 @@
+{
+  "id": "fighter",
+  "name": "Fighter",
+  "hitDie": 10,
+  "primaryAbility": "strength",
+  "savingThrows": ["strength", "constitution"],
+  "armorProficiencies": ["light", "medium", "heavy", "shield"],
+  "weaponProficiencies": ["simple", "martial"],
+  "levelFeatures": {
+    "1": [
+      {
+        "id": "fighting_style",
+        "name": "Fighting Style",
+        "description": "You gain a Fighting Style feat of your choice.",
+        "actionRecipes": []
+      },
+      {
+        "id": "second_wind",
+        "name": "Second Wind",
+        "description": "You can use a bonus action to regain hit points equal to 1d10 plus your Fighter level.",
+        "actionRecipes": [
+          {
+            "type": "heal",
+            "dice": "1d10",
+            "addLevel": true,
+            "label": "Second Wind"
+          }
+        ]
+      }
+    ]
+  },
+  "masteryCount": 3,
+  "masteryRestrictions": []
+}

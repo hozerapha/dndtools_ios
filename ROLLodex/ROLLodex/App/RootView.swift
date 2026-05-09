@@ -3,6 +3,8 @@ import SwiftUI
 struct RootView: View {
     @State private var history = HistoryStore()
     @State private var presets = PresetStore()
+    @State private var contentStore = ContentStore()
+    @State private var characterStore = CharacterStore()
 
     var body: some View {
         TabView {
@@ -15,6 +17,8 @@ struct RootView: View {
         }
         .environment(history)
         .environment(presets)
+        .environment(contentStore)
+        .environment(characterStore)
     }
 }
 

@@ -1,0 +1,63 @@
+[
+  {
+    "id": "fighter",
+    "name": "Fighter",
+    "hitDie": 10,
+    "primaryAbility": "strength",
+    "savingThrows": ["strength", "constitution"],
+    "armorProficiencies": ["light", "medium", "heavy", "shield"],
+    "weaponProficiencies": ["simple", "martial"],
+    "levelFeatures": {
+      "1": [
+        {
+          "id": "fighting_style",
+          "name": "Fighting Style",
+          "description": "You gain a Fighting Style feat of your choice.",
+          "actionRecipes": []
+        },
+        {
+          "id": "second_wind",
+          "name": "Second Wind",
+          "description": "You can use a Bonus Action to regain Hit Points equal to 1d10 plus your Fighter level.",
+          "actionRecipes": [
+            {
+              "type": "heal",
+              "dice": "1d10",
+              "addLevel": true,
+              "label": "Second Wind"
+            }
+          ]
+        }
+      ]
+    },
+    "masteryCount": 3,
+    "masteryRestrictions": []
+  },
+  {
+    "id": "wizard",
+    "name": "Wizard",
+    "hitDie": 6,
+    "primaryAbility": "intelligence",
+    "savingThrows": ["intelligence", "wisdom"],
+    "armorProficiencies": [],
+    "weaponProficiencies": [],
+    "levelFeatures": {
+      "1": [
+        {
+          "id": "spellcasting",
+          "name": "Spellcasting",
+          "description": "You know three cantrips and have a spellbook with six 1st-level spells.",
+          "actionRecipes": []
+        },
+        {
+          "id": "arcane_recovery",
+          "name": "Arcane Recovery",
+          "description": "Once per day after a Short Rest, recover expended spell slots up to half your Wizard level.",
+          "actionRecipes": []
+        }
+      ]
+    },
+    "masteryCount": null,
+    "masteryRestrictions": []
+  }
+]

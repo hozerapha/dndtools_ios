@@ -1,0 +1,38 @@
+[
+  {
+    "id": "soldier",
+    "name": "Soldier",
+    "abilityScoreIncreases": {
+      "strength": 2,
+      "constitution": 1
+    },
+    "skillProficiencies": ["athletics", "intimidation"],
+    "feat": "savage_attacker",
+    "toolProficiency": "gaming_set",
+    "equipment": ["common_clothes", "insignia_of_rank", "gaming_set"]
+  },
+  {
+    "id": "sage",
+    "name": "Sage",
+    "abilityScoreIncreases": {
+      "intelligence": 2,
+      "wisdom": 1
+    },
+    "skillProficiencies": ["arcana", "history"],
+    "feat": "magic_initiate_wizard",
+    "toolProficiency": "calligraphers_supplies",
+    "equipment": ["common_clothes", "bottle_of_ink", "small_knife", "letter_from_colleague"]
+  },
+  {
+    "id": "acolyte",
+    "name": "Acolyte",
+    "abilityScoreIncreases": {
+      "wisdom": 2,
+      "charisma": 1
+    },
+    "skillProficiencies": ["insight", "religion"],
+    "feat": "magic_initiate_cleric",
+    "toolProficiency": "calligraphers_supplies",
+    "equipment": ["common_clothes", "holy_symbol", "prayer_book"]
+  }
+]

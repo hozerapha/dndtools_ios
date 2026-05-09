@@ -66,6 +66,8 @@ ROLLodex/
           PresetRowView.swift  # Horizontal scroll of saved presets
           SavePresetSheet.swift
     Assets.xcassets/           # Dice face textures (d4–d20, d10 for d100), tray wood/felt images
+    Resources/
+      Content/                 # Bundled SRD JSON: classes, species, backgrounds, weapons, armor, gear
 ```
 
 There is no test target or test files in the repository yet.

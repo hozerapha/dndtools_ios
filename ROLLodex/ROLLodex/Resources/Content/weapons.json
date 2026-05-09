@@ -1,0 +1,204 @@
+[
+  {
+    "id": "club",
+    "name": "Club",
+    "description": "A simple blunt weapon.",
+    "cost": 10,
+    "weight": 2,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d4",
+    "damageType": "bludgeoning",
+    "damageAbility": "strength",
+    "properties": ["light"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "slow",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "dagger",
+    "name": "Dagger",
+    "description": "A small blade.",
+    "cost": 200,
+    "weight": 1,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d4",
+    "damageType": "piercing",
+    "damageAbility": "strength",
+    "properties": ["finesse", "light", "thrown"],
+    "versatileDamage": null,
+    "range": "20/60",
+    "masteryProperty": "nick",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": true },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "mace",
+    "name": "Mace",
+    "description": "A blunt weapon with a heavy head.",
+    "cost": 500,
+    "weight": 4,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d6",
+    "damageType": "bludgeoning",
+    "damageAbility": "strength",
+    "properties": [],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "sap",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "quarterstaff",
+    "name": "Quarterstaff",
+    "description": "A sturdy wooden staff.",
+    "cost": 20,
+    "weight": 4,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d6",
+    "damageType": "bludgeoning",
+    "damageAbility": "strength",
+    "properties": ["versatile"],
+    "versatileDamage": "1d8",
+    "range": null,
+    "masteryProperty": "topple",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": true }
+    ]
+  },
+  {
+    "id": "longsword",
+    "name": "Longsword",
+    "description": "A versatile blade suitable for one or two hands.",
+    "cost": 1500,
+    "weight": 3,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d8",
+    "damageType": "slashing",
+    "damageAbility": "strength",
+    "properties": ["versatile"],
+    "versatileDamage": "1d10",
+    "range": null,
+    "masteryProperty": "sap",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": true }
+    ]
+  },
+  {
+    "id": "rapier",
+    "name": "Rapier",
+    "description": "A thin, sharp blade designed for thrusting.",
+    "cost": 2500,
+    "weight": 2,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d8",
+    "damageType": "piercing",
+    "damageAbility": "dexterity",
+    "properties": ["finesse"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "vex",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": true },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "greatsword",
+    "name": "Greatsword",
+    "description": "A heavy two-handed blade.",
+    "cost": 5000,
+    "weight": 6,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "2d6",
+    "damageType": "slashing",
+    "damageAbility": "strength",
+    "properties": ["heavy", "two_handed"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "graze",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "shortbow",
+    "name": "Shortbow",
+    "description": "A simple ranged weapon.",
+    "cost": 2500,
+    "weight": 2,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d6",
+    "damageType": "piercing",
+    "damageAbility": "dexterity",
+    "properties": ["ammunition", "two_handed"],
+    "versatileDamage": null,
+    "range": "80/320",
+    "masteryProperty": "vex",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "longbow",
+    "name": "Longbow",
+    "description": "A heavy ranged weapon.",
+    "cost": 5000,
+    "weight": 2,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d8",
+    "damageType": "piercing",
+    "damageAbility": "dexterity",
+    "properties": ["ammunition", "heavy", "two_handed"],
+    "versatileDamage": null,
+    "range": "150/600",
+    "masteryProperty": "slow",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "light_crossbow",
+    "name": "Light Crossbow",
+    "description": "A small crossbow.",
+    "cost": 2500,
+    "weight": 5,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d8",
+    "damageType": "piercing",
+    "damageAbility": "dexterity",
+    "properties": ["ammunition", "loading", "two_handed"],
+    "versatileDamage": null,
+    "range": "80/320",
+    "masteryProperty": "slow",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  }
+]

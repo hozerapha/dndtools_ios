@@ -1,0 +1,41 @@
+{
+  "id": "sample-fighter-001",
+  "name": "Bruenor",
+  "level": 1,
+  "speciesID": "human",
+  "backgroundID": "soldier",
+  "classEntries": [
+    { "classID": "fighter", "level": 1 }
+  ],
+  "abilityScores": {
+    "strength": 16,
+    "dexterity": 12,
+    "constitution": 14,
+    "intelligence": 10,
+    "wisdom": 13,
+    "charisma": 8
+  },
+  "maxHP": 12,
+  "currentHP": 12,
+  "tempHP": 0,
+  "proficiencies": {
+    "savingThrow_strength": "proficient",
+    "savingThrow_constitution": "proficient",
+    "skill_athletics": "proficient",
+    "skill_intimidation": "proficient",
+    "armor_light": "proficient",
+    "armor_medium": "proficient",
+    "armor_heavy": "proficient",
+    "armor_shield": "proficient",
+    "weapon_simple": "proficient",
+    "weapon_martial": "proficient"
+  },
+  "inventory": [
+    { "itemID": "longsword", "quantity": 1, "equipped": true, "attuned": false },
+    { "itemID": "chain_mail", "quantity": 1, "equipped": true, "attuned": false },
+    { "itemID": "healing_potion", "quantity": 3, "equipped": false, "attuned": false }
+  ],
+  "currency": { "cp": 0, "sp": 0, "ep": 0, "gp": 15, "pp": 0 },
+  "notes": "",
+  "manifestVersion": 1
+}

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "human",
+    "name": "Human",
+    "size": "medium",
+    "speed": 30,
+    "traits": [
+      {
+        "id": "resourceful",
+        "name": "Resourceful",
+        "description": "You gain Heroic Inspiration after a Long Rest.",
+        "actionRecipes": []
+      },
+      {
+        "id": "skillful",
+        "name": "Skillful",
+        "description": "You gain proficiency in one skill of your choice.",
+        "actionRecipes": []
+      },
+      {
+        "id": "versatile",
+        "name": "Versatile",
+        "description": "You gain an Origin feat of your choice.",
+        "actionRecipes": []
+      }
+    ]
+  },
+  {
+    "id": "elf",
+    "name": "Elf",
+    "size": "medium",
+    "speed": 30,
+    "traits": [
+      {
+        "id": "darkvision",
+        "name": "Darkvision",
+        "description": "You have Darkvision with a range of 60 feet.",
+        "actionRecipes": []
+      },
+      {
+        "id": "fey_ancestry",
+        "name": "Fey Ancestry",
+        "description": "You have Advantage on saving throws to avoid or end the Charmed condition.",
+        "actionRecipes": []
+      },
+      {
+        "id": "keen_senses",
+        "name": "Keen Senses",
+        "description": "You have proficiency in Insight, Perception, or Survival.",
+        "actionRecipes": []
+      },
+      {
+        "id": "trance",
+        "name": "Trance",
+        "description": "You don't need to sleep, and magic can't put you to sleep. You can finish a Long Rest in 4 hours.",
+        "actionRecipes": []
+      }
+    ]
+  },
+  {
+    "id": "dwarf",
+    "name": "Dwarf",
+    "size": "medium",
+    "speed": 30,
+    "traits": [
+      {
+        "id": "darkvision",
+        "name": "Darkvision",
+        "description": "You have Darkvision with a range of 120 feet.",
+        "actionRecipes": []
+      },
+      {
+        "id": "dwarven_resilience",
+        "name": "Dwarven Resilience",
+        "description": "You have Resistance to Poison damage. You also have Advantage on saving throws to avoid or end the Poisoned condition.",
+        "actionRecipes": []
+      },
+      {
+        "id": "dwarven_toughness",
+        "name": "Dwarven Toughness",
+        "description": "Your Hit Point maximum increases by 1, and it increases by 1 again whenever you gain a level.",
+        "actionRecipes": []
+      },
+      {
+        "id": "stonecunning",
+        "name": "Stonecunning",
+        "description": "You have Tremorsense with a range of 60 feet, but you can sense only through stone.",
+        "actionRecipes": []
+      }
+    ]
+  }
+]
