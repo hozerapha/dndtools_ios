@@ -11,11 +11,6 @@ struct RootView: View {
                     Label("Dice", systemImage: "dice")
                 }
 
-            Dice3DPlaygroundView()
-                .tabItem {
-                    Label("3D", systemImage: "cube")
-                }
-
             // Future tabs (initiative, character sheet, etc.) plug in here.
         }
         .environment(history)
