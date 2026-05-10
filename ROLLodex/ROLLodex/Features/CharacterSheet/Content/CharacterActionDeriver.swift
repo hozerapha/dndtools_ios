@@ -3,18 +3,57 @@ import Foundation
 /// One actionable (or info-only) row on the character sheet. Wraps a
 /// `ResolvedAction` plus optional UI extras (weapon mastery badge, resource
 /// counter) and an `isExhausted` flag the tile reads to grey itself out.
+///
+/// When `castFromItem` is non-nil, the tap handler diverts: instead of pushing
+/// the action onto the dice tab, the character sheet opens `SpellCastSheet`
+/// with the item context so the user can pick an upcast level and the sheet
+/// pays the charge cost.
 struct ActionRow: Identifiable, Equatable {
     let action: ResolvedAction
     let badge: String?
     let isExhausted: Bool
+    let castFromItem: ItemSpellCastContext?
 
-    init(action: ResolvedAction, badge: String?, isExhausted: Bool = false) {
+    init(
+        action: ResolvedAction,
+        badge: String?,
+        isExhausted: Bool = false,
+        castFromItem: ItemSpellCastContext? = nil
+    ) {
         self.action = action
         self.badge = badge
         self.isExhausted = isExhausted
+        self.castFromItem = castFromItem
     }
 
     var id: String { action.id }
+}
+
+/// Routing payload for an "Item: Cast X" row. The sheet uses this to open
+/// `SpellCastSheet` with the item's pool driving the slot-picker UI.
+struct ItemSpellCastContext: Equatable {
+    /// Spell to cast.
+    let spellID: String
+    /// Item the use comes from (for labeling).
+    let itemName: String
+    /// Resource the cast consumes (charges).
+    let resourceID: String
+    /// Slot level the spell goes off at when the use fires at its base cost.
+    let baseLevel: Int
+    /// Highest level the use can upcast to. Equal to `baseLevel` when there's
+    /// no upcast support.
+    let maxLevel: Int
+    /// Base charge cost (the `amount` from `ItemUseCost`).
+    let baseCost: Int
+    /// Extra charges per slot level above `baseLevel`. Zero when there's no
+    /// upcast support.
+    let extraCostPerLevel: Int
+
+    /// Charge cost for a cast at `level`. Clamped to baseCost at base level.
+    func cost(forLevel level: Int) -> Int {
+        let extra = max(0, level - baseLevel)
+        return baseCost + extra * extraCostPerLevel
+    }
 }
 
 /// A grouped section of action rows (Attacks, Features). Ability/skill/save
@@ -54,6 +93,16 @@ enum CharacterActionDeriver {
                 title: "Features",
                 systemImage: "sparkles",
                 rows: features
+            ))
+        }
+
+        let itemUses = itemUseRows(for: character, content: content)
+        if !itemUses.isEmpty {
+            sections.append(ActionSection(
+                id: "item_uses",
+                title: "Items",
+                systemImage: "wand.and.stars",
+                rows: itemUses
             ))
         }
 
@@ -200,4 +249,96 @@ enum CharacterActionDeriver {
         return "\(feature.name): \(resolved.label)"
     }
 
+    // MARK: - Item Uses
+
+    /// Build the action grid's "Items" section. Only equipped, attuned-if-required
+    /// items contribute — carried-but-unequipped items still live in the resources
+    /// card so the player can spend them ad-hoc, just not as a primary action.
+    private static func itemUseRows(
+        for character: Character,
+        content: ContentStore
+    ) -> [ActionRow] {
+        var rows: [ActionRow] = []
+
+        for inv in character.inventory {
+            guard inv.equipped else { continue }
+            let needsAttunement = content.attunementRule(forItemID: inv.itemID) != nil
+            if needsAttunement && !inv.attuned { continue }
+
+            let uses = content.itemUses(forItemID: inv.itemID)
+            guard !uses.isEmpty else { continue }
+            let itemName = content.itemName(forItemID: inv.itemID) ?? inv.itemID
+
+            for use in uses {
+                let resolvedResource = ResourceCalculator.availableResources(character: character, content: content)
+                    .first { $0.definition.id == use.cost.resourceID }
+                let badge = resolvedResource.map { "\($0.current) / \($0.max)" }
+                // Exhausted if the pool can't even cover the base cost.
+                let isExhausted = (resolvedResource?.current ?? 0) < use.cost.amount
+
+                switch use.effect {
+                case .castSpell(let spellID, let baseLevel):
+                    let maxLevel = use.upcastChoice?.maxLevel ?? baseLevel
+                    let extra    = use.upcastChoice?.extraCostPerLevel ?? 0
+                    let context = ItemSpellCastContext(
+                        spellID: spellID,
+                        itemName: itemName,
+                        resourceID: use.cost.resourceID,
+                        baseLevel: baseLevel,
+                        maxLevel: maxLevel,
+                        baseCost: use.cost.amount,
+                        extraCostPerLevel: extra
+                    )
+                    // Formula stays nil; the cast sheet owns the rolls. The
+                    // resourceCost field is also nil — the cast sheet pays the
+                    // charge cost itself based on the chosen slot level.
+                    let action = ResolvedAction(
+                        id: "itemUse_\(inv.itemID)_\(use.id)",
+                        label: use.name,
+                        formula: nil,
+                        description: costSubtitle(amount: use.cost.amount, extraPerLevel: extra),
+                        resourceCost: nil
+                    )
+                    rows.append(ActionRow(
+                        action: action,
+                        badge: badge,
+                        isExhausted: isExhausted,
+                        castFromItem: context
+                    ))
+
+                case .actionRecipes(let recipes):
+                    let cost = ResourceCost(resourceID: use.cost.resourceID, amount: use.cost.amount)
+                    for recipe in recipes {
+                        let resolved = ActionInterpreter.resolve(
+                            recipe: recipe,
+                            character: character,
+                            weapon: nil
+                        )
+                        let labeled = ResolvedAction(
+                            id: "itemUse_\(inv.itemID)_\(use.id)_\(resolved.id)",
+                            label: use.name,
+                            formula: resolved.formula,
+                            description: resolved.description,
+                            resourceCost: cost
+                        )
+                        rows.append(ActionRow(
+                            action: labeled,
+                            badge: badge,
+                            isExhausted: isExhausted
+                        ))
+                    }
+                }
+            }
+        }
+
+        return rows
+    }
+
+    private static func costSubtitle(amount: Int, extraPerLevel: Int) -> String {
+        let basePart = amount == 1 ? "1 charge" : "\(amount) charges"
+        if extraPerLevel > 0 {
+            return "\(basePart) (+\(extraPerLevel)/lvl)"
+        }
+        return basePart
+    }
 }

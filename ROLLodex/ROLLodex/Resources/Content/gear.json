@@ -54,5 +54,30 @@
     "cost": 5000,
     "weight": 0.5,
     "category": "consumable"
+  },
+  {
+    "id": "wand_of_magic_missiles",
+    "name": "Wand of Magic Missiles",
+    "description": "This wand has 7 charges. While holding it, you can use an action to expend 1 or more of its charges to cast magic missile from it. For 1 charge, you cast the 1st-level version of the spell. You can increase the spell slot level by 1 for each additional charge you expend. The wand regains 1d6 + 1 expended charges daily at dawn.",
+    "cost": 800000,
+    "weight": 1,
+    "category": "magic_item",
+    "attunement": {},
+    "resource": {
+      "id": "wand_of_magic_missiles_charges",
+      "name": "Wand Charges",
+      "max": 7,
+      "refreshOn": "dawn",
+      "refreshAmount": { "roll": "1d6+1" }
+    },
+    "uses": [
+      {
+        "id": "cast_magic_missile",
+        "name": "Cast Magic Missile",
+        "cost": { "resourceID": "wand_of_magic_missiles_charges", "amount": 1 },
+        "effect": { "type": "castSpell", "spellID": "magic_missile", "atLevel": 1 },
+        "upcastChoice": { "maxLevel": 3, "extraCostPerLevel": 1 }
+      }
+    ]
   }
 ]

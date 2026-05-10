@@ -1,12 +1,13 @@
 import SwiftUI
 
 /// Grouped grid of action buttons on the character sheet. Tapping a button
-/// hands the resolved action off to the dice tab via `PendingRollStore` and
-/// flips `selectedTab` to `.dice`. Save-DC style rows have no formula and are
-/// rendered as info chips instead of buttons.
+/// hands the row to the sheet, which routes it: most rows push their resolved
+/// action onto the dice tab (and pay any `resourceCost`); rows tagged with
+/// `castFromItem` open the spell-cast sheet instead. Save-DC style rows have
+/// no formula, no cost, and no item context — they render as info chips.
 struct ActionButtonGrid: View {
     let sections: [ActionSection]
-    let onTap: (ResolvedAction) -> Void
+    let onTap: (ActionRow) -> Void
 
     private let columns = [
         GridItem(.adaptive(minimum: 150), spacing: 8)
@@ -29,18 +30,23 @@ struct ActionButtonGrid: View {
 
 private struct ActionTile: View {
     let row: ActionRow
-    let onTap: (ResolvedAction) -> Void
+    let onTap: (ActionRow) -> Void
+
+    /// A row is interactive when it has *anything* to do on tap: a roll to
+    /// hand off, a resource to consume, or a spell-cast sheet to open.
+    private var isInteractive: Bool {
+        row.action.formula != nil
+            || row.action.resourceCost != nil
+            || row.castFromItem != nil
+    }
 
     var body: some View {
-        // Info-only rows (no formula and no resource cost) — e.g. save DC —
-        // render as a flat chip. Anything actionable is a button. The
-        // `isExhausted` flag greys it out in either case.
-        if row.action.formula == nil && row.action.resourceCost == nil {
+        if !isInteractive {
             tileBody
                 .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
         } else {
             Button {
-                onTap(row.action)
+                onTap(row)
             } label: {
                 tileBody
             }
@@ -52,11 +58,19 @@ private struct ActionTile: View {
 
     private var tileBody: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(row.action.label)
-                .font(.subheadline.weight(.semibold))
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(row.action.label)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                if let subtitle = row.action.description, row.castFromItem != nil {
+                    // For item rows we surface the charge cost under the label.
+                    Text(subtitle)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             if let badge = row.badge {
                 Text(badge)
                     .font(.caption2.monospacedDigit().weight(.bold))

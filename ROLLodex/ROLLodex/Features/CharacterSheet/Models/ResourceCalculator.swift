@@ -72,8 +72,37 @@ enum ResourceCalculator {
             resolved.append(contentsOf: synthesizedSlotResources(for: entry, in: cls, character: character))
         }
 
-        // Equipped items (Phase K) will plug in here once they declare their
-        // own `resource` block on item definitions.
+        // Items the character is carrying. We include carried-but-unequipped
+        // items so consumables (scrolls, potions w/ charges) still appear in
+        // the resources card — the action grid filters separately to keep
+        // its rows scoped to equipped items. Items that require attunement
+        // are skipped until they're actually attuned, since you can't spend
+        // their charges otherwise. Two stacks of the same item share one
+        // pool (per Phase K.1's `<itemID>_charges` convention), so de-dupe
+        // by resource id rather than emitting two rows.
+        var seen = Set(resolved.map(\.id))
+        for inv in character.inventory {
+            guard let definition = content.itemResource(forItemID: inv.itemID) else { continue }
+            if content.attunementRule(forItemID: inv.itemID) != nil && !inv.attuned { continue }
+            guard !seen.contains(definition.id) else { continue }
+            seen.insert(definition.id)
+            let maxValue = definition.max.value(
+                classLevel: character.level,
+                characterLevel: character.level
+            )
+            let current = currentClamped(
+                character: character,
+                resourceID: definition.id,
+                max: maxValue
+            )
+            let itemName = content.itemName(forItemID: inv.itemID) ?? inv.itemID
+            resolved.append(ResolvedResource(
+                definition: definition,
+                max: maxValue,
+                current: current,
+                sourceLabel: itemName
+            ))
+        }
 
         return resolved
     }

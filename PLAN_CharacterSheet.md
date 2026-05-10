@@ -1111,6 +1111,296 @@ Each is JSON in `levelFeatures[N]` extended with a `prompts: [ChoicePromptDefini
 
 ---
 
+### Phase N — Damage Typing in the Dice Tray
+
+**Goal:** Rolls can carry per-group damage type metadata so a mixed-damage
+attack (Meteor Swarm bludgeoning + fire; Eldritch Blast force + Hex necrotic;
+a longsword Divine Smite slashing + radiant) displays a breakdown instead of a
+single anonymous total. Untyped rolls (manual rolls, history rerolls, ability
+checks, saves) keep working unchanged.
+
+This is a substrate change. It's small on its own, but Phase O leans on it —
+"+1d6 necrotic" only reads correctly when the tray knows what "necrotic" is.
+
+**N.1 DiceGroup gains an optional damage type**
+
+```swift
+struct DiceGroup: Codable, Equatable {
+    var kind: DieKind
+    var count: Int
+    var modifier: GroupModifier?   // kh1, kl1, etc. — existing
+    var damageType: DamageType?    // new; nil = untyped
+}
+```
+
+Backwards-compat: existing JSON without `damageType` decodes as nil; existing
+formulas (presets, history, ad-hoc picker rolls) stay untyped. The dice tab's
+modifier stepper is a single integer and stays untyped — it's added to the
+"untyped" bucket.
+
+**N.2 RollResult subtotals**
+
+`RollResult` adds:
+
+```swift
+/// Total per damage type. Untyped dice + the flat modifier land under nil.
+var subtotalsByType: [DamageType?: Int] { ... }
+```
+
+The grand total stays as-is (sum across types). When `subtotalsByType` has
+more than one non-nil key, the UI surfaces the breakdown; otherwise it just
+shows the total like today.
+
+**N.3 Recipe → group plumbing**
+
+The damage-type info already exists upstream — it just gets dropped when we
+collapse to a plain `DiceFormula`. The fix is mechanical:
+
+- `weaponDamage` interpreter writes `weapon.damageType` onto the group(s) it
+  produces.
+- `rawDamage` interpreter writes the recipe's `damageType` onto its group.
+- `heal` writes nothing (healing is its own visual treatment, not a damage type).
+- Spell upcast scaling (`SpellDefinition.recipes(castAtLevel:)`) preserves the
+  damage type when it appends extra dice to a typed recipe.
+
+**N.4 Tray rendering**
+
+The 3D physics stays a single bag of dice — all groups bounce in the same
+tray. The HUD changes:
+
+- Big total stays centered.
+- Below it (or as a chip below the tray), a small breakdown: "12 force · 4 necrotic"
+  when there's >1 type.
+- The result chip in history shows the same breakdown.
+- Per-die coloring on the 3D models is a stretch goal — start with HUD only;
+  reach for SCNMaterial tinting later if mixed-damage rolls feel ambiguous.
+
+**N.5 Formula bar pretty-printing**
+
+Currently the bar reads `1d10+1d6+3`. With damage typing it reads
+`1d10 fire + 1d6 necrotic + 3`. Parser stays tolerant of both shapes; the
+pretty-printer emits the type only when present.
+
+**N.6 History line**
+
+`RollResult.subtotalsByType` flows into the history rendering. A typed Fire
+Bolt result reads "Fire Bolt Damage: 7 fire". Untyped rolls render exactly as
+today.
+
+**N.7 Tests**
+
+- `DiceGroup` round-trip with and without `damageType`.
+- `RollResult.subtotalsByType` for a typed-only formula, mixed-typed, and
+  fully untyped formula.
+- Weapon damage interpreter stamps the weapon's damage type onto its group.
+- Spell upcast preserves the damage type across the appended dice.
+- Backwards-compat: an existing untyped formula decodes and rolls correctly.
+
+**Deliverable:** Casting Fire Bolt shows "7 fire" in the tray and history.
+Magic Missile shows "9 force". A weapon attack with `1d8+3` damage shows
+"11 slashing". Manual rolls and ability checks are unchanged. The infra is in
+place for Phase O to attach typed extra dice ("+1d6 necrotic from Hex").
+
+---
+
+### Phase O — Triggered Effects & Active Statuses
+
+**Goal:** One mechanism that covers every "modify a roll based on a trigger"
+mechanic in 5e — persistent riders (Hex, Hunter's Mark, Rage, Bless),
+attack-time opt-ins (Sneak Attack, Divine Smite), pre-roll toggles
+(Great Weapon Master, Sharpshooter), and resource-gated reactions (Battle
+Master maneuvers, Lucky). Concentration (Phase L) gates the persistent ones;
+damage typing (Phase N) makes their extra dice render correctly.
+
+This phase is design-heavy. The shape below is a sketch; pieces will move as
+we encode real content.
+
+**O.1 TriggeredEffect schema**
+
+```swift
+struct TriggeredEffect: Codable, Equatable {
+    let id: String
+    let name: String
+    let trigger: TriggerCondition
+    let activation: TriggerActivation
+    let cost: TriggerCost?
+    let effect: TriggerEffect
+    let lifecycle: TriggerLifecycle
+}
+```
+
+`TriggerCondition` — *when* it can fire:
+- `.onAttackRoll(filter:)` — fires after the d20 lands, before damage. GWM penalty case.
+- `.onAttackHit(filter:)` — fires after a confirmed hit. Sneak Attack, Divine Smite.
+- `.onDamageRoll(filter:)` — auto-attaches to a damage roll. Hex, Hunter's Mark.
+- `.onSpellAttackHit(filter:)` — variant for spell attacks.
+- `.onTurnStart` — Rage end-of-turn maintenance, etc.
+
+`AttackFilter` (composable):
+- `.weaponHasProperty([WeaponProperty])` — Sneak Attack: finesse OR ranged.
+- `.weaponCategory([WeaponCategory])`
+- `.weaponDamageType([DamageType])`
+- `.hadAdvantage`, `.didNotHaveDisadvantage`
+- `.allyWithin5ft` — manual checkbox in the prompt; gated by trust ("you say there's an ally").
+- `.allOf([AttackFilter])`, `.anyOf([AttackFilter])`
+
+`TriggerActivation` — *how* the player engages with it:
+- `.automatic` — always applies when the trigger matches. Hex's damage rider, Rage's bonus.
+- `.optIn` — surfaces an opt-in chip after the trigger fires (same UI as the Phase J
+  "Roll damage?" chip). Divine Smite, Sneak Attack.
+- `.toggleBeforeRoll` — a chip on the action button. GWM's `-5 to hit / +10 damage`.
+
+`TriggerCost`:
+- `.spellSlot(minLevel: Int, maxLevel: Int)` — Divine Smite (1–5).
+- `.resource(id: String, amount: Int)` — superiority die.
+- `.oncePerTurn(flagID: String)` — Sneak Attack.
+- `.none` — Hex (cost was paid when the spell was originally cast).
+
+`TriggerEffect` — *what* it does to the in-flight roll:
+- `.addDamageDice(formula: LevelScaledValue, damageType: TypedOrMatch)` — Hex `1d6 necrotic`; Sneak Attack scales by class level, type matches the weapon.
+- `.addFlat(Int)` — Rage damage bonus.
+- `.advantage(target: TriggerTarget)` / `.disadvantage(target:)` — Reckless Attack.
+- `.rerollOne` — Halfling Lucky / Lucky feat.
+- `.attackPenalty(Int)` — GWM `-5` paired with `+10` damage.
+
+`TypedOrMatch`:
+- `.fixed(DamageType)` — Hex deals necrotic.
+- `.matchWeapon` — Sneak Attack matches the weapon's damage type.
+- `.matchSpell` — Divine Smite's `+1d8 vs undead` rider matches radiant.
+
+`TriggerLifecycle`:
+- `.oneShot` — Divine Smite, Sneak Attack (cleared after a single application).
+- `.persistent(until: PersistenceEnd)` — Hex until concentration drops, Rage until 10 rounds or unconscious.
+
+`PersistenceEnd`:
+- `.concentrationEnds` (Phase L tracks concentration)
+- `.endOfTurn` / `.rounds(Int)`
+- `.shortRest` / `.longRest`
+- `.manual` — player ends it explicitly
+
+**O.2 Where TriggeredEffects come from**
+
+- **Features** declare them inline: Rogue L1 ships a Sneak Attack
+  `TriggeredEffect` whose effect formula scales by class level via the existing
+  `LevelScaledValue` type. Paladin L1 ships Divine Smite.
+- **Spells** can grant a persistent `TriggeredEffect` when cast: Hex declares a
+  `grantsTriggeredEffect: TriggeredEffect` field; casting the spell activates
+  the effect on the character, casting another concentration spell drops it.
+- **Items** can do the same (e.g., a ring of accuracy gives a one-shot reroll
+  per long rest as a `.optIn` effect with a resource cost).
+
+**O.3 Character state**
+
+```json
+"activeEffects": [
+  { "effectID": "hex", "source": { "kind": "spell", "spellID": "hex" } },
+  { "effectID": "rage", "source": { "kind": "feature", "featureID": "barbarian_rage" }, "metadata": { "roundsRemaining": 8 } }
+],
+"turnFlags": ["sneak_attack_used"]
+```
+
+- `activeEffects` is the persistent rider list, populated by spell casts and
+  feature toggles.
+- `turnFlags` tracks once-per-turn opt-ins. Cleared by a "Start new turn"
+  button on the sheet (MVP; replaced by initiative-aware reset when the combat
+  tracker lands).
+
+**O.4 UI surfaces**
+
+- **Effect badges** in the sheet header (below HP, above abilities): one pill
+  per active persistent effect. Tap to dismiss (drops the effect; for spell
+  sources also drops concentration). Long-press for description.
+- **Opt-in chips in the dice tab.** Reuses the Phase J follow-up chip
+  pattern. After an attack roll lands, the resolver inspects matching
+  `TriggeredEffect`s with `.optIn` activation and renders one chip per option
+  ("Sneak Attack +2d6 piercing?", "Divine Smite (L1) +2d8 radiant?").
+- **Pre-roll toggles on action buttons.** A GWM-eligible weapon attack gets a
+  small inline "Heavy" chip the player can toggle before tapping the attack
+  button.
+
+**O.5 Resolver wiring**
+
+`ActionInterpreter` already produces a `ResolvedAction`. Add a sibling pass:
+
+```swift
+struct ResolvedActionWithRiders {
+    let primary: ResolvedAction
+    let autoRiders: [ResolvedAction]      // appended automatically
+    let optInRiders: [OptInRider]         // surfaced as chips after primary
+}
+```
+
+- `autoRiders` get folded into the primary's `DiceFormula` *with their
+  damageType set* (Phase N's payoff) so the result HUD shows the breakdown
+  naturally.
+- `optInRiders` are parked on `PendingRollStore.followUp` (or its successor —
+  this phase generalizes it to `followUps: [ResolvedAction]`) so the dice tab
+  can render multiple chips after the primary lands.
+
+**O.6 Concentration handoff**
+
+When the player casts Hex:
+1. The spell-cast flow consumes the slot.
+2. The spell's `grantsTriggeredEffect` is appended to `activeEffects`.
+3. `Character.concentratingSpellID = "hex"` (Phase L).
+
+When the player casts a second concentration spell, Phase L's concentration
+break drops the existing concentration spell, which in turn removes its
+`TriggeredEffect`. When concentration breaks from damage, same path.
+
+**O.7 Once-per-turn tracking**
+
+`TriggerCost.oncePerTurn(flagID:)` checks `character.turnFlags`. After
+applying the effect, the flag is added to the set. A "Start new turn" button
+clears all turn flags. (Long rest also clears them defensively.)
+
+This is an honor-system MVP — the app doesn't know whose turn it is. Replaced
+when an initiative/combat tracker lands.
+
+**O.8 Initial content**
+
+- **Rogue Sneak Attack** — `TriggeredEffect` on Rogue L1 feature. Filter:
+  weapon with finesse or ranged; had advantage OR (no disadvantage AND ally
+  within 5 ft). Effect: `Nd6` matching weapon damage type, where N scales by
+  class level. Activation: `.optIn`. Cost: `.oncePerTurn("sneak_attack")`.
+- **Paladin Divine Smite** — `TriggeredEffect` on Paladin L1 feature. Filter:
+  melee weapon hit. Effect: `2d8 radiant` + `1d8` per slot level above 1
+  (max 5d8) + `1d8` vs undead/fiend (max 6d8). Activation: `.optIn`. Cost:
+  `.spellSlot(minLevel: 1, maxLevel: 5)`.
+- **Hex** — spell that grants a `TriggeredEffect` on the caster. Filter:
+  weapon damage roll from caster. Effect: `1d6 necrotic`. Activation:
+  `.automatic`. Cost: none. Lifecycle: `.persistent(until: .concentrationEnds)`.
+- **Hunter's Mark** — same shape as Hex, but damage type is the weapon's own
+  (no extra type — just an extra d6 of the weapon's damage type).
+- **Battle Master Riposte / Disarm / etc.** — features with `.optIn`
+  activation and `.resource("battle_master_superiority")` cost.
+- **Great Weapon Master** — feat with `.toggleBeforeRoll` activation. Effect
+  combines `.attackPenalty(-5)` with a paired `.addFlat(10)` on damage.
+- **Rage** — feature toggle. `.automatic` rider for melee STR damage; expires
+  on a `.persistent(until: .rounds(10))` timer with a "maintain rage" prompt.
+
+**O.9 Tests**
+
+- Hex damage rider is auto-applied to a weapon damage roll, tagged necrotic,
+  surfaced in the HUD breakdown.
+- Sneak Attack opt-in chip appears only when the filter matches; the
+  `once_per_turn` flag suppresses it until "Start new turn" is tapped.
+- Divine Smite consumes the picked slot level and applies the right number of
+  dice (including the +1d8 vs undead/fiend variant).
+- Casting Hex then Hunter's Mark drops Hex (concentration handoff).
+- Persistent effect survives a short rest, drops on long rest or when
+  manually dismissed.
+- Backwards-compat: a character without `activeEffects` / `turnFlags` decodes
+  cleanly (defaults to empty).
+
+**Deliverable:** A Rogue/Paladin/Warlock multiclass actually plays right. Hex
+adds 1d6 necrotic to every attack roll's damage breakdown. Sneak Attack pops
+up after a qualifying hit (max once per turn). Divine Smite asks for a slot
+level after a melee hit. Each of these reuses the same `TriggeredEffect`
+schema — adding a new feature is a JSON edit, not a code edit.
+
+---
+
 ## Integration with Existing Dice Roller
 
 ### What already exists
@@ -1179,7 +1469,7 @@ No UI tests in v1. Pure model + store tests only.
 
 ---
 
-## Status (as of 2026-05-09)
+## Status (as of 2026-05-10)
 
 | Phase | Status |
 |---|---|
@@ -1190,12 +1480,14 @@ No UI tests in v1. Pure model + store tests only.
 | E — Read-only character sheet | shipped |
 | F — Action engine, buttons, dice handoff | shipped |
 | G — Editing characters | shipped (death saves still deferred) |
-| H — Custom content import / export | **deferred** until I–M stabilize the schema |
-| I — Resources & rest cycle | next |
-| J — Spells | after I |
-| K — Items with charges & spell access | after J |
+| H — Custom content import / export | **deferred** until I–O stabilize the schema |
+| I — Resources & rest cycle | shipped |
+| J — Spells | shipped (incl. `spellAttack` recipe + attack→damage follow-up chip) |
+| K — Items with charges & spell access | next |
 | L — Conditions, concentration, action economy | after K |
 | M — Choices & multi-step prompts | after L |
+| N — Damage typing in the dice tray | after M (low coupling — can slot earlier if Phase O work pulls it forward) |
+| O — Triggered effects & active statuses | after N + L (needs damage typing + concentration) |
 
 ## Open Decisions (to resolve during implementation)
 
@@ -1210,10 +1502,10 @@ No UI tests in v1. Pure model + store tests only.
 
 ---
 
-*Last updated: 2026-05-09*
-*Next step: Implement Phase I (resources & rest cycle).*
+*Last updated: 2026-05-10*
+*Next step: Implement Phase K (items with charges & spell access).*
 
-> This document is mutable. As phases I–M evolve and new SRD / expansion
+> This document is mutable. As phases K–O evolve and new SRD / expansion
 > content surfaces edge cases the schema doesn't cover, update the relevant
 > phase section in place rather than spawning a parallel document.
 

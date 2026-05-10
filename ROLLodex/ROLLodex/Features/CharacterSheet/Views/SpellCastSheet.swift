@@ -14,6 +14,10 @@ import SwiftUI
 struct SpellCastSheet: View {
     @Binding var character: Character
     let spell: SpellDefinition
+    /// When non-nil, this cast is paid from an item's charge pool — the slot
+    /// picker shows charge costs per level and the consumed pool is the item's
+    /// resource, not the character's spell slots.
+    let itemContext: ItemSpellCastContext?
     /// Called for each roll tap. `followUp` is non-nil when the primary roll
     /// has a natural next step (attack → damage); the dice tab parks it until
     /// the primary lands.
@@ -29,12 +33,17 @@ struct SpellCastSheet: View {
     init(
         character: Binding<Character>,
         spell: SpellDefinition,
+        itemContext: ItemSpellCastContext? = nil,
         onRoll: @escaping (_ action: ResolvedAction, _ followUp: ResolvedAction?) -> Void
     ) {
         self._character = character
         self.spell = spell
+        self.itemContext = itemContext
         self.onRoll = onRoll
-        self._selectedLevel = State(initialValue: spell.level)
+        // Item-driven cast starts at the item's base level; otherwise the
+        // spell's natural base.
+        let startLevel = itemContext?.baseLevel ?? spell.level
+        self._selectedLevel = State(initialValue: startLevel)
     }
 
     var body: some View {
@@ -42,7 +51,7 @@ struct SpellCastSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     metadataGrid
-                    if !spell.isCantrip { slotPicker }
+                    if showsPicker { slotPicker }
                     if !rollEntries.isEmpty { rollsSection }
                     descriptionCard
                     if let higher = spell.higherLevel, !higher.isEmpty {
@@ -61,6 +70,16 @@ struct SpellCastSheet: View {
                 }
             }
         }
+    }
+
+    /// Picker is shown when there's a choice to make: leveled spells cast from
+    /// slots always show it; item-driven casts show it whenever the item
+    /// supports more than one level. Cantrips with no item context skip it.
+    private var showsPicker: Bool {
+        if let ctx = itemContext {
+            return ctx.maxLevel > ctx.baseLevel
+        }
+        return !spell.isCantrip
     }
 
     // MARK: - Subviews
@@ -84,11 +103,17 @@ struct SpellCastSheet: View {
     private var slotPicker: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Cast at slot level")
+                Text(pickerTitle)
                     .font(.subheadline.weight(.semibold))
                 if slotConsumed {
                     Text("· locked")
                         .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if let subtitle = pickerSubtitle {
+                    Text(subtitle)
+                        .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
             }
@@ -101,10 +126,8 @@ struct SpellCastSheet: View {
                         VStack(spacing: 2) {
                             Text("L\(level)")
                                 .font(.subheadline.weight(.semibold))
-                            if let slot = slotResource(forLevel: level) {
-                                Text("\(slot.current) / \(slot.max)")
-                                    .font(.caption2.monospacedDigit())
-                            }
+                            Text(pickerSubLabel(forLevel: level))
+                                .font(.caption2.monospacedDigit())
                         }
                         .frame(maxWidth: .infinity, minHeight: 48)
                         .background(
@@ -130,6 +153,26 @@ struct SpellCastSheet: View {
         }
     }
 
+    private var pickerTitle: String {
+        itemContext == nil ? "Cast at slot level" : "Charges per cast"
+    }
+
+    private var pickerSubtitle: String? {
+        guard let pool = chargePool else { return nil }
+        return "\(pool.current) / \(pool.max) chg"
+    }
+
+    private func pickerSubLabel(forLevel level: Int) -> String {
+        if let ctx = itemContext {
+            let cost = ctx.cost(forLevel: level)
+            return cost == 1 ? "1 chg" : "\(cost) chg"
+        }
+        if let slot = slotResource(forLevel: level) {
+            return "\(slot.current) / \(slot.max)"
+        }
+        return ""
+    }
+
     private var rollsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Rolls")
@@ -146,11 +189,18 @@ struct SpellCastSheet: View {
                 }
             }
             if !canTapRolls {
-                Text("No slot available at L\(selectedLevel).")
+                Text(unavailableNotice)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var unavailableNotice: String {
+        if itemContext != nil {
+            return "Not enough charges for L\(selectedLevel)."
+        }
+        return "No slot available at L\(selectedLevel)."
     }
 
     private var descriptionCard: some View {
@@ -194,14 +244,8 @@ struct SpellCastSheet: View {
     }
 
     private func handleRollTap(_ entry: RollEntry) {
-        if !slotConsumed && !spell.isCantrip {
-            guard let resolved = slotResource(forLevel: selectedLevel) else { return }
-            let ok = ResourceCalculator.consume(
-                amount: 1,
-                from: resolved.definition.id,
-                in: &character,
-                content: content
-            )
+        if !slotConsumed && needsPayment {
+            let ok = payForCast()
             guard ok else { return }
             slotConsumed = true
         }
@@ -209,6 +253,33 @@ struct SpellCastSheet: View {
         // The dice tab takes it from here — chained damage rolls surface as a
         // follow-up chip there, so there's nothing left for this sheet to do.
         dismiss()
+    }
+
+    /// Whether the first roll tap should pay a cost. Cantrips cast from spell
+    /// slots are free; everything else (leveled slot cast, any item cast) pays.
+    private var needsPayment: Bool {
+        if itemContext != nil { return true }
+        return !spell.isCantrip
+    }
+
+    /// Charge the appropriate pool for the chosen level. Returns whether the
+    /// consumption succeeded — false short-circuits the roll.
+    private func payForCast() -> Bool {
+        if let ctx = itemContext {
+            return ResourceCalculator.consume(
+                amount: ctx.cost(forLevel: selectedLevel),
+                from: ctx.resourceID,
+                in: &character,
+                content: content
+            )
+        }
+        guard let resolved = slotResource(forLevel: selectedLevel) else { return false }
+        return ResourceCalculator.consume(
+            amount: 1,
+            from: resolved.definition.id,
+            in: &character,
+            content: content
+        )
     }
 
     /// If the primary is a spell attack, surface the first non-attack rollable
@@ -234,7 +305,17 @@ struct SpellCastSheet: View {
             }
     }
 
+    /// The item's charge pool, looked up by id. Nil for slot-based casts.
+    private var chargePool: ResolvedResource? {
+        guard let ctx = itemContext else { return nil }
+        return ResourceCalculator.availableResources(character: character, content: content)
+            .first { $0.definition.id == ctx.resourceID }
+    }
+
     private var availableLevels: [Int] {
+        if let ctx = itemContext {
+            return Array(ctx.baseLevel...ctx.maxLevel)
+        }
         guard !spell.isCantrip else { return [] }
         let maxLevel = slotResources.compactMap { resolved -> Int? in
             guard case .spellSlot(let level) = resolved.definition.displayHint else { return nil }
@@ -251,15 +332,20 @@ struct SpellCastSheet: View {
     }
 
     private func hasSlotAtLevel(_ level: Int) -> Bool {
+        if let ctx = itemContext {
+            let cost = ctx.cost(forLevel: level)
+            return (chargePool?.current ?? 0) >= cost
+        }
         guard let resolved = slotResource(forLevel: level) else { return false }
         return resolved.current > 0
     }
 
-    /// Cantrips can always roll. Leveled spells require a free slot at the
-    /// selected level UNTIL the first roll, after which the slot has already
-    /// been consumed and follow-up rolls (e.g. damage after attack) are free.
+    /// Cantrips cast from slots can always roll. Anything else (leveled slot
+    /// cast, any item cast) requires a free slot / enough charges at the
+    /// selected level — until the first roll, after which the cost has already
+    /// been paid and follow-up rolls (e.g. damage after attack) are free.
     private var canTapRolls: Bool {
-        if spell.isCantrip { return true }
+        if !needsPayment { return true }
         if slotConsumed { return true }
         return hasSlotAtLevel(selectedLevel)
     }

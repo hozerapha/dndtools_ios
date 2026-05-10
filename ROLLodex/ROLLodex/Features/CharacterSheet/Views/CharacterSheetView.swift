@@ -11,7 +11,7 @@ struct CharacterSheetView: View {
 
     @State private var showRestConfirm = false
     @State private var pendingRefreshes: [PendingRefresh] = []
-    @State private var spellBeingCast: SpellDefinition?
+    @State private var spellBeingCast: PendingSpellCast?
 
     var body: some View {
         ScrollView {
@@ -32,7 +32,7 @@ struct CharacterSheetView: View {
                 SpellListView(character: $character) { spell, _ in
                     // Open the cast sheet rather than passing the level
                     // through here; the sheet has its own picker.
-                    spellBeingCast = spell
+                    spellBeingCast = PendingSpellCast(spell: spell, itemContext: nil)
                 }
                 sensesCard
                 SkillListView(character: character) { skill, mode in
@@ -74,8 +74,12 @@ struct CharacterSheetView: View {
             )
             .presentationDetents([.medium, .large])
         }
-        .sheet(item: $spellBeingCast) { spell in
-            SpellCastSheet(character: $character, spell: spell) { action, followUp in
+        .sheet(item: $spellBeingCast) { pending in
+            SpellCastSheet(
+                character: $character,
+                spell: pending.spell,
+                itemContext: pending.itemContext
+            ) { action, followUp in
                 handleSpellRoll(action, followUp: followUp)
             }
             .presentationDetents([.large])
@@ -95,7 +99,16 @@ struct CharacterSheetView: View {
         CharacterActionDeriver.sections(for: character, content: content)
     }
 
-    private func handleActionTap(_ action: ResolvedAction) {
+    private func handleActionTap(_ row: ActionRow) {
+        // Cast-from-item rows divert to the spell cast sheet — the sheet
+        // pays the charge cost itself based on the chosen slot level.
+        if let ctx = row.castFromItem {
+            guard let spell = content.spellDefinition(id: ctx.spellID) else { return }
+            spellBeingCast = PendingSpellCast(spell: spell, itemContext: ctx)
+            return
+        }
+
+        let action = row.action
         // Pay the resource cost first; abort if exhausted (deriver should
         // already have greyed the tile out, but belt-and-suspenders).
         if let cost = action.resourceCost {
@@ -432,6 +445,27 @@ struct CharacterSheetView: View {
 
     private var backgroundFeatName: String? {
         content.backgroundDefinition(id: character.backgroundID)?.feat
+    }
+}
+
+/// Sheet `item:` binding payload. Wraps the spell with an optional item
+/// context so the cast sheet can swap its slot picker for an item-charges
+/// picker when the cast originated from a magic item.
+struct PendingSpellCast: Identifiable, Equatable {
+    let id: String
+    let spell: SpellDefinition
+    let itemContext: ItemSpellCastContext?
+
+    init(spell: SpellDefinition, itemContext: ItemSpellCastContext?) {
+        self.spell = spell
+        self.itemContext = itemContext
+        // Stable id per invocation source — re-tapping the same row reuses
+        // the same id so SwiftUI doesn't double-present.
+        if let ctx = itemContext {
+            self.id = "item_\(ctx.resourceID)_\(spell.id)"
+        } else {
+            self.id = "slot_\(spell.id)"
+        }
     }
 }
 

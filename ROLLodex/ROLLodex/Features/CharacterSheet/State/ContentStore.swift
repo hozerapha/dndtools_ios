@@ -45,6 +45,24 @@ final class ContentStore {
         return nil
     }
 
+    /// Resource pool an item owns (Wand of Magic Missiles' charges, etc.).
+    /// Nil for mundane items.
+    func itemResource(forItemID id: String) -> ResourceDefinition? {
+        if let w = weapons[id] { return w.resource }
+        if let a = armor[id]   { return a.resource }
+        if let g = gear[id]    { return g.resource }
+        return nil
+    }
+
+    /// Tappable actions an item exposes ("Cast Magic Missile", "Drink", etc.).
+    /// Empty for items that just sit in inventory.
+    func itemUses(forItemID id: String) -> [ItemUse] {
+        if let w = weapons[id] { return w.uses }
+        if let a = armor[id]   { return a.uses }
+        if let g = gear[id]    { return g.uses }
+        return []
+    }
+
     // MARK: - Loading
 
     private func loadBundledContent() {
