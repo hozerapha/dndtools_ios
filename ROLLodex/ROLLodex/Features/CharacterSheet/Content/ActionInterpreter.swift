@@ -1,10 +1,14 @@
 import Foundation
 
 enum ActionInterpreter {
+    /// `spellcastingAbility` is only consulted for `.spellAttack` — every other
+    /// recipe ignores it. Defaulted to nil so non-spell callers can keep their
+    /// existing two-arg signature.
     static func resolve(
         recipe: ActionRecipe,
         character: Character,
-        weapon: WeaponDefinition?
+        weapon: WeaponDefinition?,
+        spellcastingAbility: Ability? = nil
     ) -> ResolvedAction {
         switch recipe {
         case .weaponAttack(let abilityOverride, let finesse):
@@ -41,7 +45,45 @@ enum ActionInterpreter {
 
         case .rawDamage(let dice, _, let label):
             return resolveRawDamage(dice: dice, label: label)
+
+        case .spellAttack(let label):
+            return resolveSpellAttack(
+                character: character,
+                ability: spellcastingAbility,
+                label: label
+            )
         }
+    }
+
+    private static func resolveSpellAttack(
+        character: Character,
+        ability: Ability?,
+        label: String
+    ) -> ResolvedAction {
+        // Without a spellcasting ability we have nothing to roll. Return a
+        // no-formula action so the caller can tell there's nothing to do.
+        guard let ability else {
+            return ResolvedAction(
+                id: "spell_attack_unresolved",
+                label: label,
+                formula: nil,
+                description: nil
+            )
+        }
+        let abilityMod = CharacterCalculator.abilityModifier(score: character.abilityScores[ability] ?? 10)
+        let profBonus = CharacterCalculator.proficiencyBonus(level: character.level)
+        let total = abilityMod + profBonus
+
+        var formula = DiceFormula()
+        formula.add(.d20)
+        formula.modifier = total
+
+        return ResolvedAction(
+            id: "spell_attack_\(ability.rawValue)",
+            label: "\(label) \(total >= 0 ? "+" : "")\(total)",
+            formula: formula,
+            description: "1d20 + \(ability.abbreviation) (\(abilityMod >= 0 ? "+" : "")\(abilityMod)) + Prof (\(profBonus))"
+        )
     }
 
     private static func resolveRawDamage(dice: String, label: String) -> ResolvedAction {

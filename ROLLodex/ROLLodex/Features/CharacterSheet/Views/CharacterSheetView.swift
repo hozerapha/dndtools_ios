@@ -75,8 +75,8 @@ struct CharacterSheetView: View {
             .presentationDetents([.medium, .large])
         }
         .sheet(item: $spellBeingCast) { spell in
-            SpellCastSheet(character: $character, spell: spell) { actions in
-                handleCastResolved(actions)
+            SpellCastSheet(character: $character, spell: spell) { action, followUp in
+                handleSpellRoll(action, followUp: followUp)
             }
             .presentationDetents([.large])
         }
@@ -114,12 +114,12 @@ struct CharacterSheetView: View {
         selectedTab = .dice
     }
 
-    /// Cast flow returns 0+ resolved actions (some spells have no rolls). Push
-    /// the first rollable one to the dice tab; later phases can add a queue
-    /// for multi-effect spells (e.g. damage AND save prompts).
-    private func handleCastResolved(_ actions: [ResolvedAction]) {
-        guard let rollable = actions.first(where: { $0.formula != nil }) else { return }
-        pendingRoll.pending = rollable
+    /// Sheet hands us one roll at a time. `followUp` (typically the damage
+    /// for a spell attack) is parked on the store; the dice tab pulls it out
+    /// after the primary roll lands and offers it as a "Roll damage?" chip.
+    private func handleSpellRoll(_ action: ResolvedAction, followUp: ResolvedAction?) {
+        pendingRoll.pending = action
+        pendingRoll.followUp = followUp
         selectedTab = .dice
     }
 

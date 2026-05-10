@@ -216,6 +216,72 @@ struct SpellTests {
         }
     }
 
+    // MARK: - Spell attack recipe
+
+    @Test func spellAttackRecipeRoundTrips() throws {
+        let recipe = ActionRecipe.spellAttack(label: "Fire Bolt Attack")
+        let data = try JSONEncoder().encode(recipe)
+        let decoded = try JSONDecoder().decode(ActionRecipe.self, from: data)
+        #expect(decoded == recipe)
+    }
+
+    @Test func spellAttackResolvesWithSpellcastingAbility() {
+        // Wizard L1, INT 16 (+3 mod) + prof bonus (+2) = +5 spell attack.
+        let character = makeWizard(level: 1)
+        let recipe = ActionRecipe.spellAttack(label: "Fire Bolt Attack")
+        let resolved = ActionInterpreter.resolve(
+            recipe: recipe,
+            character: character,
+            weapon: nil,
+            spellcastingAbility: .intelligence
+        )
+        #expect(resolved.formula?.groups.first?.kind == .d20)
+        #expect(resolved.formula?.groups.first?.count == 1)
+        #expect(resolved.formula?.modifier == 5)
+    }
+
+    @Test func spellAttackWithoutAbilityReturnsNoFormula() {
+        // Defensive: if the caller forgets to pass a spellcasting ability we
+        // return an action with no formula rather than rolling +0.
+        let character = makeWizard(level: 1)
+        let recipe = ActionRecipe.spellAttack(label: "Fire Bolt Attack")
+        let resolved = ActionInterpreter.resolve(
+            recipe: recipe,
+            character: character,
+            weapon: nil,
+            spellcastingAbility: nil
+        )
+        #expect(resolved.formula == nil)
+    }
+
+    @Test func fireBoltSpellHasBothAttackAndDamageRecipes() throws {
+        let json = """
+        {
+          "id": "fire_bolt",
+          "name": "Fire Bolt",
+          "level": 0,
+          "school": "evocation",
+          "castingTime": { "type": "action" },
+          "range": { "type": "feet", "value": 120 },
+          "components": { "verbal": true, "somatic": true },
+          "duration": { "type": "instantaneous" },
+          "description": "...",
+          "actionRecipes": [
+            { "type": "spellAttack", "label": "Fire Bolt Attack" },
+            { "type": "rawDamage", "dice": "1d10", "damageType": "fire", "label": "Fire Bolt Damage" }
+          ]
+        }
+        """.data(using: .utf8)!
+        let spell = try JSONDecoder().decode(SpellDefinition.self, from: json)
+        #expect(spell.actionRecipes.count == 2)
+        if case .spellAttack = spell.actionRecipes[0] {} else {
+            Issue.record("Expected spellAttack as first recipe")
+        }
+        if case .rawDamage = spell.actionRecipes[1] {} else {
+            Issue.record("Expected rawDamage as second recipe")
+        }
+    }
+
     // MARK: - rawDamage recipe
 
     @Test func rawDamageRecipeRoundTrips() throws {

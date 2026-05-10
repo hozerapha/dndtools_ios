@@ -24,6 +24,13 @@ struct DiceRollerView: View {
     /// element. Set on the first onChanged of the magnifier gesture, cleared
     /// on release / new roll / formula change.
     @State private var magnifyingDieIndices: [Int] = []
+    /// Optional next roll handed in alongside the primary (e.g. damage queued
+    /// after a spell attack). Surfaced as a "Roll damage?" chip below the tray
+    /// once the primary roll has produced a result. Tapping the chip loads
+    /// this action's formula. Cleared by tap, by dismiss, or by any manual
+    /// formula edit (the chip stops making sense once the user has touched
+    /// the dice).
+    @State private var pendingFollowUp: ResolvedAction?
 
     @Environment(HistoryStore.self) private var history
     @Environment(PresetStore.self) private var presets
@@ -41,6 +48,8 @@ struct DiceRollerView: View {
 
                 tray
                     .frame(maxHeight: .infinity)
+
+                followUpChip
 
                 bottomControls
                     .disabled(isRolling)
@@ -94,6 +103,9 @@ struct DiceRollerView: View {
                 if labelBoundFormula != new {
                     pendingLabel = nil
                     labelBoundFormula = nil
+                    // Once the user has touched the dice manually, a queued
+                    // damage roll no longer pairs with what's in the tray.
+                    pendingFollowUp = nil
                 }
             }
         }
@@ -177,6 +189,60 @@ struct DiceRollerView: View {
         return .white
     }
 
+    /// Small pill that appears below the tray when a follow-up roll is queued
+    /// (typically the damage roll for a spell attack) AND the primary roll has
+    /// landed. Tap to load the follow-up formula; X to dismiss.
+    @ViewBuilder
+    private var followUpChip: some View {
+        if let followUp = pendingFollowUp, lastResult != nil {
+            HStack(spacing: 10) {
+                Image(systemName: "arrow.right.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(followUpPrompt(for: followUp))
+                        .font(.subheadline.weight(.semibold))
+                    Text(followUp.label)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer()
+                Button {
+                    pendingFollowUp = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Dismiss follow-up roll")
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color.accentColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 12))
+            .contentShape(Rectangle())
+            .onTapGesture { consumeFollowUp(followUp) }
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
+    private func followUpPrompt(for action: ResolvedAction) -> String {
+        let label = action.label.lowercased()
+        if label.contains("damage") { return "Roll damage?" }
+        if label.contains("heal")   { return "Roll heal?" }
+        return "Roll next?"
+    }
+
+    private func consumeFollowUp(_ action: ResolvedAction) {
+        pendingFollowUp = nil
+        guard let nextFormula = action.formula else { return }
+        applyLabeled(formula: nextFormula, label: action.label)
+        if autoRollEnabled {
+            Task { await roll() }
+        }
+    }
+
     @ViewBuilder
     private var bottomControls: some View {
         VStack(spacing: 10) {
@@ -252,18 +318,25 @@ struct DiceRollerView: View {
     }
 
     /// Drain any pending ResolvedAction handed off from the character sheet:
-    /// prefill the formula, then clear the slot. Adv/dis is encoded directly in
-    /// the formula (e.g. 2d20kh1) by the caller, so no separate mode is needed.
-    /// If the user has opted into auto-roll, kick off a roll immediately.
+    /// prefill the formula, park any queued follow-up roll, then clear both
+    /// store slots. Adv/dis is encoded directly in the formula (e.g. 2d20kh1)
+    /// by the caller, so no separate mode is needed. If the user has opted
+    /// into auto-roll, kick off a roll immediately.
     private func consumePendingRollIfNeeded() {
         guard !isRolling, let resolved = pendingRoll.pending else { return }
-        // saveDC and other info-only actions have no formula — nothing to load.
-        guard let resolvedFormula = resolved.formula else {
-            pendingRoll.pending = nil
-            return
-        }
-        applyLabeled(formula: resolvedFormula, label: resolved.label)
+        // Snapshot the follow-up first; always clear both store slots so a
+        // later handoff without a follow-up doesn't inherit a stale one.
+        let nextFollowUp = pendingRoll.followUp
         pendingRoll.pending = nil
+        pendingRoll.followUp = nil
+
+        // saveDC and other info-only actions have no formula — nothing to load.
+        guard let resolvedFormula = resolved.formula else { return }
+        applyLabeled(formula: resolvedFormula, label: resolved.label)
+        // Set the follow-up AFTER applyLabeled so the formula's onChange (which
+        // would have cleared a stale follow-up on manual edits) sees the new
+        // labelBoundFormula match and leaves us alone.
+        pendingFollowUp = nextFollowUp
         if autoRollEnabled {
             Task { await roll() }
         }

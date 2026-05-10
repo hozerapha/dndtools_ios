@@ -13,6 +13,10 @@ enum ActionRecipe: Codable, Equatable {
     /// spell text rather than derived from a weapon. `damageType` is
     /// informational; the dice tab just rolls the formula.
     case rawDamage(dice: String, damageType: DamageType, label: String)
+    /// Spell attack roll: d20 + spellcasting ability mod + proficiency. The
+    /// caster's spellcasting ability is resolved at interpret time, not stored
+    /// here, so this same recipe works for any caster.
+    case spellAttack(label: String)
 }
 
 extension ActionRecipe {
@@ -65,6 +69,10 @@ extension ActionRecipe {
             let label = try container.decodeIfPresent(String.self, forKey: .label) ?? "Damage"
             self = .rawDamage(dice: dice, damageType: damageType, label: label)
 
+        case "spellAttack":
+            let label = try container.decodeIfPresent(String.self, forKey: .label) ?? "Spell Attack"
+            self = .spellAttack(label: label)
+
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .type,
@@ -115,6 +123,10 @@ extension ActionRecipe {
             try container.encode("rawDamage", forKey: .type)
             try container.encode(dice, forKey: .dice)
             try container.encode(damageType, forKey: .damageType)
+            try container.encode(label, forKey: .label)
+
+        case .spellAttack(let label):
+            try container.encode("spellAttack", forKey: .type)
             try container.encode(label, forKey: .label)
         }
     }

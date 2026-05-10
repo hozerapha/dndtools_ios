@@ -1,32 +1,39 @@
 import SwiftUI
 
-/// Modal that opens when the user taps a spell. Shows the spell text, lets
-/// the player pick an upcast slot level (if there are higher slots available),
-/// then commits the cast on confirm: consumes the slot resource, applies
-/// upcast scaling to the spell's recipes, and routes any rolls through the
-/// existing dice-tab handoff.
+/// Single-stage spell modal. The rolls are visible immediately as separate
+/// buttons (Roll Spell Attack, Roll Damage, Roll Heal) so the player can fire
+/// each one with a single tap — no Cast confirmation step.
 ///
-/// Cantrips skip the slot picker entirely — `Cast` is the only action.
+/// For leveled spells the slot is consumed lazily on the first roll tap (so
+/// dismissing the sheet without rolling spends nothing); the slot picker then
+/// locks to the chosen level. Cantrips skip slot logic entirely.
+///
+/// When the player taps Spell Attack and the spell also has a damage roll, the
+/// damage action is handed to the dice tab as a `followUp`; the tab surfaces a
+/// "Roll damage?" chip after the attack settles.
 struct SpellCastSheet: View {
     @Binding var character: Character
     let spell: SpellDefinition
-    /// Called after the slot is consumed with the (possibly scaled) recipes
-    /// to push to the dice tab. The sheet dismisses itself afterward.
-    let onResolved: ([ResolvedAction]) -> Void
+    /// Called for each roll tap. `followUp` is non-nil when the primary roll
+    /// has a natural next step (attack → damage); the dice tab parks it until
+    /// the primary lands.
+    let onRoll: (_ action: ResolvedAction, _ followUp: ResolvedAction?) -> Void
 
     @Environment(ContentStore.self) private var content
     @Environment(\.dismiss) private var dismiss
     @State private var selectedLevel: Int
+    /// Set once the first roll button is tapped — locks the slot picker so the
+    /// player can't switch slot levels mid-cast.
+    @State private var slotConsumed: Bool = false
 
     init(
         character: Binding<Character>,
         spell: SpellDefinition,
-        onResolved: @escaping ([ResolvedAction]) -> Void
+        onRoll: @escaping (_ action: ResolvedAction, _ followUp: ResolvedAction?) -> Void
     ) {
         self._character = character
         self.spell = spell
-        self.onResolved = onResolved
-        // Default cast level = spell's base level (or 0 for cantrips).
+        self.onRoll = onRoll
         self._selectedLevel = State(initialValue: spell.level)
     }
 
@@ -35,9 +42,8 @@ struct SpellCastSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     metadataGrid
-                    if !spell.isCantrip {
-                        slotPicker
-                    }
+                    if !spell.isCantrip { slotPicker }
+                    if !rollEntries.isEmpty { rollsSection }
                     descriptionCard
                     if let higher = spell.higherLevel, !higher.isEmpty {
                         higherLevelCard(higher)
@@ -50,13 +56,8 @@ struct SpellCastSheet: View {
             .navigationTitle(spell.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
-                }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Cast") { cast() }
-                        .bold()
-                        .disabled(!canCast)
+                    Button("Done") { dismiss() }
                 }
             }
         }
@@ -82,11 +83,19 @@ struct SpellCastSheet: View {
 
     private var slotPicker: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Cast at slot level")
-                .font(.subheadline.weight(.semibold))
+            HStack {
+                Text("Cast at slot level")
+                    .font(.subheadline.weight(.semibold))
+                if slotConsumed {
+                    Text("· locked")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
             HStack(spacing: 8) {
                 ForEach(availableLevels, id: \.self) { level in
                     Button {
+                        guard !slotConsumed else { return }
                         selectedLevel = level
                     } label: {
                         VStack(spacing: 2) {
@@ -114,9 +123,32 @@ struct SpellCastSheet: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    .disabled(!hasSlotAtLevel(level))
+                    .disabled(slotConsumed || !hasSlotAtLevel(level))
                     .opacity(hasSlotAtLevel(level) ? 1 : 0.45)
                 }
+            }
+        }
+    }
+
+    private var rollsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Rolls")
+                .font(.subheadline.weight(.semibold))
+            VStack(spacing: 8) {
+                ForEach(rollEntries) { entry in
+                    RollButton(
+                        title: buttonTitle(for: entry),
+                        subtitle: entry.action.description,
+                        disabled: !canTapRolls
+                    ) {
+                        handleRollTap(entry)
+                    }
+                }
+            }
+            if !canTapRolls {
+                Text("No slot available at L\(selectedLevel).")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -144,6 +176,54 @@ struct SpellCastSheet: View {
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
+    // MARK: - Roll handling
+
+    /// Sheet-side button label. Distinct from the action's own `label` field
+    /// (which is what shows up in the dice tab + history).
+    private func buttonTitle(for entry: RollEntry) -> String {
+        switch entry.recipe {
+        case .spellAttack:                return "Roll Spell Attack"
+        case .rawDamage:                  return "Roll Damage"
+        case .heal:                       return "Roll Heal"
+        case .weaponAttack:               return "Roll Attack"
+        case .weaponDamage:               return "Roll Weapon Damage"
+        case .abilityCheck, .skillCheck:  return "Roll Check"
+        case .savingThrow:                return "Roll Save"
+        case .saveDC:                     return "Roll"
+        }
+    }
+
+    private func handleRollTap(_ entry: RollEntry) {
+        if !slotConsumed && !spell.isCantrip {
+            guard let resolved = slotResource(forLevel: selectedLevel) else { return }
+            let ok = ResourceCalculator.consume(
+                amount: 1,
+                from: resolved.definition.id,
+                in: &character,
+                content: content
+            )
+            guard ok else { return }
+            slotConsumed = true
+        }
+        onRoll(entry.action, followUp(for: entry))
+        // The dice tab takes it from here — chained damage rolls surface as a
+        // follow-up chip there, so there's nothing left for this sheet to do.
+        dismiss()
+    }
+
+    /// If the primary is a spell attack, surface the first non-attack rollable
+    /// in the same spell as the chained damage roll. Other recipes have no
+    /// natural pairing (yet).
+    private func followUp(for entry: RollEntry) -> ResolvedAction? {
+        guard case .spellAttack = entry.recipe else { return nil }
+        return rollEntries.first { other in
+            switch other.recipe {
+            case .rawDamage, .heal: return true
+            default: return false
+            }
+        }?.action
+    }
+
     // MARK: - Slot context
 
     private var slotResources: [ResolvedResource] {
@@ -154,8 +234,6 @@ struct SpellCastSheet: View {
             }
     }
 
-    /// Slot levels visible in the picker — from the spell's base level up to
-    /// the highest level the caster has slots for.
     private var availableLevels: [Int] {
         guard !spell.isCantrip else { return [] }
         let maxLevel = slotResources.compactMap { resolved -> Int? in
@@ -177,52 +255,68 @@ struct SpellCastSheet: View {
         return resolved.current > 0
     }
 
-    private var canCast: Bool {
-        spell.isCantrip || hasSlotAtLevel(selectedLevel)
+    /// Cantrips can always roll. Leveled spells require a free slot at the
+    /// selected level UNTIL the first roll, after which the slot has already
+    /// been consumed and follow-up rolls (e.g. damage after attack) are free.
+    private var canTapRolls: Bool {
+        if spell.isCantrip { return true }
+        if slotConsumed { return true }
+        return hasSlotAtLevel(selectedLevel)
     }
 
-    // MARK: - Cast
-
-    private func cast() {
-        // Cantrips: no slot consumption.
-        if !spell.isCantrip {
-            guard let resolved = slotResource(forLevel: selectedLevel) else { return }
-            _ = ResourceCalculator.consume(
-                amount: 1,
-                from: resolved.definition.id,
-                in: &character,
-                content: content
-            )
+    /// The character's spellcasting ability — the first class with a
+    /// spellcasting block. Multi-class casters with diverging abilities will
+    /// need a per-class picker in a later phase.
+    private var spellcastingAbility: Ability? {
+        for entry in character.classEntries {
+            if let block = content.classDefinition(id: entry.classID)?.spellcasting {
+                return block.ability
+            }
         }
-        let resolvedActions = buildResolvedActions()
-        onResolved(resolvedActions)
-        dismiss()
+        return nil
     }
 
-    /// Apply upcast scaling (if any) to the spell's recipes, then resolve them
-    /// through `ActionInterpreter`. The hand-off layer takes care of pushing
-    /// each rollable action into the dice tab.
-    private func buildResolvedActions() -> [ResolvedAction] {
+    // MARK: - Roll entries
+
+    /// Pairs each spell recipe with its resolved action so the view can
+    /// distinguish attack rows from damage rows when wiring follow-ups.
+    private struct RollEntry: Identifiable {
+        let id: String
+        let recipe: ActionRecipe
+        let action: ResolvedAction
+    }
+
+    private var rollEntries: [RollEntry] {
         let scaledRecipes = spell.recipes(castAtLevel: selectedLevel)
-        return scaledRecipes.compactMap { recipe in
+        let upcastSuffix: String? = (spell.isCantrip || selectedLevel == spell.level)
+            ? nil
+            : "L\(selectedLevel)"
+        let ability = spellcastingAbility
+
+        return scaledRecipes.enumerated().compactMap { offset, recipe in
             let resolved = ActionInterpreter.resolve(
                 recipe: recipe,
                 character: character,
-                weapon: nil
+                weapon: nil,
+                spellcastingAbility: ability
             )
-            // Re-label so history reads "Magic Missile (L2)" instead of the
-            // raw "Magic Missile" pulled from the recipe.
+            guard resolved.formula != nil else { return nil }
             let label: String
-            if spell.isCantrip || selectedLevel == spell.level {
-                label = spell.name
+            if let upcastSuffix {
+                label = "\(resolved.label) (\(upcastSuffix))"
             } else {
-                label = "\(spell.name) (L\(selectedLevel))"
+                label = resolved.label
             }
-            return ResolvedAction(
-                id: "spell_\(spell.id)_l\(selectedLevel)",
+            let stamped = ResolvedAction(
+                id: "spell_\(spell.id)_l\(selectedLevel)_\(resolved.id)",
                 label: label,
                 formula: resolved.formula,
                 description: resolved.description
+            )
+            return RollEntry(
+                id: "\(spell.id)_\(offset)",
+                recipe: recipe,
+                action: stamped
             )
         }
     }
@@ -241,5 +335,38 @@ private struct MetadataChip: View {
                 .font(.subheadline.weight(.semibold))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct RollButton: View {
+    let title: String
+    let subtitle: String?
+    let disabled: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                    if let subtitle, !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                Image(systemName: "dice.fill")
+                    .font(.title3)
+                    .foregroundStyle(disabled ? Color.secondary.opacity(0.5) : Color.accentColor)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .opacity(disabled ? 0.55 : 1)
     }
 }
