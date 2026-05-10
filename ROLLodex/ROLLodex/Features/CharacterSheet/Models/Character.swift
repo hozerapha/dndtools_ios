@@ -30,6 +30,12 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
     var resources: [String: ResourceState]
     /// Spell list state — prepared / known / spellbook IDs. See `CharacterSpells`.
     var spells: CharacterSpells
+    /// Player picks for each feature that has a `FeatureSelection`. The key
+    /// is `FeatureSelection.id` (often the feature's id); the value is the
+    /// list of chosen option IDs. One mechanism backs Weapon Mastery,
+    /// Eldritch Invocations, Metamagic, etc. — the picker UI keys off the
+    /// owning feature's selection block.
+    var featureSelections: [String: [String]]
     var manifestVersion: Int
 
     init(
@@ -50,6 +56,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         attunementSlotsOverride: Int? = nil,
         resources: [String: ResourceState] = [:],
         spells: CharacterSpells = CharacterSpells(),
+        featureSelections: [String: [String]] = [:],
         manifestVersion: Int = 1
     ) {
         self.id = id
@@ -69,6 +76,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         self.attunementSlotsOverride = attunementSlotsOverride
         self.resources = resources
         self.spells = spells
+        self.featureSelections = featureSelections
         self.manifestVersion = manifestVersion
     }
 
@@ -78,7 +86,11 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         case id, name, level, speciesID, backgroundID, classEntries
         case abilityScores, maxHP, currentHP, tempHP
         case proficiencies, inventory, currency, notes
-        case attunementSlotsOverride, resources, spells, manifestVersion
+        case attunementSlotsOverride, resources, spells
+        case featureSelections, manifestVersion
+        /// Legacy key from when masteries lived on the character directly.
+        /// Migrated into `featureSelections["weapon_mastery"]` on decode.
+        case chosenWeaponMasteries
     }
 
     init(from decoder: Decoder) throws {
@@ -99,6 +111,14 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         attunementSlotsOverride = try container.decodeIfPresent(Int.self, forKey: .attunementSlotsOverride)
         resources = try container.decodeIfPresent([String: ResourceState].self, forKey: .resources) ?? [:]
         spells = try container.decodeIfPresent(CharacterSpells.self, forKey: .spells) ?? CharacterSpells()
+        // Migrate the legacy chosenWeaponMasteries field if present.
+        var selections = try container.decodeIfPresent([String: [String]].self, forKey: .featureSelections) ?? [:]
+        if let legacyMasteries = try container.decodeIfPresent([String].self, forKey: .chosenWeaponMasteries),
+           !legacyMasteries.isEmpty,
+           selections["weapon_mastery"] == nil {
+            selections["weapon_mastery"] = legacyMasteries
+        }
+        featureSelections = selections
         manifestVersion = try container.decodeIfPresent(Int.self, forKey: .manifestVersion) ?? 1
 
         let profDict = try container.decodeIfPresent([String: ProficiencyLevel].self, forKey: .proficiencies) ?? [:]
@@ -126,6 +146,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         try container.encodeIfPresent(attunementSlotsOverride, forKey: .attunementSlotsOverride)
         try container.encode(resources, forKey: .resources)
         try container.encode(spells, forKey: .spells)
+        try container.encode(featureSelections, forKey: .featureSelections)
         try container.encode(manifestVersion, forKey: .manifestVersion)
 
         let profDict = Dictionary(uniqueKeysWithValues: proficiencies.map { key, value in

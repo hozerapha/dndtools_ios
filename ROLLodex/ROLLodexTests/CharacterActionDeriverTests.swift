@@ -5,7 +5,10 @@ import Foundation
 @MainActor
 struct CharacterActionDeriverTests {
 
-    private func makeFighter(equipped: Bool = true) -> Character {
+    private func makeFighter(
+        equipped: Bool = true,
+        masteringLongsword: Bool = true
+    ) -> Character {
         Character(
             name: "Bruenor",
             level: 1,
@@ -31,13 +34,16 @@ struct CharacterActionDeriverTests {
             ],
             inventory: [
                 InventoryItem(itemID: "longsword", quantity: 1, equipped: equipped, attuned: false)
-            ]
+            ],
+            featureSelections: masteringLongsword ? ["weapon_mastery": ["longsword"]] : [:]
         )
     }
 
-    @Test func actionGridOnlyHoldsAttacksAndFeatures() {
-        // Ability checks, saves, and skills are surfaced inline on their own
-        // cards now — they should NOT appear in the action grid.
+    @Test func actionGridOmitsAttacksAndInlineRolls() {
+        // Ability checks, saves, skills are surfaced inline on their own cards.
+        // Weapon attacks now have a bespoke `weaponAttacks(...)` API rather
+        // than living in `sections(...)`. The grid should hold only features
+        // and item uses.
         let store = ContentStore()
         let character = makeFighter(equipped: false)
         let sections = CharacterActionDeriver.sections(for: character, content: store)
@@ -46,41 +52,66 @@ struct CharacterActionDeriverTests {
         #expect(!ids.contains("checks"))
         #expect(!ids.contains("saves"))
         #expect(!ids.contains("skills"))
-        // No equipped weapons → no Attacks section.
         #expect(!ids.contains("attacks"))
         // Fighter L1 has Second Wind (heal recipe), so features should remain.
         #expect(ids.contains("features"))
     }
 
-    @Test func equippedWeaponProducesAttackAndDamageRows() {
+    @Test func equippedWeaponProducesAttackDamageAndVersatileRows() {
         let store = ContentStore()
         let character = makeFighter()
-        let sections = CharacterActionDeriver.sections(for: character, content: store)
+        let rows = CharacterActionDeriver.weaponAttacks(for: character, content: store)
 
-        guard let attacks = sections.first(where: { $0.id == "attacks" }) else {
-            Issue.record("Expected an attacks section")
-            return
-        }
-
-        // Longsword: attack + damage + versatile damage = 3 rows
-        #expect(attacks.rows.count == 3)
-        let labels = attacks.rows.map(\.action.label)
-        #expect(labels.contains("Longsword Attack +5"))
-        #expect(labels.contains("Longsword Damage"))
-        #expect(labels.contains("Longsword Damage (2H)"))
+        #expect(rows.count == 1)
+        let row = rows.first
+        #expect(row?.weaponName == "Longsword")
+        #expect(row?.attack.label == "Longsword Attack +5")
+        #expect(row?.damage.label == "Longsword Damage")
+        #expect(row?.versatileDamage?.label == "Longsword Damage (2H)")
     }
 
-    @Test func weaponMasteryAppearsAsBadge() {
+    @Test func unequippedWeaponProducesNoAttackRow() {
         let store = ContentStore()
-        let character = makeFighter()
-        let sections = CharacterActionDeriver.sections(for: character, content: store)
+        let character = makeFighter(equipped: false)
+        let rows = CharacterActionDeriver.weaponAttacks(for: character, content: store)
+        #expect(rows.isEmpty)
+    }
 
-        guard let attacks = sections.first(where: { $0.id == "attacks" }) else {
-            Issue.record("Expected an attacks section")
-            return
-        }
-        // Longsword's mastery is "sap" → badge should be "Sap" on every row.
-        #expect(attacks.rows.allSatisfy { $0.badge == "Sap" })
+    @Test func weaponAttackRowCarriesMasteryWhenChosen() {
+        let store = ContentStore()
+        let character = makeFighter(masteringLongsword: true)
+        let rows = CharacterActionDeriver.weaponAttacks(for: character, content: store)
+        // Longsword's mastery property is `.sap`. Fighter selected it → shown.
+        #expect(rows.first?.mastery == .sap)
+    }
+
+    @Test func weaponAttackRowOmitsMasteryWhenNotChosen() {
+        let store = ContentStore()
+        let character = makeFighter(masteringLongsword: false)
+        let rows = CharacterActionDeriver.weaponAttacks(for: character, content: store)
+        // Fighter has the Weapon Mastery feature but hasn't picked the
+        // longsword — badge shouldn't display.
+        #expect(rows.first?.mastery == nil)
+    }
+
+    @Test func weaponAttackRowOmitsMasteryForCharacterWithoutFeature() {
+        // Wizard has no Weapon Mastery feature in JSON, so even putting the
+        // longsword into featureSelections shouldn't surface the badge.
+        let store = ContentStore()
+        let character = Character(
+            name: "Mordenkainen", level: 1,
+            speciesID: "human", backgroundID: "sage",
+            classEntries: [ClassEntry(classID: "wizard", level: 1)],
+            abilityScores: [
+                .strength: 8, .dexterity: 14, .constitution: 14,
+                .intelligence: 16, .wisdom: 12, .charisma: 10
+            ],
+            maxHP: 6,
+            inventory: [InventoryItem(itemID: "longsword", quantity: 1, equipped: true)],
+            featureSelections: ["weapon_mastery": ["longsword"]]
+        )
+        let rows = CharacterActionDeriver.weaponAttacks(for: character, content: store)
+        #expect(rows.first?.mastery == nil)
     }
 
     @Test func featureWithRecipeAppearsAsRow() {

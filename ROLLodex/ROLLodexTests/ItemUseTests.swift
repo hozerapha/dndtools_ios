@@ -9,6 +9,7 @@ struct ItemUseTests {
 
     @Test func wandOfMagicMissilesJSONDecodes() throws {
         // Lifted verbatim from gear.json so the test catches schema drift.
+        // SRD: Wand of Magic Missiles does NOT require attunement.
         let json = """
         {
           "id": "wand_of_magic_missiles",
@@ -17,7 +18,6 @@ struct ItemUseTests {
           "cost": 800000,
           "weight": 1,
           "category": "magic_item",
-          "attunement": {},
           "resource": {
             "id": "wand_of_magic_missiles_charges",
             "name": "Wand Charges",
@@ -38,7 +38,7 @@ struct ItemUseTests {
         """.data(using: .utf8)!
         let item = try JSONDecoder().decode(ItemDefinition.self, from: json)
         #expect(item.id == "wand_of_magic_missiles")
-        #expect(item.attunement != nil)
+        #expect(item.attunement == nil)
         #expect(item.resource?.id == "wand_of_magic_missiles_charges")
         #expect(item.resource?.refreshOn == .dawn)
         if case .roll(let formula)? = item.resource?.refreshAmount {
@@ -124,19 +124,22 @@ struct ItemUseTests {
 
     // MARK: - Resource availability
 
-    @Test func unattunedWandHasNoResourceInPool() {
+    @Test func carriedWandSurfacesChargesPool() {
+        // SRD wand doesn't require attunement: carrying it (equipped or not)
+        // is enough to expose its charge pool to the resources card.
         let store = ContentStore()
         var character = makeWizard()
         character.inventory = [InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: false, attuned: false)]
         let resources = ResourceCalculator.availableResources(character: character, content: store)
         let wand = resources.first { $0.definition.id == "wand_of_magic_missiles_charges" }
-        #expect(wand == nil)
+        #expect(wand?.max == 7)
+        #expect(wand?.current == 7)
     }
 
-    @Test func attunedWandSurfacesChargesPool() {
+    @Test func equippedWandSurfacesChargesPool() {
         let store = ContentStore()
         var character = makeWizard()
-        character.inventory = [InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: true, attuned: true)]
+        character.inventory = [InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: true, attuned: false)]
         let resources = ResourceCalculator.availableResources(character: character, content: store)
         let wand = resources.first { $0.definition.id == "wand_of_magic_missiles_charges" }
         #expect(wand?.max == 7)
@@ -149,8 +152,8 @@ struct ItemUseTests {
         let store = ContentStore()
         var character = makeWizard()
         character.inventory = [
-            InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: true, attuned: true),
-            InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: false, attuned: true)
+            InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: true, attuned: false),
+            InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: false, attuned: false)
         ]
         let resources = ResourceCalculator.availableResources(character: character, content: store)
         let wandPools = resources.filter { $0.definition.id == "wand_of_magic_missiles_charges" }
@@ -159,10 +162,10 @@ struct ItemUseTests {
 
     // MARK: - Action grid
 
-    @Test func attunedEquippedWandShowsItemUseRow() {
+    @Test func equippedWandShowsItemUseRow() {
         let store = ContentStore()
         var character = makeWizard()
-        character.inventory = [InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: true, attuned: true)]
+        character.inventory = [InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: true, attuned: false)]
         let sections = CharacterActionDeriver.sections(for: character, content: store)
         let items = sections.first { $0.id == "item_uses" }
         #expect(items?.rows.count == 1)
@@ -174,19 +177,10 @@ struct ItemUseTests {
         #expect(row?.castFromItem?.extraCostPerLevel == 1)
     }
 
-    @Test func unattunedWandShowsNoItemUseRow() {
-        let store = ContentStore()
-        var character = makeWizard()
-        character.inventory = [InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: true, attuned: false)]
-        let sections = CharacterActionDeriver.sections(for: character, content: store)
-        let items = sections.first { $0.id == "item_uses" }
-        #expect(items == nil)
-    }
-
     @Test func unequippedWandShowsNoItemUseRow() {
         let store = ContentStore()
         var character = makeWizard()
-        character.inventory = [InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: false, attuned: true)]
+        character.inventory = [InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: false, attuned: false)]
         let sections = CharacterActionDeriver.sections(for: character, content: store)
         let items = sections.first { $0.id == "item_uses" }
         #expect(items == nil)
@@ -199,7 +193,7 @@ struct ItemUseTests {
     @Test func exhaustedWandMarksRowExhausted() {
         let store = ContentStore()
         var character = makeWizard()
-        character.inventory = [InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: true, attuned: true)]
+        character.inventory = [InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: true, attuned: false)]
         character.resources = ["wand_of_magic_missiles_charges": ResourceState(current: 0)]
         let sections = CharacterActionDeriver.sections(for: character, content: store)
         let row = sections.first { $0.id == "item_uses" }?.rows.first
@@ -211,7 +205,7 @@ struct ItemUseTests {
     @Test func longRestQueuesPendingRefreshForWandCharges() {
         let store = ContentStore()
         var character = makeWizard()
-        character.inventory = [InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: true, attuned: true)]
+        character.inventory = [InventoryItem(itemID: "wand_of_magic_missiles", quantity: 1, equipped: true, attuned: false)]
         // Drain a few charges so the refresh has something to do.
         character.resources = ["wand_of_magic_missiles_charges": ResourceState(current: 3)]
         let pending = ResourceCalculator.applyRest(.long, to: &character, content: store)

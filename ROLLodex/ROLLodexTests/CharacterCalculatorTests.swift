@@ -358,4 +358,97 @@ struct CharacterCalculatorTests {
         )
         #expect(CharacterCalculator.spellSaveDC(character: character, spellcastingAbility: .intelligence) == 13)
     }
+
+    // MARK: - Weapon Mastery
+
+    @MainActor
+    @Test func weaponMasterySlotCountForFighter() {
+        let store = ContentStore()
+        let fighter = Character(
+            name: "Bruenor", level: 1,
+            speciesID: "human", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 1)],
+            abilityScores: [.strength: 16], maxHP: 10
+        )
+        #expect(CharacterCalculator.weaponMasterySlotCount(character: fighter, content: store) == 3)
+    }
+
+    @MainActor
+    @Test func weaponMasterySlotCountForWizardIsZero() {
+        let store = ContentStore()
+        let wizard = Character(
+            name: "Mordenkainen", level: 1,
+            speciesID: "human", backgroundID: "sage",
+            classEntries: [ClassEntry(classID: "wizard", level: 1)],
+            abilityScores: [.intelligence: 16], maxHP: 6
+        )
+        #expect(CharacterCalculator.weaponMasterySlotCount(character: wizard, content: store) == 0)
+    }
+
+    @MainActor
+    @Test func hasActiveMasteryRequiresBothFeatureAndSelection() {
+        let store = ContentStore()
+        let fighter = Character(
+            name: "Bruenor", level: 1,
+            speciesID: "human", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 1)],
+            abilityScores: [.strength: 16], maxHP: 10,
+            featureSelections: ["weapon_mastery": ["longsword"]]
+        )
+        #expect(CharacterCalculator.hasActiveMastery(weaponID: "longsword", character: fighter, content: store))
+        // Not in the chosen list → no active mastery.
+        #expect(!CharacterCalculator.hasActiveMastery(weaponID: "dagger", character: fighter, content: store))
+    }
+
+    @MainActor
+    @Test func hasActiveMasteryFalseForCharacterWithoutFeature() {
+        let store = ContentStore()
+        let wizard = Character(
+            name: "Mordenkainen", level: 1,
+            speciesID: "human", backgroundID: "sage",
+            classEntries: [ClassEntry(classID: "wizard", level: 1)],
+            abilityScores: [.intelligence: 16], maxHP: 6,
+            featureSelections: ["weapon_mastery": ["longsword"]] // populated, but no Mastery feature
+        )
+        #expect(!CharacterCalculator.hasActiveMastery(weaponID: "longsword", character: wizard, content: store))
+    }
+
+    // MARK: - Weapon roll breakdown
+
+    @MainActor
+    @Test func weaponBreakdownForLongswordSTR16Fighter() {
+        let store = ContentStore()
+        let fighter = Character(
+            name: "Bruenor", level: 1,
+            speciesID: "human", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 1)],
+            abilityScores: [.strength: 16, .dexterity: 12],
+            maxHP: 10,
+            proficiencies: [.weapon(.martial): .proficient]
+        )
+        let b = CharacterCalculator.weaponRollBreakdown(
+            weaponID: "longsword", character: fighter, content: store
+        )
+        // Attack: 1d20 + STR (+3) + Prof (+2) → +5
+        #expect(b?.attack.formula == "+5")
+        // Damage: 1d8 + STR (+3)
+        #expect(b?.damage.formula == "1d8+3")
+        // Versatile (2H): 1d10 + 3
+        #expect(b?.versatile?.formula == "1d10+3")
+        #expect(b?.damageType == "Slashing")
+    }
+
+    @MainActor
+    @Test func weaponBreakdownReturnsNilForNonWeapon() {
+        let store = ContentStore()
+        let character = Character(
+            name: "Bruenor", level: 1,
+            speciesID: "human", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 1)],
+            abilityScores: [.strength: 16], maxHP: 10
+        )
+        #expect(CharacterCalculator.weaponRollBreakdown(
+            weaponID: "backpack", character: character, content: store
+        ) == nil)
+    }
 }

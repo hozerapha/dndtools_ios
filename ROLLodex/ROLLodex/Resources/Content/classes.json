@@ -34,6 +34,18 @@
               "label": "Second Wind"
             }
           ]
+        },
+        {
+          "id": "weapon_mastery",
+          "name": "Weapon Mastery",
+          "description": "Your training with weapons lets you exploit each weapon's unique properties. You gain the Mastery property of three Simple or Martial weapons of your choice. Whenever you finish a Long Rest, you can practice with different weapons and change one of those weapon choices.",
+          "kind": "selection",
+          "selection": {
+            "id": "weapon_mastery",
+            "prompt": "Choose 3 weapons whose Mastery property you can use",
+            "count": { "byClassLevel": { "1": 3 } },
+            "optionsSource": { "type": "weapons", "proficientOnly": true }
+          }
         }
       ]
     },

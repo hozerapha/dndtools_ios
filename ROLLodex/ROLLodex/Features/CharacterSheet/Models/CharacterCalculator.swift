@@ -144,4 +144,124 @@ enum CharacterCalculator {
         }
         return limit
     }
+
+    // MARK: - Weapon Mastery (5e 2024)
+
+    /// Total Weapon Mastery slots the character gets. Computed by walking
+    /// every class feature granted at or below the character's class level
+    /// for a `FeatureSelection` with id "weapon_mastery", summing each
+    /// feature's selection count (sparse-table-resolved at the owning class
+    /// level). Returns 0 when no class feature exposes a mastery selection.
+    @MainActor
+    static func weaponMasterySlotCount(character: Character, content: ContentStore) -> Int {
+        var total = 0
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            for level in 1...max(entry.level, 1) {
+                for feature in cls.levelFeatures[level] ?? [] {
+                    guard let selection = feature.selection,
+                          selection.id == "weapon_mastery" else { continue }
+                    total += selection.count.value(
+                        classLevel: entry.level,
+                        characterLevel: character.level
+                    )
+                }
+            }
+        }
+        return total
+    }
+
+    /// True when this character actively has the given weapon's mastery
+    /// property online: they have the Weapon Mastery feature AND have selected
+    /// this weapon as one of their masteries via `featureSelections`.
+    @MainActor
+    static func hasActiveMastery(
+        weaponID: String,
+        character: Character,
+        content: ContentStore
+    ) -> Bool {
+        guard weaponMasterySlotCount(character: character, content: content) > 0 else { return false }
+        return (character.featureSelections["weapon_mastery"] ?? []).contains(weaponID)
+    }
+
+    /// Per-weapon attack + damage breakdown shown in the inventory description.
+    /// Lets the player audit why their Shortbow attack is "+3" instead of "+5":
+    /// they see the DEX mod and proficiency contributions inline.
+    ///
+    /// Returns nil when the item id isn't a weapon (caller should fall back to
+    /// the bare description).
+    @MainActor
+    static func weaponRollBreakdown(
+        weaponID: String,
+        character: Character,
+        content: ContentStore
+    ) -> WeaponRollBreakdown? {
+        guard let weapon = content.weaponDefinition(id: weaponID) else { return nil }
+
+        let attackRecipe = ActionRecipe.weaponAttack(
+            abilityOverride: nil,
+            finesse: weapon.properties.contains(.finesse)
+        )
+        let damageRecipe = ActionRecipe.weaponDamage(
+            dieOverride: nil,
+            addAbility: true,
+            versatile: false
+        )
+        let attack = ActionInterpreter.resolve(recipe: attackRecipe, character: character, weapon: weapon)
+        let damage = ActionInterpreter.resolve(recipe: damageRecipe, character: character, weapon: weapon)
+
+        let versatile: WeaponRollLine?
+        if weapon.versatileDamage != nil {
+            let recipe = ActionRecipe.weaponDamage(dieOverride: nil, addAbility: true, versatile: true)
+            let resolved = ActionInterpreter.resolve(recipe: recipe, character: character, weapon: weapon)
+            versatile = WeaponRollLine(formula: formulaString(resolved.formula), breakdown: resolved.description ?? "")
+        } else {
+            versatile = nil
+        }
+
+        return WeaponRollBreakdown(
+            attack: WeaponRollLine(
+                formula: signedModifierString(attack.formula?.modifier ?? 0),
+                breakdown: attack.description ?? ""
+            ),
+            damage: WeaponRollLine(
+                formula: formulaString(damage.formula),
+                breakdown: damage.description ?? ""
+            ),
+            versatile: versatile,
+            damageType: weapon.damageType.rawValue.capitalized
+        )
+    }
+
+    /// "+5" / "−2" / "+0" formatting for an attack bonus.
+    private static func signedModifierString(_ mod: Int) -> String {
+        if mod > 0 { return "+\(mod)" }
+        if mod < 0 { return "−\(abs(mod))" }
+        return "+0"
+    }
+
+    /// "1d8+3", "1d10−1", "1d4" — the formula a damage roll resolves to.
+    private static func formulaString(_ formula: DiceFormula?) -> String {
+        guard let formula else { return "—" }
+        let dice = formula.groups.map { "\($0.count)d\($0.kind.rawValue)" }.joined(separator: "+")
+        let mod = formula.modifier
+        if mod == 0 { return dice }
+        return mod > 0 ? "\(dice)+\(mod)" : "\(dice)−\(abs(mod))"
+    }
+}
+
+struct WeaponRollLine: Equatable {
+    /// Top-line formula ("1d8+3" or "+5").
+    let formula: String
+    /// How the formula was assembled ("1d8 + STR (+3)").
+    let breakdown: String
+}
+
+struct WeaponRollBreakdown: Equatable {
+    let attack: WeaponRollLine
+    let damage: WeaponRollLine
+    /// Two-handed damage line for versatile weapons; nil otherwise.
+    let versatile: WeaponRollLine?
+    /// Damage type label ("Slashing", "Piercing", …).
+    let damageType: String
 }

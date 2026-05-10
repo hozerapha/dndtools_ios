@@ -34,6 +34,12 @@ final class ContentStore {
         gear[id]?.weight ?? weapons[id]?.weight ?? armor[id]?.weight
     }
 
+    /// Flavor / mechanical description for the item ("This wand has 7 charges
+    /// …"). Empty string if the item exists but has no description (rare).
+    func itemDescription(forItemID id: String) -> String? {
+        gear[id]?.description ?? weapons[id]?.description ?? armor[id]?.description
+    }
+
     /// Returns the attunement rule for an item across all kinds (weapon /
     /// armor / gear). Nil result means either the item doesn't exist OR it
     /// doesn't require attunement — both are equivalent for the eligibility

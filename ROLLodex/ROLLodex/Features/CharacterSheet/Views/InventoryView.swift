@@ -89,11 +89,17 @@ struct InventoryView: View {
                 id: item.id,
                 itemID: item.itemID,
                 name: content.itemName(forItemID: item.itemID) ?? item.itemID,
+                description: content.itemDescription(forItemID: item.itemID) ?? "",
                 quantity: item.quantity,
                 equipped: item.equipped,
                 attuned: item.attuned,
                 weight: content.itemWeight(forItemID: item.itemID) ?? 0,
-                kind: itemKind(for: item.itemID)
+                kind: itemKind(for: item.itemID),
+                weaponBreakdown: CharacterCalculator.weaponRollBreakdown(
+                    weaponID: item.itemID,
+                    character: character,
+                    content: content
+                )
             )
         }
     }
@@ -206,11 +212,14 @@ private struct InventoryRow: Identifiable {
     let id: UUID
     let itemID: String
     let name: String
+    let description: String
     let quantity: Int
     let equipped: Bool
     let attuned: Bool
     let weight: Double
     let kind: Kind
+    /// Per-character attack/damage breakdown for weapons. Nil for non-weapons.
+    let weaponBreakdown: WeaponRollBreakdown?
 
     enum Kind {
         case weapon, armor, gear
@@ -299,6 +308,16 @@ private struct ItemRow: View {
 
     private var editPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if !row.description.isEmpty {
+                Text(row.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let breakdown = row.weaponBreakdown {
+                weaponBreakdownBlock(breakdown)
+            }
             HStack(spacing: 12) {
                 Toggle(isOn: equipBinding) {
                     Label("Equipped", systemImage: row.equipped ? "checkmark.circle.fill" : "circle")
@@ -370,6 +389,44 @@ private struct ItemRow: View {
     private var isBlockedByRestriction: Bool {
         if case .blocked = attunementEligibility { return true }
         return false
+    }
+
+    @ViewBuilder
+    private func weaponBreakdownBlock(_ b: WeaponRollBreakdown) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            breakdownLine(label: "Attack", line: b.attack)
+            breakdownLine(label: "Damage", line: b.damage, trailing: b.damageType)
+            if let v = b.versatile {
+                breakdownLine(label: "2H", line: v, trailing: b.damageType)
+            }
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    @ViewBuilder
+    private func breakdownLine(label: String, line: WeaponRollLine, trailing: String? = nil) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(label.uppercased())
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.secondary)
+                .frame(width: 50, alignment: .leading)
+            Text(line.formula)
+                .font(.subheadline.monospacedDigit().weight(.semibold))
+            if let trailing {
+                Text(trailing.lowercased())
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            Text(line.breakdown)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .lineLimit(2)
+                .multilineTextAlignment(.trailing)
+        }
     }
 }
 

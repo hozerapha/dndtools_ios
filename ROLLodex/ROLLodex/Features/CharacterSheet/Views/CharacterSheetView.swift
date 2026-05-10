@@ -12,43 +12,62 @@ struct CharacterSheetView: View {
     @State private var showRestConfirm = false
     @State private var pendingRefreshes: [PendingRefresh] = []
     @State private var spellBeingCast: PendingSpellCast?
+    /// Which sub-tab of the character sheet is showing. The header (badges,
+    /// HP bar, stat pills) stays fixed above the picker so every tab can see
+    /// "who am I and how am I doing right now".
+    @State private var section: SheetSection = .actions
+
+    /// Sub-tabs of a single character sheet. The Spells tab disappears when
+    /// the character has no spellcasting source — there's nothing to put in
+    /// it. Features is always present (every character has at least a few).
+    enum SheetSection: String, CaseIterable, Identifiable {
+        case actions, abilities, features, inventory, spells
+
+        var id: Self { self }
+
+        var label: String {
+            switch self {
+            case .actions:   return "Actions"
+            case .abilities: return "Abilities"
+            case .features:  return "Features"
+            case .inventory: return "Inventory"
+            case .spells:    return "Spells"
+            }
+        }
+
+        var systemImage: String {
+            switch self {
+            case .actions:   return "burst"
+            case .abilities: return "person.fill"
+            case .features:  return "sparkles"
+            case .inventory: return "backpack.fill"
+            case .spells:    return "wand.and.stars"
+            }
+        }
+    }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 14) {
-                headerCard
-                statPillRow
-                AbilityBlockView(
-                    character: character,
-                    onRollCheck: { ability, mode in
-                        dispatchRoll(.abilityCheck(ability: ability), mode: mode)
-                    },
-                    onRollSave: { ability, mode in
-                        dispatchRoll(.savingThrow(ability: ability), mode: mode)
+        VStack(spacing: 0) {
+            stickyHeader
+            sectionPicker
+            ScrollView {
+                Group {
+                    switch section {
+                    case .actions:   actionsTab
+                    case .abilities: abilitiesTab
+                    case .features:  featuresTab
+                    case .inventory: inventoryTab
+                    case .spells:    spellsTab
                     }
-                )
-                ResourcesView(character: $character)
-                ActionButtonGrid(sections: actionSections, onTap: handleActionTap)
-                SpellListView(character: $character) { spell, _ in
-                    // Open the cast sheet rather than passing the level
-                    // through here; the sheet has its own picker.
-                    spellBeingCast = PendingSpellCast(spell: spell, itemContext: nil)
                 }
-                sensesCard
-                SkillListView(character: character) { skill, mode in
-                    dispatchRoll(.skillCheck(skill: skill), mode: mode)
-                }
-                proficienciesCard
-                InventoryView(character: $character)
-                featuresCard
-                NotesEditorView(notes: $character.notes)
+                .padding(.horizontal)
+                .padding(.top, 8)
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal)
-            .padding(.bottom, 24)
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(character.name)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -57,6 +76,12 @@ struct CharacterSheetView: View {
                     Label("Rest", systemImage: "moon.zzz.fill")
                 }
             }
+        }
+        .onChange(of: hasSpellcasting) { _, casts in
+            // Defensive: a class swap that drops spellcasting while the user
+            // is on the Spells tab would otherwise leave them looking at an
+            // empty tab they can no longer navigate away from via the picker.
+            if !casts && section == .spells { section = .actions }
         }
         .confirmationDialog("Rest", isPresented: $showRestConfirm, titleVisibility: .hidden) {
             Button("Short Rest") { takeRest(.short) }
@@ -83,6 +108,112 @@ struct CharacterSheetView: View {
                 handleSpellRoll(action, followUp: followUp)
             }
             .presentationDetents([.large])
+        }
+    }
+
+    // MARK: - Layout chrome
+
+    /// Sticky bit at the top of every tab: name editor, badges, HP, stat pills.
+    /// Sits outside the ScrollView so it never scrolls away.
+    private var stickyHeader: some View {
+        VStack(spacing: 10) {
+            headerCard
+            statPillRow
+        }
+        .padding(.horizontal)
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+    }
+
+    private var sectionPicker: some View {
+        Picker("Section", selection: $section) {
+            ForEach(availableSections) { sec in
+                Text(sec.label).tag(sec)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+        .padding(.bottom, 4)
+    }
+
+    private var availableSections: [SheetSection] {
+        SheetSection.allCases.filter {
+            $0 != .spells || hasSpellcasting
+        }
+    }
+
+    private var hasSpellcasting: Bool {
+        character.classEntries.contains { entry in
+            content.classDefinition(id: entry.classID)?.spellcasting != nil
+        }
+    }
+
+    // MARK: - Tab content
+
+    private var actionsTab: some View {
+        VStack(spacing: 14) {
+            ResourcesView(character: $character)
+            AttacksView(
+                rows: weaponAttackRows,
+                onAttack: handleWeaponAttack,
+                onDamage: handleStandaloneRoll
+            )
+            ActionButtonGrid(sections: actionSections, onTap: handleActionTap)
+        }
+    }
+
+    private var weaponAttackRows: [WeaponAttackRow] {
+        CharacterActionDeriver.weaponAttacks(for: character, content: content)
+    }
+
+    /// Tap on a weapon's Attack chip: push the d20 attack onto the dice tab
+    /// AND queue the matching damage as a follow-up — same pattern spell
+    /// attacks use, so the dice tab's "Roll damage?" chip appears after the
+    /// attack lands.
+    private func handleWeaponAttack(_ row: WeaponAttackRow) {
+        pendingRoll.pending = row.attack
+        pendingRoll.followUp = row.damage
+        selectedTab = .dice
+    }
+
+    /// Standalone damage / versatile-damage tap: no follow-up, just roll.
+    private func handleStandaloneRoll(_ action: ResolvedAction) {
+        pendingRoll.pending = action
+        pendingRoll.followUp = nil
+        selectedTab = .dice
+    }
+
+    private var abilitiesTab: some View {
+        VStack(spacing: 14) {
+            AbilityBlockView(
+                character: character,
+                onRollCheck: { ability, mode in
+                    dispatchRoll(.abilityCheck(ability: ability), mode: mode)
+                },
+                onRollSave: { ability, mode in
+                    dispatchRoll(.savingThrow(ability: ability), mode: mode)
+                }
+            )
+            SkillListView(character: character) { skill, mode in
+                dispatchRoll(.skillCheck(skill: skill), mode: mode)
+            }
+            sensesCard
+            proficienciesCard
+            NotesEditorView(notes: $character.notes)
+        }
+    }
+
+    private var featuresTab: some View {
+        FeaturesView(character: $character)
+    }
+
+    private var inventoryTab: some View {
+        InventoryView(character: $character)
+    }
+
+    private var spellsTab: some View {
+        SpellListView(character: $character) { spell, _ in
+            spellBeingCast = PendingSpellCast(spell: spell, itemContext: nil)
         }
     }
 
@@ -324,27 +455,6 @@ struct CharacterSheetView: View {
         }
     }
 
-    // MARK: - Features
-
-    private var featuresCard: some View {
-        SheetCard(title: "Features & Traits", systemImage: "sparkles") {
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(allFeatures, id: \.id) { feature in
-                    FeatureRow(name: feature.name, description: feature.description)
-                }
-                if let backgroundFeatName {
-                    FeatureRow(
-                        name: backgroundFeatName.replacingOccurrences(of: "_", with: " ").capitalized,
-                        description: "From background"
-                    )
-                }
-                if allFeatures.isEmpty && backgroundFeatName == nil {
-                    Text("No features yet").font(.subheadline).foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-
     // MARK: - Derived values
 
     private var primaryClassName: String? {
@@ -420,32 +530,6 @@ struct CharacterSheetView: View {
         }.sorted()
     }
 
-    /// Class features at or below current level + species traits (excluding the
-    /// darkvision trait, which is already surfaced in the Senses section).
-    private var allFeatures: [FeatureDefinition] {
-        var features: [FeatureDefinition] = []
-        for entry in character.classEntries {
-            guard let cls = content.classDefinition(id: entry.classID) else { continue }
-            for level in 1...max(entry.level, 1) {
-                features.append(contentsOf: cls.levelFeatures[level] ?? [])
-            }
-        }
-        if let species = content.speciesDefinition(id: character.speciesID) {
-            for trait in species.traits where trait.id != "darkvision" {
-                features.append(FeatureDefinition(
-                    id: "species_\(trait.id)",
-                    name: trait.name,
-                    description: trait.description,
-                    actionRecipes: trait.actionRecipes
-                ))
-            }
-        }
-        return features
-    }
-
-    private var backgroundFeatName: String? {
-        content.backgroundDefinition(id: character.backgroundID)?.feat
-    }
 }
 
 /// Sheet `item:` binding payload. Wraps the spell with an optional item
@@ -536,20 +620,6 @@ private struct ProficiencyGroup: View {
     }
 }
 
-private struct FeatureRow: View {
-    let name: String
-    let description: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(name).font(.subheadline.weight(.semibold))
-            Text(description)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-}
 
 // MARK: - Module-wide formatting helper
 
