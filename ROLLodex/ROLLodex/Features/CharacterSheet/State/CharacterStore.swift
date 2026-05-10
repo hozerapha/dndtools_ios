@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 
 @Observable
 @MainActor
@@ -38,7 +39,11 @@ final class CharacterStore {
         let url = fileURL(for: character.id)
         do {
             let data = try encoder.encode(character)
-            try atomicWrite(data, to: url)
+            // `.atomic` writes through a sibling temp file and renames over
+            // the destination, which works whether or not the file exists —
+            // unlike our previous moveItem dance that 17/EEXISTed when an
+            // earlier save left a `.tmp` orphan around.
+            try data.write(to: url, options: .atomic)
             updateManifest(id: character.id, lastEdited: Date())
             reloadCharacter(id: character.id)
         } catch {
@@ -55,6 +60,22 @@ final class CharacterStore {
 
     func character(id: UUID) -> Character? {
         characters.first { $0.id == id }
+    }
+
+    /// SwiftUI `Binding` over a stored character. Reads return the live value;
+    /// writes persist via `save`, which round-trips through the file system
+    /// and refreshes `characters` in-place. Used by the character sheet so
+    /// every inline edit (name tap, HP stepper, equip toggle, …) is durable.
+    func binding(for id: UUID) -> Binding<Character>? {
+        guard let initial = character(id: id) else { return nil }
+        return Binding(
+            get: { [weak self] in
+                self?.character(id: id) ?? initial
+            },
+            set: { [weak self] newValue in
+                self?.save(newValue)
+            }
+        )
     }
 
     // MARK: - Loading
@@ -110,7 +131,7 @@ final class CharacterStore {
     private func writeManifest(_ manifest: CharacterManifest) {
         do {
             let data = try encoder.encode(manifest)
-            try atomicWrite(data, to: manifestURL)
+            try data.write(to: manifestURL, options: .atomic)
         } catch {
             print("Failed to write manifest: \(error)")
         }
@@ -139,11 +160,5 @@ final class CharacterStore {
 
     private func fileURL(for id: UUID) -> URL {
         directory.appendingPathComponent("\(id.uuidString).json")
-    }
-
-    private func atomicWrite(_ data: Data, to url: URL) throws {
-        let temp = url.appendingPathExtension("tmp")
-        try data.write(to: temp)
-        try FileManager.default.moveItem(at: temp, to: url)
     }
 }

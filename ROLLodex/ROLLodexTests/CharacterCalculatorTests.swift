@@ -214,6 +214,138 @@ struct CharacterCalculatorTests {
         #expect(CharacterCalculator.passivePerception(character: character) == 14) // 10 + 2 WIS + 2 prof
     }
 
+    // MARK: - Attunement
+
+    @Test func attunementLimitDefaultsToThree() {
+        let store = ContentStore()
+        let character = Character(
+            name: "Test",
+            level: 1,
+            speciesID: "human",
+            backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 1)],
+            abilityScores: [.strength: 16],
+            maxHP: 10
+        )
+        #expect(CharacterCalculator.attunementLimit(character: character, content: store) == 3)
+    }
+
+    @Test func attunementLimitHonorsCharacterOverride() {
+        let store = ContentStore()
+        let character = Character(
+            name: "Test",
+            level: 1,
+            speciesID: "human",
+            backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 1)],
+            abilityScores: [.strength: 16],
+            maxHP: 10,
+            attunementSlotsOverride: 6
+        )
+        #expect(CharacterCalculator.attunementLimit(character: character, content: store) == 6)
+    }
+
+    @Test func featureDefinitionDecodesAttunementSlots() throws {
+        // Verifies the JSON key the calculator relies on. Class-feature data
+        // loaded from `classes.json` flows through this same decoder, so a
+        // feature like Artificer's Magic Item Adept can simply add
+        // `"attunementSlots": 4` and the limit will pick it up at runtime.
+        let json = """
+        {
+            "id": "magic_item_adept",
+            "name": "Magic Item Adept",
+            "description": "...",
+            "actionRecipes": [],
+            "attunementSlots": 4
+        }
+        """.data(using: .utf8)!
+        let feature = try JSONDecoder().decode(FeatureDefinition.self, from: json)
+        #expect(feature.attunementSlots == 4)
+    }
+
+    @Test func featureDefinitionAttunementSlotsAbsentDecodesAsNil() throws {
+        let json = """
+        { "id": "f", "name": "F", "description": "", "actionRecipes": [] }
+        """.data(using: .utf8)!
+        let feature = try JSONDecoder().decode(FeatureDefinition.self, from: json)
+        #expect(feature.attunementSlots == nil)
+    }
+
+    // MARK: - Attunement restrictions
+
+    @MainActor
+    @Test func attunementRestrictionsClassMismatch() {
+        let store = ContentStore()
+        let character = Character(
+            name: "Test", level: 5,
+            speciesID: "human", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 5)],
+            abilityScores: [.strength: 16], maxHP: 40
+        )
+        let restrictions = AttunementRestrictions(classes: ["wizard", "sorcerer"])
+        let reason = restrictions.firstUnmetReason(for: character, content: store)
+        #expect(reason == "Requires class: Wizard, Sorcerer")
+    }
+
+    @MainActor
+    @Test func attunementRestrictionsClassMatchPasses() {
+        let store = ContentStore()
+        let character = Character(
+            name: "Test", level: 5,
+            speciesID: "human", backgroundID: "sage",
+            classEntries: [ClassEntry(classID: "wizard", level: 5)],
+            abilityScores: [.intelligence: 16], maxHP: 30
+        )
+        let restrictions = AttunementRestrictions(classes: ["wizard"])
+        #expect(restrictions.firstUnmetReason(for: character, content: store) == nil)
+    }
+
+    @MainActor
+    @Test func attunementRestrictionsBelowMinLevel() {
+        let store = ContentStore()
+        let character = Character(
+            name: "Test", level: 3,
+            speciesID: "human", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 3)],
+            abilityScores: [.strength: 16], maxHP: 24
+        )
+        let restrictions = AttunementRestrictions(minLevel: 5)
+        #expect(restrictions.firstUnmetReason(for: character, content: store) == "Requires level 5+")
+    }
+
+    @MainActor
+    @Test func attunementRestrictionsAbilityScoreShortfall() {
+        let store = ContentStore()
+        let character = Character(
+            name: "Test", level: 1,
+            speciesID: "halfling", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "rogue", level: 1)],
+            abilityScores: [.strength: 10, .dexterity: 16], maxHP: 8
+        )
+        // Belt of Giant Strength style requirement.
+        let restrictions = AttunementRestrictions(abilityScoreMinimums: [.strength: 13])
+        #expect(restrictions.firstUnmetReason(for: character, content: store) == "Requires STR 13+")
+    }
+
+    @MainActor
+    @Test func attunementRestrictionsCombineAsAndPriority() {
+        // Multiple unmet restrictions: report the first failure in the
+        // calculator's documented order — minLevel, classes, species, ability.
+        let store = ContentStore()
+        let character = Character(
+            name: "Test", level: 2,
+            speciesID: "human", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 2)],
+            abilityScores: [.strength: 8], maxHP: 16
+        )
+        let restrictions = AttunementRestrictions(
+            classes: ["wizard"],
+            minLevel: 5,
+            abilityScoreMinimums: [.strength: 13]
+        )
+        #expect(restrictions.firstUnmetReason(for: character, content: store) == "Requires level 5+")
+    }
+
     @Test func spellSaveDC() {
         let character = Character(
             name: "Test",

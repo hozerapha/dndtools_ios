@@ -16,4 +16,5 @@ struct WeaponDefinition: Codable, Identifiable, Equatable {
     let range: String?
     let masteryProperty: WeaponMastery?
     let actionRecipes: [ActionRecipe]
+    let attunement: AttunementRule?
 }

@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// Read-only character sheet (Phase E). All values are recomputed from the
-/// character + ContentStore via `CharacterCalculator` — nothing is cached on
-/// the character. Action buttons and editing arrive in later phases.
+/// Editable character sheet. Mutations (name, HP, inventory, notes) flow back
+/// through the `@Binding`, which `CharacterStore.binding(for:)` persists on
+/// every set. All derived values (AC, action grid, etc.) recompute on demand.
 struct CharacterSheetView: View {
-    let character: Character
+    @Binding var character: Character
     @Binding var selectedTab: AppTab
     @Environment(ContentStore.self) private var content
     @Environment(PendingRollStore.self) private var pendingRoll
@@ -29,8 +29,9 @@ struct CharacterSheetView: View {
                     dispatchRoll(.skillCheck(skill: skill), mode: mode)
                 }
                 proficienciesCard
-                InventoryView(character: character)
+                InventoryView(character: $character)
                 featuresCard
+                NotesEditorView(notes: $character.notes)
             }
             .padding(.horizontal)
             .padding(.bottom, 24)
@@ -97,8 +98,18 @@ struct CharacterSheetView: View {
 
     // MARK: - Header
 
+    @State private var showHPEditor = false
+
     private var headerCard: some View {
         VStack(alignment: .leading, spacing: 12) {
+            // Inline-editable name. The TextField looks like normal text until
+            // tapped, then becomes editable. Saves on each character via the
+            // CharacterStore binding.
+            TextField("Name", text: $character.name)
+                .font(.title2.bold())
+                .textFieldStyle(.plain)
+                .submitLabel(.done)
+
             HStack(spacing: 6) {
                 if let className = primaryClassName {
                     SheetBadge(text: className, systemImage: "shield.lefthalf.filled")
@@ -113,17 +124,45 @@ struct CharacterSheetView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .sheet(isPresented: $showHPEditor) {
+            HPEditorSheet(character: $character)
+                .presentationDetents([.medium])
+        }
     }
 
     private var hpBar: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
+            HStack(spacing: 8) {
                 Label("HP", systemImage: "heart.fill")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.red)
                 Spacer()
+                Button {
+                    character.currentHP = max(0, character.currentHP - 1)
+                } label: {
+                    Image(systemName: "minus.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Take 1 damage")
+
                 Text("\(character.currentHP) / \(character.maxHP)")
                     .font(.subheadline.monospacedDigit().weight(.semibold))
+                    .frame(minWidth: 56)
+                    .contentShape(Rectangle())
+                    .onTapGesture { showHPEditor = true }
+
+                Button {
+                    character.currentHP = min(character.maxHP, character.currentHP + 1)
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Heal 1 HP")
+
                 if character.tempHP > 0 {
                     Text("+\(character.tempHP) temp")
                         .font(.caption.monospacedDigit())

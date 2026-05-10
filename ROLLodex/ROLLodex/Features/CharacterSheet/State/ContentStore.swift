@@ -32,6 +32,17 @@ final class ContentStore {
         gear[id]?.weight ?? weapons[id]?.weight ?? armor[id]?.weight
     }
 
+    /// Returns the attunement rule for an item across all kinds (weapon /
+    /// armor / gear). Nil result means either the item doesn't exist OR it
+    /// doesn't require attunement — both are equivalent for the eligibility
+    /// check (no toggle is shown).
+    func attunementRule(forItemID id: String) -> AttunementRule? {
+        if let w = weapons[id] { return w.attunement }
+        if let a = armor[id]   { return a.attunement }
+        if let g = gear[id]    { return g.attunement }
+        return nil
+    }
+
     // MARK: - Loading
 
     private func loadBundledContent() {

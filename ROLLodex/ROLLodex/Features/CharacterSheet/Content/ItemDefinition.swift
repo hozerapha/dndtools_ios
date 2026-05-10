@@ -7,4 +7,7 @@ struct ItemDefinition: Codable, Identifiable, Equatable {
     let cost: Int
     let weight: Double
     let category: ItemCategory
+    /// JSON: presence of the `attunement` key means "requires attunement".
+    /// Absence means freely usable. See `AttunementRule` for the schema.
+    let attunement: AttunementRule?
 }

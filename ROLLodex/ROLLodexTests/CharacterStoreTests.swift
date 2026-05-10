@@ -144,6 +144,33 @@ struct CharacterStoreTests {
         #expect(store.character(id: b.id)?.name == "Bob")
     }
 
+    // MARK: - Binding helper
+
+    @Test func bindingPersistsMutations() {
+        let store = makeTemporaryStore()
+        let character = makeSampleCharacter()
+        store.create(character)
+
+        guard let binding = store.binding(for: character.id) else {
+            Issue.record("Expected a binding for the created character")
+            return
+        }
+
+        // Mutate via the binding setter — should both update memory and disk.
+        var edited = binding.wrappedValue
+        edited.currentHP = 4
+        edited.notes = "tested"
+        binding.wrappedValue = edited
+
+        #expect(store.character(id: character.id)?.currentHP == 4)
+        #expect(store.character(id: character.id)?.notes == "tested")
+    }
+
+    @Test func bindingForUnknownIDReturnsNil() {
+        let store = makeTemporaryStore()
+        #expect(store.binding(for: UUID()) == nil)
+    }
+
     // MARK: - Atomic write integrity
 
     @Test func atomicWriteDoesNotCorruptOnCrash() throws {

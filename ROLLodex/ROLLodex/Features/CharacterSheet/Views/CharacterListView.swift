@@ -10,7 +10,7 @@ struct CharacterListView: View {
         NavigationStack {
             List {
                 ForEach(characterStore.characters) { character in
-                    NavigationLink(value: character) {
+                    NavigationLink(value: character.id) {
                         CharacterRow(character: character)
                     }
                 }
@@ -33,8 +33,14 @@ struct CharacterListView: View {
                     showCreation = false
                 }
             }
-            .navigationDestination(for: Character.self) { character in
-                CharacterSheetView(character: character, selectedTab: $selectedTab)
+            // Push the UUID, not the Character struct. Character's auto-Hashable
+            // hashes every field, so editing HP would invalidate a pushed value.
+            .navigationDestination(for: UUID.self) { id in
+                if let binding = characterStore.binding(for: id) {
+                    CharacterSheetView(character: binding, selectedTab: $selectedTab)
+                } else {
+                    ContentUnavailableView("Character not found", systemImage: "person.crop.circle.badge.exclamationmark")
+                }
             }
         }
     }

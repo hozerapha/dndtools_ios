@@ -12,4 +12,5 @@ struct ArmorDefinition: Codable, Identifiable, Equatable {
     let dexCap: Int?
     let stealthDisadvantage: Bool
     let strengthRequirement: Int?
+    let attunement: AttunementRule?
 }
