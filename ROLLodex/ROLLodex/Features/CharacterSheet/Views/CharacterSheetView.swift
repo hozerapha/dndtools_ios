@@ -11,6 +11,7 @@ struct CharacterSheetView: View {
 
     @State private var showRestConfirm = false
     @State private var pendingRefreshes: [PendingRefresh] = []
+    @State private var spellBeingCast: SpellDefinition?
 
     var body: some View {
         ScrollView {
@@ -28,6 +29,11 @@ struct CharacterSheetView: View {
                 )
                 ResourcesView(character: $character)
                 ActionButtonGrid(sections: actionSections, onTap: handleActionTap)
+                SpellListView(character: $character) { spell, _ in
+                    // Open the cast sheet rather than passing the level
+                    // through here; the sheet has its own picker.
+                    spellBeingCast = spell
+                }
                 sensesCard
                 SkillListView(character: character) { skill, mode in
                     dispatchRoll(.skillCheck(skill: skill), mode: mode)
@@ -68,6 +74,12 @@ struct CharacterSheetView: View {
             )
             .presentationDetents([.medium, .large])
         }
+        .sheet(item: $spellBeingCast) { spell in
+            SpellCastSheet(character: $character, spell: spell) { actions in
+                handleCastResolved(actions)
+            }
+            .presentationDetents([.large])
+        }
     }
 
     /// Apply the rest, then either show the refresh-resolution sheet (if any
@@ -99,6 +111,15 @@ struct CharacterSheetView: View {
         // resource was still spent above.
         guard action.formula != nil else { return }
         pendingRoll.pending = action
+        selectedTab = .dice
+    }
+
+    /// Cast flow returns 0+ resolved actions (some spells have no rolls). Push
+    /// the first rollable one to the dice tab; later phases can add a queue
+    /// for multi-effect spells (e.g. damage AND save prompts).
+    private func handleCastResolved(_ actions: [ResolvedAction]) {
+        guard let rollable = actions.first(where: { $0.formula != nil }) else { return }
+        pendingRoll.pending = rollable
         selectedTab = .dice
     }
 

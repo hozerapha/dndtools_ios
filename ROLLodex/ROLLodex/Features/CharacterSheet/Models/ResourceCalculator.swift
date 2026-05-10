@@ -65,12 +65,58 @@ enum ResourceCalculator {
                     ))
                 }
             }
+
+            // Spell slots: synthesize one resource per slot level from the
+            // class's slot table. Refresh trigger = long rest for full
+            // casters, short rest for pact magic.
+            resolved.append(contentsOf: synthesizedSlotResources(for: entry, in: cls, character: character))
         }
 
         // Equipped items (Phase K) will plug in here once they declare their
         // own `resource` block on item definitions.
 
         return resolved
+    }
+
+    private static func synthesizedSlotResources(
+        for entry: ClassEntry,
+        in cls: ClassDefinition,
+        character: Character
+    ) -> [ResolvedResource] {
+        guard let spellcasting = cls.spellcasting else { return [] }
+        let slots = spellcasting.slotTable.slots(atClassLevel: entry.level)
+        guard !slots.isEmpty else { return [] }
+
+        let isPact = spellcasting.slotTable.isPactMagic
+        let trigger: RefreshTrigger = isPact ? .shortRest : .longRest
+
+        return slots.sorted(by: { $0.key < $1.key }).map { (slotLevel, count) in
+            let id = "\(cls.id)_slot_\(slotLevel)"
+            let definition = ResourceDefinition(
+                id: id,
+                name: slotLabel(level: slotLevel),
+                max: .flat(count),
+                refreshOn: trigger,
+                refreshAmount: .all,
+                displayHint: .spellSlot(level: slotLevel)
+            )
+            let current = currentClamped(character: character, resourceID: id, max: count)
+            return ResolvedResource(
+                definition: definition,
+                max: count,
+                current: current,
+                sourceLabel: "\(cls.name) (L\(entry.level))"
+            )
+        }
+    }
+
+    private static func slotLabel(level: Int) -> String {
+        switch level {
+        case 1: return "1st-Level Slots"
+        case 2: return "2nd-Level Slots"
+        case 3: return "3rd-Level Slots"
+        default: return "\(level)th-Level Slots"
+        }
     }
 
     // MARK: - Reads

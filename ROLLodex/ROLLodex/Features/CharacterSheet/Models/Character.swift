@@ -28,6 +28,8 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
     /// and refresh rules live in content; this map only tracks how much the
     /// character has spent. Missing keys default to "full" via the calculator.
     var resources: [String: ResourceState]
+    /// Spell list state — prepared / known / spellbook IDs. See `CharacterSpells`.
+    var spells: CharacterSpells
     var manifestVersion: Int
 
     init(
@@ -47,6 +49,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         notes: String = "",
         attunementSlotsOverride: Int? = nil,
         resources: [String: ResourceState] = [:],
+        spells: CharacterSpells = CharacterSpells(),
         manifestVersion: Int = 1
     ) {
         self.id = id
@@ -65,6 +68,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         self.notes = notes
         self.attunementSlotsOverride = attunementSlotsOverride
         self.resources = resources
+        self.spells = spells
         self.manifestVersion = manifestVersion
     }
 
@@ -74,7 +78,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         case id, name, level, speciesID, backgroundID, classEntries
         case abilityScores, maxHP, currentHP, tempHP
         case proficiencies, inventory, currency, notes
-        case attunementSlotsOverride, resources, manifestVersion
+        case attunementSlotsOverride, resources, spells, manifestVersion
     }
 
     init(from decoder: Decoder) throws {
@@ -94,6 +98,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         notes = try container.decodeIfPresent(String.self, forKey: .notes) ?? ""
         attunementSlotsOverride = try container.decodeIfPresent(Int.self, forKey: .attunementSlotsOverride)
         resources = try container.decodeIfPresent([String: ResourceState].self, forKey: .resources) ?? [:]
+        spells = try container.decodeIfPresent(CharacterSpells.self, forKey: .spells) ?? CharacterSpells()
         manifestVersion = try container.decodeIfPresent(Int.self, forKey: .manifestVersion) ?? 1
 
         let profDict = try container.decodeIfPresent([String: ProficiencyLevel].self, forKey: .proficiencies) ?? [:]
@@ -120,6 +125,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         try container.encode(notes, forKey: .notes)
         try container.encodeIfPresent(attunementSlotsOverride, forKey: .attunementSlotsOverride)
         try container.encode(resources, forKey: .resources)
+        try container.encode(spells, forKey: .spells)
         try container.encode(manifestVersion, forKey: .manifestVersion)
 
         let profDict = Dictionary(uniqueKeysWithValues: proficiencies.map { key, value in

@@ -1,0 +1,252 @@
+import Testing
+import Foundation
+@testable import ROLLodex
+
+@MainActor
+struct SpellTests {
+
+    // MARK: - Codable round-trips
+
+    @Test func spellDefinitionDecodes() throws {
+        let json = """
+        {
+          "id": "magic_missile",
+          "name": "Magic Missile",
+          "level": 1,
+          "school": "evocation",
+          "castingTime": { "type": "action" },
+          "range": { "type": "feet", "value": 120 },
+          "components": { "verbal": true, "somatic": true },
+          "duration": { "type": "instantaneous" },
+          "description": "...",
+          "actionRecipes": [
+            { "type": "rawDamage", "dice": "3d4+3", "damageType": "force", "label": "Magic Missile" }
+          ],
+          "upcastEffect": { "type": "extraDicePerLevel", "recipeIndex": 0, "dice": "1d4+1" }
+        }
+        """.data(using: .utf8)!
+        let spell = try JSONDecoder().decode(SpellDefinition.self, from: json)
+        #expect(spell.name == "Magic Missile")
+        #expect(spell.level == 1)
+        #expect(spell.school == .evocation)
+        #expect(spell.actionRecipes.count == 1)
+        if case .extraDicePerLevel(let index, let dice)? = spell.upcastEffect {
+            #expect(index == 0)
+            #expect(dice == "1d4+1")
+        } else {
+            Issue.record("Expected extraDicePerLevel upcastEffect")
+        }
+    }
+
+    @Test func cantripDecodesWithLevelZero() throws {
+        let json = """
+        {
+          "id": "fire_bolt",
+          "name": "Fire Bolt",
+          "level": 0,
+          "school": "evocation",
+          "castingTime": { "type": "action" },
+          "range": { "type": "feet", "value": 120 },
+          "components": { "verbal": true, "somatic": true },
+          "duration": { "type": "instantaneous" },
+          "description": "...",
+          "actionRecipes": [
+            { "type": "rawDamage", "dice": "1d10", "damageType": "fire", "label": "Fire Bolt" }
+          ]
+        }
+        """.data(using: .utf8)!
+        let spell = try JSONDecoder().decode(SpellDefinition.self, from: json)
+        #expect(spell.isCantrip)
+        #expect(spell.upcastEffect == nil)
+    }
+
+    // MARK: - Slot table
+
+    @Test func slotTableLookupForFullCaster() {
+        // Wizard at L3: 4 L1 slots, 2 L2 slots.
+        let table = SlotTable.fullCaster([
+            1: [1: 2],
+            3: [1: 4, 2: 2],
+            5: [1: 4, 2: 3, 3: 2]
+        ])
+        let slots = table.slots(atClassLevel: 3)
+        #expect(slots[1] == 4)
+        #expect(slots[2] == 2)
+        #expect(slots[3] == nil)
+    }
+
+    @Test func slotTableHandlesGapInClassLevels() {
+        // L1 entry, no L2 entry, L3 entry. At L2 the lookup should fall back
+        // to the highest key ≤ 2, which is 1.
+        let table = SlotTable.fullCaster([
+            1: [1: 2],
+            3: [1: 4]
+        ])
+        let l2 = table.slots(atClassLevel: 2)
+        #expect(l2[1] == 2)
+    }
+
+    @Test func pactMagicCollapsesToSingleSlotLevel() {
+        let table = SlotTable.pactMagic([
+            1: PactSlots(slotLevel: 1, count: 1),
+            3: PactSlots(slotLevel: 2, count: 2)
+        ])
+        let l3 = table.slots(atClassLevel: 3)
+        #expect(l3.count == 1)
+        #expect(l3[2] == 2)
+    }
+
+    // MARK: - Slot synthesis through the resource calculator
+
+    @Test func wizardL1HasTwoFirstLevelSlots() {
+        let store = ContentStore()
+        let character = makeWizard(level: 1)
+        let resources = ResourceCalculator.availableResources(character: character, content: store)
+        let l1Slot = resources.first { $0.definition.id == "wizard_slot_1" }
+        #expect(l1Slot?.max == 2)
+        #expect(l1Slot?.current == 2)
+        // displayHint should categorize it as a spell slot for the UI.
+        if case .spellSlot(let level)? = l1Slot?.definition.displayHint {
+            #expect(level == 1)
+        } else {
+            Issue.record("Expected spellSlot displayHint")
+        }
+    }
+
+    @Test func slotConsumeDecrementsCurrent() {
+        let store = ContentStore()
+        var character = makeWizard(level: 1)
+        let ok = ResourceCalculator.consume(
+            amount: 1, from: "wizard_slot_1",
+            in: &character, content: store
+        )
+        #expect(ok)
+        #expect(character.resources["wizard_slot_1"]?.current == 1)
+    }
+
+    @Test func longRestRestoresSpellSlots() {
+        let store = ContentStore()
+        var character = makeWizard(level: 1)
+        _ = ResourceCalculator.consume(amount: 1, from: "wizard_slot_1", in: &character, content: store)
+        _ = ResourceCalculator.consume(amount: 1, from: "wizard_slot_1", in: &character, content: store)
+        let pending = ResourceCalculator.applyRest(.long, to: &character, content: store)
+        #expect(pending.isEmpty)
+        #expect(character.resources["wizard_slot_1"]?.current == 2)
+    }
+
+    @Test func shortRestDoesNotRestoreFullCasterSlots() {
+        let store = ContentStore()
+        var character = makeWizard(level: 1)
+        _ = ResourceCalculator.consume(amount: 1, from: "wizard_slot_1", in: &character, content: store)
+        let pending = ResourceCalculator.applyRest(.short, to: &character, content: store)
+        #expect(pending.isEmpty)
+        // Wizard slots refresh on long rest only.
+        #expect(character.resources["wizard_slot_1"]?.current == 1)
+    }
+
+    // MARK: - Upcast scaling
+
+    @Test func upcastAtBaseLevelLeavesRecipesUnchanged() {
+        let spell = SpellDefinition(
+            id: "magic_missile",
+            name: "Magic Missile",
+            level: 1,
+            school: .evocation,
+            castingTime: .action,
+            range: .feet(120),
+            components: SpellComponents(verbal: true, somatic: true),
+            duration: .instantaneous,
+            description: "",
+            actionRecipes: [.rawDamage(dice: "3d4+3", damageType: .force, label: "Magic Missile")],
+            upcastEffect: .extraDicePerLevel(recipeIndex: 0, dice: "1d4+1")
+        )
+        let recipes = spell.recipes(castAtLevel: 1)
+        if case .rawDamage(let dice, _, _) = recipes[0] {
+            #expect(dice == "3d4+3")
+        } else {
+            Issue.record("Expected rawDamage at base level")
+        }
+    }
+
+    @Test func upcastAddsExtraDicePerLevel() {
+        // Magic Missile at L3 = base 3d4+3 + 2 × (1d4+1) → "3d4+3+1d4+1+1d4+1".
+        let spell = SpellDefinition(
+            id: "magic_missile",
+            name: "Magic Missile",
+            level: 1,
+            school: .evocation,
+            castingTime: .action,
+            range: .feet(120),
+            components: SpellComponents(verbal: true, somatic: true),
+            duration: .instantaneous,
+            description: "",
+            actionRecipes: [.rawDamage(dice: "3d4+3", damageType: .force, label: "Magic Missile")],
+            upcastEffect: .extraDicePerLevel(recipeIndex: 0, dice: "1d4+1")
+        )
+        let recipes = spell.recipes(castAtLevel: 3)
+        guard case .rawDamage(let dice, _, _) = recipes[0] else {
+            Issue.record("Expected rawDamage")
+            return
+        }
+        // Verify the parser can resolve the extended formula (5 d4 + 5 mod).
+        let formula = try? DiceFormulaParser().parse(dice)
+        #expect(formula?.groups.first?.kind == .d4)
+        #expect(formula?.groups.first?.count == 5)
+        #expect(formula?.modifier == 5)
+    }
+
+    @Test func upcastIsNoOpForSpellsWithoutEffect() {
+        let spell = SpellDefinition(
+            id: "fire_bolt",
+            name: "Fire Bolt",
+            level: 0,
+            school: .evocation,
+            castingTime: .action,
+            range: .feet(120),
+            components: SpellComponents(verbal: true, somatic: true),
+            duration: .instantaneous,
+            description: "",
+            actionRecipes: [.rawDamage(dice: "1d10", damageType: .fire, label: "Fire Bolt")]
+        )
+        let recipes = spell.recipes(castAtLevel: 5)
+        if case .rawDamage(let dice, _, _) = recipes[0] {
+            #expect(dice == "1d10")
+        } else {
+            Issue.record("Expected rawDamage")
+        }
+    }
+
+    // MARK: - rawDamage recipe
+
+    @Test func rawDamageRecipeRoundTrips() throws {
+        let recipe = ActionRecipe.rawDamage(dice: "3d4+3", damageType: .force, label: "Magic Missile")
+        let data = try JSONEncoder().encode(recipe)
+        let decoded = try JSONDecoder().decode(ActionRecipe.self, from: data)
+        #expect(decoded == recipe)
+    }
+
+    @Test func actionInterpreterResolvesRawDamageWithInlineModifier() {
+        let character = makeWizard(level: 1)
+        let recipe = ActionRecipe.rawDamage(dice: "3d4+3", damageType: .force, label: "Magic Missile")
+        let resolved = ActionInterpreter.resolve(recipe: recipe, character: character, weapon: nil)
+        // 3d4 group + modifier of +3.
+        #expect(resolved.formula?.groups.first?.kind == .d4)
+        #expect(resolved.formula?.groups.first?.count == 3)
+        #expect(resolved.formula?.modifier == 3)
+    }
+
+    // MARK: - Helpers
+
+    private func makeWizard(level: Int) -> Character {
+        Character(
+            name: "Mordenkainen", level: level,
+            speciesID: "human", backgroundID: "sage",
+            classEntries: [ClassEntry(classID: "wizard", level: level)],
+            abilityScores: [
+                .strength: 8, .dexterity: 14, .constitution: 14,
+                .intelligence: 16, .wisdom: 12, .charisma: 10
+            ],
+            maxHP: 6
+        )
+    }
+}

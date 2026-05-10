@@ -1,0 +1,112 @@
+[
+  {
+    "id": "fire_bolt",
+    "name": "Fire Bolt",
+    "level": 0,
+    "school": "evocation",
+    "castingTime": { "type": "action" },
+    "range": { "type": "feet", "value": 120 },
+    "components": { "verbal": true, "somatic": true },
+    "duration": { "type": "instantaneous" },
+    "description": "You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. A flammable object hit by this spell ignites if it isn't being worn or carried.",
+    "higherLevel": "This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).",
+    "actionRecipes": [
+      { "type": "rawDamage", "dice": "1d10", "damageType": "fire", "label": "Fire Bolt" }
+    ]
+  },
+  {
+    "id": "sacred_flame",
+    "name": "Sacred Flame",
+    "level": 0,
+    "school": "evocation",
+    "castingTime": { "type": "action" },
+    "range": { "type": "feet", "value": 60 },
+    "components": { "verbal": true, "somatic": true },
+    "duration": { "type": "instantaneous" },
+    "description": "Flame-like radiance descends on a creature you can see within range. The target must succeed on a Dexterity saving throw or take 1d8 radiant damage. The target gains no benefit from cover for this saving throw.",
+    "higherLevel": "The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).",
+    "actionRecipes": [
+      { "type": "rawDamage", "dice": "1d8", "damageType": "radiant", "label": "Sacred Flame" }
+    ]
+  },
+  {
+    "id": "mage_hand",
+    "name": "Mage Hand",
+    "level": 0,
+    "school": "conjuration",
+    "castingTime": { "type": "action" },
+    "range": { "type": "feet", "value": 30 },
+    "components": { "verbal": true, "somatic": true },
+    "duration": { "type": "minutes", "value": 1 },
+    "description": "A spectral, floating hand appears at a point you choose within range. The hand vanishes if it is ever more than 30 feet from you or if you cast this spell again.",
+    "actionRecipes": []
+  },
+  {
+    "id": "magic_missile",
+    "name": "Magic Missile",
+    "level": 1,
+    "school": "evocation",
+    "castingTime": { "type": "action" },
+    "range": { "type": "feet", "value": 120 },
+    "components": { "verbal": true, "somatic": true },
+    "duration": { "type": "instantaneous" },
+    "description": "You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals 1d4+1 force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.",
+    "higherLevel": "When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.",
+    "actionRecipes": [
+      { "type": "rawDamage", "dice": "3d4+3", "damageType": "force", "label": "Magic Missile" }
+    ],
+    "upcastEffect": { "type": "extraDicePerLevel", "recipeIndex": 0, "dice": "1d4+1" }
+  },
+  {
+    "id": "shield",
+    "name": "Shield",
+    "level": 1,
+    "school": "abjuration",
+    "castingTime": { "type": "reaction", "trigger": "which you take when you are hit by an attack or targeted by the magic missile spell" },
+    "range": { "type": "targetSelf" },
+    "components": { "verbal": true, "somatic": true },
+    "duration": { "type": "rounds", "value": 1 },
+    "description": "An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from magic missile.",
+    "actionRecipes": []
+  },
+  {
+    "id": "cure_wounds",
+    "name": "Cure Wounds",
+    "level": 1,
+    "school": "abjuration",
+    "castingTime": { "type": "action" },
+    "range": { "type": "touch" },
+    "components": { "verbal": true, "somatic": true },
+    "duration": { "type": "instantaneous" },
+    "description": "A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier. This spell has no effect on undead or constructs.",
+    "higherLevel": "When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.",
+    "actionRecipes": [
+      { "type": "heal", "dice": "1d8", "addLevel": false, "label": "Cure Wounds" }
+    ],
+    "upcastEffect": { "type": "extraDicePerLevel", "recipeIndex": 0, "dice": "1d8" }
+  },
+  {
+    "id": "detect_magic",
+    "name": "Detect Magic",
+    "level": 1,
+    "school": "divination",
+    "castingTime": { "type": "ritual", "base": { "type": "action" } },
+    "range": { "type": "targetSelf" },
+    "components": { "verbal": true, "somatic": true },
+    "duration": { "type": "concentration", "value": 10 },
+    "description": "For the duration, you sense the presence of magic within 30 feet of you. If you sense magic in this way, you can use your action to see a faint aura around any visible creature or object in the area that bears magic, and you learn its school of magic, if any.",
+    "actionRecipes": []
+  },
+  {
+    "id": "feather_fall",
+    "name": "Feather Fall",
+    "level": 1,
+    "school": "transmutation",
+    "castingTime": { "type": "reaction", "trigger": "which you take when you or a creature within 60 feet of you falls" },
+    "range": { "type": "feet", "value": 60 },
+    "components": { "verbal": true, "material": "a small feather or piece of down" },
+    "duration": { "type": "minutes", "value": 1 },
+    "description": "Choose up to five falling creatures within range. A falling creature's rate of descent slows to 60 feet per round until the spell ends. If the creature lands before the spell ends, it takes no falling damage and can land on its feet, and the spell ends for that creature.",
+    "actionRecipes": []
+  }
+]

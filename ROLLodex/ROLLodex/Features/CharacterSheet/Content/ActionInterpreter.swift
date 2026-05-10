@@ -38,7 +38,24 @@ enum ActionInterpreter {
 
         case .heal(let dice, let addLevel, let label):
             return resolveHeal(character: character, dice: dice, addLevel: addLevel, label: label)
+
+        case .rawDamage(let dice, _, let label):
+            return resolveRawDamage(dice: dice, label: label)
         }
+    }
+
+    private static func resolveRawDamage(dice: String, label: String) -> ResolvedAction {
+        // Spell formulas can carry inline modifiers ("3d4+3"). The simple
+        // `parseDieString` helper only handles the bare "NdM" shape, so we
+        // route through the existing dice-formula parser instead and fall
+        // back to an empty formula if anything goes wrong.
+        let formula = (try? DiceFormulaParser().parse(dice)) ?? DiceFormula()
+        return ResolvedAction(
+            id: "raw_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))",
+            label: label,
+            formula: formula,
+            description: dice
+        )
     }
 
     // MARK: - Private helpers

@@ -77,9 +77,56 @@ struct CharacterListView: View {
             for weapon in classDef.weaponProficiencies {
                 character.proficiencies[.weapon(weapon)] = .proficient
             }
+
+            // Seed the starting spell list for caster classes. Phase J MVP
+            // grants every level-appropriate spell we ship so a fresh wizard
+            // can cast immediately — Phase M's level-up flow will replace
+            // this with proper "choose your starting spells" prompts.
+            if classDef.spellcasting != nil {
+                seedStartingSpells(character: &character, classDef: classDef)
+            }
         }
 
         return character
+    }
+
+    /// Bulk-load all bundled spells the class would reasonably know at L1:
+    /// cantrips up to `cantripsKnown(L1)`, plus every L1 spell in the store.
+    /// Sets `spellbookIDs` and `preparedIDs` for prepared casters; sets
+    /// `knownIDs` for "known list" casters.
+    private func seedStartingSpells(character: inout Character, classDef: ClassDefinition) {
+        guard let block = classDef.spellcasting else { return }
+
+        let classLevel = character.classEntries.first(where: { $0.classID == classDef.id })?.level ?? 1
+        let cantripBudget = block.cantripsKnown.value(classLevel: classLevel, characterLevel: character.level)
+
+        let allSpells = Array(contentStore.spells.values)
+        let cantrips = allSpells
+            .filter { $0.level == 0 }
+            .sorted { $0.name < $1.name }
+            .prefix(cantripBudget)
+        let leveledSpells = allSpells
+            .filter { $0.level == 1 }
+            .sorted { $0.name < $1.name }
+
+        let cantripIDs = cantrips.map(\.id)
+        let leveledIDs = leveledSpells.map(\.id)
+
+        switch block.preparedRule {
+        case .knownList, .pactMagic:
+            character.spells.knownIDs = cantripIDs + leveledIDs
+        case .preparedFromBook:
+            // Wizards: leveled spells live in the spellbook; cantrips are
+            // always-known. Prepared list starts as everything until the
+            // player curates it.
+            character.spells.spellbookIDs = leveledIDs
+            character.spells.preparedIDs = cantripIDs + leveledIDs
+        case .preparedFromAll:
+            // Clerics / druids / paladins: cantrips + prepared list (curated
+            // from the full class list, which we don't model yet — so seed
+            // everything we have).
+            character.spells.preparedIDs = cantripIDs + leveledIDs
+        }
     }
 }
 

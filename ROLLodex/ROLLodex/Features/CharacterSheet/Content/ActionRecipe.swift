@@ -8,12 +8,17 @@ enum ActionRecipe: Codable, Equatable {
     case savingThrow(ability: Ability)
     case saveDC(ability: Ability)
     case heal(dice: String, addLevel: Bool, label: String)
+    /// Self-contained damage formula — used by spells (Magic Missile 3d4+3,
+    /// Sacred Flame 1d8, etc.) where the dice and ability mod are part of the
+    /// spell text rather than derived from a weapon. `damageType` is
+    /// informational; the dice tab just rolls the formula.
+    case rawDamage(dice: String, damageType: DamageType, label: String)
 }
 
 extension ActionRecipe {
     private enum CodingKeys: String, CodingKey {
         case type, abilityOverride, finesse, dieOverride, addAbility, versatile
-        case ability, skill, dice, addLevel, label
+        case ability, skill, dice, addLevel, label, damageType
     }
 
     init(from decoder: Decoder) throws {
@@ -53,6 +58,12 @@ extension ActionRecipe {
             let addLevel = try container.decodeIfPresent(Bool.self, forKey: .addLevel) ?? false
             let label = try container.decodeIfPresent(String.self, forKey: .label) ?? "Heal"
             self = .heal(dice: dice, addLevel: addLevel, label: label)
+
+        case "rawDamage":
+            let dice = try container.decode(String.self, forKey: .dice)
+            let damageType = try container.decode(DamageType.self, forKey: .damageType)
+            let label = try container.decodeIfPresent(String.self, forKey: .label) ?? "Damage"
+            self = .rawDamage(dice: dice, damageType: damageType, label: label)
 
         default:
             throw DecodingError.dataCorruptedError(
@@ -98,6 +109,12 @@ extension ActionRecipe {
             try container.encode("heal", forKey: .type)
             try container.encode(dice, forKey: .dice)
             try container.encode(addLevel, forKey: .addLevel)
+            try container.encode(label, forKey: .label)
+
+        case .rawDamage(let dice, let damageType, let label):
+            try container.encode("rawDamage", forKey: .type)
+            try container.encode(dice, forKey: .dice)
+            try container.encode(damageType, forKey: .damageType)
             try container.encode(label, forKey: .label)
         }
     }

@@ -10,19 +10,20 @@ struct ResourcesView: View {
     @State private var expanded: Bool = true
 
     var body: some View {
+        // Spell slots have their own dedicated card (SpellListView), so we
+        // exclude them here to avoid showing the same pool in two places.
         let resources = ResourceCalculator.availableResources(
             character: character,
             content: content
-        )
-        DisclosureGroup(isExpanded: $expanded) {
-            VStack(spacing: 6) {
-                if resources.isEmpty {
-                    Text("No resources yet")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 4)
-                } else {
+        ).filter { resolved in
+            if case .spellSlot = resolved.definition.displayHint { return false }
+            return true
+        }
+        if resources.isEmpty {
+            EmptyView()
+        } else {
+            DisclosureGroup(isExpanded: $expanded) {
+                VStack(spacing: 6) {
                     ForEach(resources) { resource in
                         ResourceRow(
                             resource: resource,
@@ -30,14 +31,14 @@ struct ResourcesView: View {
                         )
                     }
                 }
+                .padding(.top, 10)
+            } label: {
+                Label("Resources", systemImage: "bolt.circle.fill")
+                    .font(.headline)
             }
-            .padding(.top, 10)
-        } label: {
-            Label("Resources", systemImage: "bolt.circle.fill")
-                .font(.headline)
+            .padding(16)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
         }
-        .padding(16)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
     }
 
     private func adjust(resource: ResolvedResource, by delta: Int) {
