@@ -78,7 +78,12 @@ struct DiceRoller {
     /// 3D physics engine). Applies each group's keep/drop modifier, but does NOT
     /// generate any random values — the caller must already have resolved rerolls
     /// and pass in the FINAL face values, in formula order.
-    func resultFrom(formula: DiceFormula, values: [Int], mode: RollMode = .normal) -> RollResult {
+    func resultFrom(
+        formula: DiceFormula,
+        values: [Int],
+        mode: RollMode = .normal,
+        label: String? = nil
+    ) -> RollResult {
         var dieRolls: [DieRoll] = []
         var cursor = 0
         for group in formula.groups {
@@ -90,7 +95,7 @@ struct DiceRoller {
             }
             cursor += group.count
         }
-        return RollResult(formula: formula, dieRolls: dieRolls, mode: mode)
+        return RollResult(formula: formula, dieRolls: dieRolls, mode: mode, label: label)
     }
 
     /// Returns the formula-flat indices of dice that should re-roll under their

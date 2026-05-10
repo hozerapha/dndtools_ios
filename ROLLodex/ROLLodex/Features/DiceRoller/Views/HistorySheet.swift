@@ -51,25 +51,17 @@ private struct HistoryRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(result.formula.displayString)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(headline)
                     .font(.headline)
-                HStack(spacing: 6) {
-                    if result.mode != .normal {
-                        Text(result.mode.shortLabel)
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                result.mode == .advantage ? Color.green : Color.red,
-                                in: Capsule()
-                            )
-                    }
-                    Text(result.timestamp, style: .relative)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                    .lineLimit(2)
+                Text(result.formula.displayString)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                Text(result.timestamp, style: .relative)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .padding(.top, 2)
             }
             Spacer()
             Text("\(result.total)")
@@ -77,6 +69,18 @@ private struct HistoryRow: View {
                 .foregroundStyle(totalColor(for: result))
         }
         .padding(.vertical, 4)
+    }
+
+    /// Composed headline: friendly label (or "Custom roll") + an "(adv)" /
+    /// "(dis)" suffix derived from the formula itself, so adv/dis is always
+    /// readable even on rerolled or restored entries.
+    private var headline: String {
+        let base = result.label?.isEmpty == false ? result.label! : "Custom roll"
+        switch result.formula.encodedAdvantageMode {
+        case .advantage:    return "\(base) (adv)"
+        case .disadvantage: return "\(base) (dis)"
+        case .normal, .none: return base
+        }
     }
 
     private func totalColor(for result: RollResult) -> Color {

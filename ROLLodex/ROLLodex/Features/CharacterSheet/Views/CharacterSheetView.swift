@@ -60,13 +60,26 @@ struct CharacterSheetView: View {
             weapon: nil
         )
         let formula = applyAdvantage(to: resolved.formula, mode: mode)
+        // The interpreter's label includes the modifier ("Athletics +5") for
+        // the on-sheet button, but in history that just duplicates the formula
+        // line, so we use a cleaner recipe-based name there.
+        let historyLabel = historyLabel(for: recipe) ?? resolved.label
         pendingRoll.pending = ResolvedAction(
             id: resolved.id,
-            label: resolved.label,
+            label: historyLabel,
             formula: formula,
             description: resolved.description
         )
         selectedTab = .dice
+    }
+
+    private func historyLabel(for recipe: ActionRecipe) -> String? {
+        switch recipe {
+        case .skillCheck(let skill):     return "\(skill.displayName) check"
+        case .abilityCheck(let ability): return "\(ability.rawValue.capitalized) check"
+        case .savingThrow(let ability):  return "\(ability.rawValue.capitalized) save"
+        default: return nil
+        }
     }
 
     /// Returns a copy of `base` with its first 1-die d20 group expanded to a

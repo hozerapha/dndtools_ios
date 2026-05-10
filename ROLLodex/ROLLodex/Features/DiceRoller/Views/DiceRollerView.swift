@@ -7,6 +7,16 @@ struct DiceRollerView: View {
     @State private var showSavePreset = false
     @State private var isRolling = false
     @State private var controller = DiceSceneController()
+    /// Friendly label for the current formula — set by sheet handoffs, preset
+    /// taps, and history rerolls. Cleared automatically when the user edits
+    /// the formula directly (picker, formula bar, clear, etc.). Stamped onto
+    /// the resulting RollResult so the history sheet can show "Sleight of
+    /// Hand Check (adv): 25" instead of just "2d20kh1+5: 25".
+    @State private var pendingLabel: String?
+    /// Snapshot of the formula at the moment `pendingLabel` was set. If the
+    /// live formula drifts away from this snapshot, the label has gone stale
+    /// (the user reshaped the dice) and we drop it.
+    @State private var labelBoundFormula: DiceFormula?
     /// Indices in the controller's `dice` array currently being magnified
     /// (press-and-hold). Empty when no finger is pressing a settled die. One
     /// element for standalone kinds, two for a d100 (tens then ones) — the
@@ -51,7 +61,7 @@ struct DiceRollerView: View {
             }
             .sheet(isPresented: $showHistory) {
                 HistorySheet { selected in
-                    formula = selected.formula
+                    applyLabeled(formula: selected.formula, label: selected.label)
                 }
                 .presentationDetents([.medium, .large])
             }
@@ -78,6 +88,13 @@ struct DiceRollerView: View {
                 controller.setDice(formula: new)
                 lastResult = nil
                 magnifyingDieIndices = []
+                // Drop a stale label if the user reshaped the formula manually.
+                // Labeled handoffs always set labelBoundFormula == new, so this
+                // only fires for direct picker / formula-bar / clear edits.
+                if labelBoundFormula != new {
+                    pendingLabel = nil
+                    labelBoundFormula = nil
+                }
             }
         }
     }
@@ -164,7 +181,9 @@ struct DiceRollerView: View {
     private var bottomControls: some View {
         VStack(spacing: 10) {
             if !presets.presets.isEmpty {
-                PresetRowView(formula: $formula)
+                PresetRowView { preset in
+                    applyLabeled(formula: preset.formula, label: preset.name)
+                }
             }
 
             modifierRow
@@ -243,11 +262,21 @@ struct DiceRollerView: View {
             pendingRoll.pending = nil
             return
         }
-        formula = resolvedFormula
+        applyLabeled(formula: resolvedFormula, label: resolved.label)
         pendingRoll.pending = nil
         if autoRollEnabled {
             Task { await roll() }
         }
+    }
+
+    /// Set the formula AND remember that the supplied label should ride along
+    /// to the next roll. The matching `labelBoundFormula` snapshot lets the
+    /// `onChange(of: formula)` observer tell apart "labeled handoff" from
+    /// "user edited the formula manually" — only the latter clears the label.
+    private func applyLabeled(formula newFormula: DiceFormula, label: String?) {
+        pendingLabel = label
+        labelBoundFormula = (label == nil) ? nil : newFormula
+        formula = newFormula
     }
 
     @MainActor
@@ -272,7 +301,7 @@ struct DiceRollerView: View {
         }
 
         // 3. Build the RollResult — applies kh/kl/dh/dl per group to mark kept/dropped.
-        let result = dr.resultFrom(formula: formula, values: values)
+        let result = dr.resultFrom(formula: formula, values: values, label: pendingLabel)
 
         // 4. Visually dim the dropped dice. Done after the result is computed so the
         //    fade kicks in once everything has settled and we know what's kept.

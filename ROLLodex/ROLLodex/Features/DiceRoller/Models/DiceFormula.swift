@@ -73,6 +73,20 @@ struct DiceFormula: Codable, Hashable {
             && groups[0].isPlain
     }
 
+    /// If the formula encodes a 5e advantage / disadvantage roll
+    /// (`2d20kh1` / `2d20kl1`) returns the matching mode; otherwise `nil`.
+    /// Used by the history sheet to decorate labels with "(adv)" / "(dis)".
+    var encodedAdvantageMode: RollMode? {
+        for group in groups where group.kind == .d20 && group.count == 2 {
+            switch group.modifier {
+            case .keepHighest(1): return .advantage
+            case .keepLowest(1):  return .disadvantage
+            default: continue
+            }
+        }
+        return nil
+    }
+
     /// Total count of dice of the given kind, summed across all groups (any modifier).
     func count(of kind: DieKind) -> Int {
         groups.filter { $0.kind == kind }.map(\.count).reduce(0, +)

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct PresetRowView: View {
-    @Binding var formula: DiceFormula
+    let onSelect: (Preset) -> Void
     @Environment(PresetStore.self) private var presets
 
     var body: some View {
@@ -9,7 +9,7 @@ struct PresetRowView: View {
             HStack(spacing: 8) {
                 ForEach(presets.presets) { preset in
                     Button {
-                        formula = preset.formula
+                        onSelect(preset)
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(preset.name)
