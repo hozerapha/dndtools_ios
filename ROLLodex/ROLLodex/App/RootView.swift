@@ -9,6 +9,7 @@ struct RootView: View {
     @State private var presets = PresetStore()
     @State private var contentStore = ContentStore()
     @State private var characterStore = CharacterStore()
+    @State private var pendingRollStore = PendingRollStore()
     @State private var selectedTab: AppTab = .dice
 
     var body: some View {
@@ -19,7 +20,7 @@ struct RootView: View {
                 }
                 .tag(AppTab.dice)
 
-            CharacterListView()
+            CharacterListView(selectedTab: $selectedTab)
                 .tabItem {
                     Label("Characters", systemImage: "person.2")
                 }
@@ -29,6 +30,7 @@ struct RootView: View {
         .environment(presets)
         .environment(contentStore)
         .environment(characterStore)
+        .environment(pendingRollStore)
     }
 }
 

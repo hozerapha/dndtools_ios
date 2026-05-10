@@ -39,10 +39,9 @@ enum CharacterCalculator {
         let profBonus = proficiencyBonus(level: character.level)
 
         switch profLevel {
-        case .none:
-            return abilityMod
-        case .proficient, .expertise:
-            return abilityMod + profBonus
+        case .none:       return abilityMod
+        case .proficient: return abilityMod + profBonus
+        case .expertise:  return abilityMod + (profBonus * 2)
         }
     }
 

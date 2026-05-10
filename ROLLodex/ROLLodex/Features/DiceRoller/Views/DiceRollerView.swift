@@ -3,7 +3,6 @@ import SwiftUI
 struct DiceRollerView: View {
     @State private var formula = DiceFormula()
     @State private var lastResult: RollResult?
-    @State private var mode: RollMode = .normal
     @State private var showHistory = false
     @State private var showSavePreset = false
     @State private var isRolling = false
@@ -18,11 +17,14 @@ struct DiceRollerView: View {
 
     @Environment(HistoryStore.self) private var history
     @Environment(PresetStore.self) private var presets
+    @Environment(PendingRollStore.self) private var pendingRoll
+
+    @AppStorage("character.autoRoll.enabled") private var autoRollEnabled = false
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 12) {
-                FormulaBarView(formula: formula, mode: mode) { parsed in
+                FormulaBarView(formula: formula) { parsed in
                     formula = parsed
                 }
                 .disabled(isRolling)
@@ -50,7 +52,6 @@ struct DiceRollerView: View {
             .sheet(isPresented: $showHistory) {
                 HistorySheet { selected in
                     formula = selected.formula
-                    mode = selected.mode
                 }
                 .presentationDetents([.medium, .large])
             }
@@ -65,6 +66,10 @@ struct DiceRollerView: View {
                 if controller.diceCount == 0 && formula.totalDiceCount > 0 {
                     controller.setDice(formula: formula)
                 }
+                consumePendingRollIfNeeded()
+            }
+            .onChange(of: pendingRoll.pending) { _, _ in
+                consumePendingRollIfNeeded()
             }
             .onChange(of: formula) { _, new in
                 // Reset the visible tray + last result whenever the formula changes
@@ -74,10 +79,6 @@ struct DiceRollerView: View {
                 lastResult = nil
                 magnifyingDieIndices = []
             }
-            .onChange(of: formula.supportsAdvantage) { _, supports in
-                if !supports { mode = .normal }
-            }
-            .animation(.snappy, value: formula.supportsAdvantage)
         }
     }
 
@@ -166,16 +167,6 @@ struct DiceRollerView: View {
                 PresetRowView(formula: $formula)
             }
 
-            if formula.supportsAdvantage {
-                Picker("Mode", selection: $mode) {
-                    ForEach(RollMode.allCases) { m in
-                        Text(m.label).tag(m)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
             modifierRow
             DiePickerView(formula: $formula)
             actionRow
@@ -241,6 +232,24 @@ struct DiceRollerView: View {
         }
     }
 
+    /// Drain any pending ResolvedAction handed off from the character sheet:
+    /// prefill the formula, then clear the slot. Adv/dis is encoded directly in
+    /// the formula (e.g. 2d20kh1) by the caller, so no separate mode is needed.
+    /// If the user has opted into auto-roll, kick off a roll immediately.
+    private func consumePendingRollIfNeeded() {
+        guard !isRolling, let resolved = pendingRoll.pending else { return }
+        // saveDC and other info-only actions have no formula — nothing to load.
+        guard let resolvedFormula = resolved.formula else {
+            pendingRoll.pending = nil
+            return
+        }
+        formula = resolvedFormula
+        pendingRoll.pending = nil
+        if autoRollEnabled {
+            Task { await roll() }
+        }
+    }
+
     @MainActor
     private func roll() async {
         guard !isRolling,
@@ -263,7 +272,7 @@ struct DiceRollerView: View {
         }
 
         // 3. Build the RollResult — applies kh/kl/dh/dl per group to mark kept/dropped.
-        let result = dr.resultFrom(formula: formula, values: values, mode: mode)
+        let result = dr.resultFrom(formula: formula, values: values)
 
         // 4. Visually dim the dropped dice. Done after the result is computed so the
         //    fade kicks in once everything has settled and we know what's kept.

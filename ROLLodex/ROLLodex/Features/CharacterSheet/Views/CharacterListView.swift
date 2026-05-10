@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct CharacterListView: View {
+    @Binding var selectedTab: AppTab
     @Environment(CharacterStore.self) private var characterStore
     @Environment(ContentStore.self) private var contentStore
     @State private var showCreation = false
@@ -33,7 +34,7 @@ struct CharacterListView: View {
                 }
             }
             .navigationDestination(for: Character.self) { character in
-                CharacterSheetView(character: character)
+                CharacterSheetView(character: character, selectedTab: $selectedTab)
             }
         }
     }

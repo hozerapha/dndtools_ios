@@ -1,17 +1,18 @@
 import SwiftUI
 
-/// Collapsible 18-skill list. Sort order is "by ability, then alphabetically"
-/// (matches the layout most paper character sheets use), so all DEX skills sit
-/// together, all WIS skills sit together, etc.
+/// Collapsible 18-skill list, sorted alphabetically by display name. Each row
+/// carries an inline trio of roll buttons (normal / advantage / disadvantage)
+/// so the dice handoff happens with one explicit tap.
 struct SkillListView: View {
     let character: Character
+    let onRoll: (Skill, RollMode) -> Void
     @State private var expanded: Bool = true
 
     var body: some View {
         DisclosureGroup(isExpanded: $expanded) {
             VStack(spacing: 4) {
                 ForEach(sortedSkills, id: \.self) { skill in
-                    SkillRow(character: character, skill: skill)
+                    SkillRow(character: character, skill: skill, onRoll: onRoll)
                 }
             }
             .padding(.top, 10)
@@ -24,20 +25,14 @@ struct SkillListView: View {
     }
 
     private var sortedSkills: [Skill] {
-        // Ability.allCases is already in canonical STR/DEX/CON/INT/WIS/CHA order.
-        let abilityOrder = Ability.allCases
-        return Skill.allCases.sorted { a, b in
-            let aIdx = abilityOrder.firstIndex(of: a.ability) ?? 0
-            let bIdx = abilityOrder.firstIndex(of: b.ability) ?? 0
-            if aIdx != bIdx { return aIdx < bIdx }
-            return a.displayName < b.displayName
-        }
+        Skill.allCases.sorted { $0.displayName < $1.displayName }
     }
 }
 
 private struct SkillRow: View {
     let character: Character
     let skill: Skill
+    let onRoll: (Skill, RollMode) -> Void
 
     var body: some View {
         let mod = CharacterCalculator.skillModifier(character: character, skill: skill)
@@ -53,7 +48,10 @@ private struct SkillRow: View {
             Spacer()
             Text(mod.formattedModifier)
                 .font(.subheadline.monospacedDigit().weight(.semibold))
-                .frame(minWidth: 36, alignment: .trailing)
+                .frame(minWidth: 32, alignment: .trailing)
+            RollModeChips(accessibilityRoot: "Roll \(skill.displayName)") { mode in
+                onRoll(skill, mode)
+            }
         }
         .padding(.vertical, 2)
     }

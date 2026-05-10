@@ -84,7 +84,6 @@ enum ActionInterpreter {
             id: "weapon_\(weapon?.id ?? "attack")_attack",
             label: "\(label) Attack \(totalBonus >= 0 ? "+" : "")\(totalBonus)",
             formula: formula,
-            mode: nil,
             description: desc
         )
     }
@@ -129,7 +128,6 @@ enum ActionInterpreter {
             id: "weapon_\(weapon?.id ?? "damage")_damage",
             label: "\(label) Damage",
             formula: formula,
-            mode: nil,
             description: desc
         )
     }
@@ -149,7 +147,6 @@ enum ActionInterpreter {
             id: "ability_\(ability.rawValue)",
             label: "\(ability.rawValue.capitalized) Check \(mod >= 0 ? "+" : "")\(mod)",
             formula: formula,
-            mode: nil,
             description: "1d20 + \(ability.abbreviation) (\(mod >= 0 ? "+" : "")\(mod))"
         )
     }
@@ -168,7 +165,6 @@ enum ActionInterpreter {
             id: "skill_\(skill.rawValue)",
             label: "\(skill.displayName) \(mod >= 0 ? "+" : "")\(mod)",
             formula: formula,
-            mode: nil,
             description: "1d20 + \(skill.ability.abbreviation) (skill)"
         )
     }
@@ -187,7 +183,6 @@ enum ActionInterpreter {
             id: "save_\(ability.rawValue)",
             label: "\(ability.rawValue.capitalized) Save \(bonus >= 0 ? "+" : "")\(bonus)",
             formula: formula,
-            mode: nil,
             description: "1d20 + \(ability.abbreviation) save"
         )
     }
@@ -205,7 +200,6 @@ enum ActionInterpreter {
             id: "dc_\(ability.rawValue)",
             label: "\(ability.rawValue.capitalized) Save DC \(dc)",
             formula: nil,
-            mode: nil,
             description: "8 + \(ability.abbreviation) (\(abilityMod >= 0 ? "+" : "")\(abilityMod)) + Prof (\(profBonus))"
         )
     }
@@ -222,7 +216,6 @@ enum ActionInterpreter {
             id: "heal_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))",
             label: label,
             formula: formula,
-            mode: nil,
             description: addLevel ? "\(dice) + level (\(character.level))" : dice
         )
     }

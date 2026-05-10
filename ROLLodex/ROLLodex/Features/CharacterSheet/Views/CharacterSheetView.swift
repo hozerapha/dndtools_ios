@@ -5,16 +5,29 @@ import SwiftUI
 /// the character. Action buttons and editing arrive in later phases.
 struct CharacterSheetView: View {
     let character: Character
+    @Binding var selectedTab: AppTab
     @Environment(ContentStore.self) private var content
+    @Environment(PendingRollStore.self) private var pendingRoll
 
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
                 headerCard
                 statPillRow
-                AbilityBlockView(character: character)
+                AbilityBlockView(
+                    character: character,
+                    onRollCheck: { ability, mode in
+                        dispatchRoll(.abilityCheck(ability: ability), mode: mode)
+                    },
+                    onRollSave: { ability, mode in
+                        dispatchRoll(.savingThrow(ability: ability), mode: mode)
+                    }
+                )
+                ActionButtonGrid(sections: actionSections, onTap: handleActionTap)
                 sensesCard
-                SkillListView(character: character)
+                SkillListView(character: character) { skill, mode in
+                    dispatchRoll(.skillCheck(skill: skill), mode: mode)
+                }
                 proficienciesCard
                 InventoryView(character: character)
                 featuresCard
@@ -25,6 +38,48 @@ struct CharacterSheetView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(character.name)
         .navigationBarTitleDisplayMode(.large)
+    }
+
+    private var actionSections: [ActionSection] {
+        CharacterActionDeriver.sections(for: character, content: content)
+    }
+
+    private func handleActionTap(_ action: ResolvedAction) {
+        guard action.formula != nil else { return }
+        pendingRoll.pending = action
+        selectedTab = .dice
+    }
+
+    /// Resolve a recipe and hand it to the dice tab. If the user picked
+    /// advantage/disadvantage, the formula's plain d20 group is expanded to
+    /// 2d20kh1 / 2d20kl1 so the tray actually rolls two dice and drops one.
+    private func dispatchRoll(_ recipe: ActionRecipe, mode: RollMode) {
+        let resolved = ActionInterpreter.resolve(
+            recipe: recipe,
+            character: character,
+            weapon: nil
+        )
+        let formula = applyAdvantage(to: resolved.formula, mode: mode)
+        pendingRoll.pending = ResolvedAction(
+            id: resolved.id,
+            label: resolved.label,
+            formula: formula,
+            description: resolved.description
+        )
+        selectedTab = .dice
+    }
+
+    /// Returns a copy of `base` with its first 1-die d20 group expanded to a
+    /// 2d20kh1 / 2d20kl1 group. Anything else is returned unchanged — the
+    /// adv/dis menu only makes sense for plain d20 rolls.
+    private func applyAdvantage(to base: DiceFormula?, mode: RollMode) -> DiceFormula? {
+        guard mode != .normal, var formula = base else { return base }
+        guard let i = formula.groups.firstIndex(where: {
+            $0.kind == .d20 && $0.count == 1 && $0.isPlain
+        }) else { return formula }
+        formula.groups[i].count = 2
+        formula.groups[i].modifier = (mode == .advantage) ? .keepHighest(1) : .keepLowest(1)
+        return formula
     }
 
     // MARK: - Header

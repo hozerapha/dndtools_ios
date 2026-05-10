@@ -2,7 +2,6 @@ import SwiftUI
 
 struct FormulaBarView: View {
     let formula: DiceFormula
-    let mode: RollMode
     let onSubmit: (DiceFormula) -> Void
 
     @State private var isEditing = false
@@ -44,16 +43,6 @@ struct FormulaBarView: View {
                         .animation(.snappy, value: formula.displayString)
                         .contentShape(Rectangle())
                         .onTapGesture { startEditing() }
-
-                    if mode != .normal {
-                        Text(mode.shortLabel)
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(mode == .advantage ? Color.green : Color.red,
-                                        in: Capsule())
-                    }
 
                     Button {
                         startEditing()

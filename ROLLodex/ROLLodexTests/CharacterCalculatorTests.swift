@@ -99,6 +99,21 @@ struct CharacterCalculatorTests {
         #expect(bonus == 5) // +3 STR + 2 prof
     }
 
+    @Test func saveBonusWithExpertiseDoublesProficiency() {
+        let character = Character(
+            name: "Test",
+            level: 5,
+            speciesID: "human",
+            backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 5)],
+            abilityScores: [.strength: 16],
+            maxHP: 40,
+            proficiencies: [.savingThrow(.strength): .expertise]
+        )
+        // +3 STR + 6 expertise (prof bonus 3 × 2)
+        #expect(CharacterCalculator.saveBonus(character: character, ability: .strength) == 9)
+    }
+
     @Test func armorClassWithHeavyArmor() {
         let armor = ArmorDefinition(
             id: "chain_mail",
