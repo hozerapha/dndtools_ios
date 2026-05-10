@@ -10,9 +10,13 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
     /// active features (Artificer's "Magic Item Adept" → 4, "Master" → 5,
     /// "Savant" → 6). Absent means the feature doesn't touch attunement.
     let attunementSlots: Int?
+    /// If present, this feature grants a charge / use pool. The pool's `id`
+    /// keys into the character's `resources` map; absence means the feature
+    /// has no consumable cost (always-on, like Fighting Style).
+    let resource: ResourceDefinition?
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, description, actionRecipes, attunementSlots
+        case id, name, description, actionRecipes, attunementSlots, resource
     }
 
     init(
@@ -20,13 +24,15 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         name: String,
         description: String,
         actionRecipes: [ActionRecipe] = [],
-        attunementSlots: Int? = nil
+        attunementSlots: Int? = nil,
+        resource: ResourceDefinition? = nil
     ) {
         self.id = id
         self.name = name
         self.description = description
         self.actionRecipes = actionRecipes
         self.attunementSlots = attunementSlots
+        self.resource = resource
     }
 
     init(from decoder: Decoder) throws {
@@ -36,5 +42,6 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         description = try c.decode(String.self, forKey: .description)
         actionRecipes = try c.decodeIfPresent([ActionRecipe].self, forKey: .actionRecipes) ?? []
         attunementSlots = try c.decodeIfPresent(Int.self, forKey: .attunementSlots)
+        resource = try c.decodeIfPresent(ResourceDefinition.self, forKey: .resource)
     }
 }

@@ -32,8 +32,10 @@ private struct ActionTile: View {
     let onTap: (ResolvedAction) -> Void
 
     var body: some View {
-        if row.action.formula == nil {
-            // Info-only row (e.g. save DC). Don't make it look pressable.
+        // Info-only rows (no formula and no resource cost) — e.g. save DC —
+        // render as a flat chip. Anything actionable is a button. The
+        // `isExhausted` flag greys it out in either case.
+        if row.action.formula == nil && row.action.resourceCost == nil {
             tileBody
                 .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
         } else {
@@ -43,6 +45,8 @@ private struct ActionTile: View {
                 tileBody
             }
             .buttonStyle(ActionTileButtonStyle())
+            .disabled(row.isExhausted)
+            .opacity(row.isExhausted ? 0.45 : 1)
         }
     }
 
@@ -55,7 +59,7 @@ private struct ActionTile: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             if let badge = row.badge {
                 Text(badge)
-                    .font(.caption2.weight(.bold))
+                    .font(.caption2.monospacedDigit().weight(.bold))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(Color.accentColor.opacity(0.18), in: Capsule())

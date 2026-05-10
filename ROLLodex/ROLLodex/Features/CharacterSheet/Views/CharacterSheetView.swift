@@ -9,6 +9,9 @@ struct CharacterSheetView: View {
     @Environment(ContentStore.self) private var content
     @Environment(PendingRollStore.self) private var pendingRoll
 
+    @State private var showRestConfirm = false
+    @State private var pendingRefreshes: [PendingRefresh] = []
+
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
@@ -23,6 +26,7 @@ struct CharacterSheetView: View {
                         dispatchRoll(.savingThrow(ability: ability), mode: mode)
                     }
                 )
+                ResourcesView(character: $character)
                 ActionButtonGrid(sections: actionSections, onTap: handleActionTap)
                 sensesCard
                 SkillListView(character: character) { skill, mode in
@@ -39,6 +43,40 @@ struct CharacterSheetView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(character.name)
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showRestConfirm = true
+                } label: {
+                    Label("Rest", systemImage: "moon.zzz.fill")
+                }
+            }
+        }
+        .confirmationDialog("Rest", isPresented: $showRestConfirm, titleVisibility: .hidden) {
+            Button("Short Rest") { takeRest(.short) }
+            Button("Long Rest")  { takeRest(.long) }
+            Button("Cancel", role: .cancel) {}
+        }
+        .sheet(isPresented: Binding(
+            get: { !pendingRefreshes.isEmpty },
+            set: { if !$0 { pendingRefreshes = [] } }
+        )) {
+            RefreshResolutionSheet(
+                character: $character,
+                pendingRefreshes: pendingRefreshes,
+                onDismiss: { pendingRefreshes = [] }
+            )
+            .presentationDetents([.medium, .large])
+        }
+    }
+
+    /// Apply the rest, then either show the refresh-resolution sheet (if any
+    /// pools refresh by dice roll) or just commit silently.
+    private func takeRest(_ kind: RestKind) {
+        let pending = ResourceCalculator.applyRest(kind, to: &character, content: content)
+        if !pending.isEmpty {
+            pendingRefreshes = pending
+        }
     }
 
     private var actionSections: [ActionSection] {
@@ -46,6 +84,19 @@ struct CharacterSheetView: View {
     }
 
     private func handleActionTap(_ action: ResolvedAction) {
+        // Pay the resource cost first; abort if exhausted (deriver should
+        // already have greyed the tile out, but belt-and-suspenders).
+        if let cost = action.resourceCost {
+            let ok = ResourceCalculator.consume(
+                amount: cost.amount,
+                from: cost.resourceID,
+                in: &character,
+                content: content
+            )
+            guard ok else { return }
+        }
+        // No formula → nothing to push to dice (Action Surge style). The
+        // resource was still spent above.
         guard action.formula != nil else { return }
         pendingRoll.pending = action
         selectedTab = .dice

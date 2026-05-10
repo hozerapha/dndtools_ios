@@ -1,10 +1,18 @@
 import Foundation
 
 /// One actionable (or info-only) row on the character sheet. Wraps a
-/// `ResolvedAction` plus optional UI extras like a weapon mastery badge.
+/// `ResolvedAction` plus optional UI extras (weapon mastery badge, resource
+/// counter) and an `isExhausted` flag the tile reads to grey itself out.
 struct ActionRow: Identifiable, Equatable {
     let action: ResolvedAction
     let badge: String?
+    let isExhausted: Bool
+
+    init(action: ResolvedAction, badge: String?, isExhausted: Bool = false) {
+        self.action = action
+        self.badge = badge
+        self.isExhausted = isExhausted
+    }
 
     var id: String { action.id }
 }
@@ -116,6 +124,28 @@ enum CharacterActionDeriver {
             guard let cls = content.classDefinition(id: entry.classID) else { continue }
             for level in 1...max(entry.level, 1) {
                 for feature in cls.levelFeatures[level] ?? [] {
+                    let cost = feature.resource.map { ResourceCost(resourceID: $0.id, amount: 1) }
+                    let resolvedResource = feature.resource.flatMap { def in
+                        ResourceCalculator.availableResources(character: character, content: content)
+                            .first { $0.definition.id == def.id }
+                    }
+                    let badge = resolvedResource.map { "\($0.current) / \($0.max)" }
+                    let isExhausted = resolvedResource?.isExhausted ?? false
+
+                    if feature.actionRecipes.isEmpty, cost != nil {
+                        // Resource-only feature (e.g. Action Surge): no roll, but
+                        // tapping the button still consumes a charge.
+                        let action = ResolvedAction(
+                            id: "feature_\(feature.id)_consume",
+                            label: feature.name,
+                            formula: nil,
+                            description: nil,
+                            resourceCost: cost
+                        )
+                        rows.append(ActionRow(action: action, badge: badge, isExhausted: isExhausted))
+                        continue
+                    }
+
                     for recipe in feature.actionRecipes {
                         let resolved = ActionInterpreter.resolve(
                             recipe: recipe,
@@ -128,9 +158,10 @@ enum CharacterActionDeriver {
                             id: "feature_\(feature.id)_\(resolved.id)",
                             label: featureButtonLabel(feature: feature, resolved: resolved),
                             formula: resolved.formula,
-                            description: resolved.description
+                            description: resolved.description,
+                            resourceCost: cost
                         )
-                        rows.append(ActionRow(action: labeled, badge: nil))
+                        rows.append(ActionRow(action: labeled, badge: badge, isExhausted: isExhausted))
                     }
                 }
             }
@@ -168,4 +199,5 @@ enum CharacterActionDeriver {
         if resolved.label == feature.name { return feature.name }
         return "\(feature.name): \(resolved.label)"
     }
+
 }

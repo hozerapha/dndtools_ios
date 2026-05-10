@@ -17,6 +17,11 @@
 | **Dice handoff** | `PendingRollStore` carries `(label, formula, mode)`; Dice tab **prefills and waits** by default | User can add modifiers or change mind. Optional setting for auto-roll. |
 | **Persistence** | CharacterStore → file system; HistoryStore/PresetStore stay on UserDefaults | Characters are documents; dice state is app state. |
 | **Tests** | Swift Testing (`@Test`, `#expect`) for all pure model + interpreter logic | Follows existing convention. No XCTest. |
+| **Resources (charges/uses/slots)** | Defined inline on the owning feature/item; character JSON only stores `{ resourceID: { current: Int } }` | One mental model for Second Wind, item charges, spell slots. Definitions move with the content that owns them; per-character state stays minimal and survives content edits. |
+| **Spell slots** | Modeled as resources (one per class+level, e.g. `wizard_slot_l3`); rendered with bespoke "slots row" UI | Re-uses the rest cycle, the roll-resolution prompt, and persistence. UI layer can still group slots together without the data being a separate type. |
+| **Roll resolution mode** | Global default in Settings (`manual` / `tray` / `behindTheScenes`) with a per-prompt override | Supports physical-dice tables, virtual-roll fans, and speed-runners in the same app. One `RollPrompt` view used by every random outcome (rest refresh, healing, hit dice, item charge regen). |
+| **Rest cycle** | User-triggered via a "Rest" button on the sheet (no auto-detect) | Predictable. Walks every resource the character has access to and refreshes whatever matches the trigger. Roll-typed refreshes go through the resolution prompt. |
+| **Action recipe composition** | Recipes are sequences of effects, not single rolls | A feature like Second Wind is `[consumeResource, heal]`. Lets us model upcasting, multi-die spells, item charges + spell access, all without bespoke types per case. |
 
 ---
 
@@ -599,6 +604,11 @@ func atomicWrite(_ data: Data, to url: URL) throws {
 
 ### Phase H — Custom Content Import / Export
 
+> **Implementation note:** Hold this phase until **after Phases I–M** land. The
+> import contract should ship against the stabilized content schema (resources,
+> spells, item charges, conditions, choices). Shipping it earlier locks in a
+> shape we'll have to migrate later — a recurring cost for every external pack.
+
 **Goal:** Homebrew JSON and character sharing.
 
 **H.1 Import content**
@@ -616,6 +626,488 @@ func atomicWrite(_ data: Data, to url: URL) throws {
 - Validate JSON → copy to `Documents/Characters/` → update manifest.
 
 **Deliverable:** Users can share characters and import homebrew content packs.
+
+---
+
+### Phase I — Resources & Rest Cycle
+
+**Goal:** Introduce a generic `Resource` primitive that backs every charge-based
+mechanic in the system (Second Wind uses, Action Surge, Hit Dice, item charges,
+spell slots). Add a rest cycle that refreshes resources on the appropriate
+trigger. Add a single `RollPrompt` view that respects the user's resolution-mode
+preference, used by every refresh roll and any future random outcome.
+
+**I.1 Resource definition**
+
+`ResourceDefinition.swift`:
+- `id: String` — unique within content (`fighter_second_wind`, `wand_of_mm_charges`, …)
+- `name: String` — display name on the sheet
+- `max: LevelScaledValue`
+- `refreshOn: RefreshTrigger`
+- `refreshAmount: RefreshAmount`
+- `displayHint: ResourceDisplayHint?` — optional UI grouping (e.g., `.spellSlot(level: 3)` so the spells UI can collect slot resources together)
+
+`LevelScaledValue.swift` — the same sparse-table pattern used by `attunementSlotsByLevel`:
+- `.flat(Int)`
+- `.byClassLevel([Int: Int])` — applies to whichever class owns the resource; take highest key ≤ entry.level
+- `.byCharacterLevel([Int: Int])` — applies to overall character level (rare; useful for racial features)
+
+`RefreshTrigger.swift`: `.shortRest`, `.longRest`, `.dawn`, `.encounter`, `.never`. Anything refreshed by `.shortRest` *also* refreshes on long rest unless the rule explicitly opts out.
+
+`RefreshAmount.swift` — tagged enum:
+- `.all` — fill to max (e.g., spell slots on long rest, Second Wind on long rest)
+- `.fixed(Int)` — exact amount (Second Wind on short rest = +1)
+- `.byClassLevel([Int: Int])` — scaled (Hit Dice regen = half class level)
+- `.roll(formula: String)` — refresh via dice roll (Wand of MM = `1d6+1`)
+
+**I.2 Resource ownership**
+
+Resources are declared inline on the entity that grants them — no central
+registry, per the locked-in decision:
+
+```swift
+struct FeatureDefinition {
+    var resource: ResourceDefinition?
+}
+
+struct ItemDefinition { /* + Weapon, Armor */
+    var resource: ResourceDefinition?
+}
+
+struct ClassDefinition {
+    var spellcasting: SpellcastingBlock?  // synthesizes spell-slot resources, see Phase J
+}
+```
+
+The character JSON only stores `current` values:
+
+```json
+"resources": {
+  "fighter_second_wind": { "current": 1 },
+  "wand_of_mm_charges":  { "current": 5 }
+}
+```
+
+If a referenced resource ID disappears from content (item deleted, class
+removed), the entry is silently dropped on next save. If a new resource appears
+the character has access to, it defaults to `current = max` until the next
+rest. This keeps content edits non-destructive to character files.
+
+**I.3 ResourceCalculator (pure, MainActor for content access)**
+
+- `availableResources(character:content:) -> [ResolvedResource]` — every pool the character has access to right now, with computed `max`, `refreshOn`, etc.
+- `current(character:resourceID:) -> Int` — clamped to `[0, max]`
+- `consume(_ amount: Int, from resourceID:, in: inout Character) -> Bool` — returns whether consumption succeeded
+- `applyRest(_ kind:, to: inout Character) -> [PendingRefresh]` — refreshes anything matching the trigger; returns pending dice rolls for the UI to resolve
+
+`ResolvedResource`:
+- `id`, `name`, `current`, `max`
+- `refreshOn`, `refreshAmount`
+- `sourceLabel: String` — "Fighter (L1)", "Wand of Magic Missiles", etc.
+- `displayHint: ResourceDisplayHint?`
+
+**I.4 Rest cycle**
+
+`RestKind`: `.short`, `.long`.
+
+Flow:
+1. User taps "Rest" → action sheet picks short or long.
+2. `applyRest` walks resources, builds `[PendingRefresh]` for any with `.roll(...)` amount.
+3. If `pendingRefreshes` is empty: HUD confirmation, done.
+4. Otherwise: `RefreshResolutionSheet` opens with one row per pending refresh. Each row has the user's roll-resolution mode prefilled, with a per-row override. User confirms; rolled values are applied; sheet dismisses.
+
+Long rest also restores HP to max, clears temp HP, and resets death save state (when introduced in Phase L).
+
+**I.5 RollResolutionMode + RollPrompt**
+
+`RollResolutionMode.swift`:
+- `.manual` — number-pad input for the user to type a result rolled IRL
+- `.tray` — push the formula into the dice tab; wait for the result
+- `.behindTheScenes` — `Int.random(in:…)` and use it directly
+
+Stored in `@AppStorage("roll.resolution.default")`. Default `.tray` (matches the existing "prefill and wait" handoff for action buttons).
+
+`RollPrompt.swift` — a SwiftUI view with:
+- `formula: DiceFormula`
+- `label: String`
+- `onResolve: (Int) -> Void`
+
+Renders the active mode and shows a "switch mode" button next to the formula so the user can deviate per-roll. Used everywhere a random outcome surfaces:
+- Refresh rolls (Phase I)
+- Healing from features like Second Wind (Phase I)
+- Hit Dice spend on short rest (Phase I)
+- Spell damage / healing (Phase J onward)
+
+When the user has set `.tray`, the prompt holds open until a result arrives via `PendingRollStore` with a matching label. Manually closing the sheet cancels.
+
+**I.6 Action recipe extensions**
+
+Recipes become composable sequences of effects. Add to `ActionRecipe`:
+- `consumeResource(resourceID: String, amount: Int)` — subtracts from a pool; if `current < amount`, the rest of the recipe sequence aborts.
+- `prompt(steps: [PromptStep])` — multi-step UI for choices ("cast at level 1, 2, or 3"; each option carries its own consume + roll effects).
+
+A feature like Second Wind becomes:
+
+```json
+"actionRecipes": [
+  { "type": "consumeResource", "resourceID": "fighter_second_wind", "amount": 1 },
+  { "type": "heal", "dice": "1d10", "addLevel": true, "label": "Second Wind" }
+]
+```
+
+`ActionInterpreter.resolve` returns a `ResolvedAction` whose `effects: [ResolvedEffect]` describes the sequence. When tapped, a small `EffectRunner` executes them in order: applies `consumeResource` (mutates the character), hands roll-typed effects to `RollPrompt`, records the outcome to history with a composed label.
+
+**I.7 Sheet integration**
+
+- New `ResourcesView` card on the sheet, between `AbilityBlockView` and `ActionButtonGrid`. Shows all `ResolvedResource`s grouped by source, with `current / max` and `−` / `+` for ad-hoc adjustment (e.g., DM gives back a charge). Tapping the source name links to a detail showing the refresh rule.
+- "Rest" button in the sheet's toolbar (or as a floating action). Opens the rest action sheet.
+- `ActionButtonGrid` rows display the cost ("Second Wind · uses 1") and grey out when the resource is exhausted.
+
+**I.8 Migration of existing content**
+
+- Fighter `second_wind` feature gains a `resource` block: `max: { byClassLevel: { "1": 2, "4": 3, "10": 4 } }`, `refreshOn: shortRest`, `refreshAmount: fixed(1)`. Long rest implicitly refreshes to max. Recipe updated to consume the resource before healing.
+- Action Surge, Hit Dice, Channel Divinity, Bardic Inspiration: same treatment.
+- The existing `attunementSlots` field on `FeatureDefinition` stays — it's a different concept (informational, not consumable).
+
+**I.9 Tests**
+
+- `ResourceCalculator.availableResources` for a multi-class character.
+- `applyRest` correctly fills `.all`, applies `.fixed`, defers `.roll`.
+- `consume` clamps at zero, refuses overdraft.
+- `EffectRunner` aborts subsequent effects when a `consumeResource` fails.
+- `RollPrompt` round-trip for each mode (manual / tray / hidden) with a stub `PendingRollStore`.
+- Backwards-compat: characters without a `resources` block decode and get `current = max` for every available resource.
+
+**Deliverable:** A character can spend Second Wind, see the charge consumed, take a short rest, and see one charge restored. The "Rest" button surfaces refresh-roll prompts when relevant. The roll-resolution mode setting actually changes how rolls are resolved.
+
+---
+
+### Phase J — Spells
+
+**Goal:** First-class spell support — definitions, slots (as resources),
+prepared / known lists, casting flow, upcasting.
+
+**J.1 Spell definition**
+
+`SpellDefinition.swift`:
+- `id`, `name`, `level: Int` (0 = cantrip)
+- `school: SpellSchool` — abjuration, conjuration, etc.
+- `castingTime: CastingTime` — `.action`, `.bonusAction`, `.reaction(trigger:)`, `.minutes(Int)`, `.ritual(Bool)`
+- `range: SpellRange` — `.targetSelf`, `.touch`, `.feet(Int)`, `.unlimited` (avoiding `.self` since it's a Swift keyword)
+- `components: SpellComponents` — `verbal`, `somatic`, `material(String?)`
+- `duration: SpellDuration` — `.instantaneous`, `.rounds(Int)`, `.minutes(Int)`, `.concentration(maxMinutes: Int?)`
+- `description: String`
+- `higherLevel: String?` — text describing upcast effect
+- `actionRecipes: [ActionRecipe]` — damage, healing, save DC, etc.
+- `upcastEffect: UpcastEffect?` — typed scaling
+
+`UpcastEffect`:
+- `.extraDicePerLevel(damageRecipeIndex: Int, dice: String)` — Magic Missile adds 1d4+1 per level
+- `.extraTargetsPerLevel(Int)` — informational
+- `.scaledDice(baseLevel: Int, dicePerExtraLevel: String)` — generic
+
+**J.2 Spell list JSON**
+
+`spells.json` in the bundle. Initial seed: PHB SRD spells (cantrips + L1–L3 minimum, expand from there).
+
+```json
+{
+  "id": "magic_missile",
+  "name": "Magic Missile",
+  "level": 1,
+  "school": "evocation",
+  "castingTime": { "type": "action" },
+  "range": { "type": "feet", "value": 120 },
+  "components": { "verbal": true, "somatic": true },
+  "duration": { "type": "instantaneous" },
+  "description": "...",
+  "higherLevel": "When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.",
+  "actionRecipes": [
+    { "type": "rawDamage", "dice": "3d4+3", "damageType": "force", "label": "Magic Missile darts" }
+  ],
+  "upcastEffect": { "type": "extraDicePerLevel", "damageRecipeIndex": 0, "dice": "1d4+1" }
+}
+```
+
+**J.3 SpellcastingBlock on ClassDefinition**
+
+```swift
+struct SpellcastingBlock: Codable, Equatable {
+    let ability: Ability                      // INT for wizard, WIS for cleric, …
+    let preparedRule: PreparedRule
+    let cantripsKnown: LevelScaledValue
+    let spellsKnown: LevelScaledValue?        // nil if uses preparation
+    let preparedCount: PreparedFormula?       // e.g., wizard = INT mod + class level
+    let slotTable: SlotTable
+    let ritualCasting: Bool
+    let spellcastingFocus: Bool
+}
+```
+
+`PreparedRule`:
+- `.knownList` — bards, sorcerers, rangers (fixed known list, no daily prep)
+- `.preparedFromBook` — wizards (prepare from spellbook each long rest)
+- `.preparedFromAll` — clerics, druids, paladins (prepare from full class list)
+- `.pactMagic` — warlocks (special slot rules)
+
+**J.4 Spell slots as resources**
+
+Each spell-slot level becomes its own `ResourceDefinition` synthesized from the
+`SlotTable`. ID convention: `<classID>_slot_<level>` → `wizard_slot_3`. Pact
+magic warlocks get a single `warlock_pact_slot` whose level scales by class level.
+
+`SlotTable.swift`:
+- `byClassLevel: [Int: [Int: Int]]` — class level → (spell level → slot count)
+- `pactMagic: PactMagicTable?` — alt for warlocks (single slot level + count, both scaling)
+
+The synthesizer:
+- Refresh trigger: `.longRest` for full casters, `.shortRest` for warlock pact slots
+- Refresh amount: `.all`
+- `displayHint: .spellSlot(level: N)` so the spells UI can group them
+
+**J.5 Character spell list**
+
+```json
+"spells": {
+  "preparedIDs": ["magic_missile", "shield", "detect_magic"],
+  "knownIDs": [],
+  "spellbookIDs": ["magic_missile", "shield", "detect_magic", "feather_fall"]
+}
+```
+
+Different classes use different lists (wizard reads `spellbookIDs` to populate
+`prepared`; sorcerer's `knownIDs` is fixed; etc.). The `SpellListView`
+understands the per-class rule.
+
+**J.6 Cast flow**
+
+Tap a spell:
+1. `SpellCastSheet` opens with the spell text.
+2. Slot-level picker (greyed-out levels with no remaining slots; user picks ≥ spell.level).
+3. "Cast" button → consume one slot of the chosen level via `consumeResource`, then run the spell's `actionRecipes` through the `EffectRunner`. Damage / save prompts route through `RollPrompt`.
+
+Cantrips skip the slot picker. Ritual casting offers an optional "Cast as ritual (no slot)" toggle when `ritualCasting && spell.castingTime.ritual`.
+
+Concentration spells (Phase L) flip `Character.concentratingSpellID` and break any prior concentration.
+
+**J.7 Spells UI**
+
+New `SpellListView` on the sheet, after the inventory. Two sections:
+- **Slots** (top): a row per spell level with `current / max` dots. Long-press a slot to manually toggle (DM correction).
+- **Spells** (collapsible, by level): prepared / known list, sorted by level then name. Each row shows name, school icon, casting time, and a cast button.
+
+Add a "+ Spells" button that opens a search picker over `ContentStore.spells`, filtered by the class spell list when the character has a spellcasting block.
+
+**J.8 Tests**
+
+- `SpellDefinition` Codable round-trip.
+- `SlotTable` synthesizes the right resources for wizard L1, L5, L11.
+- Warlock pact magic: short-rest refreshes pact slots; long-rest also refreshes them.
+- `SpellCastSheet` flow: cast at base level vs. upcast → resource consumption + upcast scaling on the recipe.
+- `PreparedRule` enforcement: wizard can't cast a spell that's not in `spellbookIDs`.
+
+**Deliverable:** A wizard can prepare spells, see slots, cast at base level, upcast to consume a higher slot. Cantrips work without slot consumption. Slots refresh on long rest. Warlock pact slots refresh on short rest.
+
+---
+
+### Phase K — Items With Charges & Spell Access
+
+**Goal:** Item JSON declares charges and grants spell access. Wand of Magic
+Missiles works end-to-end.
+
+**K.1 Item resource block**
+
+Items already have an optional `attunement: AttunementRule?`. Add `resource: ResourceDefinition?`. Same shape as feature resources; ID is namespaced to the item (`<itemID>_charges` by convention) so a character carrying two of the same wand currently shares the pool. Per-stack charges deferred — track as a follow-up if a real case appears (rare in 5e RAW).
+
+**K.2 ItemUse schema**
+
+```swift
+struct ItemUse: Codable, Equatable {
+    let id: String
+    let name: String
+    let cost: ResourceCost
+    let effect: ItemUseEffect    // .castSpell or .actionRecipes
+    let upcastChoice: UpcastChoice?
+}
+
+enum ItemUseEffect: Codable {
+    case castSpell(spellID: String, atLevel: Int)
+    case actionRecipes([ActionRecipe])
+}
+
+struct UpcastChoice: Codable {
+    let maxLevel: Int
+    let extraCostPerLevel: Int   // additional charges per level above base
+}
+```
+
+```json
+"uses": [
+  {
+    "id": "cast_magic_missile",
+    "name": "Cast Magic Missile",
+    "cost": { "resourceID": "wand_of_mm_charges", "amount": 1 },
+    "effect": { "type": "castSpell", "spellID": "magic_missile", "atLevel": 1 },
+    "upcastChoice": { "maxLevel": 3, "extraCostPerLevel": 1 }
+  }
+]
+```
+
+**K.3 Inventory + action grid integration**
+
+- Equipped items with `uses` contribute new rows to the action grid under an "Item Uses" section.
+- The cost is shown next to the action ("Cast Magic Missile · 1 charge").
+- Tap → if `upcastChoice`, prompt for level (uses the same `prompt` recipe step from I.6); otherwise execute directly.
+- `ItemUseEffect.castSpell` chains into the spell-casting flow but consumes the item's resource instead of a spell slot.
+
+**K.4 Resource enumeration**
+
+`ResourceCalculator.availableResources` already walks features. Extend it to walk equipped items' `resource`. Carried-but-unequipped items are excluded from the action grid but still appear in the resources card so the user can spend them (e.g., consumable scrolls).
+
+**K.5 `dawn` refresh handling**
+
+`RestKind` doesn't include "dawn" (rest is user-action). For MVP, any `.dawn` refresh also fires on long rest — covers the common case. A separate "advance time" button can land later if needed.
+
+**K.6 Tests**
+
+- Wand of Magic Missiles JSON round-trips.
+- Eligibility chain: attunement gates the item; once attuned, the use becomes available; once charges are spent, the use greys out.
+- Upcast choice consumes the right number of charges and applies upcast scaling to the spell's recipe.
+- `.dawn` refresh fires on long rest.
+
+**Deliverable:** Equip and attune a Wand of Magic Missiles. Cast Magic Missile from the action grid; charges decrement; upcast to consume 2 or 3. Long-rest restores 1d6+1 charges through the roll-resolution prompt.
+
+---
+
+### Phase L — Conditions, Concentration, Action Economy
+
+**Goal:** Track conditions (poisoned, stunned, etc.). Track concentration. Tag
+actions with their action-economy cost.
+
+**L.1 Condition catalog**
+
+`ConditionDefinition.swift` in content:
+- `id`, `name`, `description`
+- `effects: [ConditionEffect]` — typed list:
+  - `.attacksAgainstHaveAdvantage`
+  - `.attacksByHaveDisadvantage`
+  - `.savingThrowDisadvantage(abilities: [Ability])`
+  - `.cantTakeActions`, `.cantTakeReactions`, `.cantMove`
+  - `.speedZero`, `.speedHalved`
+  - `.autoFailStrengthAndDexSaves`
+  - …
+
+Initial set: SRD's 14 conditions (Blinded, Charmed, Deafened, Frightened, Grappled, Incapacitated, Invisible, Paralyzed, Petrified, Poisoned, Prone, Restrained, Stunned, Unconscious).
+
+**L.2 Character condition state**
+
+```json
+"conditions": [
+  { "id": "poisoned", "source": "Wyvern bite" },
+  { "id": "concentrating_on", "spellID": "bless" }
+]
+```
+
+The `concentrating_on` pseudo-condition is special: only one at a time, dropping the previous when set.
+
+**L.3 Concentration**
+
+`Character.concentratingSpellID: String?`. Casting a concentration spell sets this (and pins the spell card to the sheet). Taking damage prompts a Constitution save (DC = `max(10, damageDealt / 2)`). Failure clears concentration. Casting a new concentration spell drops the old one with a confirmation prompt.
+
+**L.4 Action economy tags**
+
+Add `actionCost: ActionCost?` to `ActionRecipe` (or to `ResolvedAction`):
+- `.action`, `.bonusAction`, `.reaction`, `.free`, `.movement`
+
+`ResolvedAction.actionCost` derived from the recipe set's max. The action grid groups by cost (Actions / Bonus Actions / Reactions / Free) so the player sees their economy at a glance.
+
+Per-turn tracking is out of scope for v1 (no initiative tracker yet). The cost is informational.
+
+**L.5 UI surfaces**
+
+- New `ConditionsRow` on the sheet, between the HP bar and the ability block. Pills for active conditions (tap to dismiss, long-press for description).
+- "Add Condition" button opens a picker.
+- Concentration pin (if active) appears at the top of the spells section.
+- When taking damage via the HP editor sheet, automatically prompt a Con save when concentrating.
+
+**L.6 Tests**
+
+- Condition decode round-trip.
+- Adding a `concentrating_on` condition drops a prior one.
+- Damage flow triggers a concentration save.
+- `actionCost` decode (defaults to `.action` if absent).
+
+**Deliverable:** Conditions can be applied and removed manually. Casting a concentration spell pins it. Taking damage prompts a Con save when concentrating. The action grid groups by economy cost.
+
+---
+
+### Phase M — Choices & Multi-step Prompts
+
+**Goal:** Anything where the player makes a permanent decision that mutates
+the character: level-up, fighting style, metamagic selection, feat picks,
+ASI vs. feat at L4 / L8 / etc.
+
+**M.1 Choice prompt model**
+
+`ChoicePromptDefinition.swift` (lives in content; attached to features or class level entries):
+- `id`, `name`, `description`
+- `kind: ChoiceKind` — `.pickOne(options:)`, `.pickN(count:, options:)`, `.distribute(points:, slots:)`
+- `outcome: ChoiceOutcome` — applied when the user picks
+
+`ChoiceOption`:
+- `id`, `name`, `description`
+- `outcome: ChoiceOutcome`
+
+`ChoiceOutcome` (recursive — outcomes can spawn nested choices):
+- `.grantFeature(FeatureDefinition)`
+- `.grantProficiency(ProficiencyKey)`
+- `.grantSpell(spellID:)`
+- `.modifyAbilityScore(ability:, delta:)`
+- `.spawnChoice(ChoicePromptDefinition)`
+- `.composite([ChoiceOutcome])`
+
+**M.2 Character choice state**
+
+```json
+"resolvedChoices": {
+  "fighter_l1_fighting_style": "defense",
+  "asi_4": { "kind": "asi", "increases": { "strength": 2 } },
+  "asi_8": { "kind": "feat", "featID": "great_weapon_master" }
+}
+```
+
+The character carries a record of every choice made, keyed by prompt ID. Re-entering the level-up flow with existing data pre-fills prior choices but allows changes. A "this will reset downstream choices" warning appears if the change cascades.
+
+**M.3 Level-up flow**
+
+When the user bumps level on the sheet:
+1. `LevelUpSheet` walks every prompt the new level grants.
+2. For each prompt: present the picker, save into `resolvedChoices`.
+3. On finish: apply outcomes (grant features, etc.). Update `level`, `classEntries[i].level`, `maxHP`.
+
+Hit-point gain at level-up is itself a `RollPrompt` for the class hit die, with "average" available as the per-prompt resolution-mode override.
+
+**M.4 SRD content seeded with prompts**
+
+- Fighter L1: Fighting Style (Archery, Defense, Dueling, Great Weapon Fighting, Two-Weapon Fighting)
+- Champion / Battle Master / Eldritch Knight: subclass at L3
+- Wizard: Arcane Tradition at L2
+- All classes L4 / L8 / L12 / L16 / L19: ASI vs. Feat
+- Sorcerer: Metamagic options
+- Cleric: Divine Domain
+- Etc.
+
+Each is JSON in `levelFeatures[N]` extended with a `prompts: [ChoicePromptDefinition]?` field.
+
+**M.5 Tests**
+
+- `ChoicePromptDefinition` round-trip.
+- Applying a Fighting Style choice grants the matching feature.
+- ASI distribution validates total spend (+2 to one or +1 to two distinct).
+- Re-entering level-up shows existing picks pre-filled.
+- Cascading reset: changing a foundational choice clears downstream ones.
+
+**Deliverable:** Level-up is a guided flow. Every meaningful character choice is persisted and re-editable. New SRD class content can declare its own prompts without code changes.
 
 ---
 
@@ -687,18 +1179,43 @@ No UI tests in v1. Pure model + store tests only.
 
 ---
 
+## Status (as of 2026-05-09)
+
+| Phase | Status |
+|---|---|
+| A — Domain models & content schema | shipped |
+| B — Content loader | shipped |
+| C — CharacterStore & file I/O | shipped (atomic write fixed via `Data.write(.atomic)`) |
+| D — Characters tab & creation flow | shipped |
+| E — Read-only character sheet | shipped |
+| F — Action engine, buttons, dice handoff | shipped |
+| G — Editing characters | shipped (death saves still deferred) |
+| H — Custom content import / export | **deferred** until I–M stabilize the schema |
+| I — Resources & rest cycle | next |
+| J — Spells | after I |
+| K — Items with charges & spell access | after J |
+| L — Conditions, concentration, action economy | after K |
+| M — Choices & multi-step prompts | after L |
+
 ## Open Decisions (to resolve during implementation)
 
-1. **Tab layout:** Does the 3D playground tab stay, or move to a Settings/dev panel? (User's call.)
-2. **Character portrait:** Placeholder in v1, or camera/photo picker? (Placeholder recommended.)
-3. **Death saves / conditions:** In v1 or deferred? (Defer to v1.1.)
-4. **Spellcasting tab:** Caster classes have spell slots but no spell list in v1. Show slot counter on sheet? (Yes, simple counter.)
-5. **Multi-classing:** Out of scope for v1, but character JSON should not prevent it later. (Store `classEntries: [ClassEntry]` instead of single `classID` to future-proof.)
+1. **Tab layout:** Does the 3D playground tab stay, or move to a Settings/dev panel? (3D playground tab has been removed; legacy file kept for reference.)
+2. **Character portrait:** Placeholder in v1, or camera/photo picker? (Placeholder shipped; picker deferred.)
+3. **Death saves:** Track in Phase L alongside conditions.
+4. **Multi-classing:** Out of scope for v1, but character JSON already stores `classEntries: [ClassEntry]` — multi-class UI and proficiency reconciliation land alongside Phase M's level-up flow.
+5. **Resource ID collisions across content packs:** Since resource IDs are flat strings and homebrew packs can override bundled IDs, define a namespacing convention (`<pack>.<resourceID>`) before Phase H ships.
+6. **Per-stack item charges:** Two of the same wand currently share one pool. Revisit if a real case appears in play.
+7. **`dawn` refresh trigger:** Folded into long rest for now (see K.5). Add a separate "advance time" button only if a use case demands it.
+8. **Roll-prompt label matching:** When `RollResolutionMode == .tray`, the prompt waits for a result with a matching label. Need a clear contract for what counts as "matching" — exact string vs. ID-based — before Phase J's spell-cast flow lands.
 
 ---
 
 *Last updated: 2026-05-09*
-*Next step: Implement Phase A (domain models & content schema).*
+*Next step: Implement Phase I (resources & rest cycle).*
+
+> This document is mutable. As phases I–M evolve and new SRD / expansion
+> content surfaces edge cases the schema doesn't cover, update the relevant
+> phase section in place rather than spawning a parallel document.
 
 ---
 
