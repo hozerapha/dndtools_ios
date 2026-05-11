@@ -57,32 +57,53 @@ private struct ActionTile: View {
     }
 
     private var tileBody: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(row.action.label)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                if let subtitle = row.action.description, row.castFromItem != nil {
-                    // For item rows we surface the charge cost under the label.
-                    Text(subtitle)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(row.action.label)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                    if let subtitle = row.action.description, row.castFromItem != nil {
+                        // For item rows we surface the charge cost under the label.
+                        Text(subtitle)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                if let badge = row.badge {
+                    Text(badge)
+                        .font(.caption2.monospacedDigit().weight(.bold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.accentColor.opacity(0.18), in: Capsule())
+                        .foregroundStyle(Color.accentColor)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            if let badge = row.badge {
-                Text(badge)
-                    .font(.caption2.monospacedDigit().weight(.bold))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.accentColor.opacity(0.18), in: Capsule())
-                    .foregroundStyle(Color.accentColor)
+            if let cost = row.action.actionCost {
+                ActionCostChip(cost: cost)
             }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+    }
+}
+
+/// Reusable small chip showing turn-economy cost. Sized to sit unobtrusively
+/// under an action tile label.
+struct ActionCostChip: View {
+    let cost: ActionCost
+
+    var body: some View {
+        Label(cost.shortLabel, systemImage: cost.systemImage)
+            .font(.caption2.weight(.semibold))
+            .labelStyle(.titleAndIcon)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 1)
+            .background(Color.secondary.opacity(0.18), in: Capsule())
+            .foregroundStyle(.secondary)
     }
 }
 

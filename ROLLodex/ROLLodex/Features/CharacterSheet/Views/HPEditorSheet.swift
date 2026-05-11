@@ -6,6 +6,10 @@ import SwiftUI
 /// pad or want to bump max HP after a level up.
 struct HPEditorSheet: View {
     @Binding var character: Character
+    /// Called when applying damage actually drains current HP while
+    /// concentrating — host raises the concentration-save sheet from it. Nil
+    /// when concentration isn't relevant.
+    var onConcentrationCheck: ((ConcentrationCheck) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var deltaText: String = ""
     @FocusState private var deltaFocused: Bool
@@ -83,13 +87,15 @@ struct HPEditorSheet: View {
         if sign > 0 {
             character.currentHP = min(character.maxHP, character.currentHP + amount)
         } else {
-            var remaining = amount
-            if character.tempHP > 0 {
-                let absorbed = min(character.tempHP, remaining)
-                character.tempHP -= absorbed
-                remaining -= absorbed
+            var copy = character
+            let pendingCheck = copy.applyDamage(amount)
+            character = copy
+            if let pendingCheck {
+                // Dismiss first so the concentration sheet can rise on the
+                // parent. SwiftUI won't stack two sheets from the same anchor.
+                dismiss()
+                onConcentrationCheck?(pendingCheck)
             }
-            character.currentHP = max(0, character.currentHP - remaining)
         }
         deltaText = ""
     }

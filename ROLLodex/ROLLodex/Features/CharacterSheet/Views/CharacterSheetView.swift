@@ -12,6 +12,13 @@ struct CharacterSheetView: View {
     @State private var showRestConfirm = false
     @State private var pendingRefreshes: [PendingRefresh] = []
     @State private var spellBeingCast: PendingSpellCast?
+    /// Set when applying damage to a concentrating character; presents the
+    /// concentration save sheet. Cleared when the player resolves the save
+    /// (roll handoff or manual pass/fail).
+    @State private var pendingConcentrationCheck: ConcentrationCheck?
+    /// Open by `.sheet(isPresented:)` toggle; `pendingAddCondition` carries
+    /// nothing on its own — the picker is one-shot.
+    @State private var showAddCondition = false
     /// Which sub-tab of the character sheet is showing. The header (badges,
     /// HP bar, stat pills) stays fixed above the picker so every tab can see
     /// "who am I and how am I doing right now".
@@ -109,15 +116,30 @@ struct CharacterSheetView: View {
             }
             .presentationDetents([.large])
         }
+        .sheet(item: $pendingConcentrationCheck) { check in
+            ConcentrationSaveSheet(
+                character: $character,
+                check: check,
+                onRollSave: handleStandaloneRoll
+            )
+            .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showAddCondition) {
+            AddConditionSheet(character: $character)
+                .presentationDetents([.medium, .large])
+        }
     }
 
     // MARK: - Layout chrome
 
-    /// Sticky bit at the top of every tab: name editor, badges, HP, stat pills.
-    /// Sits outside the ScrollView so it never scrolls away.
+    /// Sticky bit at the top of every tab: name editor, badges, HP, conditions,
+    /// stat pills. Sits outside the ScrollView so it never scrolls away.
     private var stickyHeader: some View {
         VStack(spacing: 10) {
             headerCard
+            ConditionsRow(character: $character) {
+                showAddCondition = true
+            }
             statPillRow
         }
         .padding(.horizontal)
@@ -212,8 +234,11 @@ struct CharacterSheetView: View {
     }
 
     private var spellsTab: some View {
-        SpellListView(character: $character) { spell, _ in
-            spellBeingCast = PendingSpellCast(spell: spell, itemContext: nil)
+        VStack(spacing: 14) {
+            ConcentrationPin(character: $character)
+            SpellListView(character: $character) { spell, _ in
+                spellBeingCast = PendingSpellCast(spell: spell, itemContext: nil)
+            }
         }
     }
 
@@ -341,8 +366,22 @@ struct CharacterSheetView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
         .sheet(isPresented: $showHPEditor) {
-            HPEditorSheet(character: $character)
-                .presentationDetents([.medium])
+            HPEditorSheet(
+                character: $character,
+                onConcentrationCheck: { pendingConcentrationCheck = $0 }
+            )
+            .presentationDetents([.medium])
+        }
+    }
+
+    /// Header `-` button. Routes through the model so concentration prompts
+    /// surface even on incremental clicks.
+    private func applyHeaderDamage(_ amount: Int) {
+        var copy = character
+        let pendingCheck = copy.applyDamage(amount)
+        character = copy
+        if let pendingCheck {
+            pendingConcentrationCheck = pendingCheck
         }
     }
 
@@ -354,7 +393,7 @@ struct CharacterSheetView: View {
                     .foregroundStyle(.red)
                 Spacer()
                 Button {
-                    character.currentHP = max(0, character.currentHP - 1)
+                    applyHeaderDamage(1)
                 } label: {
                     Image(systemName: "minus.circle.fill")
                         .font(.title3)

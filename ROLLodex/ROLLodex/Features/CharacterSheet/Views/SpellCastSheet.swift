@@ -1,16 +1,21 @@
 import SwiftUI
 
-/// Single-stage spell modal. The rolls are visible immediately as separate
-/// buttons (Roll Spell Attack, Roll Damage, Roll Heal) so the player can fire
-/// each one with a single tap — no Cast confirmation step.
+/// Single-stage spell modal. Three commit paths:
+/// 1. **Roll-tap** (Magic Missile, Fire Bolt) — slot picker selects level,
+///    Roll buttons fire the rolls and consume the slot.
+/// 2. **Slot-tap cast** (Detect Magic, Identify) — when the spell has no
+///    rolls, tapping a level button is itself the cast: consume slot + set
+///    concentration + dismiss in one move.
+/// 3. **Ritual-tap** — for ritual-tagged spells on a ritual-casting class.
+///    Skips slot consumption entirely; otherwise behaves like a normal cast.
 ///
-/// For leveled spells the slot is consumed lazily on the first roll tap (so
-/// dismissing the sheet without rolling spends nothing); the slot picker then
-/// locks to the chosen level. Cantrips skip slot logic entirely.
+/// Slot/charge consumption is lazy on the first commit (so dismissing the
+/// sheet without acting spends nothing). After commit the slot picker locks.
+/// Cantrips skip slot logic entirely.
 ///
-/// When the player taps Spell Attack and the spell also has a damage roll, the
-/// damage action is handed to the dice tab as a `followUp`; the tab surfaces a
-/// "Roll damage?" chip after the attack settles.
+/// When the player rolls a Spell Attack and the spell also has a damage roll,
+/// the damage action is handed to the dice tab as a `followUp`; the tab
+/// surfaces a "Roll damage?" chip after the attack settles.
 struct SpellCastSheet: View {
     @Binding var character: Character
     let spell: SpellDefinition
@@ -29,6 +34,10 @@ struct SpellCastSheet: View {
     /// Set once the first roll button is tapped — locks the slot picker so the
     /// player can't switch slot levels mid-cast.
     @State private var slotConsumed: Bool = false
+    /// Closure-based concentration-swap confirmation. When non-nil, the alert
+    /// is up; confirming calls it. Generalized so the slot-tap, roll-tap, and
+    /// ritual-tap paths can all reuse the same prompt.
+    @State private var pendingSwapAction: PendingSwap?
 
     init(
         character: Binding<Character>,
@@ -52,6 +61,7 @@ struct SpellCastSheet: View {
                 VStack(alignment: .leading, spacing: 16) {
                     metadataGrid
                     if showsPicker { slotPicker }
+                    if canCastAsRitual { ritualSection }
                     if !rollEntries.isEmpty { rollsSection }
                     descriptionCard
                     if let higher = spell.higherLevel, !higher.isEmpty {
@@ -69,7 +79,36 @@ struct SpellCastSheet: View {
                     Button("Done") { dismiss() }
                 }
             }
+            .alert(
+                "Replace concentration?",
+                isPresented: Binding(
+                    get: { pendingSwapAction != nil },
+                    set: { if !$0 { pendingSwapAction = nil } }
+                )
+            ) {
+                Button("End \(currentConcentrationName ?? "previous spell")", role: .destructive) {
+                    let pending = pendingSwapAction
+                    pendingSwapAction = nil
+                    pending?.commit()
+                }
+                Button("Cancel", role: .cancel) { pendingSwapAction = nil }
+            } message: {
+                Text("\(spell.name) requires concentration. Casting it ends \(currentConcentrationName ?? "your current concentration spell").")
+            }
         }
+    }
+
+    /// Boxed `() -> Void` so we can hang it off `@State` and key the alert off
+    /// its presence. Equatable based on identity (each request is distinct).
+    private struct PendingSwap: Equatable {
+        let id = UUID()
+        let commit: () -> Void
+        static func == (a: PendingSwap, b: PendingSwap) -> Bool { a.id == b.id }
+    }
+
+    private var currentConcentrationName: String? {
+        guard let id = character.concentratingSpellID else { return nil }
+        return content.spellDefinition(id: id)?.name
     }
 
     /// Picker is shown when there's a choice to make: leveled spells cast from
@@ -121,7 +160,11 @@ struct SpellCastSheet: View {
                 ForEach(availableLevels, id: \.self) { level in
                     Button {
                         guard !slotConsumed else { return }
-                        selectedLevel = level
+                        if castsImmediatelyOnLevelTap {
+                            handleSlotTapCast(level)
+                        } else {
+                            selectedLevel = level
+                        }
                     } label: {
                         VStack(spacing: 2) {
                             Text("L\(level)")
@@ -150,7 +193,77 @@ struct SpellCastSheet: View {
                     .opacity(hasSlotAtLevel(level) ? 1 : 0.45)
                 }
             }
+            if castsImmediatelyOnLevelTap {
+                Text("Tap a level to cast.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
+    }
+
+    /// "Cast as Ritual" affordance. Visible only when the spell is a ritual
+    /// AND the character has ritual casting on at least one of their classes.
+    /// Ritual casts skip slot consumption — that's the whole feature — and
+    /// take 10 extra minutes in fiction (informational only here).
+    private var ritualSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                handleRitualTap()
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "hourglass")
+                        .font(.title3)
+                        .foregroundStyle(.purple)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Cast as Ritual")
+                            .font(.subheadline.weight(.semibold))
+                        Text("No slot consumed · +10 minutes")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "arrow.right.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.purple)
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.purple.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.purple.opacity(0.35), lineWidth: 0.5)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(slotConsumed)
+            .opacity(slotConsumed ? 0.5 : 1)
+        }
+    }
+
+    /// True when there are no roll buttons to wait on — Detect Magic, Detect
+    /// Poison and Disease, Identify, etc. In that case a slot-button tap is
+    /// itself the cast confirmation; the user doesn't need a second tap.
+    private var castsImmediatelyOnLevelTap: Bool {
+        rollEntries.isEmpty
+    }
+
+    /// Spell carries the ritual tag in its casting time.
+    private var isRitualSpell: Bool {
+        if case .ritual = spell.castingTime { return true }
+        return false
+    }
+
+    /// Character has at least one class with the ritualCasting flag.
+    private var characterCanRitualCast: Bool {
+        character.classEntries.contains { entry in
+            content.classDefinition(id: entry.classID)?.spellcasting?.ritualCasting == true
+        }
+    }
+
+    private var canCastAsRitual: Bool {
+        // Ritual casts originate from the prepared/known list, never from an
+        // item's charge pool — items pay charges by design.
+        itemContext == nil && isRitualSpell && characterCanRitualCast
     }
 
     private var pickerTitle: String {
@@ -244,15 +357,84 @@ struct SpellCastSheet: View {
     }
 
     private func handleRollTap(_ entry: RollEntry) {
+        if shouldPromptConcentrationSwap {
+            pendingSwapAction = PendingSwap { performRoll(entry) }
+            return
+        }
+        performRoll(entry)
+    }
+
+    private func performRoll(_ entry: RollEntry) {
         if !slotConsumed && needsPayment {
             let ok = payForCast()
             guard ok else { return }
             slotConsumed = true
         }
+        commitConcentrationIfNeeded()
         onRoll(entry.action, followUp(for: entry))
         // The dice tab takes it from here — chained damage rolls surface as a
         // follow-up chip there, so there's nothing left for this sheet to do.
         dismiss()
+    }
+
+    /// Slot-tap shortcut: when the spell has no rolls, tapping a level button
+    /// commits the cast (consume slot + maybe set concentration + dismiss)
+    /// without a separate roll button. Detect Magic is the prototypical case.
+    private func handleSlotTapCast(_ level: Int) {
+        if shouldPromptConcentrationSwap {
+            pendingSwapAction = PendingSwap { performCastWithoutRoll(at: level) }
+            return
+        }
+        performCastWithoutRoll(at: level)
+    }
+
+    private func performCastWithoutRoll(at level: Int) {
+        selectedLevel = level
+        if !slotConsumed && needsPayment {
+            let ok = payForCast()
+            guard ok else { return }
+            slotConsumed = true
+        }
+        commitConcentrationIfNeeded()
+        dismiss()
+    }
+
+    /// Ritual-tap path: skip slot payment entirely, optionally set
+    /// concentration, dismiss. Rituals with rolls (uncommon) still get their
+    /// rolls handed off after.
+    private func handleRitualTap() {
+        if shouldPromptConcentrationSwap {
+            pendingSwapAction = PendingSwap { performRitualCast() }
+            return
+        }
+        performRitualCast()
+    }
+
+    private func performRitualCast() {
+        commitConcentrationIfNeeded()
+        // Fire any rolls anyway (Detect Magic has none; a hypothetical homebrew
+        // ritual with damage would still work). No slot consumption — that's
+        // the whole point of casting as ritual.
+        if let primary = rollEntries.first {
+            onRoll(primary.action, followUp(for: primary))
+        }
+        dismiss()
+    }
+
+    /// True when the cast would replace an existing concentration spell. The
+    /// three commit paths (roll, slot-tap, ritual-tap) all reuse this.
+    private var shouldPromptConcentrationSwap: Bool {
+        guard !slotConsumed,
+              spell.duration.requiresConcentration,
+              let active = character.concentratingSpellID,
+              active != spell.id else { return false }
+        return true
+    }
+
+    private func commitConcentrationIfNeeded() {
+        if spell.duration.requiresConcentration {
+            character.concentratingSpellID = spell.id
+        }
     }
 
     /// Whether the first roll tap should pay a cost. Cantrips cast from spell

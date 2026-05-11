@@ -11,6 +11,7 @@ final class ContentStore {
     private(set) var armor: [String: ArmorDefinition] = [:]
     private(set) var gear: [String: ItemDefinition] = [:]
     private(set) var spells: [String: SpellDefinition] = [:]
+    private(set) var conditions: [String: ConditionDefinition] = [:]
 
     init() {
         loadBundledContent()
@@ -25,6 +26,10 @@ final class ContentStore {
     func armorDefinition(id: String) -> ArmorDefinition? { armor[id] }
     func gearDefinition(id: String) -> ItemDefinition? { gear[id] }
     func spellDefinition(id: String) -> SpellDefinition? { spells[id] }
+    func conditionDefinition(id: String) -> ConditionDefinition? { conditions[id] }
+    var allConditions: [ConditionDefinition] {
+        conditions.values.sorted { $0.name < $1.name }
+    }
 
     func itemName(forItemID id: String) -> String? {
         gear[id]?.name ?? weapons[id]?.name ?? armor[id]?.name
@@ -79,6 +84,7 @@ final class ContentStore {
         armor = loadDictionary(from: "armor", decode: [ArmorDefinition].self)
         gear = loadDictionary(from: "gear", decode: [ItemDefinition].self)
         spells = loadDictionary(from: "spells", decode: [SpellDefinition].self)
+        conditions = loadDictionary(from: "conditions", decode: [ConditionDefinition].self)
     }
 
     private func loadDictionary<T: Codable & Identifiable>(

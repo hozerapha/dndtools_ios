@@ -23,10 +23,14 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
     /// If present, the Features tab renders a picker so the player can choose
     /// N options. Their picks are persisted under `Character.featureSelections[selection.id]`.
     let selection: FeatureSelection?
+    /// Turn cost when the feature is tapped from the action grid. Nil for
+    /// purely passive features. JSON defaults to `.action` when the feature
+    /// has tappable recipes but doesn't declare a cost.
+    let actionCost: ActionCost?
 
     private enum CodingKeys: String, CodingKey {
         case id, name, description, actionRecipes
-        case attunementSlots, resource, kind, selection
+        case attunementSlots, resource, kind, selection, actionCost
     }
 
     init(
@@ -37,7 +41,8 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         attunementSlots: Int? = nil,
         resource: ResourceDefinition? = nil,
         kind: FeatureKind = .passive,
-        selection: FeatureSelection? = nil
+        selection: FeatureSelection? = nil,
+        actionCost: ActionCost? = nil
     ) {
         self.id = id
         self.name = name
@@ -47,6 +52,7 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         self.resource = resource
         self.kind = kind
         self.selection = selection
+        self.actionCost = actionCost
     }
 
     init(from decoder: Decoder) throws {
@@ -58,6 +64,13 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         attunementSlots = try c.decodeIfPresent(Int.self, forKey: .attunementSlots)
         resource = try c.decodeIfPresent(ResourceDefinition.self, forKey: .resource)
         selection = try c.decodeIfPresent(FeatureSelection.self, forKey: .selection)
+        // Explicit JSON wins; otherwise default to .action when the feature
+        // surfaces a tappable recipe, and nil for pure passives.
+        if let declared = try c.decodeIfPresent(ActionCost.self, forKey: .actionCost) {
+            actionCost = declared
+        } else {
+            actionCost = actionRecipes.isEmpty && resource == nil ? nil : .action
+        }
         // Fall back to a sensible auto-kind when JSON omits it: a feature
         // with a selection is `.selection`, one with a resource is `.active`,
         // and everything else is `.passive`. Explicit `kind` always wins.

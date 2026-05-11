@@ -36,6 +36,13 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
     /// Eldritch Invocations, Metamagic, etc. — the picker UI keys off the
     /// owning feature's selection block.
     var featureSelections: [String: [String]]
+    /// Currently active conditions (poisoned, restrained, etc.). Order is
+    /// preserved so the UI can render them in the order the player added them.
+    var conditions: [CharacterCondition]
+    /// Spell ID of the active concentration spell, if any. Only one at a time
+    /// (5e rule); setters should clear any prior value before assigning. Nil
+    /// when the character isn't concentrating.
+    var concentratingSpellID: String?
     var manifestVersion: Int
 
     init(
@@ -57,6 +64,8 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         resources: [String: ResourceState] = [:],
         spells: CharacterSpells = CharacterSpells(),
         featureSelections: [String: [String]] = [:],
+        conditions: [CharacterCondition] = [],
+        concentratingSpellID: String? = nil,
         manifestVersion: Int = 1
     ) {
         self.id = id
@@ -77,6 +86,8 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         self.resources = resources
         self.spells = spells
         self.featureSelections = featureSelections
+        self.conditions = conditions
+        self.concentratingSpellID = concentratingSpellID
         self.manifestVersion = manifestVersion
     }
 
@@ -87,7 +98,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         case abilityScores, maxHP, currentHP, tempHP
         case proficiencies, inventory, currency, notes
         case attunementSlotsOverride, resources, spells
-        case featureSelections, manifestVersion
+        case featureSelections, conditions, concentratingSpellID, manifestVersion
         /// Legacy key from when masteries lived on the character directly.
         /// Migrated into `featureSelections["weapon_mastery"]` on decode.
         case chosenWeaponMasteries
@@ -119,6 +130,8 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
             selections["weapon_mastery"] = legacyMasteries
         }
         featureSelections = selections
+        conditions = try container.decodeIfPresent([CharacterCondition].self, forKey: .conditions) ?? []
+        concentratingSpellID = try container.decodeIfPresent(String.self, forKey: .concentratingSpellID)
         manifestVersion = try container.decodeIfPresent(Int.self, forKey: .manifestVersion) ?? 1
 
         let profDict = try container.decodeIfPresent([String: ProficiencyLevel].self, forKey: .proficiencies) ?? [:]
@@ -147,6 +160,8 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         try container.encode(resources, forKey: .resources)
         try container.encode(spells, forKey: .spells)
         try container.encode(featureSelections, forKey: .featureSelections)
+        try container.encode(conditions, forKey: .conditions)
+        try container.encodeIfPresent(concentratingSpellID, forKey: .concentratingSpellID)
         try container.encode(manifestVersion, forKey: .manifestVersion)
 
         let profDict = Dictionary(uniqueKeysWithValues: proficiencies.map { key, value in
@@ -154,4 +169,65 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         })
         try container.encode(profDict, forKey: .proficiencies)
     }
+
+    // MARK: - Condition mutators
+
+    /// Apply a condition. Re-adding the same condition replaces its source
+    /// rather than stacking — duplicates would just clutter the row.
+    mutating func applyCondition(id: String, source: String? = nil) {
+        if let index = conditions.firstIndex(where: { $0.id == id }) {
+            conditions[index].source = source
+        } else {
+            conditions.append(CharacterCondition(id: id, source: source))
+        }
+    }
+
+    mutating func removeCondition(id: String) {
+        conditions.removeAll { $0.id == id }
+    }
+
+    /// Set the active concentration spell. Replacing a prior one is the
+    /// caller's responsibility to confirm with the user; this just commits.
+    mutating func startConcentrating(on spellID: String) {
+        concentratingSpellID = spellID
+    }
+
+    mutating func stopConcentrating() {
+        concentratingSpellID = nil
+    }
+
+    /// Apply `amount` damage. Drains temp HP first (per 5e), then chips
+    /// current HP. Returns a pending `ConcentrationCheck` when the character
+    /// was concentrating and actually took damage to current HP (temp-only
+    /// absorbs don't trigger the save). Caller is responsible for prompting
+    /// the player to roll.
+    mutating func applyDamage(_ amount: Int) -> ConcentrationCheck? {
+        guard amount > 0 else { return nil }
+        var remaining = amount
+        if tempHP > 0 {
+            let absorbed = min(tempHP, remaining)
+            tempHP -= absorbed
+            remaining -= absorbed
+        }
+        guard remaining > 0 else { return nil }
+        currentHP = max(0, currentHP - remaining)
+        guard let spellID = concentratingSpellID else { return nil }
+        // DC is the larger of 10 or half the damage taken (after temp HP).
+        let dc = max(10, remaining / 2)
+        return ConcentrationCheck(spellID: spellID, dc: dc, damageTaken: remaining)
+    }
+}
+
+/// Returned by `Character.applyDamage` when the hit interrupts concentration.
+/// The view layer reads this to surface the save sheet — the model itself
+/// doesn't know whether the player passes or fails.
+struct ConcentrationCheck: Equatable, Identifiable {
+    /// Spell currently held; if the player fails, this is what drops.
+    let spellID: String
+    let dc: Int
+    let damageTaken: Int
+
+    /// Combine spell + damage so a re-tap on the same hit doesn't dedupe with
+    /// the prior one (player might take multiple hits before saving).
+    var id: String { "\(spellID)_\(dc)_\(damageTaken)" }
 }

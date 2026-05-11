@@ -301,6 +301,42 @@ struct SpellTests {
         #expect(resolved.formula?.modifier == 3)
     }
 
+    // MARK: - Ritual casting
+
+    @Test func castingTimeRitualRoundTrips() throws {
+        let times: [CastingTime] = [
+            .ritual(base: .action),
+            .ritual(base: .bonusAction),
+            .ritual(base: .minutes(10))
+        ]
+        for time in times {
+            let data = try JSONEncoder().encode(time)
+            let decoded = try JSONDecoder().decode(CastingTime.self, from: data)
+            #expect(decoded == time)
+        }
+    }
+
+    @Test func bundledDetectMagicIsTaggedRitual() {
+        let store = ContentStore()
+        guard let spell = store.spellDefinition(id: "detect_magic") else {
+            Issue.record("Detect Magic not in bundled content")
+            return
+        }
+        if case .ritual = spell.castingTime {
+            // ok
+        } else {
+            Issue.record("Detect Magic should be tagged as ritual")
+        }
+        // Detect Magic has no recipes — slot-tap should cast immediately in the UI.
+        #expect(spell.actionRecipes.isEmpty)
+    }
+
+    @Test func bundledWizardHasRitualCasting() {
+        let store = ContentStore()
+        let block = store.classDefinition(id: "wizard")?.spellcasting
+        #expect(block?.ritualCasting == true)
+    }
+
     // MARK: - Helpers
 
     private func makeWizard(level: Int) -> Character {

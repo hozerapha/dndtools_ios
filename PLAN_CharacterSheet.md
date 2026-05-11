@@ -977,6 +977,125 @@ struct UpcastChoice: Codable {
 
 **Deliverable:** Equip and attune a Wand of Magic Missiles. Cast Magic Missile from the action grid; charges decrement; upcast to consume 2 or 3. Long-rest restores 1d6+1 charges through the roll-resolution prompt.
 
+> **Shipped 2026-05-10.** Implemented as specified, with two deviations:
+> - **Wand of Magic Missiles requires no attunement.** Per the 2024 SRD it's
+>   freely usable; `attunement: {}` was dropped from `gear.json`. The
+>   attunement-gating code in `ResourceCalculator.availableResources` stays
+>   in place for the next attunement-required magic item.
+> - **Item description shown in inventory.** Beyond the action grid wiring,
+>   the inventory row's expanded edit panel now displays the item's
+>   description text and (for weapons) a per-character formula breakdown so
+>   the player can audit attack/damage numbers against the rules.
+>
+> Behavior delivered:
+> - `ItemDefinition` / `WeaponDefinition` / `ArmorDefinition` accept optional
+>   `resource: ResourceDefinition` and `uses: [ItemUse]`.
+> - `ItemUseEffect` supports `.castSpell(spellID:atLevel:)` and
+>   `.actionRecipes([ActionRecipe])`; only the former is exercised by
+>   bundled content so far.
+> - `ResourceCalculator.availableResources` walks inventory and de-dupes
+>   pools by id (two stacks of the same wand share one charge pool).
+> - `CharacterActionDeriver` emits an "Item Uses" section in the action
+>   grid; rows with `.castSpell` carry an `ItemSpellCastContext` that the
+>   character sheet routes into `SpellCastSheet` with the item's pool
+>   replacing the slot picker.
+
+---
+
+## Out-of-Scope Additions (shipped between phases)
+
+A handful of changes landed that weren't called out in any single phase. They
+were small, contained, and unblocked future work, so they shipped opportunistically.
+Notes here so the plan stays an accurate map of the codebase.
+
+### Tabbed character sheet
+
+The original sheet was one long vertical scroll. It was already cramped after
+Phase J's spell card and intolerable after Phase K's item-uses + resources
+additions. Reshaped into a fixed header (name, badges, HP bar, AC/Speed/Init
+pills) over a segmented picker with five tabs:
+
+- **Actions** — Resources card, Attacks card, action grid (Features + Item Uses).
+- **Abilities** — ability block (with adv/dis chips), skills, senses, proficiencies, notes.
+- **Features** — every feature with description, kind, charges, and selection picker. See "Data-driven Features tab" below.
+- **Inventory** — full inventory editor with weapon breakdowns and item descriptions.
+- **Spells** — slot dots + spell list. Hidden entirely for non-casters; an `onChange` guard kicks the user to Actions if they somehow lose spellcasting while sitting on this tab.
+
+`navigationBarTitleDisplayMode` is now `.inline` (was `.large`) to reclaim
+vertical space. The picker uses text-only labels — adding icons collided with
+smaller iPhone widths.
+
+### Bespoke `AttacksView` for weapons
+
+Weapon attacks used to flow through the generic `ActionButtonGrid` as one tile
+per recipe — Attack / Damage / Damage (2H) for a longsword was three tiles in a
+2-column grid. Replaced with a `AttacksView` that emits one row per equipped
+weapon, with name + mastery chip + inline pill buttons (`🎯 +5`,
+`💧 1d8+3`, optional `2H 1d10+3`). The mastery chip taps to a sheet with the
+SRD rule summary. `CharacterActionDeriver.weaponAttacks(for:content:)` builds
+the typed model; weapons no longer appear in `sections(...)`.
+
+### Attack → damage follow-up chip
+
+Tapping a weapon Attack chip (and tapping Spell Attack in the cast sheet)
+queues the damage roll on `PendingRollStore.followUp`. The dice tab shows a
+small accent-tinted "Roll damage?" pill below the tray once the attack roll
+lands. Tap → load the damage formula; X → dismiss; touching the picker manually
+also clears it (so the chip stops appearing once the player has reshaped the
+dice). One UX pattern serves spell attacks, weapon attacks, and any future
+"primary + follow-up" pair.
+
+### Weapon roll breakdowns + item descriptions in inventory
+
+The inventory row's expanded edit panel now shows:
+
+- The item's `description` text (from JSON, looked up via `ContentStore.itemDescription`).
+- For weapons, a `WeaponRollBreakdown` block with attack/damage/(2H) lines.
+  Each line shows the resolved formula ("+5", "1d8+3"), the damage type
+  ("slashing"), and the derivation ("1d8 + STR (+3)"). Built by
+  `CharacterCalculator.weaponRollBreakdown(...)`, which routes through the
+  same `ActionInterpreter` the dice handoff uses, so the displayed math always
+  matches what gets rolled.
+
+### `WeaponMastery` got display data
+
+The enum used to be bare cases. Added `displayName` and a `summary` (one short
+SRD-style paragraph per property — Cleave, Graze, Nick, Push, Sap, Slow,
+Topple, Vex). Surfaced in the `AttacksView` mastery sheet and in the weapon
+selection picker.
+
+### Data-driven Features tab (partial Phase M)
+
+A `Features` tab was added that lists every class feature and species trait
+sourced entirely from JSON. Each card shows the feature's name, source label,
+kind chip, description, optional resource pool, and a selection picker when
+applicable. The schema additions to support this:
+
+- `FeatureKind` enum — `.passive` / `.active` / `.selection` / `.toggle`. Pure
+  presentation tag; mechanical behavior still comes from the surface (`resource`,
+  `actionRecipes`, `selection`). When JSON omits `kind`, the decoder auto-infers
+  from shape so existing data needs no updates.
+- `FeatureSelection { id, prompt, count: LevelScaledValue, optionsSource: SelectionSource }`
+  attached optionally to a `FeatureDefinition`. The first `SelectionSource`
+  case is `.weapons(proficientOnly: Bool)`. Future cases (spells, skills, free-form
+  option lists) plug in here without code changes to consumers.
+- `Character.featureSelections: [String: [String]]` — generic selection storage
+  keyed by `FeatureSelection.id`. Replaces the short-lived `chosenWeaponMasteries`
+  field; legacy saves are migrated on decode.
+
+Fighter L1's `weapon_mastery` is now a JSON-declared feature with a selection
+block. `CharacterCalculator.weaponMasterySlotCount` reads from the feature
+rather than from `ClassDefinition.masteryCount` (the legacy field is still
+parsed but no longer consulted). Mastery picking moved entirely from the
+inventory row (deleted) to the Features tab's picker.
+
+**Impact on Phase M:** the FeatureSelection schema is a starting substrate for
+Phase M's choice system. Phase M still needs to: (a) generalize
+`SelectionSource` to spells, skills, feats, ASI distribution; (b) add nested
+choice prompts (`.composite`, `.spawnChoice`); (c) drive the choices from a
+level-up flow rather than ad-hoc per-feature edits; (d) record version history
+for re-entry. But the persistence layer + the picker plumbing already exist.
+
 ---
 
 ### Phase L — Conditions, Concentration, Action Economy
@@ -1046,6 +1165,15 @@ Per-turn tracking is out of scope for v1 (no initiative tracker yet). The cost i
 **Goal:** Anything where the player makes a permanent decision that mutates
 the character: level-up, fighting style, metamagic selection, feat picks,
 ASI vs. feat at L4 / L8 / etc.
+
+> **Already in place (see "Out-of-Scope Additions" → "Data-driven Features tab"):**
+> a `FeatureSelection` schema attached to features, a `SelectionSource.weapons`
+> case, generic per-feature picker UI, and `Character.featureSelections` as the
+> persistence layer for picks. Phase M extends this — it does not replace it.
+>
+> What Phase M still needs to add: more `SelectionSource` cases (spells, skills,
+> feats, ASI distribution), nested / cascading choice outcomes, a guided
+> level-up flow, and re-entry support with versioned outcomes.
 
 **M.1 Choice prompt model**
 
@@ -1121,6 +1249,10 @@ checks, saves) keep working unchanged.
 
 This is a substrate change. It's small on its own, but Phase O leans on it —
 "+1d6 necrotic" only reads correctly when the tray knows what "necrotic" is.
+
+> **Note:** the follow-up chip pattern is already in place (Phase J / Phase K
+> wired it for attack→damage chaining on both spells and weapons). Phase N's
+> result HUD breakdown will sit alongside that chip, not replace it.
 
 **N.1 DiceGroup gains an optional damage type**
 
@@ -1214,6 +1346,12 @@ damage typing (Phase N) makes their extra dice render correctly.
 
 This phase is design-heavy. The shape below is a sketch; pieces will move as
 we encode real content.
+
+> **Already in place:** `FeatureKind.toggle` is declared on `FeatureDefinition`
+> as a UI tag, the Features tab knows how to render a toggleable card, and
+> the follow-up-chip plumbing in the dice tab is the right substrate for
+> Phase O's `.optIn` activation. Phase O fills in the actual `TriggeredEffect`
+> data and the resolver pass that consumes it.
 
 **O.1 TriggeredEffect schema**
 
@@ -1483,11 +1621,12 @@ No UI tests in v1. Pure model + store tests only.
 | H — Custom content import / export | **deferred** until I–O stabilize the schema |
 | I — Resources & rest cycle | shipped |
 | J — Spells | shipped (incl. `spellAttack` recipe + attack→damage follow-up chip) |
-| K — Items with charges & spell access | next |
-| L — Conditions, concentration, action economy | after K |
-| M — Choices & multi-step prompts | after L |
-| N — Damage typing in the dice tray | after M (low coupling — can slot earlier if Phase O work pulls it forward) |
-| O — Triggered effects & active statuses | after N + L (needs damage typing + concentration) |
+| K — Items with charges & spell access | shipped (Wand of Magic Missiles end-to-end) |
+| Post-J UX polish | shipped — see "Out-of-Scope Additions" below |
+| L — Conditions, concentration, action economy | shipped (14 SRD conditions + concentration tracking + damage-triggered Con save + action-cost chips) |
+| M — Choices & multi-step prompts | next (partial schema already in place — see addendum) |
+| N — Damage typing in the dice tray | after M |
+| O — Triggered effects & active statuses | after N (the `FeatureKind.toggle` tag is already there as a placeholder; condition `effects` array seeded in L) |
 
 ## Open Decisions (to resolve during implementation)
 
@@ -1503,9 +1642,9 @@ No UI tests in v1. Pure model + store tests only.
 ---
 
 *Last updated: 2026-05-10*
-*Next step: Implement Phase K (items with charges & spell access).*
+*Next step: Implement Phase M (choices & multi-step prompts).*
 
-> This document is mutable. As phases K–O evolve and new SRD / expansion
+> This document is mutable. As phases L–O evolve and new SRD / expansion
 > content surfaces edge cases the schema doesn't cover, update the relevant
 > phase section in place rather than spawning a parallel document.
 

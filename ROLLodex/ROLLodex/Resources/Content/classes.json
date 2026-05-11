@@ -19,6 +19,7 @@
           "id": "second_wind",
           "name": "Second Wind",
           "description": "You can use a Bonus Action to regain Hit Points equal to 1d10 plus your Fighter level.",
+          "actionCost": "bonusAction",
           "resource": {
             "id": "fighter_second_wind",
             "name": "Second Wind Uses",

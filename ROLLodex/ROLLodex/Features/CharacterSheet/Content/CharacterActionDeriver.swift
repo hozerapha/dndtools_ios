@@ -237,7 +237,8 @@ enum CharacterActionDeriver {
                             label: feature.name,
                             formula: nil,
                             description: nil,
-                            resourceCost: cost
+                            resourceCost: cost,
+                            actionCost: feature.actionCost
                         )
                         rows.append(ActionRow(action: action, badge: badge, isExhausted: isExhausted))
                         continue
@@ -256,7 +257,8 @@ enum CharacterActionDeriver {
                             label: featureButtonLabel(feature: feature, resolved: resolved),
                             formula: resolved.formula,
                             description: resolved.description,
-                            resourceCost: cost
+                            resourceCost: cost,
+                            actionCost: feature.actionCost
                         )
                         rows.append(ActionRow(action: labeled, badge: badge, isExhausted: isExhausted))
                     }
@@ -345,7 +347,8 @@ enum CharacterActionDeriver {
                         label: use.name,
                         formula: nil,
                         description: costSubtitle(amount: use.cost.amount, extraPerLevel: extra),
-                        resourceCost: nil
+                        resourceCost: nil,
+                        actionCost: use.actionCost
                     )
                     rows.append(ActionRow(
                         action: action,
@@ -367,7 +370,8 @@ enum CharacterActionDeriver {
                             label: use.name,
                             formula: resolved.formula,
                             description: resolved.description,
-                            resourceCost: cost
+                            resourceCost: cost,
+                            actionCost: use.actionCost
                         )
                         rows.append(ActionRow(
                             action: labeled,

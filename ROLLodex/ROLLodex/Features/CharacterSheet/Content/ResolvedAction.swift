@@ -10,19 +10,24 @@ struct ResolvedAction: Identifiable, Equatable {
     let formula: DiceFormula?
     let description: String?
     let resourceCost: ResourceCost?
+    /// Action-economy cost (Action, Bonus, Reaction, etc.). Nil for rows that
+    /// aren't real turn actions (save DCs, info-only checks).
+    let actionCost: ActionCost?
 
     init(
         id: String,
         label: String,
         formula: DiceFormula?,
         description: String?,
-        resourceCost: ResourceCost? = nil
+        resourceCost: ResourceCost? = nil,
+        actionCost: ActionCost? = nil
     ) {
         self.id = id
         self.label = label
         self.formula = formula
         self.description = description
         self.resourceCost = resourceCost
+        self.actionCost = actionCost
     }
 }
 

@@ -16,19 +16,48 @@ struct ItemUse: Codable, Equatable {
     /// When set, the cast sheet shows a level picker (Wand of MM: 1st–3rd).
     /// Nil means the item only ever fires at one level.
     let upcastChoice: UpcastChoice?
+    /// Turn-economy cost when invoked. Defaults to `.action` on decode when
+    /// the JSON omits it (most magic items consume your action).
+    let actionCost: ActionCost
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, cost, effect, upcastChoice, actionCost
+    }
 
     init(
         id: String,
         name: String,
         cost: ItemUseCost,
         effect: ItemUseEffect,
-        upcastChoice: UpcastChoice? = nil
+        upcastChoice: UpcastChoice? = nil,
+        actionCost: ActionCost = .action
     ) {
         self.id = id
         self.name = name
         self.cost = cost
         self.effect = effect
         self.upcastChoice = upcastChoice
+        self.actionCost = actionCost
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id           = try c.decode(String.self, forKey: .id)
+        name         = try c.decode(String.self, forKey: .name)
+        cost         = try c.decode(ItemUseCost.self, forKey: .cost)
+        effect       = try c.decode(ItemUseEffect.self, forKey: .effect)
+        upcastChoice = try c.decodeIfPresent(UpcastChoice.self, forKey: .upcastChoice)
+        actionCost   = try c.decodeIfPresent(ActionCost.self, forKey: .actionCost) ?? .action
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(name, forKey: .name)
+        try c.encode(cost, forKey: .cost)
+        try c.encode(effect, forKey: .effect)
+        try c.encodeIfPresent(upcastChoice, forKey: .upcastChoice)
+        try c.encode(actionCost, forKey: .actionCost)
     }
 }
 
