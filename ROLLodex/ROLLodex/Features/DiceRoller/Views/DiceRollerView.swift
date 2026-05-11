@@ -129,15 +129,25 @@ struct DiceRollerView: View {
                     .padding(.top, 16)
                     .transition(.opacity)
             } else if let result = lastResult {
-                Text("\(result.total)")
-                    .font(.system(size: 56, weight: .heavy, design: .rounded))
-                    .foregroundStyle(totalColor(for: result))
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 8)
-                    .background(.black.opacity(0.55), in: Capsule())
-                    .padding(.top, 16)
-                    .contentTransition(.numericText())
-                    .transition(.scale.combined(with: .opacity))
+                VStack(spacing: 6) {
+                    Text("\(result.total)")
+                        .font(.system(size: 56, weight: .heavy, design: .rounded))
+                        .foregroundStyle(totalColor(for: result))
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 8)
+                        .background(.black.opacity(0.55), in: Capsule())
+                        .contentTransition(.numericText())
+                    if let breakdown = DamageBreakdownView.text(for: result) {
+                        Text(breakdown)
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 4)
+                            .background(.black.opacity(0.55), in: Capsule())
+                    }
+                }
+                .padding(.top, 16)
+                .transition(.scale.combined(with: .opacity))
             }
 
             if !magnifyingDieIndices.isEmpty {

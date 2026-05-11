@@ -52,16 +52,19 @@ struct DiceTrayView: View {
                 .font(.system(.title3, design: .rounded, weight: .semibold))
                 .foregroundStyle(Self.feltSecondary)
         } else if let r = settledResult {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Total")
-                    .font(.subheadline)
-                    .foregroundStyle(Self.feltSecondary)
-                Spacer()
-                Text("\(r.total)")
-                    .font(.system(size: 56, weight: .heavy, design: .rounded))
-                    .foregroundStyle(totalColor(for: r))
-                    .shadow(color: .black.opacity(0.45), radius: 4, y: 2)
-                    .contentTransition(.numericText())
+            VStack(alignment: .trailing, spacing: 2) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Total")
+                        .font(.subheadline)
+                        .foregroundStyle(Self.feltSecondary)
+                    Spacer()
+                    Text("\(r.total)")
+                        .font(.system(size: 56, weight: .heavy, design: .rounded))
+                        .foregroundStyle(totalColor(for: r))
+                        .shadow(color: .black.opacity(0.45), radius: 4, y: 2)
+                        .contentTransition(.numericText())
+                }
+                DamageBreakdownView(result: r, foreground: Self.feltSecondary)
             }
         } else {
             Text("Tap Roll")

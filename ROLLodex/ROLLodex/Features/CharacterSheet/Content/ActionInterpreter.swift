@@ -47,8 +47,8 @@ enum ActionInterpreter {
         case .heal(let dice, let addLevel, let label):
             return resolveHeal(character: character, dice: dice, addLevel: addLevel, label: label)
 
-        case .rawDamage(let dice, _, let label):
-            return resolveRawDamage(dice: dice, label: label)
+        case .rawDamage(let dice, let damageType, let label):
+            return resolveRawDamage(dice: dice, damageType: damageType, label: label)
 
         case .spellAttack(let label):
             return resolveSpellAttack(
@@ -90,12 +90,17 @@ enum ActionInterpreter {
         )
     }
 
-    private static func resolveRawDamage(dice: String, label: String) -> ResolvedAction {
+    private static func resolveRawDamage(
+        dice: String,
+        damageType: DamageType,
+        label: String
+    ) -> ResolvedAction {
         // Spell formulas can carry inline modifiers ("3d4+3"). The simple
         // `parseDieString` helper only handles the bare "NdM" shape, so we
         // route through the existing dice-formula parser instead and fall
         // back to an empty formula if anything goes wrong.
-        let formula = (try? DiceFormulaParser().parse(dice)) ?? DiceFormula()
+        var formula = (try? DiceFormulaParser().parse(dice)) ?? DiceFormula()
+        formula.applyDamageType(damageType)
         return ResolvedAction(
             id: "raw_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))",
             label: label,
@@ -215,7 +220,10 @@ enum ActionInterpreter {
 
         let totalMod = abilityContribution + duelingBonus
 
-        let formula = parseDieString(dieString, modifier: totalMod)
+        var formula = parseDieString(dieString, modifier: totalMod)
+        if let dmgType = weapon?.damageType {
+            formula.applyDamageType(dmgType)
+        }
         let label = weapon?.name ?? "Damage"
         var desc = dieString
         if addAbility {

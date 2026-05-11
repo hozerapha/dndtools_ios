@@ -1625,7 +1625,7 @@ No UI tests in v1. Pure model + store tests only.
 | Post-J UX polish | shipped — see "Out-of-Scope Additions" below |
 | L — Conditions, concentration, action economy | shipped (14 SRD conditions + concentration tracking + damage-triggered Con save + action-cost chips) |
 | M — Choices & multi-step prompts | **shipped (architecture complete)** — Slices A + B + C all landed. Substrate: `FeatureSelection` + 4 `SelectionSource` cases (weapons / fixedOptions / subclasses / abilityScoreIncrease), `SubclassDefinition` schema, `ClassDefinition.resolvedFeatures` aggregator threaded through every feature-walking site, `LevelUpSheet` with HP roll/average, and ASI mutators with score-cap + per-ability-cap enforcement. **Incremental content still to author** (not blocking): more subclasses (Battle Master / Eldritch Knight / wizard arcane traditions / cleric domains), sorcerer metamagic via existing `.fixedOptions`, ASI prompts on every class at L4/L8/L12/L16/L19, and a feat catalog + Origin/General feat picker. **Deferred architecture**: the heavier `ChoicePromptDefinition` / `ChoiceOutcome` recursive model the plan describes — pushed until a real use case needs nested choices (Feat → "+1 ability" sub-prompt, etc.). |
-| N — Damage typing in the dice tray | after M |
+| N — Damage typing in the dice tray | **shipped** — `DiceGroup` gained `damageType: DamageType?` (Codable optional, backwards-compat for legacy JSON), `DiceFormula.applyDamageType(_:)` + `displayStringWithTypes`, `RollResult.subtotalsByType` bucketing kept dice + flat modifier (modifier attaches to a sole damage type when groups share one; falls under `nil` for mixed/untyped). `ActionInterpreter.resolveWeaponDamage` stamps `weapon.damageType` onto produced groups; `resolveRawDamage` stamps the recipe's `damageType`. Spell upcast preserves the type implicitly because `SpellDefinition.scaledRecipe` keeps the recipe's `damageType` field. New `DamageBreakdownView` renders "5 slashing + 4 radiant" lines under the tray total and in history rows. Formula bar stays untyped for parser round-trip. **Known wart**: opening the formula bar editor on a typed roll and tapping Done re-parses the untyped text, losing the type — acceptable since typed rolls come from recipe dispatch, not bar edits. |
 | O — Triggered effects & active statuses | after N (the `FeatureKind.toggle` tag is already there as a placeholder; condition `effects` array seeded in L) |
 
 ## Open Decisions (to resolve during implementation)
@@ -1641,8 +1641,8 @@ No UI tests in v1. Pure model + store tests only.
 
 ---
 
-*Last updated: 2026-05-10*
-*Next step: Implement Phase N — damage typing in the dice tray. `DiceGroup` gains an optional `damageType`; mixed-damage results break out per-type instead of one anonymous total. Phase O (triggered effects) leans on this for `+1d6 necrotic` style add-ons.*
+*Last updated: 2026-05-11*
+*Next step: Implement Phase O — triggered effects & active statuses. Phase N's per-type subtotals are in place, so a Hex rider that adds `+1d6 necrotic` to weapon damage will render cleanly alongside the base slashing total. Phase O builds the `TriggeredEffect` substrate (`.onHit`, `.onAttackRoll`, `.optIn`) and a `CharacterStatus` list on the character for active riders (Hex, Hunter's Mark, Rage, Bless).*
 
 > This document is mutable. As phases L–O evolve and new SRD / expansion
 > content surfaces edge cases the schema doesn't cover, update the relevant

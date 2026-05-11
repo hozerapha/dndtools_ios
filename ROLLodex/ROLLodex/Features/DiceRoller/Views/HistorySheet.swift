@@ -58,6 +58,7 @@ private struct HistoryRow: View {
                 Text(result.formula.displayString)
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
+                DamageBreakdownView(result: result)
                 Text(result.timestamp, style: .relative)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)

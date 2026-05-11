@@ -23,33 +23,60 @@ struct DiceGroup: Identifiable, Codable {
     var kind: DieKind
     var count: Int
     var modifier: GroupModifier?
+    /// Optional 5e damage type for this group's dice (slashing, fire, necrotic, …).
+    /// Nil for non-damage rolls (ability checks, saves, manual tray rolls). When
+    /// multiple groups in a formula carry different types, the result HUD surfaces
+    /// a per-type breakdown so e.g. Eldritch Smite reads "8 slashing · 6 radiant"
+    /// instead of one anonymous total.
+    var damageType: DamageType?
 
-    init(id: UUID = UUID(), kind: DieKind, count: Int, modifier: GroupModifier? = nil) {
+    init(
+        id: UUID = UUID(),
+        kind: DieKind,
+        count: Int,
+        modifier: GroupModifier? = nil,
+        damageType: DamageType? = nil
+    ) {
         self.id = id
         self.kind = kind
         self.count = count
         self.modifier = modifier
+        self.damageType = damageType
     }
 
     var isPlain: Bool { modifier == nil }
 
+    /// Untyped dice notation — `1d8`, `2d20kh1`. Round-trips through
+    /// `DiceFormulaParser` so it's safe to surface in the editable formula bar.
     var displayString: String {
         let base = "\(count)\(kind.label)"
         return base + (modifier?.suffix ?? "")
     }
+
+    /// Dice notation with the damage type appended (`1d10 fire`) when present.
+    /// Used by display-only surfaces (tray HUD, history) — never feed this back
+    /// into `DiceFormulaParser`, which doesn't recognize the type token.
+    var displayStringWithType: String {
+        guard let damageType else { return displayString }
+        return "\(displayString) \(damageType.rawValue)"
+    }
 }
 
-// Equality / Hashable ignore `id` — two groups are "the same" if their dice/modifier match,
+// Equality / Hashable ignore `id` — two groups are "the same" if their dice/modifier/type match,
 // regardless of UUID. UUIDs are for SwiftUI identity only.
 extension DiceGroup: Hashable {
     static func == (lhs: DiceGroup, rhs: DiceGroup) -> Bool {
-        lhs.kind == rhs.kind && lhs.count == rhs.count && lhs.modifier == rhs.modifier
+        lhs.kind == rhs.kind
+            && lhs.count == rhs.count
+            && lhs.modifier == rhs.modifier
+            && lhs.damageType == rhs.damageType
     }
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(kind)
         hasher.combine(count)
         hasher.combine(modifier)
+        hasher.combine(damageType)
     }
 }
 
@@ -125,5 +152,27 @@ struct DiceFormula: Codable, Hashable {
             result += " − \(abs(modifier))"
         }
         return result
+    }
+
+    /// Like `displayString`, but each group prints with its damage type when set.
+    /// Display-only — see `DiceGroup.displayStringWithType`.
+    var displayStringWithTypes: String {
+        var result = groups.map(\.displayStringWithType).joined(separator: " + ")
+        if result.isEmpty { result = "—" }
+        if modifier > 0 {
+            result += " + \(modifier)"
+        } else if modifier < 0 {
+            result += " − \(abs(modifier))"
+        }
+        return result
+    }
+
+    /// Stamp `type` onto every group in the formula. Used by the action
+    /// interpreter to apply a recipe's damage type (the weapon's or the spell
+    /// recipe's) onto the parsed dice groups in one step.
+    mutating func applyDamageType(_ type: DamageType) {
+        for i in groups.indices {
+            groups[i].damageType = type
+        }
     }
 }
