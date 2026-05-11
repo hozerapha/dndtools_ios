@@ -48,7 +48,8 @@ enum CharacterCalculator {
     static func armorClass(
         dexMod: Int,
         armor: ArmorDefinition?,
-        hasShield: Bool
+        hasShield: Bool,
+        fightingStyleBonus: Int = 0
     ) -> Int {
         let base: Int
         if let armor = armor {
@@ -64,7 +65,70 @@ enum CharacterCalculator {
         }
 
         let shieldBonus = hasShield ? 2 : 0
-        return base + shieldBonus
+        return base + shieldBonus + fightingStyleBonus
+    }
+
+    /// Resolves Fighting Style "Defense" to its AC delta. +1 when the chosen
+    /// style is `defense` *and* the character is wearing armor (the SRD
+    /// condition). Zero otherwise. Other styles modify attacks / damage and
+    /// are surfaced through `ActionInterpreter` instead.
+    static func defenseACBonus(
+        character: Character,
+        wearingArmor: Bool
+    ) -> Int {
+        guard wearingArmor,
+              character.featureSelections["fighting_style"]?.first == "defense"
+        else { return 0 }
+        return 1
+    }
+
+    /// Snapshot of fighting-style state that affects weapon rolls. Computed
+    /// from inventory + content because Dueling needs to know whether the
+    /// character has any *other* weapon equipped. Pure data so the
+    /// interpreter can stay independent of ContentStore.
+    static func fightingStyleEffects(
+        character: Character,
+        content: ContentStore
+    ) -> FightingStyleEffects {
+        let style = character.featureSelections["fighting_style"]?.first
+        let equippedWeapons = character.inventory
+            .filter { $0.equipped }
+            .compactMap { content.weaponDefinition(id: $0.itemID) }
+        return FightingStyleEffects(
+            style: style,
+            onlyOneWeaponEquipped: equippedWeapons.count == 1
+        )
+    }
+
+    /// HP gain at level-up if the player takes the average. 5e PHB rule:
+    /// `floor(hitDie/2) + 1 + CON mod`. Always ≥ 1 (CON penalty can't push
+    /// the gain below 1 — handled in `clampedLevelUpHPGain`).
+    static func averageLevelUpHPGain(hitDie: Int, conMod: Int) -> Int {
+        (hitDie / 2 + 1) + conMod
+    }
+
+    /// 5e rule: a level-up never grants fewer than 1 HP even with a brutal
+    /// CON penalty. Wrap any computed gain through this before applying.
+    static func clampedLevelUpHPGain(_ raw: Int) -> Int {
+        max(1, raw)
+    }
+
+    /// Bumps the character's overall level, the matching class entry's level,
+    /// and adds the (clamped) HP gain to both max and current HP. Centralized
+    /// so the level-up sheet and any future automation share the same math.
+    static func applyLevelUp(
+        to character: inout Character,
+        hpGain: Int,
+        classID: String
+    ) {
+        let clampedGain = clampedLevelUpHPGain(hpGain)
+        character.maxHP += clampedGain
+        character.currentHP = min(character.currentHP + clampedGain, character.maxHP)
+        character.level += 1
+        if let idx = character.classEntries.firstIndex(where: { $0.classID == classID }) {
+            let entry = character.classEntries[idx]
+            character.classEntries[idx] = ClassEntry(classID: entry.classID, level: entry.level + 1)
+        }
     }
 
     static func initiativeBonus(character: Character) -> Int {
@@ -134,11 +198,12 @@ enum CharacterCalculator {
         var limit = 3
         for entry in character.classEntries {
             guard let cls = content.classDefinition(id: entry.classID) else { continue }
-            for level in 1...max(entry.level, 1) {
-                for feature in cls.levelFeatures[level] ?? [] {
-                    if let slots = feature.attunementSlots {
-                        limit = max(limit, slots)
-                    }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
+                if let slots = resolved.feature.attunementSlots {
+                    limit = max(limit, slots)
                 }
             }
         }
@@ -157,15 +222,16 @@ enum CharacterCalculator {
         var total = 0
         for entry in character.classEntries {
             guard let cls = content.classDefinition(id: entry.classID) else { continue }
-            for level in 1...max(entry.level, 1) {
-                for feature in cls.levelFeatures[level] ?? [] {
-                    guard let selection = feature.selection,
-                          selection.id == "weapon_mastery" else { continue }
-                    total += selection.count.value(
-                        classLevel: entry.level,
-                        characterLevel: character.level
-                    )
-                }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
+                guard let selection = resolved.feature.selection,
+                      selection.id == "weapon_mastery" else { continue }
+                total += selection.count.value(
+                    classLevel: entry.level,
+                    characterLevel: character.level
+                )
             }
         }
         return total
@@ -198,6 +264,7 @@ enum CharacterCalculator {
     ) -> WeaponRollBreakdown? {
         guard let weapon = content.weaponDefinition(id: weaponID) else { return nil }
 
+        let fs = fightingStyleEffects(character: character, content: content)
         let attackRecipe = ActionRecipe.weaponAttack(
             abilityOverride: nil,
             finesse: weapon.properties.contains(.finesse)
@@ -207,13 +274,13 @@ enum CharacterCalculator {
             addAbility: true,
             versatile: false
         )
-        let attack = ActionInterpreter.resolve(recipe: attackRecipe, character: character, weapon: weapon)
-        let damage = ActionInterpreter.resolve(recipe: damageRecipe, character: character, weapon: weapon)
+        let attack = ActionInterpreter.resolve(recipe: attackRecipe, character: character, weapon: weapon, fightingStyle: fs)
+        let damage = ActionInterpreter.resolve(recipe: damageRecipe, character: character, weapon: weapon, fightingStyle: fs)
 
         let versatile: WeaponRollLine?
         if weapon.versatileDamage != nil {
             let recipe = ActionRecipe.weaponDamage(dieOverride: nil, addAbility: true, versatile: true)
-            let resolved = ActionInterpreter.resolve(recipe: recipe, character: character, weapon: weapon)
+            let resolved = ActionInterpreter.resolve(recipe: recipe, character: character, weapon: weapon, fightingStyle: fs)
             versatile = WeaponRollLine(formula: formulaString(resolved.formula), breakdown: resolved.description ?? "")
         } else {
             versatile = nil
@@ -264,4 +331,19 @@ struct WeaponRollBreakdown: Equatable {
     let versatile: WeaponRollLine?
     /// Damage type label ("Slashing", "Piercing", …).
     let damageType: String
+}
+
+/// Pre-computed Fighting Style context for the `ActionInterpreter`. Tells the
+/// weapon-resolution path which style is active and whether the Dueling
+/// condition ("no other weapons equipped") is currently satisfied. Spell
+/// resolution ignores this entirely. Built via
+/// `CharacterCalculator.fightingStyleEffects(character:content:)`.
+struct FightingStyleEffects: Equatable {
+    /// Picked option ID, e.g. `archery` / `defense` / `dueling`. Nil when the
+    /// character hasn't chosen a style yet.
+    let style: String?
+    /// True when exactly one weapon is equipped — the Dueling pre-condition.
+    let onlyOneWeaponEquipped: Bool
+
+    static let none = FightingStyleEffects(style: nil, onlyOneWeaponEquipped: false)
 }

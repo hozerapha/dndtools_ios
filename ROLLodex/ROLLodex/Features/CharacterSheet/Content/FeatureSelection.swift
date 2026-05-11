@@ -53,13 +53,31 @@ enum SelectionSource: Codable, Equatable {
     /// restricts to weapons whose category the character is proficient in
     /// (most class Weapon Mastery features).
     case weapons(proficientOnly: Bool)
+    /// Pick from an inline list of named options. The picked option's ID is
+    /// what downstream lookups key off (e.g., Fighting Style: archery /
+    /// defense / dueling). Mechanical effects live in the calculator and
+    /// interpreter — the choice itself just records "which option".
+    case fixedOptions(options: [SelectionOption])
+    /// Pick a subclass for the given parent class. Options come from
+    /// `ContentStore.classDefinition(id: parentClassID)?.subclasses`. Stored
+    /// under the convention key `<parentClassID>_subclass` (see
+    /// `ClassDefinition.subclassSelectionID(forClassID:)`).
+    case subclasses(parentClassID: String)
+    /// Distribute N points across ability scores (the 5e ASI mechanic).
+    /// `FeatureSelection.count` carries the total point budget (typically 2).
+    /// `perAbilityMax` caps how many points can land on a single ability
+    /// (typically 2 so the player can't dump 2 into one and still have an
+    /// over-cap pick). Each pick is recorded as an `Ability.rawValue` in
+    /// `featureSelections`; the picker mutates `character.abilityScores`
+    /// directly on each tap.
+    case abilityScoreIncrease(perAbilityMax: Int)
 
     private enum CodingKeys: String, CodingKey {
-        case type, proficientOnly
+        case type, proficientOnly, options, parentClassID, perAbilityMax
     }
 
     private enum Kind: String, Codable {
-        case weapons
+        case weapons, fixedOptions, subclasses, abilityScoreIncrease
     }
 
     init(from decoder: Decoder) throws {
@@ -68,6 +86,15 @@ enum SelectionSource: Codable, Equatable {
         case .weapons:
             let proficient = try c.decodeIfPresent(Bool.self, forKey: .proficientOnly) ?? false
             self = .weapons(proficientOnly: proficient)
+        case .fixedOptions:
+            let options = try c.decode([SelectionOption].self, forKey: .options)
+            self = .fixedOptions(options: options)
+        case .subclasses:
+            let parent = try c.decode(String.self, forKey: .parentClassID)
+            self = .subclasses(parentClassID: parent)
+        case .abilityScoreIncrease:
+            let max = try c.decodeIfPresent(Int.self, forKey: .perAbilityMax) ?? 2
+            self = .abilityScoreIncrease(perAbilityMax: max)
         }
     }
 
@@ -77,6 +104,24 @@ enum SelectionSource: Codable, Equatable {
         case .weapons(let proficient):
             try c.encode(Kind.weapons, forKey: .type)
             try c.encode(proficient, forKey: .proficientOnly)
+        case .fixedOptions(let options):
+            try c.encode(Kind.fixedOptions, forKey: .type)
+            try c.encode(options, forKey: .options)
+        case .subclasses(let parent):
+            try c.encode(Kind.subclasses, forKey: .type)
+            try c.encode(parent, forKey: .parentClassID)
+        case .abilityScoreIncrease(let max):
+            try c.encode(Kind.abilityScoreIncrease, forKey: .type)
+            try c.encode(max, forKey: .perAbilityMax)
         }
     }
+}
+
+/// One named pick inside a `.fixedOptions` selection. The option `id` is what
+/// the calculator / interpreter check against — by convention a snake_case
+/// token like `defense` or `great_weapon_fighting`.
+struct SelectionOption: Codable, Equatable, Identifiable {
+    let id: String
+    let name: String
+    let description: String
 }

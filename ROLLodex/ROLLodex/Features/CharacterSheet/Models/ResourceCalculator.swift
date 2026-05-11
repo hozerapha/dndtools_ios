@@ -45,25 +45,30 @@ enum ResourceCalculator {
 
         for entry in character.classEntries {
             guard let cls = content.classDefinition(id: entry.classID) else { continue }
-            for level in 1...max(entry.level, 1) {
-                for feature in cls.levelFeatures[level] ?? [] {
-                    guard let definition = feature.resource else { continue }
-                    let maxValue = definition.max.value(
-                        classLevel: entry.level,
-                        characterLevel: character.level
-                    )
-                    let current = currentClamped(
-                        character: character,
-                        resourceID: definition.id,
-                        max: maxValue
-                    )
-                    resolved.append(ResolvedResource(
-                        definition: definition,
-                        max: maxValue,
-                        current: current,
-                        sourceLabel: "\(cls.name) \(feature.name)"
-                    ))
-                }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolvedFeature in cls.resolvedFeatures(
+                throughClassLevel: entry.level,
+                subclassID: subclassID
+            ) {
+                guard let definition = resolvedFeature.feature.resource else { continue }
+                let maxValue = definition.max.value(
+                    classLevel: entry.level,
+                    characterLevel: character.level
+                )
+                let current = currentClamped(
+                    character: character,
+                    resourceID: definition.id,
+                    max: maxValue
+                )
+                let sourceName = resolvedFeature.subclassName ?? cls.name
+                resolved.append(ResolvedResource(
+                    definition: definition,
+                    max: maxValue,
+                    current: current,
+                    sourceLabel: "\(sourceName) \(resolvedFeature.feature.name)"
+                ))
             }
 
             // Spell slots: synthesize one resource per slot level from the
@@ -304,7 +309,9 @@ enum ResourceCalculator {
     }
 
     /// Find which class entry granted a resource so byClassLevel scaling
-    /// resolves correctly. Falls back to character.level if not found.
+    /// resolves correctly. Walks subclass features too so subclass-granted
+    /// resources scale by the right class level. Falls back to
+    /// character.level if not found.
     private static func classLevelFor(
         resourceID: String,
         character: Character,
@@ -312,11 +319,12 @@ enum ResourceCalculator {
     ) -> Int {
         for entry in character.classEntries {
             guard let cls = content.classDefinition(id: entry.classID) else { continue }
-            for level in 1...max(entry.level, 1) {
-                for feature in cls.levelFeatures[level] ?? [] {
-                    if feature.resource?.id == resourceID {
-                        return entry.level
-                    }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
+                if resolved.feature.resource?.id == resourceID {
+                    return entry.level
                 }
             }
         }

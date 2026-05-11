@@ -131,6 +131,7 @@ enum CharacterActionDeriver {
         content: ContentStore
     ) -> [WeaponAttackRow] {
         var rows: [WeaponAttackRow] = []
+        let fsEffects = CharacterCalculator.fightingStyleEffects(character: character, content: content)
         for inv in character.inventory where inv.equipped {
             guard let weapon = content.weaponDefinition(id: inv.itemID) else { continue }
 
@@ -159,7 +160,8 @@ enum CharacterActionDeriver {
                 let resolved = ActionInterpreter.resolve(
                     recipe: recipe,
                     character: character,
-                    weapon: weapon
+                    weapon: weapon,
+                    fightingStyle: fsEffects
                 )
                 switch recipe {
                 case .weaponAttack:
@@ -219,49 +221,54 @@ enum CharacterActionDeriver {
 
         for entry in character.classEntries {
             guard let cls = content.classDefinition(id: entry.classID) else { continue }
-            for level in 1...max(entry.level, 1) {
-                for feature in cls.levelFeatures[level] ?? [] {
-                    let cost = feature.resource.map { ResourceCost(resourceID: $0.id, amount: 1) }
-                    let resolvedResource = feature.resource.flatMap { def in
-                        ResourceCalculator.availableResources(character: character, content: content)
-                            .first { $0.definition.id == def.id }
-                    }
-                    let badge = resolvedResource.map { "\($0.current) / \($0.max)" }
-                    let isExhausted = resolvedResource?.isExhausted ?? false
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolvedFeature in cls.resolvedFeatures(
+                throughClassLevel: entry.level,
+                subclassID: subclassID
+            ) {
+                let feature = resolvedFeature.feature
+                let cost = feature.resource.map { ResourceCost(resourceID: $0.id, amount: 1) }
+                let resolvedResource = feature.resource.flatMap { def in
+                    ResourceCalculator.availableResources(character: character, content: content)
+                        .first { $0.definition.id == def.id }
+                }
+                let badge = resolvedResource.map { "\($0.current) / \($0.max)" }
+                let isExhausted = resolvedResource?.isExhausted ?? false
 
-                    if feature.actionRecipes.isEmpty, cost != nil {
-                        // Resource-only feature (e.g. Action Surge): no roll, but
-                        // tapping the button still consumes a charge.
-                        let action = ResolvedAction(
-                            id: "feature_\(feature.id)_consume",
-                            label: feature.name,
-                            formula: nil,
-                            description: nil,
-                            resourceCost: cost,
-                            actionCost: feature.actionCost
-                        )
-                        rows.append(ActionRow(action: action, badge: badge, isExhausted: isExhausted))
-                        continue
-                    }
+                if feature.actionRecipes.isEmpty, cost != nil {
+                    // Resource-only feature (e.g. Action Surge): no roll, but
+                    // tapping the button still consumes a charge.
+                    let action = ResolvedAction(
+                        id: "feature_\(feature.id)_consume",
+                        label: feature.name,
+                        formula: nil,
+                        description: nil,
+                        resourceCost: cost,
+                        actionCost: feature.actionCost
+                    )
+                    rows.append(ActionRow(action: action, badge: badge, isExhausted: isExhausted))
+                    continue
+                }
 
-                    for recipe in feature.actionRecipes {
-                        let resolved = ActionInterpreter.resolve(
-                            recipe: recipe,
-                            character: character,
-                            weapon: nil
-                        )
-                        // Prefer the feature name as the label so the button reads
-                        // "Second Wind" rather than the interpreter's generic title.
-                        let labeled = ResolvedAction(
-                            id: "feature_\(feature.id)_\(resolved.id)",
-                            label: featureButtonLabel(feature: feature, resolved: resolved),
-                            formula: resolved.formula,
-                            description: resolved.description,
-                            resourceCost: cost,
-                            actionCost: feature.actionCost
-                        )
-                        rows.append(ActionRow(action: labeled, badge: badge, isExhausted: isExhausted))
-                    }
+                for recipe in feature.actionRecipes {
+                    let resolved = ActionInterpreter.resolve(
+                        recipe: recipe,
+                        character: character,
+                        weapon: nil
+                    )
+                    // Prefer the feature name as the label so the button reads
+                    // "Second Wind" rather than the interpreter's generic title.
+                    let labeled = ResolvedAction(
+                        id: "feature_\(feature.id)_\(resolved.id)",
+                        label: featureButtonLabel(feature: feature, resolved: resolved),
+                        formula: resolved.formula,
+                        description: resolved.description,
+                        resourceCost: cost,
+                        actionCost: feature.actionCost
+                    )
+                    rows.append(ActionRow(action: labeled, badge: badge, isExhausted: isExhausted))
                 }
             }
         }

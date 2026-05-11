@@ -2,13 +2,15 @@ import Foundation
 
 enum ActionInterpreter {
     /// `spellcastingAbility` is only consulted for `.spellAttack` — every other
-    /// recipe ignores it. Defaulted to nil so non-spell callers can keep their
-    /// existing two-arg signature.
+    /// recipe ignores it. `fightingStyle` modifies weapon attack / damage rolls
+    /// (Archery +2 ranged attack, Dueling +2 damage when single-wielding melee).
+    /// Both default to nil so callers that don't care can keep the bare API.
     static func resolve(
         recipe: ActionRecipe,
         character: Character,
         weapon: WeaponDefinition?,
-        spellcastingAbility: Ability? = nil
+        spellcastingAbility: Ability? = nil,
+        fightingStyle: FightingStyleEffects? = nil
     ) -> ResolvedAction {
         switch recipe {
         case .weaponAttack(let abilityOverride, let finesse):
@@ -16,7 +18,8 @@ enum ActionInterpreter {
                 character: character,
                 weapon: weapon,
                 abilityOverride: abilityOverride,
-                finesse: finesse
+                finesse: finesse,
+                fightingStyle: fightingStyle
             )
 
         case .weaponDamage(let dieOverride, let addAbility, let versatile):
@@ -25,7 +28,8 @@ enum ActionInterpreter {
                 weapon: weapon,
                 dieOverride: dieOverride,
                 addAbility: addAbility,
-                versatile: versatile
+                versatile: versatile,
+                fightingStyle: fightingStyle
             )
 
         case .abilityCheck(let ability):
@@ -106,7 +110,8 @@ enum ActionInterpreter {
         character: Character,
         weapon: WeaponDefinition?,
         abilityOverride: Ability?,
-        finesse: Bool
+        finesse: Bool,
+        fightingStyle: FightingStyleEffects?
     ) -> ResolvedAction {
         let ability: Ability
         if let override = abilityOverride {
@@ -129,15 +134,27 @@ enum ActionInterpreter {
         }
 
         let profBonus = CharacterCalculator.proficiencyBonus(level: character.level)
-        let totalBonus = abilityMod + (isProficient ? profBonus : 0)
+
+        // Archery: +2 to attack rolls with ranged weapons (the SRD restricts
+        // this to weapons with the ammunition property — bows, crossbows,
+        // etc. — not thrown melee weapons).
+        let archeryBonus: Int = {
+            guard fightingStyle?.style == "archery",
+                  let weapon, weapon.properties.contains(.ammunition)
+            else { return 0 }
+            return 2
+        }()
+
+        let totalBonus = abilityMod + (isProficient ? profBonus : 0) + archeryBonus
 
         var formula = DiceFormula()
         formula.add(.d20)
         formula.modifier = totalBonus
 
         let label = weapon?.name ?? "Attack"
-        let desc = "1d20 + \(ability.abbreviation) (\(abilityMod >= 0 ? "+" : "")\(abilityMod))" +
-                   (isProficient ? " + Prof (\(profBonus))" : "")
+        var desc = "1d20 + \(ability.abbreviation) (\(abilityMod >= 0 ? "+" : "")\(abilityMod))"
+        if isProficient { desc += " + Prof (\(profBonus))" }
+        if archeryBonus > 0 { desc += " + Archery (+\(archeryBonus))" }
 
         return ResolvedAction(
             id: "weapon_\(weapon?.id ?? "attack")_attack",
@@ -152,7 +169,8 @@ enum ActionInterpreter {
         weapon: WeaponDefinition?,
         dieOverride: String?,
         addAbility: Bool,
-        versatile: Bool
+        versatile: Bool,
+        fightingStyle: FightingStyleEffects?
     ) -> ResolvedAction {
         let dieString: String
         if let override = dieOverride {
@@ -177,11 +195,35 @@ enum ActionInterpreter {
         }
 
         let abilityMod = CharacterCalculator.abilityModifier(score: character.abilityScores[ability] ?? 10)
-        let totalMod = addAbility ? abilityMod : 0
+        let abilityContribution = addAbility ? abilityMod : 0
+
+        // Dueling: +2 damage when wielding a melee weapon in one hand and no
+        // other weapons. The "no other weapons" gate comes pre-computed in
+        // `fightingStyle.onlyOneWeaponEquipped`. Versatile-2H (`versatile:true`)
+        // and intrinsic two-handed weapons are excluded — Dueling only applies
+        // to one-handed melee swings.
+        let duelingBonus: Int = {
+            guard fightingStyle?.style == "dueling",
+                  fightingStyle?.onlyOneWeaponEquipped == true,
+                  let weapon,
+                  !weapon.properties.contains(.ammunition),
+                  !weapon.properties.contains(.twoHanded),
+                  !versatile
+            else { return 0 }
+            return 2
+        }()
+
+        let totalMod = abilityContribution + duelingBonus
 
         let formula = parseDieString(dieString, modifier: totalMod)
         let label = weapon?.name ?? "Damage"
-        let desc = "\(dieString)" + (addAbility ? " + \(ability.abbreviation) (\(totalMod >= 0 ? "+" : "")\(totalMod))" : "")
+        var desc = dieString
+        if addAbility {
+            desc += " + \(ability.abbreviation) (\(abilityContribution >= 0 ? "+" : "")\(abilityContribution))"
+        }
+        if duelingBonus > 0 {
+            desc += " + Dueling (+\(duelingBonus))"
+        }
 
         return ResolvedAction(
             id: "weapon_\(weapon?.id ?? "damage")_damage",

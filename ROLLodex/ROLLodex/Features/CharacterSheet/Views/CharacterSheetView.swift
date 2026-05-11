@@ -10,6 +10,7 @@ struct CharacterSheetView: View {
     @Environment(PendingRollStore.self) private var pendingRoll
 
     @State private var showRestConfirm = false
+    @State private var showLevelUp = false
     @State private var pendingRefreshes: [PendingRefresh] = []
     @State private var spellBeingCast: PendingSpellCast?
     /// Set when applying damage to a concentrating character; presents the
@@ -78,6 +79,14 @@ struct CharacterSheetView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
+                    showLevelUp = true
+                } label: {
+                    Label("Level Up", systemImage: "arrow.up.circle.fill")
+                }
+                .disabled(character.level >= 20)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
                     showRestConfirm = true
                 } label: {
                     Label("Rest", systemImage: "moon.zzz.fill")
@@ -127,6 +136,10 @@ struct CharacterSheetView: View {
         .sheet(isPresented: $showAddCondition) {
             AddConditionSheet(character: $character)
                 .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showLevelUp) {
+            LevelUpSheet(character: $character)
+                .presentationDetents([.large])
         }
     }
 
@@ -511,10 +524,15 @@ struct CharacterSheetView: View {
     private var armorClass: Int {
         let dexScore = character.abilityScores[.dexterity] ?? 10
         let dexMod = CharacterCalculator.abilityModifier(score: dexScore)
+        let fsBonus = CharacterCalculator.defenseACBonus(
+            character: character,
+            wearingArmor: equippedArmor != nil
+        )
         return CharacterCalculator.armorClass(
             dexMod: dexMod,
             armor: equippedArmor,
-            hasShield: hasShield
+            hasShield: hasShield,
+            fightingStyleBonus: fsBonus
         )
     }
 

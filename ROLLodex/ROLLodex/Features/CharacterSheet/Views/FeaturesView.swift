@@ -62,15 +62,21 @@ struct FeaturesView: View {
         var rows: [FeatureRowModel] = []
         for entry in character.classEntries {
             guard let cls = content.classDefinition(id: entry.classID) else { continue }
-            for level in 1...max(entry.level, 1) {
-                for feature in cls.levelFeatures[level] ?? [] {
-                    rows.append(FeatureRowModel(
-                        id: "class_\(entry.classID)_\(feature.id)",
-                        feature: feature,
-                        sourceLabel: "\(cls.name) · L\(level)",
-                        classLevel: entry.level
-                    ))
-                }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(
+                throughClassLevel: entry.level,
+                subclassID: subclassID
+            ) {
+                let sourceName = resolved.subclassName ?? cls.name
+                let idPrefix = resolved.subclassName == nil ? "class" : "subclass"
+                rows.append(FeatureRowModel(
+                    id: "\(idPrefix)_\(entry.classID)_\(resolved.feature.id)",
+                    feature: resolved.feature,
+                    sourceLabel: "\(sourceName) · L\(resolved.grantedAtLevel)",
+                    classLevel: entry.level
+                ))
             }
         }
         if let species = content.speciesDefinition(id: character.speciesID) {
@@ -260,6 +266,26 @@ struct SelectionSheet: View {
                 max: maxPicks,
                 proficientOnly: proficientOnly
             )
+        case .fixedOptions(let options):
+            FixedOptionsSelectionList(
+                character: $character,
+                selectionID: selection.id,
+                max: maxPicks,
+                options: options
+            )
+        case .subclasses(let parentClassID):
+            SubclassSelectionList(
+                character: $character,
+                selectionID: selection.id,
+                parentClassID: parentClassID
+            )
+        case .abilityScoreIncrease(let perAbilityMax):
+            AbilityScoreIncreaseList(
+                character: $character,
+                selectionID: selection.id,
+                totalPoints: maxPicks,
+                perAbilityMax: perAbilityMax
+            )
         }
     }
 
@@ -364,6 +390,266 @@ private struct WeaponSelectionList: View {
         .buttonStyle(.plain)
         .disabled(weapon.masteryProperty == nil)
         .opacity(weapon.masteryProperty == nil ? 0.45 : 1)
+    }
+}
+
+/// Picker for a `.fixedOptions` selection (Fighting Style, etc.). When `max`
+/// is 1 the list acts like a radio group — tapping a different option swaps
+/// the pick rather than ignoring the tap.
+private struct FixedOptionsSelectionList: View {
+    @Binding var character: Character
+    let selectionID: String
+    let max: Int
+    let options: [SelectionOption]
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                ForEach(options) { option in
+                    optionRow(option)
+                }
+            }
+            .padding()
+        }
+        .safeAreaInset(edge: .top) {
+            Text(headerLabel)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(Color(.systemGroupedBackground))
+        }
+    }
+
+    private var headerLabel: String {
+        max == 1 ? "Pick one" : "Picked \(picks.count) of \(max)"
+    }
+
+    private var picks: [String] {
+        character.featureSelections[selectionID] ?? []
+    }
+
+    private func isPicked(_ option: SelectionOption) -> Bool {
+        picks.contains(option.id)
+    }
+
+    /// Radio behavior at max=1 (tap to swap); checklist behavior above that.
+    private func togglePick(_ option: SelectionOption) {
+        if max == 1 {
+            character.featureSelections[selectionID] = isPicked(option) ? [] : [option.id]
+            return
+        }
+        var current = picks
+        if let i = current.firstIndex(of: option.id) {
+            current.remove(at: i)
+        } else if current.count < max {
+            current.append(option.id)
+        } else {
+            return
+        }
+        character.featureSelections[selectionID] = current
+    }
+
+    @ViewBuilder
+    private func optionRow(_ option: SelectionOption) -> some View {
+        Button {
+            togglePick(option)
+        } label: {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: isPicked(option) ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(isPicked(option) ? Color.accentColor : .secondary)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(option.name)
+                        .font(.subheadline.weight(.semibold))
+                    Text(option.description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Radio-style picker for choosing a subclass. Lists every subclass declared
+/// on the parent class, with name + description rows. Tap to swap (max = 1).
+private struct SubclassSelectionList: View {
+    @Binding var character: Character
+    let selectionID: String
+    let parentClassID: String
+
+    @Environment(ContentStore.self) private var content
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                if subclasses.isEmpty {
+                    Text("No subclasses authored yet for this class.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding()
+                } else {
+                    ForEach(subclasses) { sub in
+                        row(sub)
+                    }
+                }
+            }
+            .padding()
+        }
+    }
+
+    private var subclasses: [SubclassDefinition] {
+        content.classDefinition(id: parentClassID)?.subclasses ?? []
+    }
+
+    private var pickedID: String? {
+        character.featureSelections[selectionID]?.first
+    }
+
+    private func isPicked(_ sub: SubclassDefinition) -> Bool { pickedID == sub.id }
+
+    private func togglePick(_ sub: SubclassDefinition) {
+        if isPicked(sub) {
+            character.featureSelections[selectionID] = []
+        } else {
+            character.featureSelections[selectionID] = [sub.id]
+        }
+    }
+
+    private func row(_ sub: SubclassDefinition) -> some View {
+        Button { togglePick(sub) } label: {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: isPicked(sub) ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(isPicked(sub) ? Color.accentColor : .secondary)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(sub.name)
+                        .font(.subheadline.weight(.semibold))
+                    Text(sub.description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Ability-Score Improvement picker. Distributes `totalPoints` across the six
+/// abilities, capped at `perAbilityMax` per ability. Each row shows the
+/// current effective score with `-` / `+` steppers; both halves stay disabled
+/// when the constraint they'd break is in force. Mutates `character.abilityScores`
+/// inline so spell save DCs, attack bonuses, etc. see the bump immediately.
+private struct AbilityScoreIncreaseList: View {
+    @Binding var character: Character
+    let selectionID: String
+    let totalPoints: Int
+    let perAbilityMax: Int
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                ForEach(Ability.allCases, id: \.self) { ability in
+                    row(for: ability)
+                }
+            }
+            .padding()
+        }
+        .safeAreaInset(edge: .top) {
+            Text("Points spent: \(picks.count) / \(totalPoints)")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(Color(.systemGroupedBackground))
+        }
+    }
+
+    private var picks: [String] {
+        character.featureSelections[selectionID] ?? []
+    }
+
+    private func picks(for ability: Ability) -> Int {
+        picks.filter { $0 == ability.rawValue }.count
+    }
+
+    private func increment(_ ability: Ability) {
+        var copy = character
+        copy.applyASIIncrement(
+            ability: ability,
+            selectionID: selectionID,
+            totalPoints: totalPoints,
+            perAbilityMax: perAbilityMax
+        )
+        character = copy
+    }
+
+    private func decrement(_ ability: Ability) {
+        var copy = character
+        copy.applyASIDecrement(ability: ability, selectionID: selectionID)
+        character = copy
+    }
+
+    private func row(for ability: Ability) -> some View {
+        let score = character.abilityScores[ability] ?? 10
+        let picksHere = picks(for: ability)
+        let canIncrement = picks.count < totalPoints
+            && picksHere < perAbilityMax
+            && score < Character.abilityScoreCeiling
+        let canDecrement = picksHere > 0
+
+        return HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(ability.rawValue.uppercased().prefix(3))
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+                Text("\(score)")
+                    .font(.title3.bold().monospacedDigit())
+            }
+            .frame(width: 56, alignment: .leading)
+            Spacer()
+            if picksHere > 0 {
+                Text("+\(picksHere)")
+                    .font(.caption.weight(.bold).monospacedDigit())
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.green.opacity(0.22), in: Capsule())
+                    .foregroundStyle(.green)
+            }
+            Button {
+                decrement(ability)
+            } label: {
+                Image(systemName: "minus.circle.fill")
+                    .font(.title2)
+            }
+            .buttonStyle(.plain)
+            .disabled(!canDecrement)
+            .opacity(canDecrement ? 1 : 0.3)
+
+            Button {
+                increment(ability)
+            } label: {
+                Image(systemName: "plus.circle.fill")
+                    .font(.title2)
+            }
+            .buttonStyle(.plain)
+            .disabled(!canIncrement)
+            .opacity(canIncrement ? 1 : 0.3)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
     }
 }
 

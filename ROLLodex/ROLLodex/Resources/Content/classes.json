@@ -12,8 +12,43 @@
         {
           "id": "fighting_style",
           "name": "Fighting Style",
-          "description": "You gain a Fighting Style feat of your choice.",
-          "actionRecipes": []
+          "description": "You gain a Fighting Style feat of your choice. The chosen style modifies your attack rolls, damage, or AC depending on the option.",
+          "kind": "selection",
+          "selection": {
+            "id": "fighting_style",
+            "prompt": "Choose a Fighting Style",
+            "count": 1,
+            "optionsSource": {
+              "type": "fixedOptions",
+              "options": [
+                {
+                  "id": "archery",
+                  "name": "Archery",
+                  "description": "You gain a +2 bonus to attack rolls you make with ranged weapons."
+                },
+                {
+                  "id": "defense",
+                  "name": "Defense",
+                  "description": "While you are wearing armor, you gain a +1 bonus to AC."
+                },
+                {
+                  "id": "dueling",
+                  "name": "Dueling",
+                  "description": "When you are wielding a melee weapon in one hand and no other weapons, you gain a +2 bonus to damage rolls with that weapon."
+                },
+                {
+                  "id": "great_weapon_fighting",
+                  "name": "Great Weapon Fighting",
+                  "description": "When you roll a 1 or 2 on a damage die for an attack you make with a melee weapon that you are wielding with two hands, you can reroll the die and must use the new roll. The weapon must have the two-handed or versatile property."
+                },
+                {
+                  "id": "two_weapon_fighting",
+                  "name": "Two-Weapon Fighting",
+                  "description": "When you engage in two-weapon fighting, you can add your ability modifier to the damage of the second attack."
+                }
+              ]
+            }
+          }
         },
         {
           "id": "second_wind",
@@ -48,10 +83,114 @@
             "optionsSource": { "type": "weapons", "proficientOnly": true }
           }
         }
+      ],
+      "2": [
+        {
+          "id": "action_surge",
+          "name": "Action Surge",
+          "description": "Once per Short or Long Rest, take one additional action on your turn.",
+          "actionCost": "free",
+          "resource": {
+            "id": "fighter_action_surge",
+            "name": "Action Surge",
+            "max": { "byClassLevel": { "2": 1, "17": 2 } },
+            "refreshOn": "shortRest",
+            "refreshAmount": "all"
+          }
+        }
+      ],
+      "3": [
+        {
+          "id": "martial_archetype",
+          "name": "Martial Archetype",
+          "description": "Choose a subclass that shapes your fighting style for the rest of your career.",
+          "kind": "selection",
+          "selection": {
+            "id": "fighter_subclass",
+            "prompt": "Choose a Martial Archetype",
+            "count": 1,
+            "optionsSource": { "type": "subclasses", "parentClassID": "fighter" }
+          }
+        }
+      ],
+      "4": [
+        {
+          "id": "fighter_asi_4",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "kind": "selection",
+          "selection": {
+            "id": "fighter_asi_4",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
       ]
     },
     "masteryCount": 3,
-    "masteryRestrictions": []
+    "masteryRestrictions": [],
+    "subclassLevel": 3,
+    "subclasses": [
+      {
+        "id": "champion",
+        "name": "Champion",
+        "description": "A Fighter who focuses on raw physical power honed to deadly perfection. The simplicity of the archetype makes it ideal for newcomers, while still offering elite martial output.",
+        "levelFeatures": {
+          "3": [
+            {
+              "id": "improved_critical",
+              "name": "Improved Critical",
+              "description": "Your weapon attacks score a critical hit on a roll of 19 or 20."
+            }
+          ],
+          "7": [
+            {
+              "id": "remarkable_athlete",
+              "name": "Remarkable Athlete",
+              "description": "You can add half your proficiency bonus (rounded up) to any Strength, Dexterity, or Constitution check you make that doesn't already use your proficiency bonus. In addition, when you make a running long jump, the distance you can cover increases by a number of feet equal to your Strength modifier."
+            }
+          ],
+          "10": [
+            {
+              "id": "additional_fighting_style",
+              "name": "Additional Fighting Style",
+              "description": "You can choose a second option from the Fighting Style class feature.",
+              "kind": "selection",
+              "selection": {
+                "id": "fighter_fighting_style_2",
+                "prompt": "Choose an additional Fighting Style",
+                "count": 1,
+                "optionsSource": {
+                  "type": "fixedOptions",
+                  "options": [
+                    { "id": "archery", "name": "Archery", "description": "+2 bonus to attack rolls with ranged weapons." },
+                    { "id": "defense", "name": "Defense", "description": "While wearing armor, +1 bonus to AC." },
+                    { "id": "dueling", "name": "Dueling", "description": "+2 damage when wielding a melee weapon in one hand with no other weapons." },
+                    { "id": "great_weapon_fighting", "name": "Great Weapon Fighting", "description": "Reroll 1s and 2s on damage dice with two-handed melee weapons." },
+                    { "id": "two_weapon_fighting", "name": "Two-Weapon Fighting", "description": "Add your ability modifier to the damage of the second attack when two-weapon fighting." }
+                  ]
+                }
+              }
+            }
+          ],
+          "15": [
+            {
+              "id": "superior_critical",
+              "name": "Superior Critical",
+              "description": "Your weapon attacks score a critical hit on a roll of 18-20."
+            }
+          ],
+          "18": [
+            {
+              "id": "survivor",
+              "name": "Survivor",
+              "description": "At the start of each of your turns, you regain hit points equal to 5 + your Constitution modifier if you have no more than half of your hit points left. You don't gain this benefit if you have 0 hit points."
+            }
+          ]
+        }
+      }
+    ]
   },
   {
     "id": "wizard",

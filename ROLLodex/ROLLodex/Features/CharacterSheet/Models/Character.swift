@@ -196,6 +196,52 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         concentratingSpellID = nil
     }
 
+    // MARK: - ASI mutators
+
+    /// SRD 2024 ceiling for ability scores. ASI cannot push a score past this
+    /// (magic items can, but they don't route through this path).
+    static let abilityScoreCeiling = 20
+
+    /// Apply +1 to `ability` via an ASI selection, recording the pick under
+    /// `selectionID`. Refuses to act when:
+    /// - the total budget (`totalPoints`) is exhausted,
+    /// - the per-ability sub-cap (`perAbilityMax`) is reached, or
+    /// - the score is already at the SRD ceiling.
+    /// No-ops are silent so the picker UI can call this unguarded.
+    mutating func applyASIIncrement(
+        ability: Ability,
+        selectionID: String,
+        totalPoints: Int,
+        perAbilityMax: Int
+    ) {
+        let picks = featureSelections[selectionID] ?? []
+        let picksForAbility = picks.filter { $0 == ability.rawValue }.count
+        guard picks.count < totalPoints,
+              picksForAbility < perAbilityMax,
+              (abilityScores[ability] ?? 10) < Self.abilityScoreCeiling
+        else { return }
+        var updated = picks
+        updated.append(ability.rawValue)
+        featureSelections[selectionID] = updated
+        abilityScores[ability] = (abilityScores[ability] ?? 10) + 1
+    }
+
+    /// Reverse one ASI pick for `ability`. No-op when the ability has no
+    /// picks recorded under `selectionID`.
+    mutating func applyASIDecrement(
+        ability: Ability,
+        selectionID: String
+    ) {
+        let picks = featureSelections[selectionID] ?? []
+        guard picks.contains(ability.rawValue) else { return }
+        var updated = picks
+        if let i = updated.lastIndex(of: ability.rawValue) {
+            updated.remove(at: i)
+        }
+        featureSelections[selectionID] = updated
+        abilityScores[ability] = max(1, (abilityScores[ability] ?? 10) - 1)
+    }
+
     /// Apply `amount` damage. Drains temp HP first (per 5e), then chips
     /// current HP. Returns a pending `ConcentrationCheck` when the character
     /// was concentrating and actually took damage to current HP (temp-only
