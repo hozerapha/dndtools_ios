@@ -62,24 +62,31 @@ struct RollResult: Identifiable, Codable, Hashable {
     var modifier: Int { formula.modifier }
 
     var total: Int {
-        dieRolls.filter(\.isKept).map(\.value).reduce(0, +) + modifier
+        let kept = dieRolls.filter(\.isKept).map(\.value).reduce(0, +)
+        let typedModSum = formula.typedModifiers.values.reduce(0, +)
+        return kept + modifier + typedModSum
     }
 
     var hasCriticalSuccess: Bool { dieRolls.contains(where: \.isCriticalSuccess) }
     var hasCriticalFail:    Bool { dieRolls.contains(where: \.isCriticalFail) }
 
     /// Per-damage-type subtotals, derived by mapping each kept die back to its
-    /// source `DiceGroup`. Untyped groups bucket under `nil`. The flat formula
-    /// modifier (the trailing `+3`) attaches to the formula's single damage
-    /// type when every group shares one — that keeps a longsword swing
-    /// `1d8+3 slashing` reading as one slashing total instead of splitting the
-    /// STR bonus out. Mixed-type or partly-untyped formulas push the flat
-    /// modifier under `nil`.
+    /// source `DiceGroup`. Untyped groups bucket under `nil`. Three sources
+    /// contribute:
+    /// 1. Kept dice — each group's kept value lands in `group.damageType`'s
+    ///    bucket (or `nil`).
+    /// 2. `formula.typedModifiers` — values land in their typed bucket.
+    /// 3. `formula.modifier` (untyped flat) — attached to the formula's lone
+    ///    damage type when every damage-bearing element (groups + typed mods)
+    ///    shares the same one; otherwise it sits in `nil`. This keeps a swing
+    ///    like `[slashing]1d8 + 3` reading as one slashing total instead of
+    ///    splitting the STR bonus out.
     var subtotalsByType: [DamageType?: Int] {
         var totals: [DamageType?: Int] = [:]
 
-        // dieRolls is laid out in formula-group order: each group contributes
-        // `count` dice, except the single d20 adv/dis case which doubles up.
+        // 1) Dice from groups. `dieRolls` is laid out in formula-group order:
+        //    each group contributes `count` dice, except the single d20 adv/dis
+        //    case which doubles up.
         let advDoubled = mode != .normal && formula.supportsAdvantage
         var cursor = 0
         for group in formula.groups {
@@ -95,11 +102,20 @@ struct RollResult: Identifiable, Codable, Hashable {
             cursor = endIndex
         }
 
-        // Attribute the flat modifier to the formula's lone damage type when
-        // every group shares one; otherwise it's untyped.
+        // 2) Typed flat modifiers.
+        for (type, value) in formula.typedModifiers {
+            totals[type, default: 0] += value
+        }
+
+        // 3) Untyped flat modifier — attach to the sole damage type when every
+        //    typed contribution shares it, otherwise nil.
         if modifier != 0 {
-            let types = formula.groups.map(\.damageType)
-            if let first = types.first, types.allSatisfy({ $0 == first }), let onlyType = first {
+            let groupTypes = formula.groups.map(\.damageType)
+            let typedModTypes = formula.typedModifiers.keys.map { Optional($0) }
+            let allTypes = groupTypes + typedModTypes
+            if let first = allTypes.first,
+               allTypes.allSatisfy({ $0 == first }),
+               let onlyType = first {
                 totals[onlyType, default: 0] += modifier
             } else {
                 totals[nil, default: 0] += modifier

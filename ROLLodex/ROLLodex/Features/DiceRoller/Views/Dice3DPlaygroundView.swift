@@ -2028,9 +2028,11 @@ final class DiceSceneController: NSObject {
             // the die's silhouette visible.
             mat.cullMode = .front
             mat.isDoubleSided = false
-            // Dim the rim slightly so it reads as a glow rather than a flat
-            // sticker — full opacity looks like a comic-book outline.
-            mat.transparency = 0.75
+            // Full opacity so similar damage colors stay distinguishable.
+            // The shell trick already keeps the rim thin — softening with
+            // transparency mostly hurt contrast on look-alike pairs (slashing
+            // vs. fire, necrotic vs. poison).
+            mat.transparency = 1.0
             cloned.materials = [mat]
 
             let shell = SCNNode(geometry: cloned)

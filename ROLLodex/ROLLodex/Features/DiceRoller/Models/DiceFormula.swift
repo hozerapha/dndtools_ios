@@ -46,19 +46,14 @@ struct DiceGroup: Identifiable, Codable {
 
     var isPlain: Bool { modifier == nil }
 
-    /// Untyped dice notation — `1d8`, `2d20kh1`. Round-trips through
-    /// `DiceFormulaParser` so it's safe to surface in the editable formula bar.
+    /// Dice notation with optional `[damageType]` prefix — `1d8`, `[fire]2d6`,
+    /// `2d20kh1`, `[slashing]1d8`. Round-trips through `DiceFormulaParser`, so
+    /// the formula bar can show typed groups and have the parser read them
+    /// back identically.
     var displayString: String {
+        let prefix = damageType.map { "[\($0.rawValue)]" } ?? ""
         let base = "\(count)\(kind.label)"
-        return base + (modifier?.suffix ?? "")
-    }
-
-    /// Dice notation with the damage type appended (`1d10 fire`) when present.
-    /// Used by display-only surfaces (tray HUD, history) — never feed this back
-    /// into `DiceFormulaParser`, which doesn't recognize the type token.
-    var displayStringWithType: String {
-        guard let damageType else { return displayString }
-        return "\(displayString) \(damageType.rawValue)"
+        return prefix + base + (modifier?.suffix ?? "")
     }
 }
 
@@ -82,14 +77,54 @@ extension DiceGroup: Hashable {
 
 struct DiceFormula: Codable, Hashable {
     var groups: [DiceGroup] = []
+    /// Untyped flat modifier — the trailing `+ 3` in `1d8 + 3`.
     var modifier: Int = 0
+    /// Flat modifiers carrying a damage type, e.g. the `+5 force` half of
+    /// `[force]1d12 + [force]5 + [necrotic]1d6`. Keyed by type; values can be
+    /// negative if the user typed a `-`. Empty for untyped formulas. Zero
+    /// entries are pruned so a "fire: 0" key never lingers after edits.
+    var typedModifiers: [DamageType: Int] = [:]
+
+    init(
+        groups: [DiceGroup] = [],
+        modifier: Int = 0,
+        typedModifiers: [DamageType: Int] = [:]
+    ) {
+        self.groups = groups
+        self.modifier = modifier
+        self.typedModifiers = typedModifiers
+    }
+
+    // MARK: - Codable (backward compatible)
+
+    private enum CodingKeys: String, CodingKey {
+        case groups, modifier, typedModifiers
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.groups = try c.decodeIfPresent([DiceGroup].self, forKey: .groups) ?? []
+        self.modifier = try c.decodeIfPresent(Int.self, forKey: .modifier) ?? 0
+        // Pre-typed-modifiers formulas (any preset / history entry saved before
+        // this field existed) decode with an empty dict instead of crashing.
+        self.typedModifiers = try c.decodeIfPresent([DamageType: Int].self, forKey: .typedModifiers) ?? [:]
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(groups, forKey: .groups)
+        try c.encode(modifier, forKey: .modifier)
+        if !typedModifiers.isEmpty {
+            try c.encode(typedModifiers, forKey: .typedModifiers)
+        }
+    }
 
     var totalDiceCount: Int {
         groups.map(\.count).reduce(0, +)
     }
 
     var isEmpty: Bool {
-        groups.isEmpty && modifier == 0
+        groups.isEmpty && modifier == 0 && typedModifiers.isEmpty
     }
 
     /// Adv/dis only makes sense for exactly one plain d20.
@@ -141,24 +176,26 @@ struct DiceFormula: Codable, Hashable {
     mutating func clear() {
         groups.removeAll()
         modifier = 0
+        typedModifiers.removeAll()
     }
 
     var displayString: String {
-        var result = groups.map(\.displayString).joined(separator: " + ")
-        if result.isEmpty { result = "—" }
-        if modifier > 0 {
-            result += " + \(modifier)"
-        } else if modifier < 0 {
-            result += " − \(abs(modifier))"
+        var parts = groups.map(\.displayString)
+        let sortedTypes = typedModifiers.keys.sorted(by: { $0.rawValue < $1.rawValue })
+        // Positive typed modifiers join into the "+"-separated leading run so
+        // they read naturally next to their dice groups.
+        for type in sortedTypes {
+            guard let value = typedModifiers[type], value > 0 else { continue }
+            parts.append("[\(type.rawValue)]\(value)")
         }
-        return result
-    }
-
-    /// Like `displayString`, but each group prints with its damage type when set.
-    /// Display-only — see `DiceGroup.displayStringWithType`.
-    var displayStringWithTypes: String {
-        var result = groups.map(\.displayStringWithType).joined(separator: " + ")
+        var result = parts.joined(separator: " + ")
         if result.isEmpty { result = "—" }
+        // Negative typed modifiers tack on as " − [type]N" so the parser can
+        // tell them apart from a "+"-sign separator (avoids a "+ −" pair).
+        for type in sortedTypes {
+            guard let value = typedModifiers[type], value < 0 else { continue }
+            result += " − [\(type.rawValue)]\(abs(value))"
+        }
         if modifier > 0 {
             result += " + \(modifier)"
         } else if modifier < 0 {

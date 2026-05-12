@@ -11,6 +11,7 @@ struct DiceFormulaParser {
         case unknownModifier(String)
         case modifierOutOfRange(String)
         case rerollAlwaysTriggers(String)
+        case unknownDamageType(String)
 
         var errorDescription: String? {
             switch self {
@@ -32,6 +33,8 @@ struct DiceFormulaParser {
                 "Modifier in '\(term)' asks for more dice than were rolled."
             case .rerollAlwaysTriggers(let term):
                 "Reroll threshold in '\(term)' must be less than the die's max."
+            case .unknownDamageType(let name):
+                "Unknown damage type '\(name)'. Try fire, cold, slashing, force, …"
             }
         }
     }
@@ -40,7 +43,10 @@ struct DiceFormulaParser {
         var s = input
             .lowercased()
             .replacingOccurrences(of: "−", with: "-")
-        s.removeAll(where: { $0.isWhitespace })
+        // Strip whitespace AND parens — the latter let users visually group
+        // typed clusters like `([fire]2d6+2) + ([bludgeoning]3d8)` without
+        // affecting the underlying sum-of-terms semantics.
+        s.removeAll(where: { $0.isWhitespace || $0 == "(" || $0 == ")" })
         guard !s.isEmpty else { throw ParseError.empty }
 
         if !(s.first == "+" || s.first == "-") {
@@ -70,19 +76,49 @@ struct DiceFormulaParser {
     private func apply(_ term: String, sign: Int, into formula: inout DiceFormula) throws {
         guard !term.isEmpty else { throw ParseError.invalidToken("") }
 
-        guard term.contains("d") else {
-            // Pure number → modifier
-            guard let n = Int(term) else { throw ParseError.invalidToken(term) }
-            formula.modifier += sign * n
+        // Optional `[damageType]` prefix tags the resulting dice group.
+        var damageType: DamageType? = nil
+        var workingTerm = term
+        if workingTerm.first == "[" {
+            guard let closeIndex = workingTerm.firstIndex(of: "]") else {
+                throw ParseError.invalidToken(term)
+            }
+            let nameStart = workingTerm.index(after: workingTerm.startIndex)
+            let name = String(workingTerm[nameStart..<closeIndex])
+            guard !name.isEmpty, let parsed = DamageType(rawValue: name) else {
+                throw ParseError.unknownDamageType(name)
+            }
+            damageType = parsed
+            workingTerm = String(workingTerm[workingTerm.index(after: closeIndex)...])
+            guard !workingTerm.isEmpty else { throw ParseError.invalidToken(term) }
+        }
+
+        guard workingTerm.contains("d") else {
+            // Pure number — either an untyped flat modifier ("+ 3") or a typed
+            // flat modifier ("[force]5") that adds to that type's bucket
+            // instead of the formula-wide modifier. Useful for spells like
+            // Magic Missile's per-dart `+1 force` baked into the formula.
+            guard let n = Int(workingTerm) else { throw ParseError.invalidToken(term) }
+            let signed = sign * n
+            if let damageType {
+                let next = (formula.typedModifiers[damageType] ?? 0) + signed
+                if next == 0 {
+                    formula.typedModifiers.removeValue(forKey: damageType)
+                } else {
+                    formula.typedModifiers[damageType] = next
+                }
+            } else {
+                formula.modifier += signed
+            }
             return
         }
 
         // Dice term: <count>?d<sides>[<modifier>...]
-        guard let dIndex = term.firstIndex(of: "d") else {
+        guard let dIndex = workingTerm.firstIndex(of: "d") else {
             throw ParseError.invalidToken(term)
         }
-        let countStr = String(term[..<dIndex])
-        let afterD = term[term.index(after: dIndex)...]
+        let countStr = String(workingTerm[..<dIndex])
+        let afterD = workingTerm[workingTerm.index(after: dIndex)...]
 
         let count: Int
         if countStr.isEmpty {
@@ -114,13 +150,22 @@ struct DiceFormulaParser {
             term: term
         )
 
-        // Merge plain terms with an existing plain group of the same kind so that "1d6 + 2d6"
-        // collapses to "3d6", but DON'T collapse plain terms into a *modified* group.
+        // Merge plain terms with an existing plain group of the same kind AND
+        // matching damage type, so that `1d6 + 2d6` collapses to `3d6` and
+        // `[fire]1d6 + [fire]1d6` collapses to `[fire]2d6`. Different damage
+        // types stay as separate groups so the per-type breakdown reads right.
         if groupModifier == nil,
-           let i = formula.groups.firstIndex(where: { $0.kind == kind && $0.isPlain }) {
+           let i = formula.groups.firstIndex(where: {
+               $0.kind == kind && $0.isPlain && $0.damageType == damageType
+           }) {
             formula.groups[i].count += count
         } else {
-            formula.groups.append(DiceGroup(kind: kind, count: count, modifier: groupModifier))
+            formula.groups.append(DiceGroup(
+                kind: kind,
+                count: count,
+                modifier: groupModifier,
+                damageType: damageType
+            ))
         }
     }
 

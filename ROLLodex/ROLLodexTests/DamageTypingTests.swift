@@ -38,27 +38,165 @@ struct DamageTypingTests {
         #expect(slash != untyped)
     }
 
-    // MARK: - displayString variants
+    // MARK: - displayString round-trips through the parser
 
-    @Test func displayStringStaysUntypedForParserRoundTrip() {
-        let group = DiceGroup(kind: .d10, count: 1, damageType: .fire)
-        #expect(group.displayString == "1d10")
-        #expect(group.displayStringWithType == "1d10 fire")
+    @Test func displayStringIncludesBracketPrefixWhenTyped() {
+        let typed = DiceGroup(kind: .d10, count: 1, damageType: .fire)
+        let untyped = DiceGroup(kind: .d10, count: 1)
+        #expect(typed.displayString == "[fire]1d10")
+        #expect(untyped.displayString == "1d10")
     }
 
-    @Test func formulaDisplayStringWithTypesPrintsEachGroup() {
+    @Test func formulaDisplayStringRoundTripsThroughParser() throws {
         var formula = DiceFormula()
         formula.groups.append(DiceGroup(kind: .d8, count: 1, damageType: .slashing))
         formula.groups.append(DiceGroup(kind: .d6, count: 1, damageType: .necrotic))
         formula.modifier = 3
-        #expect(formula.displayString == "1d8 + 1d6 + 3")
-        #expect(formula.displayStringWithTypes == "1d8 slashing + 1d6 necrotic + 3")
+        #expect(formula.displayString == "[slashing]1d8 + [necrotic]1d6 + 3")
+
+        let reparsed = try DiceFormulaParser().parse(formula.displayString)
+        #expect(reparsed.groups.count == 2)
+        #expect(reparsed.groups[0].damageType == .slashing)
+        #expect(reparsed.groups[1].damageType == .necrotic)
+        #expect(reparsed.modifier == 3)
     }
 
     @Test func applyDamageTypeStampsAllGroups() {
         var formula = try! DiceFormulaParser().parse("2d6+3")
         formula.applyDamageType(.fire)
         #expect(formula.groups.allSatisfy { $0.damageType == .fire })
+    }
+
+    // MARK: - Parser bracket / parens support
+
+    @Test func parserReadsBracketDamageTypePrefix() throws {
+        let formula = try DiceFormulaParser().parse("[fire]2d6+3")
+        #expect(formula.groups.count == 1)
+        #expect(formula.groups[0].damageType == .fire)
+        #expect(formula.groups[0].kind == .d6)
+        #expect(formula.groups[0].count == 2)
+        #expect(formula.modifier == 3)
+    }
+
+    @Test func parserStripsParensForVisualGrouping() throws {
+        let formula = try DiceFormulaParser().parse("([fire]2d6 + 2) + ([bludgeoning]3d8)")
+        #expect(formula.groups.count == 2)
+        #expect(formula.groups[0].damageType == .fire)
+        #expect(formula.groups[0].count == 2)
+        #expect(formula.groups[1].damageType == .bludgeoning)
+        #expect(formula.groups[1].count == 3)
+        #expect(formula.modifier == 2)
+    }
+
+    @Test func parserMergesSameTypedPlainGroups() throws {
+        let formula = try DiceFormulaParser().parse("[fire]1d6 + [fire]2d6")
+        #expect(formula.groups.count == 1)
+        #expect(formula.groups[0].count == 3)
+        #expect(formula.groups[0].damageType == .fire)
+    }
+
+    @Test func parserKeepsDifferentTypesSeparate() throws {
+        let formula = try DiceFormulaParser().parse("[fire]1d6 + [cold]1d6 + 1d6")
+        #expect(formula.groups.count == 3)
+        #expect(formula.groups[0].damageType == .fire)
+        #expect(formula.groups[1].damageType == .cold)
+        #expect(formula.groups[2].damageType == nil)
+    }
+
+    @Test func parserRejectsUnknownDamageType() {
+        do {
+            _ = try DiceFormulaParser().parse("[nope]1d6")
+            Issue.record("Expected unknownDamageType error")
+        } catch let error as DiceFormulaParser.ParseError {
+            if case .unknownDamageType(let name) = error {
+                #expect(name == "nope")
+            } else {
+                Issue.record("Expected .unknownDamageType, got \(error)")
+            }
+        } catch {
+            Issue.record("Expected DiceFormulaParser.ParseError, got \(error)")
+        }
+    }
+
+    // MARK: - Typed flat modifiers
+
+    @Test func parserRoutesBracketedFlatNumberIntoTypedModifiers() throws {
+        let formula = try DiceFormulaParser().parse("[fire]5")
+        #expect(formula.groups.isEmpty)
+        #expect(formula.modifier == 0)
+        #expect(formula.typedModifiers == [.fire: 5])
+    }
+
+    @Test func parserCombinesTypedDiceAndTypedFlatModifier() throws {
+        // `[force]1d12 + [force]5 + [necrotic]1d6` — Magic-Missile-shaped
+        // typed flat modifier on the same type as a dice group.
+        let formula = try DiceFormulaParser().parse("[force]1d12+[force]5+[necrotic]1d6")
+        #expect(formula.groups.count == 2)
+        #expect(formula.groups[0].damageType == .force)
+        #expect(formula.groups[1].damageType == .necrotic)
+        #expect(formula.typedModifiers == [.force: 5])
+        #expect(formula.modifier == 0)
+    }
+
+    @Test func parserCollapsesRepeatedTypedFlatModifiers() throws {
+        let formula = try DiceFormulaParser().parse("[fire]2+[fire]3")
+        #expect(formula.typedModifiers == [.fire: 5])
+    }
+
+    @Test func parserHandlesNegativeTypedFlatModifier() throws {
+        let formula = try DiceFormulaParser().parse("[fire]5-[fire]2")
+        #expect(formula.typedModifiers == [.fire: 3])
+    }
+
+    @Test func displayStringRoundTripsTypedFlatModifier() throws {
+        let original = try DiceFormulaParser().parse("[force]1d12+[force]5+[necrotic]1d6")
+        let reparsed = try DiceFormulaParser().parse(original.displayString)
+        #expect(reparsed.groups.count == original.groups.count)
+        #expect(reparsed.typedModifiers == original.typedModifiers)
+        #expect(reparsed.modifier == original.modifier)
+    }
+
+    @Test func subtotalsByTypeAddsTypedFlatModifierToBucket() {
+        var formula = DiceFormula()
+        formula.groups.append(DiceGroup(kind: .d12, count: 1, damageType: .force))
+        formula.groups.append(DiceGroup(kind: .d6,  count: 1, damageType: .necrotic))
+        formula.typedModifiers = [.force: 5]
+        let result = RollResult(
+            formula: formula,
+            dieRolls: [
+                DieRoll(kind: .d12, value: 8),
+                DieRoll(kind: .d6,  value: 4)
+            ]
+        )
+        // force = d12(8) + flat 5 = 13; necrotic = d6(4)
+        #expect(result.subtotalsByType == [.force: 13, .necrotic: 4])
+    }
+
+    @Test func subtotalsByTypeAttachesUntypedModifierWhenAllShareSingleTypeIncludingTypedMod() {
+        // groups all force AND typed-modifier all force → untyped +2 also
+        // attaches to force.
+        var formula = DiceFormula()
+        formula.groups.append(DiceGroup(kind: .d12, count: 1, damageType: .force))
+        formula.typedModifiers = [.force: 5]
+        formula.modifier = 2
+        let result = RollResult(
+            formula: formula,
+            dieRolls: [DieRoll(kind: .d12, value: 8)]
+        )
+        #expect(result.subtotalsByType == [.force: 15])
+    }
+
+    @Test func subtotalsByTypeFallsToNilWhenTypedModBreaksSingleTypeRule() {
+        // groups all force but typed mod is necrotic → untyped +2 falls to nil.
+        var formula = DiceFormula()
+        formula.groups.append(DiceGroup(kind: .d12, count: 1, damageType: .force))
+        formula.typedModifiers = [.necrotic: 5]
+        formula.modifier = 2
+        let result = RollResult(
+            formula: formula,
+            dieRolls: [DieRoll(kind: .d12, value: 8)]
+        )
+        #expect(result.subtotalsByType == [.force: 8, .necrotic: 5, nil: 2])
     }
 
     // MARK: - RollResult.subtotalsByType
