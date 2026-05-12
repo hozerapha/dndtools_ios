@@ -64,7 +64,7 @@ struct DiceTrayView: View {
                         .shadow(color: .black.opacity(0.45), radius: 4, y: 2)
                         .contentTransition(.numericText())
                 }
-                DamageBreakdownView(result: r, foreground: Self.feltSecondary)
+                DamageBreakdownView(result: r, neutralForeground: Self.feltSecondary)
             }
         } else {
             Text("Tap Roll")

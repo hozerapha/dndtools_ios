@@ -1996,6 +1996,67 @@ final class DiceSceneController: NSObject {
         }
     }
 
+    // MARK: - Damage-type glow (post-settle)
+
+    /// Name tag for the per-die glow shell, so `clearGlow` can find and remove
+    /// only the nodes we added — die nodes share their tree with face-decal
+    /// child nodes, connector cylinders, and magnifier cameras.
+    private static let glowShellName = "damage-glow-shell"
+
+    /// Attach an inverted-hull outline shell to each die whose `formulaIndex`
+    /// is in the map. The shell is a clone of the die's body geometry scaled
+    /// up slightly and rendered with `cullMode = .front` — so only the back
+    /// faces draw, and the die's front faces occlude all but a thin rim
+    /// around the screen-space silhouette. Tracks the die's exact outline at
+    /// any camera angle. Call this only AFTER dice settle (otherwise the
+    /// shell tumbles with the body, which still works but flickers).
+    func setGlow(_ colorsByFormulaIndex: [Int: UIColor]) {
+        clearGlow()
+        for die in dice {
+            guard let color = colorsByFormulaIndex[die.formulaIndex] else { continue }
+            // The body geometry lives on the die's root node; face decals are
+            // children. Cloning the root geometry gives us the polyhedron
+            // (cube / tetra / octa / etc.) without the textured face planes.
+            guard let cloned = die.node.geometry?.copy() as? SCNGeometry else { continue }
+
+            let mat = SCNMaterial()
+            mat.lightingModel = .constant
+            mat.diffuse.contents = color
+            mat.emission.contents = color
+            // Only the back-facing polygons of the shell render. Combined with
+            // a slightly enlarged scale, this leaves just a thin rim around
+            // the die's silhouette visible.
+            mat.cullMode = .front
+            mat.isDoubleSided = false
+            // Dim the rim slightly so it reads as a glow rather than a flat
+            // sticker — full opacity looks like a comic-book outline.
+            mat.transparency = 0.75
+            cloned.materials = [mat]
+
+            let shell = SCNNode(geometry: cloned)
+            shell.name = Self.glowShellName
+            // Tune for rim width — 1.08 yields a few pixels of glow at the
+            // standard camera distance. Bump to 1.12 for a fatter outline.
+            shell.scale = SCNVector3(1.08, 1.08, 1.08)
+            shell.castsShadow = false
+            // Render before the die so the die's depth pass overdraws the
+            // shell's interior cleanly; only the rim survives.
+            shell.renderingOrder = -1
+            die.node.addChildNode(shell)
+        }
+    }
+
+    /// Strip all damage-type glow shells from every die. Called at the start
+    /// of every roll (so shells don't tumble with the dice) and implicitly by
+    /// `setGlow` before re-stamping.
+    func clearGlow() {
+        for die in dice {
+            for child in die.node.childNodes where child.name == Self.glowShellName {
+                child.removeFromParentNode()
+            }
+        }
+    }
+
     /// Picks a spot inside the tray that doesn't overlap any existing die. If the tray
     /// is too crowded to find a clear spot, drops the new die in higher up so physics
     /// can resolve any soft contact naturally.

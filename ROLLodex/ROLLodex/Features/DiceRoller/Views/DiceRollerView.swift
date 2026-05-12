@@ -137,10 +137,8 @@ struct DiceRollerView: View {
                         .padding(.vertical, 8)
                         .background(.black.opacity(0.55), in: Capsule())
                         .contentTransition(.numericText())
-                    if let breakdown = DamageBreakdownView.text(for: result) {
-                        Text(breakdown)
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.white)
+                    if result.hasTypedDamage {
+                        DamageBreakdownView(result: result, neutralForeground: .white)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 4)
                             .background(.black.opacity(0.55), in: Capsule())
@@ -370,6 +368,9 @@ struct DiceRollerView: View {
         isRolling = true
         lastResult = nil
         magnifyingDieIndices = []
+        // Strip any glow from the prior settled state — otherwise the colored
+        // lights would tumble with the dice mid-roll. We re-apply on settle.
+        controller.clearGlow()
 
         let dr = DiceRoller()
 
@@ -393,8 +394,29 @@ struct DiceRollerView: View {
         )
         controller.setDimmed(formulaIndices: droppedFormulaIndices)
 
+        // 5. Damage-type halo: one omni light per die, colored by the source
+        //    group's `damageType`. Only typed dice get lights — manual rolls,
+        //    ability checks, etc. stay plain.
+        controller.setGlow(glowColorsByFormulaIndex())
+
         lastResult = result
         history.record(result)
         isRolling = false
+    }
+
+    /// Walk the live formula and build the per-die map the controller uses to
+    /// stamp glow lights. Each group's `damageType` (if any) is assigned to
+    /// every die index that group covers.
+    private func glowColorsByFormulaIndex() -> [Int: UIColor] {
+        var result: [Int: UIColor] = [:]
+        var idx = 0
+        for group in formula.groups {
+            let color = group.damageType?.glowColor
+            for _ in 0..<group.count {
+                if let color { result[idx] = color }
+                idx += 1
+            }
+        }
+        return result
     }
 }
