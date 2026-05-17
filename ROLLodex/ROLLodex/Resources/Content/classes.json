@@ -248,5 +248,60 @@
       "ritualCasting": true,
       "spellcastingFocus": true
     }
+  },
+  {
+    "id": "rogue",
+    "name": "Rogue",
+    "hitDie": 8,
+    "primaryAbility": "dexterity",
+    "savingThrows": ["dexterity", "intelligence"],
+    "armorProficiencies": ["light"],
+    "weaponProficiencies": ["simple", "martial"],
+    "levelFeatures": {
+      "1": [
+        {
+          "id": "expertise",
+          "name": "Expertise",
+          "description": "Choose two of your skill proficiencies, or one of your skill proficiencies and your proficiency with thieves' tools. Your proficiency bonus is doubled for any ability check you make that uses either of the chosen proficiencies."
+        },
+        {
+          "id": "sneak_attack",
+          "name": "Sneak Attack",
+          "description": "Once per turn, you can deal extra damage to a creature you hit with an attack roll if you have Advantage on the roll and the attack uses a Finesse or Ranged weapon. The extra damage matches the weapon's damage type and scales with your rogue level.",
+          "triggeredEffect": {
+            "id": "sneak_attack_rider",
+            "name": "Sneak Attack",
+            "trigger": {
+              "type": "onAttackHit",
+              "filter": {
+                "type": "weaponHasProperty",
+                "properties": ["finesse", "ammunition"]
+              }
+            },
+            "effect": {
+              "type": "addScaledDamageDice",
+              "count": {
+                "byClassLevel": {
+                  "1": 1, "3": 2, "5": 3, "7": 4, "9": 5,
+                  "11": 6, "13": 7, "15": 8, "17": 9, "19": 10
+                }
+              },
+              "die": "d6",
+              "damageType": "$weapon"
+            },
+            "lifecycle": { "type": "oneShot" },
+            "activation": "optIn",
+            "cost": { "type": "oncePerTurn", "flagID": "sneak_attack" }
+          }
+        },
+        {
+          "id": "thieves_cant",
+          "name": "Thieves' Cant",
+          "description": "You know Thieves' Cant — a secret mix of dialect, jargon, and code that allows you to hide messages in seemingly normal conversation."
+        }
+      ]
+    },
+    "masteryCount": 2,
+    "masteryRestrictions": []
   }
 ]

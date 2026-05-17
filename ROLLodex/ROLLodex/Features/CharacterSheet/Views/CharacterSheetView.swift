@@ -99,6 +99,19 @@ struct CharacterSheetView: View {
             // empty tab they can no longer navigate away from via the picker.
             if !casts && section == .spells { section = .actions }
         }
+        .onChange(of: pendingRoll.pendingCostsToApply) { _, costs in
+            guard !costs.isEmpty else { return }
+            // Apply each cost the dice tab parked (once-per-turn flags so far)
+            // to the bound character, then clear the queue so the same chip
+            // can't double-debit on a re-render.
+            for cost in costs {
+                switch cost {
+                case .oncePerTurn(let flag):
+                    character.setTurnFlag(flag)
+                }
+            }
+            pendingRoll.pendingCostsToApply = []
+        }
         .confirmationDialog("Rest", isPresented: $showRestConfirm, titleVisibility: .hidden) {
             Button("Short Rest") { takeRest(.short) }
             Button("Long Rest")  { takeRest(.long) }
@@ -189,12 +202,45 @@ struct CharacterSheetView: View {
     private var actionsTab: some View {
         VStack(spacing: 14) {
             ResourcesView(character: $character)
+            turnFlagsRow
             AttacksView(
                 rows: weaponAttackRows,
                 onAttack: handleWeaponAttack,
                 onDamage: handleStandaloneRoll
             )
             ActionButtonGrid(sections: actionSections, onTap: handleActionTap)
+        }
+    }
+
+    /// Compact pill row that surfaces any once-per-turn effects the player has
+    /// already used this turn, with a Start New Turn button to reset them.
+    /// Hidden when no flags are set so a casual fighter never sees it.
+    @ViewBuilder
+    private var turnFlagsRow: some View {
+        if !character.turnFlags.isEmpty {
+            HStack(spacing: 10) {
+                Image(systemName: "hourglass.tophalf.filled")
+                    .foregroundStyle(.orange)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Used this turn")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.secondary)
+                    Text(character.turnFlags.sorted().joined(separator: " · "))
+                        .font(.caption.monospacedDigit())
+                        .lineLimit(1)
+                }
+                Spacer()
+                Button("Start New Turn") {
+                    character.startNewTurn()
+                }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .tint(.orange)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
         }
     }
 
@@ -208,14 +254,19 @@ struct CharacterSheetView: View {
     /// attack lands.
     private func handleWeaponAttack(_ row: WeaponAttackRow) {
         pendingRoll.pending = row.attack
-        pendingRoll.followUp = row.damage
+        // Queue the chained damage roll plus any opt-in rider chips (Sneak
+        // Attack, etc.) the character qualifies for. Riders that have
+        // already fired this turn are filtered out by the resolver.
+        var followUps: [PendingFollowUp] = [.chainedDamage(row.damage)]
+        followUps.append(contentsOf: row.optInRiders)
+        pendingRoll.followUps = followUps
         selectedTab = .dice
     }
 
     /// Standalone damage / versatile-damage tap: no follow-up, just roll.
     private func handleStandaloneRoll(_ action: ResolvedAction) {
         pendingRoll.pending = action
-        pendingRoll.followUp = nil
+        pendingRoll.followUps = []
         selectedTab = .dice
     }
 
@@ -298,11 +349,12 @@ struct CharacterSheetView: View {
     }
 
     /// Sheet hands us one roll at a time. `followUp` (typically the damage
-    /// for a spell attack) is parked on the store; the dice tab pulls it out
-    /// after the primary roll lands and offers it as a "Roll damage?" chip.
+    /// for a spell attack) is parked on the store as a chained chip; the dice
+    /// tab pulls it out after the primary roll lands and offers it as a
+    /// "Roll damage?" chip.
     private func handleSpellRoll(_ action: ResolvedAction, followUp: ResolvedAction?) {
         pendingRoll.pending = action
-        pendingRoll.followUp = followUp
+        pendingRoll.followUps = followUp.map { [.chainedDamage($0)] } ?? []
         selectedTab = .dice
     }
 

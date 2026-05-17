@@ -73,7 +73,7 @@ enum TriggeredEffectResolver {
 
     /// Maps an `ActiveEffect` back to the `TriggeredEffect` payload that
     /// lives on its content source. Slice A only resolves spell sources;
-    /// feature / item sources land with Slice B & C.
+    /// feature / item sources land with later slices.
     private static func effect(
         for active: ActiveEffect,
         in content: ContentStore
@@ -83,6 +83,124 @@ enum TriggeredEffectResolver {
             return content.spellDefinition(id: id)?.grantsTriggeredEffect
         case .feature, .item:
             return nil
+        }
+    }
+
+    // MARK: - Slice B: opt-in riders from class features
+
+    /// Walk the character's class features and produce one chip per qualifying
+    /// `TriggeredEffect` with `.optIn` activation + `.onAttackHit` trigger.
+    /// Each chip's formula is the BASE weapon damage merged with the rider's
+    /// extra dice, so tapping "Use Sneak Attack" rolls weapon + rider in one
+    /// pass — the player picks one chip from the rail instead of rolling
+    /// damage and Sneak Attack separately. Features already spent this turn
+    /// (`.oncePerTurn` flag already set) are filtered out so the chip doesn't
+    /// reappear.
+    static func optInRiders(
+        weapon: WeaponDefinition?,
+        baseDamage: ResolvedAction,
+        character: Character,
+        content: ContentStore
+    ) -> [PendingFollowUp] {
+        var out: [PendingFollowUp] = []
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(
+                throughClassLevel: entry.level,
+                subclassID: subclassID
+            ) {
+                guard let effect = resolved.feature.triggeredEffect,
+                      effect.activation == .optIn,
+                      case .onAttackHit(let filter) = effect.trigger else { continue }
+                if let filter, !filter.matches(weapon: weapon) { continue }
+                // Once-per-turn cost: skip if the flag is already set.
+                if case .oncePerTurn(let flag)? = effect.cost,
+                   character.hasTurnFlag(flag) { continue }
+                guard let chip = buildChip(
+                    for: effect,
+                    weapon: weapon,
+                    baseDamage: baseDamage,
+                    character: character,
+                    classLevel: entry.level
+                ) else { continue }
+                out.append(chip)
+            }
+        }
+        return out
+    }
+
+    /// Merge the rider's dice into the base weapon-damage formula, then wrap
+    /// the result as a chip whose tap rolls the combined damage in one go.
+    /// Returns nil when the effect can't produce a usable rider (no formula
+    /// to merge, no weapon for `.matchWeapon`, scaling table at 0).
+    private static func buildChip(
+        for effect: TriggeredEffect,
+        weapon: WeaponDefinition?,
+        baseDamage: ResolvedAction,
+        character: Character,
+        classLevel: Int
+    ) -> PendingFollowUp? {
+        guard let baseFormula = baseDamage.formula else { return nil }
+
+        // Resolve the rider's contribution into its own DiceFormula first.
+        let damageType: DamageType
+        var rider: DiceFormula
+        let riderSummary: String  // for the chip subtitle: "+1d6 piercing"
+
+        switch effect.effect {
+        case .addDamageDice(let dice, let typed):
+            guard let resolvedType = resolveDamageType(typed, weapon: weapon) else { return nil }
+            damageType = resolvedType
+            rider = (try? DiceFormulaParser().parse(dice)) ?? DiceFormula()
+            riderSummary = "+\(dice) \(resolvedType.rawValue)"
+
+        case .addScaledDamageDice(let count, let die, let typed):
+            guard let resolvedType = resolveDamageType(typed, weapon: weapon) else { return nil }
+            damageType = resolvedType
+            let n = count.value(classLevel: classLevel, characterLevel: character.level)
+            guard n > 0 else { return nil }
+            rider = (try? DiceFormulaParser().parse("\(n)\(die)")) ?? DiceFormula()
+            riderSummary = "+\(n)\(die) \(resolvedType.rawValue)"
+        }
+
+        rider.applyDamageType(damageType)
+        guard !rider.groups.isEmpty else { return nil }
+
+        // Merge: base + rider groups, sum typed modifiers, sum untyped flat.
+        var merged = baseFormula
+        merged.groups.append(contentsOf: rider.groups)
+        for (type, value) in rider.typedModifiers {
+            merged.typedModifiers[type, default: 0] += value
+            if merged.typedModifiers[type] == 0 {
+                merged.typedModifiers.removeValue(forKey: type)
+            }
+        }
+        merged.modifier += rider.modifier
+
+        let mergedAction = ResolvedAction(
+            id: "merged_\(baseDamage.id)_\(effect.id)",
+            label: "\(baseDamage.label) + \(effect.name)",
+            formula: merged,
+            description: merged.displayString
+        )
+        return PendingFollowUp(
+            id: "rider_\(effect.id)",
+            action: mergedAction,
+            cost: effect.cost,
+            chipPrompt: "Use \(effect.name) (\(riderSummary))"
+        )
+    }
+
+    private static func resolveDamageType(
+        _ typed: TypedOrMatch,
+        weapon: WeaponDefinition?
+    ) -> DamageType? {
+        switch typed {
+        case .fixed(let dt): return dt
+        case .matchWeapon:  return weapon?.damageType
         }
     }
 }

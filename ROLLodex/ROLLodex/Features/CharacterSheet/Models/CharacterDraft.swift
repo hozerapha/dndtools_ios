@@ -5,7 +5,14 @@ struct CharacterDraft {
     var speciesID: String = ""
     var backgroundID: String = ""
     var classID: String = ""
-    var abilityScores: [Ability: Int] = [:]
+    /// All six abilities seeded to 8 so the ability-step's row bindings have
+    /// a backing entry from the start. Without this, the UI showed an 8 via
+    /// the binding's `default:` arg but never wrote it to the dict, so
+    /// `isValidPointBuy` failed on `count == 6` until the player nudged
+    /// every stepper.
+    var abilityScores: [Ability: Int] = Dictionary(
+        uniqueKeysWithValues: Ability.allCases.map { ($0, 8) }
+    )
 
     // MARK: - Validation
 

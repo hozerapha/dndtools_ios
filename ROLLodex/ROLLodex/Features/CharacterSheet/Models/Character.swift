@@ -49,6 +49,11 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
     /// Mutated via `startConcentrating`, `stopConcentrating`, and
     /// `dismissActiveEffect(_:)` — direct list edits should be the exception.
     var activeEffects: [ActiveEffect]
+    /// Once-per-turn flags set by opt-in effects (Sneak Attack, etc.). The
+    /// resolver consults this to gray out opt-in chips that have already
+    /// fired this turn; the player clears it by tapping Start New Turn.
+    /// MVP honor system — the app doesn't know whose turn it is yet.
+    var turnFlags: Set<String>
     var manifestVersion: Int
 
     init(
@@ -73,6 +78,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         conditions: [CharacterCondition] = [],
         concentratingSpellID: String? = nil,
         activeEffects: [ActiveEffect] = [],
+        turnFlags: Set<String> = [],
         manifestVersion: Int = 1
     ) {
         self.id = id
@@ -96,6 +102,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         self.conditions = conditions
         self.concentratingSpellID = concentratingSpellID
         self.activeEffects = activeEffects
+        self.turnFlags = turnFlags
         self.manifestVersion = manifestVersion
     }
 
@@ -107,7 +114,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         case proficiencies, inventory, currency, notes
         case attunementSlotsOverride, resources, spells
         case featureSelections, conditions, concentratingSpellID
-        case activeEffects, manifestVersion
+        case activeEffects, turnFlags, manifestVersion
         /// Legacy key from when masteries lived on the character directly.
         /// Migrated into `featureSelections["weapon_mastery"]` on decode.
         case chosenWeaponMasteries
@@ -143,6 +150,8 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         concentratingSpellID = try container.decodeIfPresent(String.self, forKey: .concentratingSpellID)
         // Pre-Phase-O characters predate the field; decode as empty.
         activeEffects = try container.decodeIfPresent([ActiveEffect].self, forKey: .activeEffects) ?? []
+        // Pre-Slice-B characters predate `turnFlags`; decode as empty.
+        turnFlags = try container.decodeIfPresent(Set<String>.self, forKey: .turnFlags) ?? []
         manifestVersion = try container.decodeIfPresent(Int.self, forKey: .manifestVersion) ?? 1
 
         let profDict = try container.decodeIfPresent([String: ProficiencyLevel].self, forKey: .proficiencies) ?? [:]
@@ -175,6 +184,9 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         try container.encodeIfPresent(concentratingSpellID, forKey: .concentratingSpellID)
         if !activeEffects.isEmpty {
             try container.encode(activeEffects, forKey: .activeEffects)
+        }
+        if !turnFlags.isEmpty {
+            try container.encode(turnFlags, forKey: .turnFlags)
         }
         try container.encode(manifestVersion, forKey: .manifestVersion)
 
@@ -248,6 +260,26 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
             if case .spell(let id) = $0.source, id == spellID { return true }
             return false
         }
+    }
+
+    // MARK: - Turn flags (once-per-turn opt-ins)
+
+    /// True when the flag has already been set this turn — used to gray out
+    /// opt-in chips for effects already spent (Sneak Attack, etc.).
+    func hasTurnFlag(_ flagID: String) -> Bool {
+        turnFlags.contains(flagID)
+    }
+
+    /// Record that an opt-in effect fired this turn. Idempotent.
+    mutating func setTurnFlag(_ flagID: String) {
+        turnFlags.insert(flagID)
+    }
+
+    /// Clear every once-per-turn flag — invoked by the sheet's Start New Turn
+    /// button. Long rest also calls this defensively so a new day never carries
+    /// over a stale flag.
+    mutating func startNewTurn() {
+        turnFlags.removeAll()
     }
 
     // MARK: - ASI mutators

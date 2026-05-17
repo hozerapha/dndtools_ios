@@ -68,20 +68,31 @@ struct EffectsRow: View {
         var parts: [String] = []
         switch effect.effect {
         case .addDamageDice(let dice, let typed):
-            switch typed {
-            case .fixed(let dt):
-                parts.append("+\(dice) \(dt.rawValue) on each damage roll")
-            case .matchWeapon:
-                parts.append("+\(dice) matching the weapon's damage type")
-            }
+            parts.append(diceLine(dice: dice, typed: typed))
+        case .addScaledDamageDice(_, let die, let typed):
+            // Scaled riders don't surface in the badge row today (Slice B's
+            // optInRiders path is Sneak Attack and friends); shape the line
+            // anyway so future persistent scaling buffs aren't blank.
+            parts.append(diceLine(dice: "N\(die)", typed: typed))
         }
         switch effect.lifecycle {
         case .persistent(.concentrationEnds):
             parts.append("Ends when concentration drops")
+        case .oneShot:
+            parts.append("One-shot (per attack)")
         }
         if case .spell(let id) = source {
             parts.append("Source: \(id)")
         }
         return parts.joined(separator: "\n")
+    }
+
+    private func diceLine(dice: String, typed: TypedOrMatch) -> String {
+        switch typed {
+        case .fixed(let dt):
+            return "+\(dice) \(dt.rawValue) on each damage roll"
+        case .matchWeapon:
+            return "+\(dice) matching the weapon's damage type"
+        }
     }
 }

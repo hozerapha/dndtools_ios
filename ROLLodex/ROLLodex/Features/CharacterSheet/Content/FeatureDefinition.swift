@@ -27,10 +27,14 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
     /// purely passive features. JSON defaults to `.action` when the feature
     /// has tappable recipes but doesn't declare a cost.
     let actionCost: ActionCost?
+    /// Standing rider this feature contributes — Sneak Attack's opt-in
+    /// damage rider, future Rage's automatic STR-damage boost, etc. Nil for
+    /// features without a trigger hook (most features).
+    let triggeredEffect: TriggeredEffect?
 
     private enum CodingKeys: String, CodingKey {
         case id, name, description, actionRecipes
-        case attunementSlots, resource, kind, selection, actionCost
+        case attunementSlots, resource, kind, selection, actionCost, triggeredEffect
     }
 
     init(
@@ -42,7 +46,8 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         resource: ResourceDefinition? = nil,
         kind: FeatureKind = .passive,
         selection: FeatureSelection? = nil,
-        actionCost: ActionCost? = nil
+        actionCost: ActionCost? = nil,
+        triggeredEffect: TriggeredEffect? = nil
     ) {
         self.id = id
         self.name = name
@@ -53,6 +58,7 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         self.kind = kind
         self.selection = selection
         self.actionCost = actionCost
+        self.triggeredEffect = triggeredEffect
     }
 
     init(from decoder: Decoder) throws {
@@ -64,6 +70,7 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         attunementSlots = try c.decodeIfPresent(Int.self, forKey: .attunementSlots)
         resource = try c.decodeIfPresent(ResourceDefinition.self, forKey: .resource)
         selection = try c.decodeIfPresent(FeatureSelection.self, forKey: .selection)
+        triggeredEffect = try c.decodeIfPresent(TriggeredEffect.self, forKey: .triggeredEffect)
         // Explicit JSON wins; otherwise default to .action when the feature
         // surfaces a tappable recipe, and nil for pure passives.
         if let declared = try c.decodeIfPresent(ActionCost.self, forKey: .actionCost) {

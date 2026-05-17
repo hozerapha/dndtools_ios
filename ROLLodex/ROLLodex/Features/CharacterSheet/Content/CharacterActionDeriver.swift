@@ -80,6 +80,12 @@ struct WeaponAttackRow: Identifiable, Equatable {
     /// Two-handed damage roll for versatile weapons (longsword, etc.). Nil
     /// when the weapon isn't versatile.
     let versatileDamage: ResolvedAction?
+    /// Opt-in rider chips the character qualifies for on this attack —
+    /// Sneak Attack (when the weapon has finesse/ranged), Divine Smite, etc.
+    /// Already filtered by `AttackFilter` and once-per-turn flags. The sheet
+    /// pushes these into `PendingRollStore.followUps` alongside the chained
+    /// damage roll.
+    let optInRiders: [PendingFollowUp]
 }
 
 /// Pure derivation of the action button list for a character, given the
@@ -212,13 +218,21 @@ enum CharacterActionDeriver {
                 return property
             }()
 
+            let optInRiders = TriggeredEffectResolver.optInRiders(
+                weapon: weapon,
+                baseDamage: damage,
+                character: character,
+                content: content
+            )
+
             rows.append(WeaponAttackRow(
                 id: "weapon_\(inv.id.uuidString)",
                 weaponName: weapon.name,
                 mastery: activeMastery,
                 attack: attack,
                 damage: damage,
-                versatileDamage: versatileEnriched
+                versatileDamage: versatileEnriched,
+                optInRiders: optInRiders
             ))
         }
         return rows

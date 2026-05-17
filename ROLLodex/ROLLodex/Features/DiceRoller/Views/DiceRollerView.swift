@@ -24,13 +24,14 @@ struct DiceRollerView: View {
     /// element. Set on the first onChanged of the magnifier gesture, cleared
     /// on release / new roll / formula change.
     @State private var magnifyingDieIndices: [Int] = []
-    /// Optional next roll handed in alongside the primary (e.g. damage queued
-    /// after a spell attack). Surfaced as a "Roll damage?" chip below the tray
-    /// once the primary roll has produced a result. Tapping the chip loads
-    /// this action's formula. Cleared by tap, by dismiss, or by any manual
-    /// formula edit (the chip stops making sense once the user has touched
-    /// the dice).
-    @State private var pendingFollowUp: ResolvedAction?
+    /// Secondary actions handed in alongside the primary — e.g. the damage
+    /// chained after a weapon attack, plus any opt-in riders (Sneak Attack,
+    /// Divine Smite) the character qualifies for. Rendered as chips under the
+    /// tray once the primary roll settles. Each chip pays its `cost` (if any)
+    /// when tapped, then drops out of the list so it can't double-fire. Any
+    /// manual formula edit clears the whole rail — the queued chips stop
+    /// matching the dice once the player has touched the picker.
+    @State private var pendingFollowUps: [PendingFollowUp] = []
 
     @Environment(HistoryStore.self) private var history
     @Environment(PresetStore.self) private var presets
@@ -49,7 +50,7 @@ struct DiceRollerView: View {
                 tray
                     .frame(maxHeight: .infinity)
 
-                followUpChip
+                followUpRail
 
                 bottomControls
                     .disabled(isRolling)
@@ -103,9 +104,9 @@ struct DiceRollerView: View {
                 if labelBoundFormula != new {
                     pendingLabel = nil
                     labelBoundFormula = nil
-                    // Once the user has touched the dice manually, a queued
-                    // damage roll no longer pairs with what's in the tray.
-                    pendingFollowUp = nil
+                    // Once the user has touched the dice manually, queued
+                    // chips no longer pair with what's in the tray.
+                    pendingFollowUps = []
                 }
             }
         }
@@ -197,42 +198,49 @@ struct DiceRollerView: View {
         return .white
     }
 
-    /// Small pill that appears below the tray when a follow-up roll is queued
-    /// (typically the damage roll for a spell attack) AND the primary roll has
-    /// landed. Tap to load the follow-up formula; X to dismiss.
+    /// Rail of chips that appears below the tray once the primary roll has
+    /// landed: a "Roll damage?" chip from the weapon-attack pairing plus any
+    /// opt-in riders (Sneak Attack, Divine Smite). Tapping a chip pays its
+    /// cost (turn flag, etc.), loads its formula, and drops the chip off the
+    /// rail. The whole rail clears on manual formula edit.
     @ViewBuilder
-    private var followUpChip: some View {
-        if let followUp = pendingFollowUp, lastResult != nil {
-            HStack(spacing: 10) {
+    private var followUpRail: some View {
+        if !pendingFollowUps.isEmpty, lastResult != nil {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(pendingFollowUps) { followUp in
+                        chip(for: followUp)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
+    private func chip(for followUp: PendingFollowUp) -> some View {
+        let prompt = followUp.chipPrompt ?? followUpPrompt(for: followUp.action)
+        return Button {
+            consumeFollowUp(followUp)
+        } label: {
+            HStack(spacing: 8) {
                 Image(systemName: "arrow.right.circle.fill")
-                    .font(.title3)
+                    .font(.subheadline)
                     .foregroundStyle(Color.accentColor)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(followUpPrompt(for: followUp))
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(prompt)
                         .font(.subheadline.weight(.semibold))
-                    Text(followUp.label)
+                    Text(followUp.action.label)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-                Spacer()
-                Button {
-                    pendingFollowUp = nil
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Dismiss follow-up roll")
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Color.accentColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 12))
-            .contentShape(Rectangle())
-            .onTapGesture { consumeFollowUp(followUp) }
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color.accentColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
         }
+        .buttonStyle(.plain)
     }
 
     private func followUpPrompt(for action: ResolvedAction) -> String {
@@ -242,10 +250,19 @@ struct DiceRollerView: View {
         return "Roll next?"
     }
 
-    private func consumeFollowUp(_ action: ResolvedAction) {
-        pendingFollowUp = nil
-        guard let nextFormula = action.formula else { return }
-        applyLabeled(formula: nextFormula, label: action.label)
+    private func consumeFollowUp(_ followUp: PendingFollowUp) {
+        // The whole rail is a single damage-roll choice for the current
+        // attack (Roll Damage vs. Use Sneak Attack vs. Use Divine Smite …).
+        // Whichever one fires, the rest go away — you only roll damage once.
+        pendingFollowUps = []
+        // Park the cost on the store so the character sheet — which owns the
+        // character binding — can apply it (set turn flag, etc.). Keeps the
+        // dice tab character-agnostic.
+        if let cost = followUp.cost {
+            pendingRoll.pendingCostsToApply.append(cost)
+        }
+        guard let nextFormula = followUp.action.formula else { return }
+        applyLabeled(formula: nextFormula, label: followUp.action.label)
         if autoRollEnabled {
             Task { await roll() }
         }
@@ -332,19 +349,19 @@ struct DiceRollerView: View {
     /// into auto-roll, kick off a roll immediately.
     private func consumePendingRollIfNeeded() {
         guard !isRolling, let resolved = pendingRoll.pending else { return }
-        // Snapshot the follow-up first; always clear both store slots so a
-        // later handoff without a follow-up doesn't inherit a stale one.
-        let nextFollowUp = pendingRoll.followUp
+        // Snapshot the follow-ups first; always clear both store slots so a
+        // later handoff with no follow-ups doesn't inherit a stale rail.
+        let nextFollowUps = pendingRoll.followUps
         pendingRoll.pending = nil
-        pendingRoll.followUp = nil
+        pendingRoll.followUps = []
 
         // saveDC and other info-only actions have no formula — nothing to load.
         guard let resolvedFormula = resolved.formula else { return }
         applyLabeled(formula: resolvedFormula, label: resolved.label)
-        // Set the follow-up AFTER applyLabeled so the formula's onChange (which
-        // would have cleared a stale follow-up on manual edits) sees the new
-        // labelBoundFormula match and leaves us alone.
-        pendingFollowUp = nextFollowUp
+        // Set the follow-ups AFTER applyLabeled so the formula's onChange
+        // (which would have cleared a stale rail on manual edits) sees the
+        // new labelBoundFormula match and leaves us alone.
+        pendingFollowUps = nextFollowUps
         if autoRollEnabled {
             Task { await roll() }
         }
