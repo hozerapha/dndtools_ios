@@ -433,7 +433,14 @@ struct SpellCastSheet: View {
 
     private func commitConcentrationIfNeeded() {
         if spell.duration.requiresConcentration {
-            character.concentratingSpellID = spell.id
+            // Routes through the helper so any persistent rider on this spell
+            // (Hex's necrotic damage, Hunter's Mark, etc.) attaches to the
+            // character — and any rider from the previously concentrated spell
+            // gets dropped at the same moment as the swap.
+            character.startConcentrating(
+                on: spell.id,
+                grantsEffect: spell.grantsTriggeredEffect
+            )
         }
     }
 

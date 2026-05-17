@@ -99,6 +99,46 @@
     "actionRecipes": []
   },
   {
+    "id": "hex",
+    "name": "Hex",
+    "level": 1,
+    "school": "enchantment",
+    "castingTime": { "type": "bonusAction" },
+    "range": { "type": "feet", "value": 90 },
+    "components": { "verbal": true, "somatic": true, "material": "the petrified eye of a newt" },
+    "duration": { "type": "concentration", "value": 60 },
+    "description": "You place a curse on a creature you can see within range. Until the spell ends, the target takes an extra 1d6 necrotic damage whenever you hit it with an attack. You also choose one ability when you cast the spell; the target has disadvantage on ability checks made with that ability.",
+    "higherLevel": "When you cast this spell using a spell slot of 3rd or 4th level, you can maintain your concentration on the spell for up to 8 hours. When you use a spell slot of 5th level or higher, you can maintain your concentration on the spell for up to 24 hours.",
+    "actionRecipes": [],
+    "grantsTriggeredEffect": {
+      "id": "hex_damage_rider",
+      "name": "Hex",
+      "trigger": { "type": "onDamageRoll" },
+      "effect": { "type": "addDamageDice", "dice": "1d6", "damageType": "necrotic" },
+      "lifecycle": { "type": "persistent", "until": { "type": "concentrationEnds" } }
+    }
+  },
+  {
+    "id": "hunters_mark",
+    "name": "Hunter's Mark",
+    "level": 1,
+    "school": "divination",
+    "castingTime": { "type": "bonusAction" },
+    "range": { "type": "feet", "value": 90 },
+    "components": { "verbal": true },
+    "duration": { "type": "concentration", "value": 60 },
+    "description": "You choose a creature you can see within range and mystically mark it as your quarry. Until the spell ends, you deal an extra 1d6 damage to the target whenever you hit it with a weapon attack, and you have advantage on any Wisdom (Perception) or Wisdom (Survival) check you make to find it.",
+    "higherLevel": "When you cast this spell using a spell slot of 3rd or 4th level, you can maintain concentration on the spell for up to 8 hours. When you use a spell slot of 5th level or higher, you can maintain concentration on the spell for up to 24 hours.",
+    "actionRecipes": [],
+    "grantsTriggeredEffect": {
+      "id": "hunters_mark_damage_rider",
+      "name": "Hunter's Mark",
+      "trigger": { "type": "onDamageRoll" },
+      "effect": { "type": "addDamageDice", "dice": "1d6", "damageType": "$weapon" },
+      "lifecycle": { "type": "persistent", "until": { "type": "concentrationEnds" } }
+    }
+  },
+  {
     "id": "feather_fall",
     "name": "Feather Fall",
     "level": 1,

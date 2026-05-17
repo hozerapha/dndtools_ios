@@ -186,7 +186,20 @@ enum CharacterActionDeriver {
 
             // A weapon without both an attack and a damage roll is effectively
             // unusable in the sheet — skip it.
-            guard let attack, let damage else { continue }
+            guard let attack, var damage else { continue }
+            var versatileEnriched = versatile
+
+            // Fold any active automatic damage riders (Hex, Hunter's Mark)
+            // into both the standard and versatile damage actions. Riders are
+            // damage-only — the d20 attack roll is untouched.
+            damage = TriggeredEffectResolver.applyAutomaticDamageRiders(
+                to: damage, weapon: weapon, character: character, content: content
+            )
+            if let v = versatileEnriched {
+                versatileEnriched = TriggeredEffectResolver.applyAutomaticDamageRiders(
+                    to: v, weapon: weapon, character: character, content: content
+                )
+            }
 
             // Mastery only displays when the character has both the Weapon
             // Mastery feature (via class) AND has chosen this weapon as one
@@ -205,7 +218,7 @@ enum CharacterActionDeriver {
                 mastery: activeMastery,
                 attack: attack,
                 damage: damage,
-                versatileDamage: versatile
+                versatileDamage: versatileEnriched
             ))
         }
         return rows

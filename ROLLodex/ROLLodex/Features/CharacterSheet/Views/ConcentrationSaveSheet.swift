@@ -87,7 +87,7 @@ struct ConcentrationSaveSheet: View {
             .tint(.green)
 
             Button {
-                character.concentratingSpellID = nil
+                character.stopConcentrating()
                 dismiss()
             } label: {
                 Label("Failed (drop)", systemImage: "xmark.octagon.fill")

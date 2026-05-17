@@ -30,6 +30,15 @@ final class ContentStore {
     var allConditions: [ConditionDefinition] {
         conditions.values.sorted { $0.name < $1.name }
     }
+    /// All bundled + loaded spells, sorted by level then name. Used by the
+    /// "Add Spell" picker so the player can grant their character any spell
+    /// regardless of class restrictions (v1 has no class spell lists).
+    var allSpells: [SpellDefinition] {
+        spells.values.sorted { lhs, rhs in
+            if lhs.level != rhs.level { return lhs.level < rhs.level }
+            return lhs.name < rhs.name
+        }
+    }
 
     func itemName(forItemID id: String) -> String? {
         gear[id]?.name ?? weapons[id]?.name ?? armor[id]?.name

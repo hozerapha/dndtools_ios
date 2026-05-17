@@ -22,12 +22,17 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
     let higherLevel: String?
     let actionRecipes: [ActionRecipe]
     let upcastEffect: UpcastEffect?
+    /// Persistent rider applied to the caster on cast — currently used by
+    /// Hex, Hunter's Mark, and similar concentration spells that modify the
+    /// caster's outgoing rolls until concentration drops. Nil for spells that
+    /// don't grant a rider.
+    let grantsTriggeredEffect: TriggeredEffect?
 
     var isCantrip: Bool { level == 0 }
 
     private enum CodingKeys: String, CodingKey {
         case id, name, level, school, castingTime, range, components, duration
-        case description, higherLevel, actionRecipes, upcastEffect
+        case description, higherLevel, actionRecipes, upcastEffect, grantsTriggeredEffect
     }
 
     init(
@@ -42,7 +47,8 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
         description: String,
         higherLevel: String? = nil,
         actionRecipes: [ActionRecipe] = [],
-        upcastEffect: UpcastEffect? = nil
+        upcastEffect: UpcastEffect? = nil,
+        grantsTriggeredEffect: TriggeredEffect? = nil
     ) {
         self.id = id
         self.name = name
@@ -56,6 +62,7 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
         self.higherLevel = higherLevel
         self.actionRecipes = actionRecipes
         self.upcastEffect = upcastEffect
+        self.grantsTriggeredEffect = grantsTriggeredEffect
     }
 
     init(from decoder: Decoder) throws {
@@ -72,6 +79,7 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
         higherLevel  = try c.decodeIfPresent(String.self, forKey: .higherLevel)
         actionRecipes = try c.decodeIfPresent([ActionRecipe].self, forKey: .actionRecipes) ?? []
         upcastEffect  = try c.decodeIfPresent(UpcastEffect.self, forKey: .upcastEffect)
+        grantsTriggeredEffect = try c.decodeIfPresent(TriggeredEffect.self, forKey: .grantsTriggeredEffect)
     }
 
     /// Returns the spell's recipes with upcast scaling applied for the given

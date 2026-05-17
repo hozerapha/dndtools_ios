@@ -123,7 +123,7 @@ struct ConcentrationPin: View {
                 }
                 Spacer()
                 Button("Drop") {
-                    character.concentratingSpellID = nil
+                    character.stopConcentrating()
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)

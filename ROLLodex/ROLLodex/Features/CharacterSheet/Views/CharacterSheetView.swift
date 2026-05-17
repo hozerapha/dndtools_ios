@@ -153,6 +153,7 @@ struct CharacterSheetView: View {
             ConditionsRow(character: $character) {
                 showAddCondition = true
             }
+            EffectsRow(character: $character)
             statPillRow
         }
         .padding(.horizontal)

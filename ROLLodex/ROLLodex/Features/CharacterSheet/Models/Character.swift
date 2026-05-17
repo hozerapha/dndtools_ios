@@ -43,6 +43,12 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
     /// (5e rule); setters should clear any prior value before assigning. Nil
     /// when the character isn't concentrating.
     var concentratingSpellID: String?
+    /// Persistent riders currently in play — Hex's necrotic damage rider,
+    /// Hunter's Mark, Rage (later slice), etc. Each entry remembers where it
+    /// came from so the resolver can look up the matching `TriggeredEffect`.
+    /// Mutated via `startConcentrating`, `stopConcentrating`, and
+    /// `dismissActiveEffect(_:)` — direct list edits should be the exception.
+    var activeEffects: [ActiveEffect]
     var manifestVersion: Int
 
     init(
@@ -66,6 +72,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         featureSelections: [String: [String]] = [:],
         conditions: [CharacterCondition] = [],
         concentratingSpellID: String? = nil,
+        activeEffects: [ActiveEffect] = [],
         manifestVersion: Int = 1
     ) {
         self.id = id
@@ -88,6 +95,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         self.featureSelections = featureSelections
         self.conditions = conditions
         self.concentratingSpellID = concentratingSpellID
+        self.activeEffects = activeEffects
         self.manifestVersion = manifestVersion
     }
 
@@ -98,7 +106,8 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         case abilityScores, maxHP, currentHP, tempHP
         case proficiencies, inventory, currency, notes
         case attunementSlotsOverride, resources, spells
-        case featureSelections, conditions, concentratingSpellID, manifestVersion
+        case featureSelections, conditions, concentratingSpellID
+        case activeEffects, manifestVersion
         /// Legacy key from when masteries lived on the character directly.
         /// Migrated into `featureSelections["weapon_mastery"]` on decode.
         case chosenWeaponMasteries
@@ -132,6 +141,8 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         featureSelections = selections
         conditions = try container.decodeIfPresent([CharacterCondition].self, forKey: .conditions) ?? []
         concentratingSpellID = try container.decodeIfPresent(String.self, forKey: .concentratingSpellID)
+        // Pre-Phase-O characters predate the field; decode as empty.
+        activeEffects = try container.decodeIfPresent([ActiveEffect].self, forKey: .activeEffects) ?? []
         manifestVersion = try container.decodeIfPresent(Int.self, forKey: .manifestVersion) ?? 1
 
         let profDict = try container.decodeIfPresent([String: ProficiencyLevel].self, forKey: .proficiencies) ?? [:]
@@ -162,6 +173,9 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         try container.encode(featureSelections, forKey: .featureSelections)
         try container.encode(conditions, forKey: .conditions)
         try container.encodeIfPresent(concentratingSpellID, forKey: .concentratingSpellID)
+        if !activeEffects.isEmpty {
+            try container.encode(activeEffects, forKey: .activeEffects)
+        }
         try container.encode(manifestVersion, forKey: .manifestVersion)
 
         let profDict = Dictionary(uniqueKeysWithValues: proficiencies.map { key, value in
@@ -186,14 +200,54 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         conditions.removeAll { $0.id == id }
     }
 
-    /// Set the active concentration spell. Replacing a prior one is the
-    /// caller's responsibility to confirm with the user; this just commits.
-    mutating func startConcentrating(on spellID: String) {
+    /// Set the active concentration spell, optionally granting an active
+    /// rider effect tied to it. Replaces any prior concentration — the caller
+    /// is responsible for confirming with the user before invoking this.
+    /// Spell-sourced effects from the prior concentration are dropped so a
+    /// Hex → Hunter's Mark handoff doesn't stack riders.
+    mutating func startConcentrating(on spellID: String, grantsEffect: TriggeredEffect? = nil) {
+        if let prior = concentratingSpellID, prior != spellID {
+            removeSpellSourcedEffects(forSpellID: prior)
+        }
         concentratingSpellID = spellID
+        if let effect = grantsEffect {
+            // Dedupe by effectID so re-casting the same spell mid-concentration
+            // (rare, but possible) doesn't add a phantom second rider.
+            activeEffects.removeAll { $0.effectID == effect.id }
+            activeEffects.append(
+                ActiveEffect(effectID: effect.id, source: .spell(spellID: spellID))
+            )
+        }
     }
 
+    /// Drop concentration entirely and remove any rider effects that were
+    /// tied to it. Called by the concentration-save fail path, the manual
+    /// drop pin, and any other surface that ends concentration.
     mutating func stopConcentrating() {
+        if let prior = concentratingSpellID {
+            removeSpellSourcedEffects(forSpellID: prior)
+        }
         concentratingSpellID = nil
+    }
+
+    /// Player dismissed a badge from the EffectsRow. Drops the effect, and if
+    /// it was spell-sourced and still matched the active concentration spell,
+    /// drops concentration too so the two views stay in sync.
+    mutating func dismissActiveEffect(_ effectID: String) {
+        let removed = activeEffects.first { $0.effectID == effectID }
+        activeEffects.removeAll { $0.effectID == effectID }
+        if let source = removed?.source,
+           case .spell(let spellID) = source,
+           concentratingSpellID == spellID {
+            concentratingSpellID = nil
+        }
+    }
+
+    private mutating func removeSpellSourcedEffects(forSpellID spellID: String) {
+        activeEffects.removeAll {
+            if case .spell(let id) = $0.source, id == spellID { return true }
+            return false
+        }
     }
 
     // MARK: - ASI mutators
