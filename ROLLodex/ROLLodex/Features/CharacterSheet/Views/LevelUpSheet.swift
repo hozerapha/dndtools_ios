@@ -68,7 +68,7 @@ struct LevelUpSheet: View {
             Label("Hit Points", systemImage: "heart.fill")
                 .font(.headline)
                 .foregroundStyle(.red)
-            Text("Hit Die: 1d\(hitDie) + CON (\(conMod.formattedModifier))")
+            Text("Hit Die: 1d\(hitDie)  •  CON bonus: \(conMod.formattedModifier) per level")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             HStack(spacing: 10) {
@@ -125,14 +125,18 @@ struct LevelUpSheet: View {
 
     private func stagedSummary(gain: Int) -> some View {
         let dieValue = stagedRoll ?? (hitDie / 2 + 1)
+        let totalGain = gain + conMod
         return HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(usedAverage ? "Average \(dieValue)" : "Rolled \(dieValue)")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
-                Text("+\(gain) HP (max \(character.maxHP) → \(character.maxHP + gain))")
+                Text("+\(dieValue) die + \(conMod.formattedModifier) CON = +\(totalGain) HP")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.green)
+                Text("max \(character.maxHP) → \(character.maxHP + totalGain)")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
             }
             Spacer()
             Button("Reset") {
@@ -240,9 +244,9 @@ struct LevelUpSheet: View {
     }
 
     private var stagedHPGain: Int? {
-        if let r = stagedRoll { return r + conMod }
+        if let r = stagedRoll { return r }
         if usedAverage {
-            return CharacterCalculator.averageLevelUpHPGain(hitDie: hitDie, conMod: conMod)
+            return CharacterCalculator.averageLevelUpHPGain(hitDie: hitDie)
         }
         return nil
     }

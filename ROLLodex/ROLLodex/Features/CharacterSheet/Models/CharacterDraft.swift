@@ -56,6 +56,7 @@ struct CharacterDraft {
             classEntries: [classEntry],
             abilityScores: finalScores,
             maxHP: startingHP(),
+            rolledHP: hitDieMax(),
             currentHP: startingHP()
         )
     }
@@ -76,9 +77,13 @@ struct CharacterDraft {
         }
     }
 
+    /// The raw hit-die maximum for the chosen class (without CON mod).
+    /// Simplified: hard-coded to 10 (d10) until we wire up ClassDefinition.
+    private func hitDieMax() -> Int {
+        10
+    }
+
     private func startingHP() -> Int {
-        // Simplified: max hit die + CON mod
-        // Actual value would come from ClassDefinition lookup
-        10 + CharacterCalculator.abilityModifier(score: abilityScores[.constitution] ?? 10)
+        hitDieMax() + CharacterCalculator.abilityModifier(score: abilityScores[.constitution] ?? 10)
     }
 }

@@ -121,10 +121,11 @@ enum CharacterCalculator {
     }
 
     /// HP gain at level-up if the player takes the average. 5e PHB rule:
-    /// `floor(hitDie/2) + 1 + CON mod`. Always ≥ 1 (CON penalty can't push
-    /// the gain below 1 — handled in `clampedLevelUpHPGain`).
-    static func averageLevelUpHPGain(hitDie: Int, conMod: Int) -> Int {
-        (hitDie / 2 + 1) + conMod
+    /// `floor(hitDie/2) + 1` (the die average, **without** CON mod).
+    /// The CON bonus is applied dynamically in `recalculateHP()` so that
+    /// Constitution changes retroactively affect max HP.
+    static func averageLevelUpHPGain(hitDie: Int) -> Int {
+        hitDie / 2 + 1
     }
 
     /// 5e rule: a level-up never grants fewer than 1 HP even with a brutal
@@ -134,21 +135,22 @@ enum CharacterCalculator {
     }
 
     /// Bumps the character's overall level, the matching class entry's level,
-    /// and adds the (clamped) HP gain to both max and current HP. Centralized
-    /// so the level-up sheet and any future automation share the same math.
+    /// and adds the (clamped) die-only HP gain to `rolledHP`.  Then calls
+    /// `recalculateHP()` so the per-level CON modifier is applied
+    /// retroactively across every level.
     static func applyLevelUp(
         to character: inout Character,
         hpGain: Int,
         classID: String
     ) {
         let clampedGain = clampedLevelUpHPGain(hpGain)
-        character.maxHP += clampedGain
-        character.currentHP = min(character.currentHP + clampedGain, character.maxHP)
+        character.rolledHP += clampedGain
         character.level += 1
         if let idx = character.classEntries.firstIndex(where: { $0.classID == classID }) {
             let entry = character.classEntries[idx]
             character.classEntries[idx] = ClassEntry(classID: entry.classID, level: entry.level + 1)
         }
+        character.recalculateHP()
     }
 
     static func initiativeBonus(character: Character) -> Int {

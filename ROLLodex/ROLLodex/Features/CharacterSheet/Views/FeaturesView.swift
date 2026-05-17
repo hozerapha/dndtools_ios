@@ -599,12 +599,18 @@ private struct AbilityScoreIncreaseList: View {
             totalPoints: totalPoints,
             perAbilityMax: perAbilityMax
         )
+        if ability == .constitution {
+            copy.recalculateHP()
+        }
         character = copy
     }
 
     private func decrement(_ ability: Ability) {
         var copy = character
         copy.applyASIDecrement(ability: ability, selectionID: selectionID)
+        if ability == .constitution {
+            copy.recalculateHP()
+        }
         character = copy
     }
 
