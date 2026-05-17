@@ -14,6 +14,10 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
     /// keys into the character's `resources` map; absence means the feature
     /// has no consumable cost (always-on, like Fighting Style).
     let resource: ResourceDefinition?
+    /// Proficiencies this feature automatically grants when unlocked. Applied
+    /// during character creation and level-up so the sheet reflects them
+    /// immediately (e.g. Rogue's Slippery Mind → WIS/CHA saves).
+    let grantsProficiencies: [ProficiencyKey]?
     /// Informational categorization. Defaults to `.passive` so older JSON
     /// without a `kind` key still decodes; the Features tab uses this to
     /// pick the right header icon and to decide whether to show toggle
@@ -34,7 +38,7 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case id, name, description, actionRecipes
-        case attunementSlots, resource, kind, selection, actionCost, triggeredEffect
+        case attunementSlots, resource, grantsProficiencies, kind, selection, actionCost, triggeredEffect
     }
 
     init(
@@ -44,6 +48,7 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         actionRecipes: [ActionRecipe] = [],
         attunementSlots: Int? = nil,
         resource: ResourceDefinition? = nil,
+        grantsProficiencies: [ProficiencyKey]? = nil,
         kind: FeatureKind = .passive,
         selection: FeatureSelection? = nil,
         actionCost: ActionCost? = nil,
@@ -55,6 +60,7 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         self.actionRecipes = actionRecipes
         self.attunementSlots = attunementSlots
         self.resource = resource
+        self.grantsProficiencies = grantsProficiencies
         self.kind = kind
         self.selection = selection
         self.actionCost = actionCost
@@ -69,6 +75,7 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         actionRecipes = try c.decodeIfPresent([ActionRecipe].self, forKey: .actionRecipes) ?? []
         attunementSlots = try c.decodeIfPresent(Int.self, forKey: .attunementSlots)
         resource = try c.decodeIfPresent(ResourceDefinition.self, forKey: .resource)
+        grantsProficiencies = try c.decodeIfPresent([ProficiencyKey].self, forKey: .grantsProficiencies)
         selection = try c.decodeIfPresent(FeatureSelection.self, forKey: .selection)
         triggeredEffect = try c.decodeIfPresent(TriggeredEffect.self, forKey: .triggeredEffect)
         // Explicit JSON wins; otherwise default to .action when the feature

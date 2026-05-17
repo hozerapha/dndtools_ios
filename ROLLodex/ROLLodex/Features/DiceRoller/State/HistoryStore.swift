@@ -23,6 +23,12 @@ final class HistoryStore {
         save()
     }
 
+    func removeFirst() {
+        guard !rolls.isEmpty else { return }
+        rolls.removeFirst()
+        save()
+    }
+
     func clear() {
         rolls.removeAll()
         save()

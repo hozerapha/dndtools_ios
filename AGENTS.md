@@ -6,7 +6,11 @@
 
 ## Project Overview
 
-**ROLLodex** (repo `dndtools_ios`) is a SwiftUI iOS app that provides a toolset for tabletop RPG players (D&D 5e/5.5e SRD flavor). The first and currently active feature is a **physics-based 3D dice roller** with formula parsing, roll history, presets, advantage/disadvantage, and group modifiers (keep/drop/reroll). A **character sheet** feature is planned but not yet implemented — the full phased plan lives in `PLAN.md`.
+**ROLLodex** (repo `dndtools_ios`) is a SwiftUI iOS app that provides a toolset for tabletop RPG players (D&D 5e/5.5e SRD flavor). The active features are:
+- A **physics-based 3D dice roller** with formula parsing, roll history, presets, advantage/disadvantage, and group modifiers (keep/drop/reroll).
+- A **character sheet** with class progression (Fighter, Wizard, Rogue, Barbarian), subclass support, features, resources, inventory, spellcasting, and action rolling.
+
+The full phased plan lives in `PLAN.md`.
 
 The app name puns on Rolodex (rotating index of cards) + ROLL (dice).
 
@@ -23,7 +27,7 @@ The app name puns on Rolodex (rotating index of cards) + ROLL (dice).
 | State (local) | `@State` |
 | State (shared) | `@Observable` classes injected via `.environment()` |
 | Persistence | `UserDefaults` + `Codable` (JSON) |
-| Tests | None currently exist. Swift Testing (`@Test`, `#expect`) is the intended framework. |
+| Tests | Swift Testing (`@Test`, `#expect`). 18+ test files covering models, content decoding, actions, and features. |
 | Dependencies | None — no SwiftPM packages or CocoaPods. |
 
 The project uses `PBXFileSystemSynchronizedRootGroup` (Xcode 26.4). **New Swift files added from outside Xcode are NOT live-detected**; the user must quit and relaunch Xcode for the navigator/build to see them. Editing existing files is live.
@@ -65,12 +69,50 @@ ROLLodex/
           HistorySheet.swift   # Bottom sheet of past rolls
           PresetRowView.swift  # Horizontal scroll of saved presets
           SavePresetSheet.swift
+      CharacterSheet/
+        Content/               # JSON schema definitions & interpreters
+          ClassDefinition.swift
+          FeatureDefinition.swift
+          FeatureSelection.swift
+          ActionRecipe.swift
+          ActionInterpreter.swift
+          CharacterActionDeriver.swift
+          TriggeredEffect.swift
+          TriggeredEffectResolver.swift
+          ResourceDefinition.swift
+          SpellDefinition.swift
+          WeaponDefinition.swift
+          ArmorDefinition.swift
+          ItemDefinition.swift
+          ConditionDefinition.swift
+          (and more)
+        Models/                # Character data models
+          Character.swift
+          CharacterCalculator.swift
+          CharacterDraft.swift
+          ProficiencyKey.swift
+          ProficiencyLevel.swift
+          Skill.swift
+          Ability.swift
+          (and more)
+        State/                 # @Observable stores
+          CharacterStore.swift # File-system persisted characters
+          ContentStore.swift   # Bundled JSON loader
+          PendingRollStore.swift # Cross-tab action handoff
+        Views/                 # SwiftUI views
+          CharacterSheetView.swift
+          CharacterListView.swift
+          CharacterCreationView.swift
+          FeaturesView.swift
+          LevelUpSheet.swift
+          ActionButtonGrid.swift
+          (and more)
     Assets.xcassets/           # Dice face textures (d4–d20, d10 for d100), tray wood/felt images
     Resources/
-      Content/                 # Bundled SRD JSON: classes, species, backgrounds, weapons, armor, gear
+      Content/                 # Bundled SRD JSON: classes, species, backgrounds, weapons, armor, gear, spells, conditions
 ```
 
-There is no test target or test files in the repository yet.
+Tests live in `ROLLodexTests/` and use Swift Testing.
 
 ---
 
@@ -121,12 +163,15 @@ The `DiceRollerView` drives the controller through an async flow:
 
 ## State & Persistence
 
-| Store | Type | Scope | Key | Notes |
+| Store | Type | Scope | Persistence | Key / Location |
 |---|---|---|---|---|
-| `HistoryStore` | `@Observable` | Environment | `history.rolls.v2` | Max 200 entries; JSON-encoded `[RollResult]` |
-| `PresetStore` | `@Observable` | Environment | `presets.v2` | JSON-encoded `[Preset]` |
+| `HistoryStore` | `@Observable class` | Environment | `UserDefaults` | `history.rolls.v2` — JSON-encoded `[RollResult]`, max 200 entries. |
+| `PresetStore` | `@Observable class` | Environment | `UserDefaults` | `presets.v2` — JSON-encoded `[Preset]`. |
+| `CharacterStore` | `@Observable class` | Environment | File System | `Documents/Characters/<uuid>.json` + `manifest.json`. Atomic writes. |
+| `ContentStore` | `@Observable class` | Environment | Bundled JSON | Loaded from app bundle at init (not persisted). |
+| `PendingRollStore` | `@Observable class` | Environment | In-memory only | Cross-tab handoff queue. |
 
-Both stores read from `UserDefaults` on `init` and write on every mutation. There is no debouncing currently.
+All stores read from their source on `init` and write on every mutation. No debouncing currently.
 
 ---
 
@@ -146,7 +191,14 @@ Advantage/disadvantage (`RollMode`) is only enabled when the formula is exactly 
 
 ## Testing
 
-**There are no tests in the repository right now.** When you add tests, use **Swift Testing** (`import Testing`, `@Test`, `#expect`). The pure model types (`DiceFormula`, `DiceRoller`, `DiceFormulaParser`) are designed to be fully testable with no UI or framework dependencies.
+Tests use **Swift Testing** (`import Testing`, `@Test`, `#expect`). The test target covers:
+- Pure model types (`DiceFormula`, `DiceRoller`, `DiceFormulaParser`)
+- Content decoding and bundled JSON invariants
+- `CharacterCalculator` (modifiers, AC, spell DC, weapon mastery)
+- `ActionInterpreter` and `CharacterActionDeriver`
+- `TriggeredEffectResolver` (automatic riders, opt-in chips)
+- Character Codable round-trips and migrations
+- Feature selections, subclasses, ASI mechanics, level-up flow
 
 Do not add XCTest unless explicitly asked.
 

@@ -29,19 +29,25 @@ struct DiceGroup: Identifiable, Codable {
     /// a per-type breakdown so e.g. Eldritch Smite reads "8 slashing · 6 radiant"
     /// instead of one anonymous total.
     var damageType: DamageType?
+    /// Minimum face value for each die in this group. When set, any rolled value
+    /// below this floor is treated as the floor (e.g. Reliable Talent's min 10).
+    /// Nil means no floor — standard 1…sides range.
+    var minimumValue: Int?
 
     init(
         id: UUID = UUID(),
         kind: DieKind,
         count: Int,
         modifier: GroupModifier? = nil,
-        damageType: DamageType? = nil
+        damageType: DamageType? = nil,
+        minimumValue: Int? = nil
     ) {
         self.id = id
         self.kind = kind
         self.count = count
         self.modifier = modifier
         self.damageType = damageType
+        self.minimumValue = minimumValue
     }
 
     var isPlain: Bool { modifier == nil }
@@ -53,11 +59,39 @@ struct DiceGroup: Identifiable, Codable {
     var displayString: String {
         let prefix = damageType.map { "[\($0.rawValue)]" } ?? ""
         let base = "\(count)\(kind.label)"
-        return prefix + base + (modifier?.suffix ?? "")
+        let modSuffix = modifier?.suffix ?? ""
+        let minSuffix = minimumValue.map { "min\($0)" } ?? ""
+        return prefix + base + modSuffix + minSuffix
+    }
+
+    // MARK: - Codable (backward compatible)
+
+    private enum CodingKeys: String, CodingKey {
+        case id, kind, count, modifier, damageType, minimumValue
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try c.decode(UUID.self, forKey: .id)
+        self.kind = try c.decode(DieKind.self, forKey: .kind)
+        self.count = try c.decode(Int.self, forKey: .count)
+        self.modifier = try c.decodeIfPresent(GroupModifier.self, forKey: .modifier)
+        self.damageType = try c.decodeIfPresent(DamageType.self, forKey: .damageType)
+        self.minimumValue = try c.decodeIfPresent(Int.self, forKey: .minimumValue)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(kind, forKey: .kind)
+        try c.encode(count, forKey: .count)
+        try c.encodeIfPresent(modifier, forKey: .modifier)
+        try c.encodeIfPresent(damageType, forKey: .damageType)
+        try c.encodeIfPresent(minimumValue, forKey: .minimumValue)
     }
 }
 
-// Equality / Hashable ignore `id` — two groups are "the same" if their dice/modifier/type match,
+// Equality / Hashable ignore `id` — two groups are "the same" if their dice/modifier/type/min match,
 // regardless of UUID. UUIDs are for SwiftUI identity only.
 extension DiceGroup: Hashable {
     static func == (lhs: DiceGroup, rhs: DiceGroup) -> Bool {
@@ -65,6 +99,7 @@ extension DiceGroup: Hashable {
             && lhs.count == rhs.count
             && lhs.modifier == rhs.modifier
             && lhs.damageType == rhs.damageType
+            && lhs.minimumValue == rhs.minimumValue
     }
 
     func hash(into hasher: inout Hasher) {
@@ -72,6 +107,7 @@ extension DiceGroup: Hashable {
         hasher.combine(count)
         hasher.combine(modifier)
         hasher.combine(damageType)
+        hasher.combine(minimumValue)
     }
 }
 

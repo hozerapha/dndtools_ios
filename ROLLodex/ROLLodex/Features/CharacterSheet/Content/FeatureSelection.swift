@@ -71,13 +71,17 @@ enum SelectionSource: Codable, Equatable {
     /// `featureSelections`; the picker mutates `character.abilityScores`
     /// directly on each tap.
     case abilityScoreIncrease(perAbilityMax: Int)
+    /// Pick skill IDs from the full skill list. `proficientOnly: true`
+    /// restricts to skills the character already has proficiency in (used by
+    /// Expertise and similar features).
+    case skills(proficientOnly: Bool)
 
     private enum CodingKeys: String, CodingKey {
         case type, proficientOnly, options, parentClassID, perAbilityMax
     }
 
     private enum Kind: String, Codable {
-        case weapons, fixedOptions, subclasses, abilityScoreIncrease
+        case weapons, fixedOptions, subclasses, abilityScoreIncrease, skills
     }
 
     init(from decoder: Decoder) throws {
@@ -95,6 +99,9 @@ enum SelectionSource: Codable, Equatable {
         case .abilityScoreIncrease:
             let max = try c.decodeIfPresent(Int.self, forKey: .perAbilityMax) ?? 2
             self = .abilityScoreIncrease(perAbilityMax: max)
+        case .skills:
+            let proficient = try c.decodeIfPresent(Bool.self, forKey: .proficientOnly) ?? false
+            self = .skills(proficientOnly: proficient)
         }
     }
 
@@ -113,6 +120,9 @@ enum SelectionSource: Codable, Equatable {
         case .abilityScoreIncrease(let max):
             try c.encode(Kind.abilityScoreIncrease, forKey: .type)
             try c.encode(max, forKey: .perAbilityMax)
+        case .skills(let proficient):
+            try c.encode(Kind.skills, forKey: .type)
+            try c.encode(proficient, forKey: .proficientOnly)
         }
     }
 }

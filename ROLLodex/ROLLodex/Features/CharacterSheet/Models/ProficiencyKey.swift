@@ -8,6 +8,25 @@ enum ProficiencyKey: Hashable {
     case tool(String)
 }
 
+extension ProficiencyKey: Codable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let raw = try container.decode(String.self)
+        guard let key = Self.decode(from: raw) else {
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Unknown ProficiencyKey: \(raw)"
+            )
+        }
+        self = key
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(encodeToString())
+    }
+}
+
 extension ProficiencyKey {
     static func decode(from string: String) -> ProficiencyKey? {
         let parts = string.split(separator: "_", maxSplits: 1)

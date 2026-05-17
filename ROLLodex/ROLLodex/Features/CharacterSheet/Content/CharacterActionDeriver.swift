@@ -325,6 +325,10 @@ enum CharacterActionDeriver {
                 }
 
                 if feature.actionRecipes.isEmpty, cost != nil {
+                    // Stroke of Luck is handled reactively by the dice tab
+                    // after any d20 roll — don't show a do-nothing consume row.
+                    if feature.id == "stroke_of_luck" { continue }
+
                     // Resource-only feature (e.g. Action Surge): no roll, but
                     // tapping the button still consumes a charge.
                     let action = ResolvedAction(

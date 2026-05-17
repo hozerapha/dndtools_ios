@@ -286,6 +286,13 @@ struct SelectionSheet: View {
                 totalPoints: maxPicks,
                 perAbilityMax: perAbilityMax
             )
+        case .skills(let proficientOnly):
+            SkillSelectionList(
+                character: $character,
+                selectionID: selection.id,
+                max: maxPicks,
+                proficientOnly: proficientOnly
+            )
         }
     }
 
@@ -650,6 +657,88 @@ private struct AbilityScoreIncreaseList: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+// MARK: - Skill Selection List
+
+private struct SkillSelectionList: View {
+    @Binding var character: Character
+    let selectionID: String
+    let max: Int
+    let proficientOnly: Bool
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 6) {
+                ForEach(eligibleSkills, id: \.self) { skill in
+                    skillRow(skill)
+                }
+            }
+            .padding()
+        }
+        .safeAreaInset(edge: .top) {
+            Text("Picked \(picks.count) of \(max)")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(Color(.systemGroupedBackground))
+        }
+    }
+
+    private var eligibleSkills: [Skill] {
+        let all = Skill.allCases.sorted { $0.displayName < $1.displayName }
+        guard proficientOnly else { return all }
+        return all.filter { skill in
+            let level = character.proficiencies[.skill(skill)] ?? .none
+            return level == .proficient || level == .expertise
+        }
+    }
+
+    private var picks: [String] {
+        character.featureSelections[selectionID] ?? []
+    }
+
+    private func isPicked(_ skill: Skill) -> Bool {
+        picks.contains(skill.rawValue)
+    }
+
+    private func togglePick(_ skill: Skill) {
+        var current = picks
+        if let i = current.firstIndex(of: skill.rawValue) {
+            current.remove(at: i)
+        } else if current.count < max {
+            current.append(skill.rawValue)
+        } else {
+            return
+        }
+        character.featureSelections[selectionID] = current
+    }
+
+    @ViewBuilder
+    private func skillRow(_ skill: Skill) -> some View {
+        Button {
+            togglePick(skill)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: isPicked(skill) ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(isPicked(skill) ? Color.accentColor : .secondary)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(skill.displayName)
+                        .font(.subheadline.weight(.semibold))
+                    Text("(\(skill.ability.abbreviation))")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
     }
 }
 

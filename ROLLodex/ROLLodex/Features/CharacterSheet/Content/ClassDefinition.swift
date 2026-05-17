@@ -8,6 +8,7 @@ struct ClassDefinition: Codable, Identifiable, Equatable {
     let savingThrows: [Ability]
     let armorProficiencies: [ArmorCategory]
     let weaponProficiencies: [WeaponCategory]
+    let toolProficiencies: [String]
     let levelFeatures: [Int: [FeatureDefinition]]
     let masteryCount: Int?
     let masteryRestrictions: [String]
@@ -25,7 +26,7 @@ struct ClassDefinition: Codable, Identifiable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case id, name, hitDie, primaryAbility, savingThrows
-        case armorProficiencies, weaponProficiencies, levelFeatures
+        case armorProficiencies, weaponProficiencies, toolProficiencies, levelFeatures
         case masteryCount, masteryRestrictions, spellcasting
         case subclasses, subclassLevel
     }
@@ -38,6 +39,7 @@ struct ClassDefinition: Codable, Identifiable, Equatable {
         savingThrows: [Ability],
         armorProficiencies: [ArmorCategory],
         weaponProficiencies: [WeaponCategory],
+        toolProficiencies: [String] = [],
         levelFeatures: [Int: [FeatureDefinition]],
         masteryCount: Int? = nil,
         masteryRestrictions: [String] = [],
@@ -52,6 +54,7 @@ struct ClassDefinition: Codable, Identifiable, Equatable {
         self.savingThrows = savingThrows
         self.armorProficiencies = armorProficiencies
         self.weaponProficiencies = weaponProficiencies
+        self.toolProficiencies = toolProficiencies
         self.levelFeatures = levelFeatures
         self.masteryCount = masteryCount
         self.masteryRestrictions = masteryRestrictions
@@ -69,6 +72,7 @@ struct ClassDefinition: Codable, Identifiable, Equatable {
         savingThrows        = try c.decode([Ability].self, forKey: .savingThrows)
         armorProficiencies  = try c.decode([ArmorCategory].self, forKey: .armorProficiencies)
         weaponProficiencies = try c.decode([WeaponCategory].self, forKey: .weaponProficiencies)
+        toolProficiencies   = try c.decodeIfPresent([String].self, forKey: .toolProficiencies) ?? []
         // levelFeatures has Int keys; classes.json encodes them as strings, so
         // the synthesized JSONDecoder handles the conversion automatically for
         // [Int: T] dictionaries via `.useDefaultKeys`. The bundled loader

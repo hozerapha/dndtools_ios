@@ -9,8 +9,8 @@ struct DiceRoller {
             if mode != .normal,
                group.kind == .d20, group.count == 1, group.isPlain,
                formula.supportsAdvantage {
-                let a = Int.random(in: 1...20)
-                let b = Int.random(in: 1...20)
+                let a = rollSingleValue(for: group)
+                let b = rollSingleValue(for: group)
                 let aWins = (mode == .advantage) ? (a >= b) : (a <= b)
                 dieRolls.append(DieRoll(kind: .d20, value: a, isKept:  aWins))
                 dieRolls.append(DieRoll(kind: .d20, value: b, isKept: !aWins))
@@ -26,17 +26,26 @@ struct DiceRoller {
     private func rollGroup(_ group: DiceGroup) -> [DieRoll] {
         var values: [Int] = []
         for _ in 0..<group.count {
-            var v = Int.random(in: 1...group.kind.sides)
-            if case .rerollOnceIfAtMost(let threshold) = group.modifier, v <= threshold {
-                v = Int.random(in: 1...group.kind.sides)
-            }
-            values.append(v)
+            values.append(rollSingleValue(for: group))
         }
 
         let keptFlags = keptFlags(for: values, modifier: group.modifier)
         return zip(values, keptFlags).map { value, kept in
             DieRoll(kind: group.kind, value: value, isKept: kept)
         }
+    }
+
+    /// Roll one die, applying reroll-then-floor logic: first resolve any
+    /// `rerollOnceIfAtMost`, then clamp to the group's `minimumValue`.
+    private func rollSingleValue(for group: DiceGroup) -> Int {
+        var v = Int.random(in: 1...group.kind.sides)
+        if case .rerollOnceIfAtMost(let threshold) = group.modifier, v <= threshold {
+            v = Int.random(in: 1...group.kind.sides)
+        }
+        if let min = group.minimumValue {
+            v = max(v, min)
+        }
+        return v
     }
 
     /// Returns one Bool per value, true if that value is kept toward the total.
@@ -91,7 +100,8 @@ struct DiceRoller {
             let groupValues = Array(values[cursor..<endIndex])
             let kept = keptFlags(for: groupValues, modifier: group.modifier)
             for (v, k) in zip(groupValues, kept) {
-                dieRolls.append(DieRoll(kind: group.kind, value: v, isKept: k))
+                let floored = group.minimumValue.map { max(v, $0) } ?? v
+                dieRolls.append(DieRoll(kind: group.kind, value: floored, isKept: k))
             }
             cursor += group.count
         }

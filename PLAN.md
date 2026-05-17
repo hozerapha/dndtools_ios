@@ -6,6 +6,23 @@ The plan is intentionally split into small phases so each step introduces one or
 
 ---
 
+## Status (as of 2026-05-17)
+
+Dice-roller phases 0–11 are all **shipped**. Phase 11 (3D dice) was implemented with **SceneKit + default physics + `physicsWorld.speed = 3`** rather than RealityKit — RealityKit's physics was hard to tune for natural dice behavior; rationale in `CLAUDE.md` ("Tech stack"). All other phase tech choices stuck.
+
+Bonus capabilities shipped on top of the original phases (not in the table below):
+
+- **Per-type damage breakdown** chip under the tray total, also rendered in history rows (`DamageBreakdownView`). Driven by Phase N of the character-sheet plan.
+- **Die-by-type colored glow** — inverted-hull shell trick on each settled die tints to its damage type (saturated UIColor palette per `DamageType`).
+- **Parser support for typed groups + typed flat modifiers** — `[fire]2d6 + [necrotic]3 + 2` round-trips through `DiceFormula.displayString`.
+- **Follow-up chip rail** in the dice tab — post-roll chips for chained damage rolls (weapon attack → damage) and opt-in/toggle rider alternatives (Sneak Attack, Rage, …). Each chip carries its own merged formula; tapping any one chip clears the rail (mutually exclusive damage choice).
+- **Compact dice-formula display** (`DiceFormula.compactDisplayString`) for chip subtitles when all groups share one damage type.
+- **`PendingRollStore`** cross-tab handoff with `followUps: [PendingFollowUp]` + `pendingCostsToApply: [TriggerCost]` side channels.
+
+**Active work has moved to `PLAN_CharacterSheet.md`** (D&D 5.2.1 character manager built on top of the dice roller). See its Status table for current phase state.
+
+---
+
 ## Tech choices (proposed)
 
 | Concern | Choice | Why |

@@ -14,6 +14,10 @@ import Observation
 final class PendingRollStore {
     var pending: ResolvedAction?
     var followUps: [PendingFollowUp] = []
+    /// The character that dispatched `pending`. Used by the dice tab to
+    /// apply reactive features (e.g. Stroke of Luck) that trigger after a
+    /// roll settles. Cleared alongside `pending` when consumed.
+    var pendingCharacterID: UUID?
     /// Costs the player has paid by tapping a chip in the dice tab. The
     /// character sheet observes this list and applies each cost (set turn
     /// flag, consume spell slot, etc.) to the bound character, then clears

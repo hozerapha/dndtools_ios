@@ -1539,6 +1539,171 @@ schema — adding a new feature is a JSON edit, not a code edit.
 
 ---
 
+#### Shipped reality (Slices A + B + C, 2026-05-17)
+
+The sketch above was the design target. What actually shipped diverges in
+naming and scope in a few places — capture that here so the next session can
+pick up cold without re-deriving everything from the code.
+
+**Actual schema in `Features/CharacterSheet/Content/TriggeredEffect.swift`:**
+
+```swift
+struct TriggeredEffect: Codable, Equatable {
+    let id: String
+    let name: String
+    let trigger: TriggerCondition
+    let effect: TriggerEffect
+    let lifecycle: TriggerLifecycle
+    let activation: TriggerActivation   // default .automatic, omitted from JSON when default
+    let cost: TriggerCost?
+}
+
+enum TriggerCondition: Equatable {
+    case onDamageRoll(filter: AttackFilter?)   // Hex/Hunter's Mark = nil; Rage = melee filter
+    case onAttackHit(filter: AttackFilter?)    // Sneak Attack
+}
+
+indirect enum AttackFilter: Equatable {
+    case weaponHasProperty([WeaponProperty])    // Sneak Attack: [.finesse, .ammunition]
+    case weaponLacksProperty([WeaponProperty])  // Rage: [.ammunition] (= melee)
+    case anyOf([AttackFilter])
+    case allOf([AttackFilter])
+}
+
+enum TriggerActivation: String, Codable {
+    case automatic    // folds silently (Hex / Hunter's Mark)
+    case optIn        // chip rail after the trigger (Sneak Attack)
+    case toggle       // player flips on, stays on until lifecycle ends (Rage)
+}
+
+enum TriggerCost: Equatable {
+    case oncePerTurn(flagID: String)   // Sneak Attack
+}
+
+enum TriggerEffect: Equatable {
+    case addDamageDice(dice: String, damageType: TypedOrMatch)                          // Hex 1d6 necrotic; Hunter's Mark 1d6 $weapon
+    case addScaledDamageDice(count: LevelScaledValue, die: String, damageType: TypedOrMatch)  // Sneak Attack Nd6
+    case addFlatDamage(amount: LevelScaledValue, damageType: TypedOrMatch?)             // Rage +2/+3/+4 (untyped → bare modifier; typed → typedModifiers bucket)
+}
+
+enum TypedOrMatch: Equatable { case fixed(DamageType); case matchWeapon }  // JSON: "necrotic" or "$weapon"
+
+enum TriggerLifecycle: Equatable {
+    case persistent(until: PersistenceEnd)
+    case oneShot                       // per-attack (Sneak Attack chips)
+}
+
+enum PersistenceEnd: Equatable {
+    case concentrationEnds             // Hex / Hunter's Mark
+    case rounds(_ count: Int)          // Rage 10
+    case manual                        // until the player dismisses from EffectsRow
+}
+```
+
+**Character state additions** (all backwards-compat — `decodeIfPresent` for
+each new field, encode-when-non-default for each new field):
+
+- `Character.activeEffects: [ActiveEffect]` — persistent rider list.
+- `Character.turnFlags: Set<String>` + `setTurnFlag(_:)` / `hasTurnFlag(_:)`.
+- `Character.startNewTurn()` clears all turn flags AND decrements
+  `roundsRemaining` on every active effect, dropping any whose counter hits 0.
+- `Character.toggleFeatureEffect(effectID:featureID:roundsRemaining:)` —
+  idempotent add/remove for `.toggle` effects.
+- `Character.startConcentrating(on:grantsEffect:)` /
+  `stopConcentrating()` / `dismissActiveEffect(_:)` — Phase L concentration
+  wiring, drops spell-sourced effects automatically.
+- `ActiveEffect { effectID, source: EffectSource, roundsRemaining: Int?, metadata: [String:Int] }`.
+  `EffectSource` is `.spell(spellID:)` / `.feature(featureID:)` /
+  `.item(itemID:)` (item branch is stubbed for later).
+
+**Resolver — `TriggeredEffectResolver` (MainActor):**
+
+- `applyAutomaticDamageRiders(to:weapon:character:content:) -> ResolvedAction`
+  — folds every `.automatic` AND `.toggle` rider whose trigger matches into
+  the in-flight damage formula. Used by `CharacterActionDeriver` to enrich
+  weapon damage rows before they ever hit the dice tab.
+- `optInRiders(weapon:baseDamage:character:content:) -> [PendingFollowUp]`
+  — produces one `PendingFollowUp` per qualifying `.optIn` rider; each
+  chip's formula is the **merged** weapon-damage + rider formula so the
+  player rolls a single combined damage roll (mutually exclusive with the
+  default "Roll damage" chip — that was a Slice B UX refinement).
+- `turnFlagDisplayName(_:character:content:)` — resolves `"sneak_attack"` →
+  `"Sneak Attack"` by scanning class features + spell-sourced effects;
+  falls back to title-cased flag id when no match.
+- Private `effectContext(for:character:in:)` returns the effect AND the
+  owning class level so `LevelScaledValue.byClassLevel` resolves correctly
+  for multiclass characters (a future L5 Rogue / L3 Barbarian gets Rage at
+  Barbarian-3 = +2, not Rogue-5).
+
+**UI surfaces shipped:**
+
+- `EffectsRow` (sheet header, below conditions). Two stripes: orange
+  "available toggles" (pill with uses-left badge; tap activates and spends
+  one resource; disabled at 0 uses) and purple "active" pills with an `Nr`
+  rounds-remaining mini-badge. Pills carry a menu with description + Dismiss.
+- `CharacterActionDeriver.featureRows` emits a bespoke **toggle row** for any
+  feature with a `.toggle` triggered effect. The row carries a
+  `ToggleEffectContext` divert (mirror of `castFromItem`). Label flips
+  between `Rage` / `End Rage` based on active state. Stays tappable when
+  active even with 0 uses left (so you can end Rage early).
+- `CharacterSheetView.handleActionTap` diverts to the toggle path before the
+  default resource-cost block, so activating spends a use, deactivating is
+  free (Rage doesn't refund).
+- `ActionTile.isInteractive` includes `toggleEffect != nil` (Slice C bug
+  fix — without this, the toggle row rendered as a non-tappable info-chip).
+- `turnFlagsRow` is now a **turn tracker**: shows whenever turn flags AND/OR
+  round-timed effects are present, listing both sorted ("Sneak Attack ·
+  Rage 9r"). Start New Turn button clears flags and decrements rounds in
+  one tap.
+- Dice tab's `followUpRail` renders one chip per `PendingFollowUp`. Tapping
+  any chip clears the whole rail (one damage roll per attack). Chip
+  subtitle uses `DiceFormula.compactDisplayString` so a merged formula reads
+  `1d8 + 1d6 + 3 piercing` instead of `[piercing]1d8 + [piercing]1d6 + 3`.
+  Rider chips use `bolt.fill` icon vs `arrow.right.circle.fill` for chained.
+
+**Content authored:**
+
+- `spells.json` — Hex (necrotic rider, `.concentrationEnds`), Hunter's Mark
+  (`$weapon` matching rider, `.concentrationEnds`).
+- `classes.json` — Rogue L1 with Sneak Attack (`.optIn`, `.onAttackHit`
+  with `[.finesse, .ammunition]` filter, `addScaledDamageDice` scaling
+  1→10 d6 by class level, `.oneShot` lifecycle, `oncePerTurn("sneak_attack")` cost).
+- `classes.json` — Barbarian L1 with Rage (`.toggle`, `.onDamageRoll` with
+  `weaponLacksProperty([.ammunition])` filter, `addFlatDamage` 2/3/4 by
+  class level, `.persistent(.rounds(10))` lifecycle, `barbarian_rage_uses`
+  resource: 2 at L1 scaling up, refreshes on long rest). Also bundled
+  Unarmored Defense as a descriptive (mechanically-inert) feature.
+
+**Tests (in `ROLLodexTests/`):**
+
+- `TriggeredEffectTests.swift` — schema round-trips, bundled Hex /
+  Hunter's Mark loads, concentration helpers, automatic damage rider folds
+  Hex into a longsword damage roll.
+- `SneakAttackOptInTests.swift` — Slice B end-to-end (14 tests).
+- `RageToggleTests.swift` — Slice C (13 tests): schema additions, filter
+  matches, `ActiveEffect` round-trips with/without `roundsRemaining`,
+  bundled Barbarian, toggle activation + deactivation, round decay,
+  resolver folds on melee + skips on ranged + skips when not toggled.
+- `DamageTypingTests.swift` — Phase N (now includes the Slice C polish-pass
+  tests for `DiceFormula.compactDisplayString`).
+
+**Divergences from the original sketch (still potential work):**
+
+| Sketch | Shipped | Notes |
+|---|---|---|
+| `TriggerActivation.toggleBeforeRoll` | `.toggle` (sticky on/off) | We did sticky-toggle, not per-attack pre-roll. GWM's `-5/+10` pre-roll trade-off would need a separate `.toggleBeforeRoll` activation that resets each turn. |
+| `TriggerCondition.onAttackRoll(filter:)` | not shipped | Needed for GWM-style penalties to the attack roll itself. |
+| `TriggerCondition.onSpellAttackHit(filter:)` | folded into `.onDamageRoll` for now | Real spell-attack-hit triggers would need a distinct condition. |
+| `TriggerCondition.onTurnStart` | not shipped | Reserved for Rage's "do nothing for a turn → end" semantics; we use the honor-system Start New Turn button instead. |
+| `AttackFilter.weaponCategory` / `.weaponDamageType` / `.hadAdvantage` / `.allyWithin5ft` | not shipped | Sneak Attack's "advantage OR ally within 5 ft" is approximated as the property filter alone — the trust/checkbox prompt isn't surfaced. |
+| `TriggerEffect.advantage` / `.disadvantage` / `.rerollOne` / `.attackPenalty` | not shipped | Reckless Attack, Halfling Lucky, GWM penalty all need these. The resolver currently only folds into damage formulas, not attack-mode or reroll mechanics. |
+| `TriggerCost.spellSlot(minLevel:maxLevel:)` | not shipped | Blocks Divine Smite. |
+| `TriggerCost.resource(id:amount:)` | not shipped | Blocks Battle Master maneuvers and any other once-per-something-else costs. |
+| `TypedOrMatch.matchSpell` | not shipped | Only matters for spell-sourced opt-in damage riders (Divine Smite's "+1d8 radiant vs undead/fiend"). |
+| `PersistenceEnd.endOfTurn` / `.shortRest` / `.longRest` | not shipped | All current persistent effects use `.concentrationEnds`, `.rounds(_)`, or `.manual`. |
+
+---
+
 ## Integration with Existing Dice Roller
 
 ### What already exists
@@ -1607,7 +1772,7 @@ No UI tests in v1. Pure model + store tests only.
 
 ---
 
-## Status (as of 2026-05-10)
+## Status (as of 2026-05-17)
 
 | Phase | Status |
 |---|---|
@@ -1626,7 +1791,7 @@ No UI tests in v1. Pure model + store tests only.
 | L — Conditions, concentration, action economy | shipped (14 SRD conditions + concentration tracking + damage-triggered Con save + action-cost chips) |
 | M — Choices & multi-step prompts | **shipped (architecture complete)** — Slices A + B + C all landed. Substrate: `FeatureSelection` + 4 `SelectionSource` cases (weapons / fixedOptions / subclasses / abilityScoreIncrease), `SubclassDefinition` schema, `ClassDefinition.resolvedFeatures` aggregator threaded through every feature-walking site, `LevelUpSheet` with HP roll/average, and ASI mutators with score-cap + per-ability-cap enforcement. **Incremental content still to author** (not blocking): more subclasses (Battle Master / Eldritch Knight / wizard arcane traditions / cleric domains), sorcerer metamagic via existing `.fixedOptions`, ASI prompts on every class at L4/L8/L12/L16/L19, and a feat catalog + Origin/General feat picker. **Deferred architecture**: the heavier `ChoicePromptDefinition` / `ChoiceOutcome` recursive model the plan describes — pushed until a real use case needs nested choices (Feat → "+1 ability" sub-prompt, etc.). |
 | N — Damage typing in the dice tray | **shipped** — `DiceGroup` gained `damageType: DamageType?` (Codable optional, backwards-compat for legacy JSON), `DiceFormula.applyDamageType(_:)` + `displayStringWithTypes`, `RollResult.subtotalsByType` bucketing kept dice + flat modifier (modifier attaches to a sole damage type when groups share one; falls under `nil` for mixed/untyped). `ActionInterpreter.resolveWeaponDamage` stamps `weapon.damageType` onto produced groups; `resolveRawDamage` stamps the recipe's `damageType`. Spell upcast preserves the type implicitly because `SpellDefinition.scaledRecipe` keeps the recipe's `damageType` field. New `DamageBreakdownView` renders "5 slashing + 4 radiant" lines under the tray total and in history rows. Formula bar stays untyped for parser round-trip. **Known wart**: opening the formula bar editor on a typed roll and tapping Done re-parses the untyped text, losing the type — acceptable since typed rolls come from recipe dispatch, not bar edits. |
-| O — Triggered effects & active statuses | **Slices A + B shipped.** *Slice A:* Hex + Hunter's Mark end-to-end via automatic damage riders folded into weapon damage formulas. *Slice B:* Rogue class + Sneak Attack as the canonical `.optIn` chip. Schema extensions: `TriggerActivation` (`.automatic`/`.optIn`), `TriggerCost` (`.oncePerTurn(flagID:)`), `AttackFilter` (composable predicate — `.weaponHasProperty`, `.anyOf`, `.allOf`), `TriggerCondition.onAttackHit(filter:)`, `TriggerLifecycle.oneShot`, `TriggerEffect.addScaledDamageDice(count:die:damageType:)` for class-level scaling. `Character.turnFlags: Set<String>` + `setTurnFlag`/`hasTurnFlag`/`startNewTurn` mutators with backwards-compat Codable. `FeatureDefinition.triggeredEffect: TriggeredEffect?` so class features can declare riders. `PendingRollStore.followUp` generalized to `followUps: [PendingFollowUp]` (each chip carries an optional `TriggerCost`); `pendingCostsToApply` side channel lets the dice tab fire chip taps without holding a character binding (the sheet observes and applies). `TriggeredEffectResolver.optInRiders(weapon:character:content:)` walks class features, applies the attack filter, resolves scaled dice via `LevelScaledValue`, and filters out once-per-turn flags already set. Dice tab renders a scrollable chip rail post-roll; sheet renders a `turnFlagsRow` with Start New Turn button only when flags are present. **Slice C (next):** `.toggleBeforeRoll` activation + Rage's rounds-remaining metadata + GWM's paired attack penalty / damage flat. Needs Barbarian content. **Deferred from Slice B:** Paladin + Divine Smite (needs `TriggerCost.spellSlot(minLevel:maxLevel:)` + Paladin spell slots). |
+| O — Triggered effects & active statuses | **Slices A + B + C all shipped.** *Slice A:* Hex + Hunter's Mark end-to-end via automatic damage riders folded into weapon damage formulas. *Slice B:* Rogue class + Sneak Attack as the canonical `.optIn` chip. *Slice C:* Barbarian L1 + Rage as the canonical `.toggle` rider with 10-round timer + per-LR resource. See the **Shipped reality** callout at the end of the Phase O section for the actual schema, divergences from the original sketch, and what's still open in this phase (Divine Smite / spell-slot cost, Battle Master / superiority dice, GWM 2024-shape on-hit, attack-roll triggers, etc.). |
 
 ## Open Decisions (to resolve during implementation)
 
@@ -1642,7 +1807,99 @@ No UI tests in v1. Pure model + store tests only.
 ---
 
 *Last updated: 2026-05-17*
-*Next step: Phase O Slice C — pre-roll toggles + persistent rounds-tracker. Add `TriggerActivation.toggleBeforeRoll`, extend `TriggerLifecycle.persistent` with `.rounds(Int)` end conditions, attach round counters via `ActiveEffect.metadata["roundsRemaining"]`, render toggle chips on action buttons. Author Barbarian L1 (Rage as automatic persistent rider with rounds tracker) and Great Weapon Master feat (paired `-5` attack / `+10` damage toggle). Or, divert to Paladin + Divine Smite as a follow-up to Slice B (needs `TriggerCost.spellSlot(minLevel:maxLevel:)` and Paladin spellcasting; simpler than Slice C overall).*
+
+### What's left — cold-start hand-off
+
+Picking up in a fresh session? These are the live threads, ordered by how
+self-contained each one is. Pick whichever matches the appetite for the
+session.
+
+**1. Paladin + Divine Smite (finishes Phase O's opt-in story)**
+- New: `TriggerCost.spellSlot(minLevel: Int, maxLevel: Int)` case
+  alongside the existing `oncePerTurn`. JSON shape:
+  `{"type":"spellSlot","minLevel":1,"maxLevel":5}`.
+- New: `TypedOrMatch.matchSpell` (only needed for Divine Smite's `+1d8`
+  vs undead/fiend variant — defer if you skip the toggle-by-target flow).
+- Resolver: `optInRiders` already iterates `.optIn` triggers from class
+  features. Add a `spellSlot` cost path that, on chip tap, prompts the
+  player for a slot level (reuse `SpellCastSheet` UX) before applying
+  `addScaledDamageDice` with `count = slotLevel + 1`.
+- Character work: bundle Paladin L1 in `classes.json` with Lay on Hands
+  (already works under existing schema) + Divine Smite triggered effect.
+  Needs Paladin spell slot table on `ClassDefinition.spellcasting`.
+- Wiring: `PendingFollowUp` already carries an optional `cost`; extend
+  the dice-tab consume path to route `spellSlot` costs to a slot picker
+  before firing. Or — simpler — gate Divine Smite chip rendering by
+  "have any slot available" and consume the lowest slot silently for
+  v1 (a "pick slot level" UI is its own polish).
+- Test: `DivineSmiteTests.swift` — bundled Paladin loads with smite,
+  resolver lists it only after a melee hit, consuming the chip
+  decrements a slot, applies `2d8 + 1d8/level above 1` radiant.
+
+**2. Bundle a real Rogue subclass at L3 (exercises level-up + subclass
+picker against live data — neither has been used end-to-end yet)**
+- Pick one: Thief (low-mechanics, easy auth), Assassin (Stealth + crit
+  bonuses, mostly descriptive), Arcane Trickster (spell-list subclass,
+  bigger but most interesting).
+- Subclass schema already lives in `SubclassDefinition`. Pattern: append
+  to a class's `subclasses: [...]` array in `classes.json`. The picker
+  UI in `LevelUpSheet` switches on the subclass `selection` block when
+  the character is at the class's `subclassLevel`.
+- Verify: create a Rogue, level up to 3, pick the subclass, see the
+  L3 features in the action grid; tap one if it has a recipe.
+
+**3. Phase O polish — visuals + content authoring (small, parallelizable)**
+- `EffectsRow` two-stripe layout: separate the orange "available
+  toggles" from the purple "active" pills with a visual gap or
+  divider — they currently jam together when both are present.
+- Chip rail wording sweep: "Roll damage" vs "Sneak Attack" vs "End Rage"
+  are inconsistent — chip prompts and tile labels could converge on one
+  verb pattern.
+- Author two more `.toggle` features to prove the substrate generalises:
+  - **Bless** (already a Phase J spell, currently lacks a triggered
+    effect) — concentration buff that adds `+1d4` to attack rolls. Needs
+    `TriggerCondition.onAttackRoll(filter:)` (NOT shipped) and
+    `TriggerEffect.addAttackBonus(dice:)` (NOT shipped). Bigger lift.
+  - **Reckless Attack** (Barbarian L2) — `.toggle`, grants advantage on
+    STR melee attacks and to attacks against you. Needs
+    `TriggerEffect.advantage(target:)` (NOT shipped).
+
+**4. Phase G follow-ups (death saves still deferred)**
+- 3 successes / 3 failures, persistence on the `Character`. UI: a small
+  row near HP. Reset on regaining HP. Crit-rest (rolled a nat-1 / nat-20
+  on the d20 → 2 failures / instant stabilise).
+
+**5. Phase H — Custom content import / export (deferred until Phase O
+schema stabilised; now that it has, this is unblocked)**
+- See Phase H section above. `UIDocumentPicker` for import,
+  `ShareLink` for per-character JSON export. Validate against the
+  bundled JSON schemas before writing into `Documents/Content/`.
+
+**6. Phase M open content debt (the architecture is done, the catalog isn't)**
+- Subclasses at the right level for every bundled class.
+- ASI prompts at L4/L8/L12/L16/L19 for every class (currently only the
+  shape exists; per-class wiring lands when each class is authored).
+- Sorcerer metamagic (uses existing `.fixedOptions`).
+- Feat catalog (Origin feats from backgrounds, General feats from ASI
+  trade-ins). May force the deferred `ChoicePromptDefinition` /
+  `ChoiceOutcome` recursive model if any feat sub-prompts.
+
+**7. Bigger architectural threads that haven't started**
+- **Initiative / combat tracker** (separate top-level feature; currently
+  out of scope per PLAN.md).
+- **Replace the "Start New Turn" honor-system button** with
+  initiative-aware turn advancement once a tracker exists.
+- **In-app content editor** (Phase I) — substantial UI surface; only
+  worth picking up if hand-editing JSON has started to hurt.
+
+### How to resume
+
+In a new session, opening with "let's continue from PLAN_CharacterSheet's
+'What's left' section, pick #N" is enough — every entry above lists the
+files / schema cases / tests that would change, so the next session can
+start without re-reading the codebase first. The repo is clean as of the
+last commit; `git log --oneline -10` shows the recent shipping cadence
+(Slice A → polish → Slice B → polish → Slice C → polish).
 
 > This document is mutable. As phases L–O evolve and new SRD / expansion
 > content surfaces edge cases the schema doesn't cover, update the relevant

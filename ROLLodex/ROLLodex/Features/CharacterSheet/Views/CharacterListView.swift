@@ -77,6 +77,18 @@ struct CharacterListView: View {
             for weapon in classDef.weaponProficiencies {
                 character.proficiencies[.weapon(weapon)] = .proficient
             }
+            for tool in classDef.toolProficiencies {
+                character.proficiencies[.tool(tool)] = .proficient
+            }
+
+            // Apply any automatic proficiency grants from level 1 class features
+            // (e.g. Rogue's starting expertise doesn't route here — it's a
+            // selection — but passive grants like Slippery Mind do).
+            for feature in classDef.levelFeatures[1] ?? [] {
+                for key in feature.grantsProficiencies ?? [] {
+                    character.proficiencies[key] = .proficient
+                }
+            }
 
             // Seed the starting spell list for caster classes. Phase J MVP
             // grants every level-appropriate spell we ship so a fresh wizard

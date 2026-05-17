@@ -257,17 +257,25 @@
     "savingThrows": ["dexterity", "intelligence"],
     "armorProficiencies": ["light"],
     "weaponProficiencies": ["simple", "martial"],
+    "toolProficiencies": ["thieves_tools"],
     "levelFeatures": {
       "1": [
         {
           "id": "expertise",
           "name": "Expertise",
-          "description": "Choose two of your skill proficiencies, or one of your skill proficiencies and your proficiency with thieves' tools. Your proficiency bonus is doubled for any ability check you make that uses either of the chosen proficiencies."
+          "description": "Choose two of your skill proficiencies. Your proficiency bonus is doubled for any ability check you make that uses either of the chosen proficiencies. At level 6, you gain Expertise in two more skill proficiencies.",
+          "kind": "selection",
+          "selection": {
+            "id": "expertise",
+            "prompt": "Choose 2 skill proficiencies for Expertise",
+            "count": 2,
+            "optionsSource": { "type": "skills", "proficientOnly": true }
+          }
         },
         {
           "id": "sneak_attack",
           "name": "Sneak Attack",
-          "description": "Once per turn, you can deal extra damage to a creature you hit with an attack roll if you have Advantage on the roll and the attack uses a Finesse or Ranged weapon. The extra damage matches the weapon's damage type and scales with your rogue level.",
+          "description": "Once per turn, you can deal extra damage to a creature you hit with an attack roll if you have Advantage on the roll and the attack uses a Finesse or Ranged weapon. You don't need Advantage if an ally is within 5 feet of the target, the ally isn't Incapacitated, and you don't have Disadvantage. The extra damage matches the weapon's damage type and scales with your rogue level.",
           "triggeredEffect": {
             "id": "sneak_attack_rider",
             "name": "Sneak Attack",
@@ -297,12 +305,288 @@
         {
           "id": "thieves_cant",
           "name": "Thieves' Cant",
-          "description": "You know Thieves' Cant — a secret mix of dialect, jargon, and code that allows you to hide messages in seemingly normal conversation."
+          "description": "You know Thieves' Cant — a secret mix of dialect, jargon, and code that allows you to hide messages in seemingly normal conversation. You also know one other language of your choice."
+        },
+        {
+          "id": "weapon_mastery",
+          "name": "Weapon Mastery",
+          "description": "Your training with weapons lets you exploit each weapon's unique properties. You gain the Mastery property of two Simple or Martial weapons of your choice with which you have proficiency. Whenever you finish a Long Rest, you can practice with different weapons and change one of those weapon choices.",
+          "kind": "selection",
+          "selection": {
+            "id": "weapon_mastery",
+            "prompt": "Choose 2 weapons whose Mastery property you can use",
+            "count": { "byClassLevel": { "1": 2 } },
+            "optionsSource": { "type": "weapons", "proficientOnly": true }
+          }
+        }
+      ],
+      "2": [
+        {
+          "id": "cunning_action",
+          "name": "Cunning Action",
+          "description": "On your turn, you can take one of the following as a Bonus Action: Dash, Disengage, or Hide.",
+          "kind": "active",
+          "actionCost": "bonusAction",
+          "actionRecipes": [
+            {
+              "type": "skillCheck",
+              "skill": "stealth"
+            }
+          ]
+        }
+      ],
+      "3": [
+        {
+          "id": "rogue_subclass",
+          "name": "Rogue Subclass",
+          "description": "Choose a subclass that shapes your roguish style for the rest of your career.",
+          "kind": "selection",
+          "selection": {
+            "id": "rogue_subclass",
+            "prompt": "Choose a Roguish Archetype",
+            "count": 1,
+            "optionsSource": { "type": "subclasses", "parentClassID": "rogue" }
+          }
+        },
+        {
+          "id": "steady_aim",
+          "name": "Steady Aim",
+          "description": "As a Bonus Action, give yourself Advantage on your next attack roll this turn. You can only use this if you haven't moved this turn, and after using it your Speed is 0 until the end of the turn.",
+          "kind": "active",
+          "actionCost": "bonusAction"
+        }
+      ],
+      "4": [
+        {
+          "id": "rogue_asi_4",
+          "name": "Ability Score Improvement",
+          "description": "Gain the Ability Score Improvement feat or another feat for which you qualify. Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "kind": "selection",
+          "selection": {
+            "id": "rogue_asi_4",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "5": [
+        {
+          "id": "cunning_strike",
+          "name": "Cunning Strike",
+          "description": "When you deal Sneak Attack damage, you can add one Cunning Strike effect by forgoing the listed number of Sneak Attack dice (DC = 8 + DEX mod + Proficiency Bonus). Initial options: Poison (1d6) — Con save or Poisoned for 1 minute; Trip (1d6) — Dex save or Prone (Large or smaller); Withdraw (1d6) — move up to half Speed without provoking Opportunity Attacks.",
+          "kind": "passive"
+        },
+        {
+          "id": "uncanny_dodge",
+          "name": "Uncanny Dodge",
+          "description": "When a visible attacker hits you, use your Reaction to halve the damage (round down).",
+          "kind": "passive"
+        }
+      ],
+      "6": [
+        {
+          "id": "expertise_6",
+          "name": "Expertise",
+          "description": "Gain Expertise in two more skill proficiencies of your choice.",
+          "kind": "selection",
+          "selection": {
+            "id": "expertise_6",
+            "prompt": "Choose 2 more skill proficiencies for Expertise",
+            "count": 2,
+            "optionsSource": { "type": "skills", "proficientOnly": true }
+          }
+        }
+      ],
+      "7": [
+        {
+          "id": "evasion",
+          "name": "Evasion",
+          "description": "When subjected to an effect that allows a Dexterity saving throw for half damage, you take no damage on a success and half damage on a failure. You can't use this while Incapacitated.",
+          "kind": "passive"
+        },
+        {
+          "id": "reliable_talent",
+          "name": "Reliable Talent",
+          "description": "When making an ability check using a skill or tool proficiency, treat a d20 roll of 9 or lower as a 10.",
+          "kind": "passive"
+        }
+      ],
+      "8": [
+        {
+          "id": "rogue_asi_8",
+          "name": "Ability Score Improvement",
+          "description": "Gain the Ability Score Improvement feat or another feat for which you qualify.",
+          "kind": "selection",
+          "selection": {
+            "id": "rogue_asi_8",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "9": [],
+      "10": [
+        {
+          "id": "rogue_asi_10",
+          "name": "Ability Score Improvement",
+          "description": "Gain the Ability Score Improvement feat or another feat for which you qualify.",
+          "kind": "selection",
+          "selection": {
+            "id": "rogue_asi_10",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "11": [
+        {
+          "id": "improved_cunning_strike",
+          "name": "Improved Cunning Strike",
+          "description": "You can use up to two Cunning Strike effects when dealing Sneak Attack damage, paying the die cost for each.",
+          "kind": "passive"
+        }
+      ],
+      "12": [
+        {
+          "id": "rogue_asi_12",
+          "name": "Ability Score Improvement",
+          "description": "Gain the Ability Score Improvement feat or another feat for which you qualify.",
+          "kind": "selection",
+          "selection": {
+            "id": "rogue_asi_12",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "13": [],
+      "14": [
+        {
+          "id": "devious_strikes",
+          "name": "Devious Strikes",
+          "description": "You learn new Cunning Strike options: Daze (2d6) — Con save or on its next turn it can only do one of move, action, or bonus action; Knock Out (6d6) — Con save or Unconscious for 1 minute (repeats save each turn); Obscure (3d6) — Dex save or Blinded until the end of its next turn.",
+          "kind": "passive"
+        }
+      ],
+      "15": [
+        {
+          "id": "slippery_mind",
+          "name": "Slippery Mind",
+          "description": "You gain proficiency in Wisdom and Charisma saving throws.",
+          "kind": "passive",
+          "grantsProficiencies": ["savingThrow_wisdom", "savingThrow_charisma"]
+        }
+      ],
+      "16": [
+        {
+          "id": "rogue_asi_16",
+          "name": "Ability Score Improvement",
+          "description": "Gain the Ability Score Improvement feat or another feat for which you qualify.",
+          "kind": "selection",
+          "selection": {
+            "id": "rogue_asi_16",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "17": [],
+      "18": [
+        {
+          "id": "elusive",
+          "name": "Elusive",
+          "description": "No attack roll can have Advantage against you unless you have the Incapacitated condition.",
+          "kind": "passive"
+        }
+      ],
+      "19": [
+        {
+          "id": "epic_boon",
+          "name": "Epic Boon",
+          "description": "Gain an Epic Boon feat or another feat for which you qualify.",
+          "kind": "passive"
+        }
+      ],
+      "20": [
+        {
+          "id": "stroke_of_luck",
+          "name": "Stroke of Luck",
+          "description": "If you fail a D20 Test, you can turn the roll into a 20. Once you use this feature, you can't do so again until you finish a Short or Long Rest.",
+          "kind": "active",
+          "actionCost": "free",
+          "resource": {
+            "id": "rogue_stroke_of_luck",
+            "name": "Stroke of Luck",
+            "max": 1,
+            "refreshOn": "shortRest",
+            "refreshAmount": "all"
+          }
         }
       ]
     },
     "masteryCount": 2,
-    "masteryRestrictions": []
+    "masteryRestrictions": [],
+    "subclassLevel": 3,
+    "subclasses": [
+      {
+        "id": "thief",
+        "name": "Thief",
+        "description": "A classic adventurer who hunts for treasure. Thieves are skilled at climbing, jumping, using items quickly, and eventually attuning to more magic items than usual.",
+        "levelFeatures": {
+          "3": [
+            {
+              "id": "fast_hands",
+              "name": "Fast Hands",
+              "description": "As a Bonus Action, you can do one of the following: make a Sleight of Hand check to pick a lock, disarm a trap, or pick a pocket; take the Utilize action; or take the Magic action to use a magic item that requires it.",
+              "kind": "active",
+              "actionCost": "bonusAction",
+              "actionRecipes": [
+                {
+                  "type": "skillCheck",
+                  "skill": "sleight_of_hand"
+                }
+              ]
+            },
+            {
+              "id": "second_story_work",
+              "name": "Second-Story Work",
+              "description": "Climber: You gain a Climb Speed equal to your Speed. Jumper: Determine jump distance using your Dexterity rather than Strength.",
+              "kind": "passive"
+            }
+          ],
+          "9": [
+            {
+              "id": "supreme_sneak",
+              "name": "Supreme Sneak",
+              "description": "You learn the Stealth Attack Cunning Strike option. When you deal Sneak Attack damage and have the Hide action's Invisible condition, this attack doesn't end that condition if you end the turn behind Three-Quarters Cover or Total Cover. Cost: 1d6.",
+              "kind": "passive"
+            }
+          ],
+          "13": [
+            {
+              "id": "use_magic_device",
+              "name": "Use Magic Device",
+              "description": "Attunement: You can attune to up to four magic items at once. Charges: When using a magic item property that expends charges, roll 1d6. On a 6, use it without expending charges. Scrolls: You can use any Spell Scroll, using Intelligence as your spellcasting ability. Cantrips and level 1 spells work reliably; for higher levels, succeed on an Intelligence (Arcana) check (DC 10 + spell level) or the scroll disintegrates.",
+              "kind": "passive",
+              "attunementSlots": 4
+            }
+          ],
+          "17": [
+            {
+              "id": "thiefs_reflexes",
+              "name": "Thief's Reflexes",
+              "description": "You take two turns during the first round of any combat. Your first turn is at your normal Initiative; your second turn is at Initiative minus 10.",
+              "kind": "passive"
+            }
+          ]
+        }
+      }
+    ]
   },
   {
     "id": "barbarian",
@@ -355,7 +639,8 @@
         {
           "id": "unarmored_defense_barbarian",
           "name": "Unarmored Defense",
-          "description": "While you aren't wearing armor, your AC equals 10 + your Dexterity modifier + your Constitution modifier. You can use a Shield and still gain this benefit."
+          "description": "While you aren't wearing armor, your AC equals 10 + your Dexterity modifier + your Constitution modifier. You can use a Shield and still gain this benefit.",
+          "kind": "passive"
         }
       ]
     },

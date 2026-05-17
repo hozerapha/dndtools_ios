@@ -313,6 +313,7 @@ struct CharacterSheetView: View {
     /// attacks use, so the dice tab's "Roll damage?" chip appears after the
     /// attack lands.
     private func handleWeaponAttack(_ row: WeaponAttackRow) {
+        pendingRoll.pendingCharacterID = character.id
         pendingRoll.pending = row.attack
         // Queue the chained damage roll plus any opt-in rider chips (Sneak
         // Attack, etc.) the character qualifies for. Riders that have
@@ -325,6 +326,7 @@ struct CharacterSheetView: View {
 
     /// Standalone damage / versatile-damage tap: no follow-up, just roll.
     private func handleStandaloneRoll(_ action: ResolvedAction) {
+        pendingRoll.pendingCharacterID = character.id
         pendingRoll.pending = action
         pendingRoll.followUps = []
         selectedTab = .dice
@@ -425,6 +427,7 @@ struct CharacterSheetView: View {
         // No formula → nothing to push to dice (Action Surge style). The
         // resource was still spent above.
         guard action.formula != nil else { return }
+        pendingRoll.pendingCharacterID = character.id
         pendingRoll.pending = action
         selectedTab = .dice
     }
@@ -434,6 +437,7 @@ struct CharacterSheetView: View {
     /// tab pulls it out after the primary roll lands and offers it as a
     /// "Roll damage?" chip.
     private func handleSpellRoll(_ action: ResolvedAction, followUp: ResolvedAction?) {
+        pendingRoll.pendingCharacterID = character.id
         pendingRoll.pending = action
         pendingRoll.followUps = followUp.map { [.chainedDamage($0)] } ?? []
         selectedTab = .dice
@@ -453,6 +457,7 @@ struct CharacterSheetView: View {
         // the on-sheet button, but in history that just duplicates the formula
         // line, so we use a cleaner recipe-based name there.
         let historyLabel = historyLabel(for: recipe) ?? resolved.label
+        pendingRoll.pendingCharacterID = character.id
         pendingRoll.pending = ResolvedAction(
             id: resolved.id,
             label: historyLabel,

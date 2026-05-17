@@ -196,8 +196,32 @@ struct LevelUpSheet: View {
         guard let gain = stagedHPGain, let entry = classEntry else { return }
         var copy = character
         CharacterCalculator.applyLevelUp(to: &copy, hpGain: gain, classID: entry.classID)
+        applyNewFeatureProficiencies(to: &copy)
         character = copy
         dismiss()
+    }
+
+    /// Scan features that are new at the upcoming class level and apply any
+    /// automatic proficiency grants (e.g. Rogue's Slippery Mind → WIS/CHA saves).
+    private func applyNewFeatureProficiencies(to character: inout Character) {
+        guard let cls = classDef, let entry = classEntry else { return }
+        let subclassID = character.featureSelections[
+            ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+        ]?.first
+        // Base-class features new at this level
+        for feature in cls.levelFeatures[newClassLevel] ?? [] {
+            for key in feature.grantsProficiencies ?? [] {
+                character.proficiencies[key] = .proficient
+            }
+        }
+        // Subclass features new at this level
+        if let subclassID, let subclass = cls.subclasses.first(where: { $0.id == subclassID }) {
+            for feature in subclass.levelFeatures[newClassLevel] ?? [] {
+                for key in feature.grantsProficiencies ?? [] {
+                    character.proficiencies[key] = .proficient
+                }
+            }
+        }
     }
 
     // MARK: - Derived state

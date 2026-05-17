@@ -266,16 +266,37 @@ enum ActionInterpreter {
     ) -> ResolvedAction {
         let mod = CharacterCalculator.skillModifier(character: character, skill: skill)
 
+        let applyReliableTalent = hasReliableTalent(character: character)
+            && (character.proficiencies[.skill(skill)] == .proficient
+                || character.proficiencies[.skill(skill)] == .expertise)
+
         var formula = DiceFormula()
-        formula.add(.d20)
+        formula.groups.append(DiceGroup(
+            kind: .d20,
+            count: 1,
+            minimumValue: applyReliableTalent ? 10 : nil
+        ))
         formula.modifier = mod
+
+        var description = "1d20 + \(skill.ability.abbreviation) (skill)"
+        if applyReliableTalent {
+            description += " — Reliable Talent (floor 10)"
+        }
 
         return ResolvedAction(
             id: "skill_\(skill.rawValue)",
             label: "\(skill.displayName) \(mod >= 0 ? "+" : "")\(mod)",
             formula: formula,
-            description: "1d20 + \(skill.ability.abbreviation) (skill)"
+            description: description
         )
+    }
+
+    /// Reliable Talent applies when the character has at least 7 levels in
+    /// Rogue and is proficient in the skill. This mirrors the class table
+    /// directly; if future subclasses delay the feature, this will need to
+    /// switch to a content-store lookup.
+    private static func hasReliableTalent(character: Character) -> Bool {
+        character.classEntries.contains { $0.classID == "rogue" && $0.level >= 7 }
     }
 
     private static func resolveSavingThrow(

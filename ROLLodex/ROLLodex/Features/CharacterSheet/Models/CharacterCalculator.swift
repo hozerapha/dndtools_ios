@@ -16,8 +16,18 @@ enum CharacterCalculator {
         let ability = skill.ability
         let score = character.abilityScores[ability] ?? 10
         let abilityMod = abilityModifier(score: score)
-        let profLevel = character.proficiencies[.skill(skill)] ?? .none
+        let baseProfLevel = character.proficiencies[.skill(skill)] ?? .none
         let profBonus = proficiencyBonus(level: character.level)
+
+        let profLevel: ProficiencyLevel
+        switch baseProfLevel {
+        case .none:
+            profLevel = hasExpertise(in: skill, character: character) ? .expertise : .none
+        case .proficient:
+            profLevel = hasExpertise(in: skill, character: character) ? .expertise : .proficient
+        case .expertise:
+            profLevel = .expertise
+        }
 
         switch profLevel {
         case .none:
@@ -26,6 +36,16 @@ enum CharacterCalculator {
             return abilityMod + profBonus
         case .expertise:
             return abilityMod + (profBonus * 2)
+        }
+    }
+
+    /// True when any class feature selection whose ID contains "expertise"
+    /// lists this skill as one of its picks. This convention lets Rogues,
+    /// Bards, and any future class use the same mechanism without hard-coding
+    /// feature IDs.
+    private static func hasExpertise(in skill: Skill, character: Character) -> Bool {
+        character.featureSelections.contains { key, values in
+            key.contains("expertise") && values.contains(skill.rawValue)
         }
     }
 

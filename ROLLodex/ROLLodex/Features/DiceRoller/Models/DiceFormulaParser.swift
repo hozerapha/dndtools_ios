@@ -12,6 +12,7 @@ struct DiceFormulaParser {
         case modifierOutOfRange(String)
         case rerollAlwaysTriggers(String)
         case unknownDamageType(String)
+        case invalidMinimum(String)
 
         var errorDescription: String? {
             switch self {
@@ -28,13 +29,15 @@ struct DiceFormulaParser {
             case .overflow:
                 "That's too many dice."
             case .unknownModifier(let s):
-                "Unknown modifier '\(s)'. Try kh, kl, dh, dl, or r."
+                "Unknown modifier '\(s)'. Try kh, kl, dh, dl, r, or min."
             case .modifierOutOfRange(let term):
                 "Modifier in '\(term)' asks for more dice than were rolled."
             case .rerollAlwaysTriggers(let term):
                 "Reroll threshold in '\(term)' must be less than the die's max."
             case .unknownDamageType(let name):
                 "Unknown damage type '\(name)'. Try fire, cold, slashing, force, …"
+            case .invalidMinimum(let term):
+                "Minimum in '\(term)' must be between 1 and the die's max."
             }
         }
     }
@@ -143,7 +146,7 @@ struct DiceFormulaParser {
         guard let kind = DieKind(rawValue: sides) else { throw ParseError.invalidDieSize(sides) }
         if sign < 0 { throw ParseError.negativeDice(term) }
 
-        let groupModifier = try parseGroupModifier(
+        let (groupModifier, minimumValue) = try parseModifiers(
             modifierStr,
             count: count,
             sides: sides,
@@ -154,7 +157,7 @@ struct DiceFormulaParser {
         // matching damage type, so that `1d6 + 2d6` collapses to `3d6` and
         // `[fire]1d6 + [fire]1d6` collapses to `[fire]2d6`. Different damage
         // types stay as separate groups so the per-type breakdown reads right.
-        if groupModifier == nil,
+        if groupModifier == nil, minimumValue == nil,
            let i = formula.groups.firstIndex(where: {
                $0.kind == kind && $0.isPlain && $0.damageType == damageType
            }) {
@@ -164,9 +167,34 @@ struct DiceFormulaParser {
                 kind: kind,
                 count: count,
                 modifier: groupModifier,
-                damageType: damageType
+                damageType: damageType,
+                minimumValue: minimumValue
             ))
         }
+    }
+
+    private func parseModifiers(
+        _ raw: String,
+        count: Int,
+        sides: Int,
+        term: String
+    ) throws -> (modifier: GroupModifier?, minimumValue: Int?) {
+        var remaining = raw
+        var minimumValue: Int? = nil
+
+        // Extract minN suffix/prefix if present.
+        if let range = remaining.range(of: "min") {
+            let before = String(remaining[..<range.lowerBound])
+            let after = String(remaining[range.upperBound...])
+            guard let n = Int(after), n >= 1, n <= sides else {
+                throw ParseError.invalidMinimum(term)
+            }
+            minimumValue = n
+            remaining = before
+        }
+
+        let modifier = try parseGroupModifier(remaining, count: count, sides: sides, term: term)
+        return (modifier, minimumValue)
     }
 
     private func parseGroupModifier(

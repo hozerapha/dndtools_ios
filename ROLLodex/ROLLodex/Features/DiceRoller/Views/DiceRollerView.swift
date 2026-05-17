@@ -32,10 +32,23 @@ struct DiceRollerView: View {
     /// manual formula edit clears the whole rail — the queued chips stop
     /// matching the dice once the player has touched the picker.
     @State private var pendingFollowUps: [PendingFollowUp] = []
+    @State private var showStrokeOfLuckPrompt = false
+    @State private var strokeOfLuckContext: StrokeOfLuckContext?
+    @State private var rollingCharacterID: UUID?
+    @State private var rollCameFromCharacterSheet = false
+
+    /// Snapshot of a settled roll + raw physics values so Stroke of Luck can
+    /// rebuild the result with a forced 20 on the d20 group.
+    private struct StrokeOfLuckContext {
+        let result: RollResult
+        let values: [Int]
+    }
 
     @Environment(HistoryStore.self) private var history
     @Environment(PresetStore.self) private var presets
     @Environment(PendingRollStore.self) private var pendingRoll
+    @Environment(CharacterStore.self) private var characterStore
+    @Environment(ContentStore.self) private var contentStore
 
     @AppStorage("character.autoRoll.enabled") private var autoRollEnabled = false
 
@@ -144,6 +157,9 @@ struct DiceRollerView: View {
                             .padding(.vertical, 4)
                             .background(.black.opacity(0.55), in: Capsule())
                     }
+                    if showStrokeOfLuckPrompt {
+                        strokeOfLuckChip
+                    }
                 }
                 .padding(.top, 16)
                 .transition(.scale.combined(with: .opacity))
@@ -196,6 +212,91 @@ struct DiceRollerView: View {
         if result.hasCriticalSuccess { return .green }
         if result.hasCriticalFail { return .red }
         return .white
+    }
+
+    private var strokeOfLuckAvailable: Bool {
+        guard let characterID = rollingCharacterID,
+              let character = characterStore.character(id: characterID) else { return false }
+        let current = ResourceCalculator.current(
+            character: character,
+            content: contentStore,
+            resourceID: "rogue_stroke_of_luck"
+        )
+        return current > 0
+    }
+
+    private var strokeOfLuckChip: some View {
+        Button {
+            applyStrokeOfLuck()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                Text("Stroke of Luck")
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.yellow)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+            .background(Color.yellow.opacity(0.2), in: Capsule())
+            .overlay(Capsule().strokeBorder(Color.yellow.opacity(0.5), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func applyStrokeOfLuck() {
+        guard let ctx = strokeOfLuckContext,
+              let characterID = rollingCharacterID,
+              var character = characterStore.character(id: characterID) else {
+            showStrokeOfLuckPrompt = false
+            strokeOfLuckContext = nil
+            return
+        }
+
+        let ok = ResourceCalculator.consume(
+            amount: 1,
+            from: "rogue_stroke_of_luck",
+            in: &character,
+            content: contentStore
+        )
+        guard ok else {
+            showStrokeOfLuckPrompt = false
+            strokeOfLuckContext = nil
+            return
+        }
+        characterStore.save(character)
+
+        var overriddenValues = ctx.values
+        var cursor = 0
+        for group in ctx.result.formula.groups {
+            let endIndex = min(cursor + group.count, overriddenValues.count)
+            if group.kind == .d20 {
+                for i in cursor..<endIndex {
+                    overriddenValues[i] = 20
+                }
+                break
+            }
+            cursor += group.count
+        }
+
+        let dr = DiceRoller()
+        let newResult = dr.resultFrom(
+            formula: ctx.result.formula,
+            values: overriddenValues,
+            mode: ctx.result.mode,
+            label: ctx.result.label
+        )
+
+        history.removeFirst()
+        history.record(newResult)
+
+        lastResult = newResult
+        showStrokeOfLuckPrompt = false
+        strokeOfLuckContext = nil
+
+        let droppedFormulaIndices = Set(
+            newResult.dieRolls.enumerated().compactMap { i, roll in roll.isKept ? nil : i }
+        )
+        controller.setDimmed(formulaIndices: droppedFormulaIndices)
     }
 
     /// Rail of chips that appears below the tray once the primary roll has
@@ -361,8 +462,11 @@ struct DiceRollerView: View {
         // Snapshot the follow-ups first; always clear both store slots so a
         // later handoff with no follow-ups doesn't inherit a stale rail.
         let nextFollowUps = pendingRoll.followUps
+        rollingCharacterID = pendingRoll.pendingCharacterID
+        rollCameFromCharacterSheet = true
         pendingRoll.pending = nil
         pendingRoll.followUps = []
+        pendingRoll.pendingCharacterID = nil
 
         // saveDC and other info-only actions have no formula — nothing to load.
         guard let resolvedFormula = resolved.formula else { return }
@@ -388,6 +492,14 @@ struct DiceRollerView: View {
 
     @MainActor
     private func roll() async {
+        // If a Stroke of Luck prompt is still showing from a prior roll, commit
+        // that result to history before starting a new one.
+        if showStrokeOfLuckPrompt, let ctx = strokeOfLuckContext {
+            history.record(ctx.result)
+            showStrokeOfLuckPrompt = false
+            strokeOfLuckContext = nil
+        }
+
         guard !isRolling,
               formula.totalDiceCount > 0,
               formula.allKinds3DSupported else { return }
@@ -397,6 +509,13 @@ struct DiceRollerView: View {
         // Strip any glow from the prior settled state — otherwise the colored
         // lights would tumble with the dice mid-roll. We re-apply on settle.
         controller.clearGlow()
+
+        // Only trust rollingCharacterID when this roll was triggered by a
+        // character-sheet handoff. Manual rolls clear the context.
+        if !rollCameFromCharacterSheet {
+            rollingCharacterID = nil
+        }
+        rollCameFromCharacterSheet = false
 
         let dr = DiceRoller()
 
@@ -424,6 +543,18 @@ struct DiceRollerView: View {
         //    group's `damageType`. Only typed dice get lights — manual rolls,
         //    ability checks, etc. stay plain.
         controller.setGlow(glowColorsByFormulaIndex())
+
+        // 6. Offer Stroke of Luck if the active character has a charge and this
+        //    roll included a d20. Defer history recording until the player
+        //    decides (or the prompt is implicitly dismissed by a new roll).
+        if strokeOfLuckAvailable,
+           result.formula.groups.contains(where: { $0.kind == .d20 }) {
+            lastResult = result
+            strokeOfLuckContext = StrokeOfLuckContext(result: result, values: values)
+            showStrokeOfLuckPrompt = true
+            isRolling = false
+            return
+        }
 
         lastResult = result
         history.record(result)
