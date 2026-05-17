@@ -61,6 +61,43 @@ struct DamageTypingTests {
         #expect(reparsed.modifier == 3)
     }
 
+    // MARK: - compactDisplayString (chip subtitle helper)
+
+    @Test func compactDisplayStringCollapsesSharedType() {
+        var formula = DiceFormula()
+        formula.groups.append(DiceGroup(kind: .d8, count: 1, damageType: .piercing))
+        formula.groups.append(DiceGroup(kind: .d6, count: 1, damageType: .piercing))
+        formula.modifier = 3
+        #expect(formula.compactDisplayString == "1d8 + 1d6 + 3 piercing")
+    }
+
+    @Test func compactDisplayStringPreservesPrefixesWhenMixed() {
+        var formula = DiceFormula()
+        formula.groups.append(DiceGroup(kind: .d8, count: 1, damageType: .slashing))
+        formula.groups.append(DiceGroup(kind: .d6, count: 1, damageType: .necrotic))
+        formula.modifier = 3
+        // Mixed types — keep the per-group prefixes; nothing to collapse.
+        #expect(formula.compactDisplayString == formula.displayString)
+    }
+
+    @Test func compactDisplayStringFallsBackWhenAGroupIsUntyped() {
+        var formula = DiceFormula()
+        formula.groups.append(DiceGroup(kind: .d8, count: 1, damageType: .piercing))
+        formula.groups.append(DiceGroup(kind: .d6, count: 1))  // untyped
+        // One untyped group would silently inherit the trailing type — leave
+        // the verbose form so the player sees exactly which dice are typed.
+        #expect(formula.compactDisplayString == formula.displayString)
+    }
+
+    @Test func compactDisplayStringFoldsTypedFlatModifier() {
+        var formula = DiceFormula()
+        formula.groups.append(DiceGroup(kind: .d8, count: 1, damageType: .fire))
+        formula.typedModifiers[.fire] = 2
+        formula.modifier = 1
+        // 1d8 fire + +2 fire + +1 untyped (sole type) → "1d8 + 3 fire"
+        #expect(formula.compactDisplayString == "1d8 + 3 fire")
+    }
+
     @Test func applyDamageTypeStampsAllGroups() {
         var formula = try! DiceFormulaParser().parse("2d6+3")
         formula.applyDamageType(.fire)

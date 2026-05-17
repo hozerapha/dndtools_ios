@@ -199,10 +199,11 @@ struct DiceRollerView: View {
     }
 
     /// Rail of chips that appears below the tray once the primary roll has
-    /// landed: a "Roll damage?" chip from the weapon-attack pairing plus any
-    /// opt-in riders (Sneak Attack, Divine Smite). Tapping a chip pays its
-    /// cost (turn flag, etc.), loads its formula, and drops the chip off the
-    /// rail. The whole rail clears on manual formula edit.
+    /// landed: a "Roll damage" chip from the weapon-attack pairing plus any
+    /// opt-in riders (Sneak Attack, Divine Smite). Each chip is an
+    /// alternative damage roll for the same attack — tapping any one fires
+    /// and clears the rest, so the player rolls damage once. Manual formula
+    /// edits clear the rail too.
     @ViewBuilder
     private var followUpRail: some View {
         if !pendingFollowUps.isEmpty, lastResult != nil {
@@ -220,17 +221,25 @@ struct DiceRollerView: View {
 
     private func chip(for followUp: PendingFollowUp) -> some View {
         let prompt = followUp.chipPrompt ?? followUpPrompt(for: followUp.action)
+        // Subtitle prefers the formula's display string ("1d8 + 1d6 + 3
+        // piercing") so both chips read as comparable damage-roll options
+        // rather than echoing their own internal action labels.
+        let subtitle = followUp.action.formula?.compactDisplayString ?? followUp.action.label
+        // Rider chips (any with a once-per-turn cost) get the bolt glyph to
+        // telegraph "fires a finite resource" vs. the plain arrow for the
+        // default chained roll.
+        let icon = followUp.cost == nil ? "arrow.right.circle.fill" : "bolt.fill"
         return Button {
             consumeFollowUp(followUp)
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: "arrow.right.circle.fill")
+                Image(systemName: icon)
                     .font(.subheadline)
                     .foregroundStyle(Color.accentColor)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(prompt)
                         .font(.subheadline.weight(.semibold))
-                    Text(followUp.action.label)
+                    Text(subtitle)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -245,9 +254,9 @@ struct DiceRollerView: View {
 
     private func followUpPrompt(for action: ResolvedAction) -> String {
         let label = action.label.lowercased()
-        if label.contains("damage") { return "Roll damage?" }
-        if label.contains("heal")   { return "Roll heal?" }
-        return "Roll next?"
+        if label.contains("damage") { return "Roll damage" }
+        if label.contains("heal")   { return "Roll heal" }
+        return "Roll next"
     }
 
     private func consumeFollowUp(_ followUp: PendingFollowUp) {

@@ -212,4 +212,38 @@ struct DiceFormula: Codable, Hashable {
             groups[i].damageType = type
         }
     }
+
+    /// Reader-friendly variant of `displayString` for compact contexts like
+    /// the follow-up chip subtitle. When every dice group AND every typed
+    /// modifier share a single damage type, the per-piece `[type]` prefixes
+    /// are stripped and the type is appended once at the end:
+    /// `[piercing]1d8 + [piercing]1d6 + 3` → `1d8 + 1d6 + 3 piercing`.
+    /// Mixed-type or untyped formulas fall back to `displayString` since
+    /// there's no shared trailer to collapse to.
+    var compactDisplayString: String {
+        // Collect the distinct damage types in play — typed groups + any
+        // typed flat modifiers. Untyped groups (`damageType == nil`) abort the
+        // collapse since their dice would silently inherit the trailing type.
+        var types: Set<DamageType> = []
+        for group in groups {
+            guard let dt = group.damageType else { return displayString }
+            types.insert(dt)
+        }
+        for (type, value) in typedModifiers where value != 0 {
+            types.insert(type)
+        }
+        guard types.count == 1, let shared = types.first else { return displayString }
+
+        // Re-render groups + typed modifiers + untyped flat without the
+        // per-piece prefixes, then append the shared type once.
+        var stripped = self
+        for i in stripped.groups.indices {
+            stripped.groups[i].damageType = nil
+        }
+        let collapsedTyped = stripped.typedModifiers.reduce(0) { $0 + $1.value }
+        stripped.typedModifiers = [:]
+        stripped.modifier += collapsedTyped
+        let base = stripped.displayString
+        return base == "—" ? base : "\(base) \(shared.rawValue)"
+    }
 }

@@ -225,8 +225,8 @@ struct CharacterSheetView: View {
                     Text("Used this turn")
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(.secondary)
-                    Text(character.turnFlags.sorted().joined(separator: " · "))
-                        .font(.caption.monospacedDigit())
+                    Text(turnFlagLabels.joined(separator: " · "))
+                        .font(.caption)
                         .lineLimit(1)
                 }
                 Spacer()
@@ -246,6 +246,15 @@ struct CharacterSheetView: View {
 
     private var weaponAttackRows: [WeaponAttackRow] {
         CharacterActionDeriver.weaponAttacks(for: character, content: content)
+    }
+
+    /// Human-readable labels for the flags currently set this turn. Sorted by
+    /// the resolved label so the row reads alphabetically by name, not by
+    /// internal id (avoids "sneak_attack" jumping around when other flags land).
+    private var turnFlagLabels: [String] {
+        character.turnFlags
+            .map { TriggeredEffectResolver.turnFlagDisplayName($0, character: character, content: content) }
+            .sorted()
     }
 
     /// Tap on a weapon's Attack chip: push the d20 attack onto the dice tab

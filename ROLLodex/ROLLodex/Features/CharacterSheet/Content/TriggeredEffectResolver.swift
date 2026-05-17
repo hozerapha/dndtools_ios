@@ -148,14 +148,12 @@ enum TriggeredEffectResolver {
         // Resolve the rider's contribution into its own DiceFormula first.
         let damageType: DamageType
         var rider: DiceFormula
-        let riderSummary: String  // for the chip subtitle: "+1d6 piercing"
 
         switch effect.effect {
         case .addDamageDice(let dice, let typed):
             guard let resolvedType = resolveDamageType(typed, weapon: weapon) else { return nil }
             damageType = resolvedType
             rider = (try? DiceFormulaParser().parse(dice)) ?? DiceFormula()
-            riderSummary = "+\(dice) \(resolvedType.rawValue)"
 
         case .addScaledDamageDice(let count, let die, let typed):
             guard let resolvedType = resolveDamageType(typed, weapon: weapon) else { return nil }
@@ -163,7 +161,6 @@ enum TriggeredEffectResolver {
             let n = count.value(classLevel: classLevel, characterLevel: character.level)
             guard n > 0 else { return nil }
             rider = (try? DiceFormulaParser().parse("\(n)\(die)")) ?? DiceFormula()
-            riderSummary = "+\(n)\(die) \(resolvedType.rawValue)"
         }
 
         rider.applyDamageType(damageType)
@@ -190,7 +187,7 @@ enum TriggeredEffectResolver {
             id: "rider_\(effect.id)",
             action: mergedAction,
             cost: effect.cost,
-            chipPrompt: "Use \(effect.name) (\(riderSummary))"
+            chipPrompt: effect.name
         )
     }
 
@@ -202,5 +199,48 @@ enum TriggeredEffectResolver {
         case .fixed(let dt): return dt
         case .matchWeapon:  return weapon?.damageType
         }
+    }
+
+    // MARK: - Turn-flag labels
+
+    /// Find the human-readable name behind a `turnFlag` id by scanning the
+    /// character's class features and spell-sourced active effects for the
+    /// effect that set it ("sneak_attack" → "Sneak Attack"). Falls back to
+    /// title-casing the id so a flag from a removed feature still renders
+    /// something readable in the "Used this turn" pill.
+    static func turnFlagDisplayName(
+        _ flagID: String,
+        character: Character,
+        content: ContentStore
+    ) -> String {
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(
+                throughClassLevel: entry.level,
+                subclassID: subclassID
+            ) {
+                if let effect = resolved.feature.triggeredEffect,
+                   case .oncePerTurn(let id) = effect.cost,
+                   id == flagID {
+                    return effect.name
+                }
+            }
+        }
+        for active in character.activeEffects {
+            if case .spell(let spellID) = active.source,
+               let spell = content.spellDefinition(id: spellID),
+               let effect = spell.grantsTriggeredEffect,
+               case .oncePerTurn(let id) = effect.cost,
+               id == flagID {
+                return effect.name
+            }
+        }
+        return flagID
+            .split(separator: "_")
+            .map { $0.prefix(1).uppercased() + $0.dropFirst() }
+            .joined(separator: " ")
     }
 }
