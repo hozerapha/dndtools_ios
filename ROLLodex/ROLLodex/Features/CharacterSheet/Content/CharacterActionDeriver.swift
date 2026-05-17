@@ -13,20 +13,43 @@ struct ActionRow: Identifiable, Equatable {
     let badge: String?
     let isExhausted: Bool
     let castFromItem: ItemSpellCastContext?
+    /// When set, the row's tap doesn't roll — it flips a toggleable
+    /// `TriggeredEffect` on/off (Barbarian Rage). The handler reads this
+    /// to skip the dice handoff and call `Character.toggleFeatureEffect`.
+    let toggleEffect: ToggleEffectContext?
 
     init(
         action: ResolvedAction,
         badge: String?,
         isExhausted: Bool = false,
-        castFromItem: ItemSpellCastContext? = nil
+        castFromItem: ItemSpellCastContext? = nil,
+        toggleEffect: ToggleEffectContext? = nil
     ) {
         self.action = action
         self.badge = badge
         self.isExhausted = isExhausted
         self.castFromItem = castFromItem
+        self.toggleEffect = toggleEffect
     }
 
     var id: String { action.id }
+}
+
+/// Routing payload for a "toggle a feature effect" row. The sheet uses this
+/// to spend the resource (only when activating, not when ending), then call
+/// `character.toggleFeatureEffect(...)` to add or remove the rider.
+struct ToggleEffectContext: Equatable {
+    let effectID: String
+    let featureID: String
+    /// Initial countdown for round-limited effects (Rage = 10). Nil for
+    /// `.manual` toggles that only end on dismiss.
+    let roundsRemaining: Int?
+    /// Resource the toggle's activation spends, if any. Nil = free toggle.
+    let resourceID: String?
+    /// True when the toggle is currently active on the character. Drives the
+    /// label flip ("End Rage" vs "Rage") and suppresses the resource spend
+    /// on the deactivate tap.
+    let isActive: Bool
 }
 
 /// Routing payload for an "Item: Cast X" row. The sheet uses this to open
@@ -263,6 +286,43 @@ enum CharacterActionDeriver {
                 }
                 let badge = resolvedResource.map { "\($0.current) / \($0.max)" }
                 let isExhausted = resolvedResource?.isExhausted ?? false
+
+                // Toggleable triggered-effect features (Rage) get a bespoke
+                // row whose tap flips the effect on/off via toggleEffect, not
+                // a roll. Resource spend is handled in the tap path so we
+                // don't pay on the deactivate tap.
+                if let trig = feature.triggeredEffect, trig.activation == .toggle {
+                    let isActive = character.activeEffects.contains { $0.effectID == trig.id }
+                    let rounds: Int?
+                    switch trig.lifecycle {
+                    case .persistent(.rounds(let n)): rounds = n
+                    case .persistent(.concentrationEnds), .persistent(.manual), .oneShot:
+                        rounds = nil
+                    }
+                    let action = ResolvedAction(
+                        id: "feature_\(feature.id)_toggle",
+                        label: isActive ? "End \(feature.name)" : feature.name,
+                        formula: nil,
+                        description: feature.description,
+                        actionCost: feature.actionCost
+                    )
+                    rows.append(ActionRow(
+                        action: action,
+                        badge: badge,
+                        // When active, the row should always be tappable (to
+                        // end the toggle). Only grey when exhausted AND we'd
+                        // be activating — can't start Rage with 0 uses left.
+                        isExhausted: !isActive && isExhausted,
+                        toggleEffect: ToggleEffectContext(
+                            effectID: trig.id,
+                            featureID: feature.id,
+                            roundsRemaining: rounds,
+                            resourceID: feature.resource?.id,
+                            isActive: isActive
+                        )
+                    ))
+                    continue
+                }
 
                 if feature.actionRecipes.isEmpty, cost != nil {
                     // Resource-only feature (e.g. Action Surge): no roll, but

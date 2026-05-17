@@ -10,26 +10,40 @@ struct ActiveEffect: Codable, Hashable, Identifiable {
     /// without dropping concentration).
     let effectID: String
     let source: EffectSource
-    /// Future home for rounds-remaining counters (Rage), charge tracking
-    /// (item-granted effects), etc. Empty in Slice A.
+    /// For `.persistent(.rounds(n))` effects (Rage, Bless): rounds left
+    /// before the effect auto-drops. Decremented by `Character.startNewTurn()`
+    /// and removed when ≤ 0. Nil for effects whose lifecycle isn't round-based
+    /// (Hex/Hunter's Mark on concentration, manual buffs).
+    var roundsRemaining: Int?
+    /// Open-ended metadata bag for future per-effect counters that don't
+    /// warrant a typed field (e.g., item-granted charges). Empty by default.
     var metadata: [String: Int]
 
     var id: String { effectID }
 
-    init(effectID: String, source: EffectSource, metadata: [String: Int] = [:]) {
+    init(
+        effectID: String,
+        source: EffectSource,
+        roundsRemaining: Int? = nil,
+        metadata: [String: Int] = [:]
+    ) {
         self.effectID = effectID
         self.source = source
+        self.roundsRemaining = roundsRemaining
         self.metadata = metadata
     }
 
     private enum CodingKeys: String, CodingKey {
-        case effectID, source, metadata
+        case effectID, source, roundsRemaining, metadata
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.effectID = try c.decode(String.self, forKey: .effectID)
         self.source = try c.decode(EffectSource.self, forKey: .source)
+        // Slice C field — pre-Slice-C ActiveEffects (Hex, Hunter's Mark)
+        // encoded without it, decode as nil.
+        self.roundsRemaining = try c.decodeIfPresent(Int.self, forKey: .roundsRemaining)
         self.metadata = try c.decodeIfPresent([String: Int].self, forKey: .metadata) ?? [:]
     }
 
@@ -37,6 +51,7 @@ struct ActiveEffect: Codable, Hashable, Identifiable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(effectID, forKey: .effectID)
         try c.encode(source, forKey: .source)
+        try c.encodeIfPresent(roundsRemaining, forKey: .roundsRemaining)
         if !metadata.isEmpty {
             try c.encode(metadata, forKey: .metadata)
         }

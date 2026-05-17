@@ -212,20 +212,23 @@ struct CharacterSheetView: View {
         }
     }
 
-    /// Compact pill row that surfaces any once-per-turn effects the player has
-    /// already used this turn, with a Start New Turn button to reset them.
-    /// Hidden when no flags are set so a casual fighter never sees it.
+    /// Turn tracker shown when there's something to advance: once-per-turn
+    /// flags spent (Sneak Attack, etc.) and/or round-limited effects ticking
+    /// down (Rage). The Start New Turn button clears flags AND decrements all
+    /// round counters in one go — that's the natural "I just ended my turn"
+    /// pulse the player needs to keep Rage's 10-round clock honest.
+    /// Hidden when there's nothing to track so a casual fighter never sees it.
     @ViewBuilder
     private var turnFlagsRow: some View {
-        if !character.turnFlags.isEmpty {
+        if !character.turnFlags.isEmpty || !timedEffectLabels.isEmpty {
             HStack(spacing: 10) {
                 Image(systemName: "hourglass.tophalf.filled")
                     .foregroundStyle(.orange)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Used this turn")
+                    Text("This turn")
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(.secondary)
-                    Text(turnFlagLabels.joined(separator: " · "))
+                    Text(turnTrackerLabels.joined(separator: " · "))
                         .font(.caption)
                         .lineLimit(1)
                 }
@@ -255,6 +258,54 @@ struct CharacterSheetView: View {
         character.turnFlags
             .map { TriggeredEffectResolver.turnFlagDisplayName($0, character: character, content: content) }
             .sorted()
+    }
+
+    /// "Rage 9r" style labels for active effects with a round counter. Lets
+    /// the turn-tracker row show what's ticking down alongside the once-per-
+    /// turn flags. Names come from the resolved triggered effect when we can
+    /// find it, falling back to the effect id.
+    private var timedEffectLabels: [String] {
+        character.activeEffects
+            .compactMap { active -> String? in
+                guard let rounds = active.roundsRemaining else { return nil }
+                let name = effectDisplayName(for: active) ?? active.effectID
+                return "\(name) \(rounds)r"
+            }
+            .sorted()
+    }
+
+    /// Merged tracker line: once-per-turn flags first, then round-ticking
+    /// effects. Both clear/decrement when the player taps Start New Turn.
+    private var turnTrackerLabels: [String] {
+        turnFlagLabels + timedEffectLabels
+    }
+
+    /// Lookup the effect name for an `ActiveEffect`, mirroring the resolver
+    /// dispatch. Used only for label rendering in the turn-tracker row, so a
+    /// nil result is fine — the caller falls back to the effect id.
+    private func effectDisplayName(for active: ActiveEffect) -> String? {
+        switch active.source {
+        case .spell(let id):
+            return content.spellDefinition(id: id)?.grantsTriggeredEffect?.name
+        case .feature(let id):
+            for entry in character.classEntries {
+                guard let cls = content.classDefinition(id: entry.classID) else { continue }
+                let subclassID = character.featureSelections[
+                    ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+                ]?.first
+                for resolved in cls.resolvedFeatures(
+                    throughClassLevel: entry.level,
+                    subclassID: subclassID
+                ) {
+                    if resolved.feature.id == id {
+                        return resolved.feature.triggeredEffect?.name ?? resolved.feature.name
+                    }
+                }
+            }
+            return nil
+        case .item:
+            return nil
+        }
     }
 
     /// Tap on a weapon's Attack chip: push the d20 attack onto the dice tab
@@ -335,6 +386,27 @@ struct CharacterSheetView: View {
         if let ctx = row.castFromItem {
             guard let spell = content.spellDefinition(id: ctx.spellID) else { return }
             spellBeingCast = PendingSpellCast(spell: spell, itemContext: ctx)
+            return
+        }
+
+        // Toggle rows (Rage) flip an effect on/off instead of rolling. The
+        // activate tap pays the resource cost; the deactivate tap is free
+        // (Rage doesn't refund a use when you drop it early).
+        if let toggle = row.toggleEffect {
+            if !toggle.isActive, let resourceID = toggle.resourceID {
+                let ok = ResourceCalculator.consume(
+                    amount: 1,
+                    from: resourceID,
+                    in: &character,
+                    content: content
+                )
+                guard ok else { return }
+            }
+            character.toggleFeatureEffect(
+                effectID: toggle.effectID,
+                featureID: toggle.featureID,
+                roundsRemaining: toggle.roundsRemaining
+            )
             return
         }
 

@@ -1,23 +1,28 @@
 import SwiftUI
 
-/// Compact row of active-effect pills shown under the conditions row in the
-/// sheet header. Each pill displays the rider's name (Hex, Hunter's Mark,
-/// later Rage / Bless / etc.); the menu shows the description and a Dismiss
-/// button that drops the effect — and concentration too, when the effect is
-/// spell-sourced.
+/// Compact row of effect pills shown under the conditions row in the sheet
+/// header. Splits into two stripes:
+///   - **Toggles**: features the character can flip on (Rage, etc.). Tapping
+///     pays the resource (if any) and adds an `ActiveEffect`.
+///   - **Active**: currently-running effects (Hex, Hunter's Mark, active
+///     Rage). Each shows a menu with description + Dismiss; round-limited
+///     effects also show "Nr" remaining.
 ///
-/// Hidden when there are no active effects; the slot collapses cleanly above
-/// the stat pill row so a casual fighter never sees an empty row.
+/// The whole row hides when there's nothing in either stripe so casual
+/// fighters never see an empty band.
 struct EffectsRow: View {
     @Binding var character: Character
     @Environment(ContentStore.self) private var content
 
     var body: some View {
-        if !character.activeEffects.isEmpty {
+        if !character.activeEffects.isEmpty || !availableToggles.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
+                    ForEach(availableToggles, id: \.feature.id) { entry in
+                        togglePill(for: entry)
+                    }
                     ForEach(character.activeEffects) { active in
-                        pill(for: active)
+                        activePill(for: active)
                     }
                 }
                 .padding(.horizontal, 2)
@@ -26,7 +31,9 @@ struct EffectsRow: View {
         }
     }
 
-    private func pill(for active: ActiveEffect) -> some View {
+    // MARK: - Active-effect pill
+
+    private func activePill(for active: ActiveEffect) -> some View {
         let resolved = resolved(for: active)
         let label = resolved?.name ?? active.effectID
         return Menu {
@@ -44,6 +51,13 @@ struct EffectsRow: View {
                     .font(.caption2)
                 Text(label)
                     .font(.caption.weight(.semibold))
+                if let rounds = active.roundsRemaining {
+                    Text("\(rounds)r")
+                        .font(.caption2.monospacedDigit())
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(Color.purple.opacity(0.35), in: Capsule())
+                }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
@@ -52,6 +66,100 @@ struct EffectsRow: View {
         }
     }
 
+    // MARK: - Toggle pill (inactive feature ready to activate)
+
+    private func togglePill(for entry: ToggleEntry) -> some View {
+        let usesLeft = entry.resourceID.map {
+            ResourceCalculator.current(character: character, content: content, resourceID: $0)
+        }
+        let disabled = (usesLeft ?? 1) <= 0
+        return Button {
+            activate(entry)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "bolt.circle")
+                    .font(.caption2)
+                Text(entry.feature.name)
+                    .font(.caption.weight(.semibold))
+                if let usesLeft {
+                    Text("\(usesLeft)")
+                        .font(.caption2.monospacedDigit())
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(Color.orange.opacity(0.35), in: Capsule())
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Color.orange.opacity(0.18), in: Capsule())
+            .foregroundStyle(disabled ? Color.secondary : Color.orange)
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+    }
+
+    private func activate(_ entry: ToggleEntry) {
+        if let resourceID = entry.resourceID {
+            guard ResourceCalculator.consume(
+                amount: 1,
+                from: resourceID,
+                in: &character,
+                content: content
+            ) else { return }
+        }
+        let rounds: Int?
+        switch entry.effect.lifecycle {
+        case .persistent(.rounds(let n)): rounds = n
+        case .persistent(.concentrationEnds), .persistent(.manual), .oneShot:
+            rounds = nil
+        }
+        character.toggleFeatureEffect(
+            effectID: entry.effect.id,
+            featureID: entry.feature.id,
+            roundsRemaining: rounds
+        )
+    }
+
+    // MARK: - Available toggles
+
+    /// Toggleable feature effects the character has but hasn't activated yet.
+    /// Pulled from class features (base + subclass) so Rage shows up for an
+    /// L1 Barbarian. Active toggles are excluded — the active pill already
+    /// covers them.
+    private var availableToggles: [ToggleEntry] {
+        var out: [ToggleEntry] = []
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(
+                throughClassLevel: entry.level,
+                subclassID: subclassID
+            ) {
+                guard let effect = resolved.feature.triggeredEffect,
+                      effect.activation == .toggle else { continue }
+                if character.activeEffects.contains(where: { $0.effectID == effect.id }) {
+                    continue
+                }
+                out.append(ToggleEntry(
+                    feature: resolved.feature,
+                    effect: effect,
+                    resourceID: resolved.feature.resource?.id
+                ))
+            }
+        }
+        return out
+    }
+
+    private struct ToggleEntry {
+        let feature: FeatureDefinition
+        let effect: TriggeredEffect
+        let resourceID: String?
+    }
+
+    // MARK: - Description lines
+
     /// Look up the matching `TriggeredEffect` payload. Mirrors the resolver's
     /// dispatch so the badge label / description stay in sync with what
     /// actually fires on damage rolls.
@@ -59,9 +167,27 @@ struct EffectsRow: View {
         switch active.source {
         case .spell(let id):
             return content.spellDefinition(id: id)?.grantsTriggeredEffect
-        case .feature, .item:
+        case .feature(let id):
+            return classFeature(id: id)?.triggeredEffect
+        case .item:
             return nil
         }
+    }
+
+    private func classFeature(id: String) -> FeatureDefinition? {
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(
+                throughClassLevel: entry.level,
+                subclassID: subclassID
+            ) {
+                if resolved.feature.id == id { return resolved.feature }
+            }
+        }
+        return nil
     }
 
     private func descriptionLine(for effect: TriggeredEffect, source: EffectSource) -> String {
@@ -70,14 +196,17 @@ struct EffectsRow: View {
         case .addDamageDice(let dice, let typed):
             parts.append(diceLine(dice: dice, typed: typed))
         case .addScaledDamageDice(_, let die, let typed):
-            // Scaled riders don't surface in the badge row today (Slice B's
-            // optInRiders path is Sneak Attack and friends); shape the line
-            // anyway so future persistent scaling buffs aren't blank.
             parts.append(diceLine(dice: "N\(die)", typed: typed))
+        case .addFlatDamage(_, let typed):
+            parts.append(flatLine(typed: typed))
         }
         switch effect.lifecycle {
         case .persistent(.concentrationEnds):
             parts.append("Ends when concentration drops")
+        case .persistent(.rounds(let n)):
+            parts.append("Lasts \(n) rounds")
+        case .persistent(.manual):
+            parts.append("Until you dismiss it")
         case .oneShot:
             parts.append("One-shot (per attack)")
         }
@@ -93,6 +222,17 @@ struct EffectsRow: View {
             return "+\(dice) \(dt.rawValue) on each damage roll"
         case .matchWeapon:
             return "+\(dice) matching the weapon's damage type"
+        }
+    }
+
+    private func flatLine(typed: TypedOrMatch?) -> String {
+        switch typed {
+        case nil:
+            return "Flat damage bonus on each qualifying roll"
+        case .fixed(let dt)?:
+            return "Flat \(dt.rawValue) damage bonus on each qualifying roll"
+        case .matchWeapon?:
+            return "Flat damage matching the weapon's type"
         }
     }
 }

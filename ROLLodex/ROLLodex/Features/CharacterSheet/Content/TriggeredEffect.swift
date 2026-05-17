@@ -73,11 +73,14 @@ struct TriggeredEffect: Codable, Equatable {
 // MARK: - TriggerCondition
 
 /// *When* the effect fires. Slice A covers automatic damage riders;
-/// Slice B adds the post-hit trigger Sneak Attack and Divine Smite need.
+/// Slice B adds the post-hit trigger Sneak Attack and Divine Smite need;
+/// Slice C extends `onDamageRoll` with an optional filter so Rage can scope
+/// its flat damage bonus to STR melee weapon attacks.
 enum TriggerCondition: Equatable {
-    /// Fires on every weapon-damage roll the affected character makes. No
-    /// filter — Hex / Hunter's Mark match all weapon damage.
-    case onDamageRoll
+    /// Fires on weapon-damage rolls. Optional filter narrows which weapons
+    /// qualify — nil (Hex / Hunter's Mark) matches every weapon damage roll;
+    /// `.weaponLacksProperty([.ammunition])` (Rage) restricts to melee.
+    case onDamageRoll(filter: AttackFilter?)
     /// Fires after a confirmed weapon hit, before the damage roll. The filter
     /// optionally restricts which weapons / circumstances qualify (Sneak
     /// Attack needs finesse or ranged; Smite needs melee).
@@ -92,7 +95,10 @@ extension TriggerCondition: Codable {
         let type = try c.decode(String.self, forKey: .type)
         switch type {
         case "onDamageRoll":
-            self = .onDamageRoll
+            // Filter is optional so pre-Slice-C Hex / Hunter's Mark JSON
+            // (which has no filter key) still decodes.
+            let filter = try c.decodeIfPresent(AttackFilter.self, forKey: .filter)
+            self = .onDamageRoll(filter: filter)
         case "onAttackHit":
             let filter = try c.decodeIfPresent(AttackFilter.self, forKey: .filter)
             self = .onAttackHit(filter: filter)
@@ -107,8 +113,9 @@ extension TriggerCondition: Codable {
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case .onDamageRoll:
+        case .onDamageRoll(let filter):
             try c.encode("onDamageRoll", forKey: .type)
+            try c.encodeIfPresent(filter, forKey: .filter)
         case .onAttackHit(let filter):
             try c.encode("onAttackHit", forKey: .type)
             try c.encodeIfPresent(filter, forKey: .filter)
@@ -125,6 +132,10 @@ indirect enum AttackFilter: Equatable {
     /// Weapon must have at least one of the listed properties (Sneak Attack:
     /// `[.finesse, .ammunition]` — any of which qualifies).
     case weaponHasProperty([WeaponProperty])
+    /// Weapon must have NONE of the listed properties. The complement of
+    /// `weaponHasProperty` — used for "melee" (`.weaponLacksProperty([.ammunition])`)
+    /// since we don't carry an explicit `.melee` flag.
+    case weaponLacksProperty([WeaponProperty])
     /// Logical OR over child filters.
     case anyOf([AttackFilter])
     /// Logical AND over child filters.
@@ -141,6 +152,9 @@ extension AttackFilter: Codable {
         case "weaponHasProperty":
             let props = try c.decode([WeaponProperty].self, forKey: .properties)
             self = .weaponHasProperty(props)
+        case "weaponLacksProperty":
+            let props = try c.decode([WeaponProperty].self, forKey: .properties)
+            self = .weaponLacksProperty(props)
         case "anyOf":
             let filters = try c.decode([AttackFilter].self, forKey: .filters)
             self = .anyOf(filters)
@@ -161,6 +175,9 @@ extension AttackFilter: Codable {
         case .weaponHasProperty(let props):
             try c.encode("weaponHasProperty", forKey: .type)
             try c.encode(props, forKey: .properties)
+        case .weaponLacksProperty(let props):
+            try c.encode("weaponLacksProperty", forKey: .type)
+            try c.encode(props, forKey: .properties)
         case .anyOf(let filters):
             try c.encode("anyOf", forKey: .type)
             try c.encode(filters, forKey: .filters)
@@ -172,12 +189,17 @@ extension AttackFilter: Codable {
 
     /// True when `weapon` satisfies this predicate. A nil weapon never
     /// matches a property check — opt-in chips silently don't fire on
-    /// unarmed strikes (Sneak Attack: no weapon, no chip).
+    /// unarmed strikes (Sneak Attack: no weapon, no chip). `weaponLacksProperty`
+    /// also requires a weapon — Rage's flat bonus shouldn't accidentally fire
+    /// on unarmed strikes either; the resolver gates that explicitly.
     func matches(weapon: WeaponDefinition?) -> Bool {
         switch self {
         case .weaponHasProperty(let needed):
             guard let weapon else { return false }
             return needed.contains { weapon.properties.contains($0) }
+        case .weaponLacksProperty(let forbidden):
+            guard let weapon else { return false }
+            return forbidden.allSatisfy { !weapon.properties.contains($0) }
         case .anyOf(let children):
             return children.contains { $0.matches(weapon: weapon) }
         case .allOf(let children):
@@ -195,6 +217,10 @@ enum TriggerActivation: String, Codable, Equatable {
     /// Surfaces a chip after the trigger fires; firing the chip applies the
     /// effect and pays the cost. Sneak Attack, Divine Smite.
     case optIn
+    /// Player flips on (paying the cost) and the effect persists until its
+    /// lifecycle ends — Barbarian Rage, Bless concentration, etc. While
+    /// active, the effect behaves exactly like an `.automatic` rider.
+    case toggle
 }
 
 // MARK: - TriggerCost
@@ -238,7 +264,8 @@ extension TriggerCost: Codable {
 // MARK: - TriggerEffect
 
 /// *What* the effect does to the in-flight roll. Slice A covered fixed dice;
-/// Slice B adds class-level-scaled dice (Sneak Attack's Nd6).
+/// Slice B adds class-level-scaled dice (Sneak Attack's Nd6); Slice C adds
+/// flat damage bonuses (Rage's +2 / +3 STR melee).
 enum TriggerEffect: Equatable {
     /// Append extra dice to the damage formula. `dice` is the same string
     /// format the parser accepts ("1d6", "2d4+1"). The damage type is either
@@ -249,10 +276,15 @@ enum TriggerEffect: Equatable {
     /// `LevelScaledValue` so Sneak Attack (1d6 → 10d6 across rogue levels)
     /// and similar scaling features share the same shape.
     case addScaledDamageDice(count: LevelScaledValue, die: String, damageType: TypedOrMatch)
+    /// Add a flat number to the damage total. `damageType` nil routes through
+    /// the formula's untyped modifier (Rage's +2 just adds to whatever damage
+    /// type the weapon already deals); a fixed type routes through
+    /// `typedModifiers` so the breakdown can attribute it.
+    case addFlatDamage(amount: LevelScaledValue, damageType: TypedOrMatch?)
 }
 
 extension TriggerEffect: Codable {
-    private enum CodingKeys: String, CodingKey { case type, dice, damageType, count, die }
+    private enum CodingKeys: String, CodingKey { case type, dice, damageType, count, die, amount }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -267,6 +299,10 @@ extension TriggerEffect: Codable {
             let die = try c.decode(String.self, forKey: .die)
             let dmg = try c.decode(TypedOrMatch.self, forKey: .damageType)
             self = .addScaledDamageDice(count: count, die: die, damageType: dmg)
+        case "addFlatDamage":
+            let amount = try c.decode(LevelScaledValue.self, forKey: .amount)
+            let dmg = try c.decodeIfPresent(TypedOrMatch.self, forKey: .damageType)
+            self = .addFlatDamage(amount: amount, damageType: dmg)
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .type, in: c,
@@ -287,6 +323,10 @@ extension TriggerEffect: Codable {
             try c.encode(count, forKey: .count)
             try c.encode(die, forKey: .die)
             try c.encode(dmg, forKey: .damageType)
+        case .addFlatDamage(let amount, let dmg):
+            try c.encode("addFlatDamage", forKey: .type)
+            try c.encode(amount, forKey: .amount)
+            try c.encodeIfPresent(dmg, forKey: .damageType)
         }
     }
 }
@@ -378,21 +418,31 @@ extension TriggerLifecycle: Codable {
 
 // MARK: - PersistenceEnd
 
-/// What ends a persistent effect. Slice A only ships `.concentrationEnds`;
-/// `.rounds`, `.shortRest`, `.longRest`, `.manual` land with Rage / Battle
-/// Master / GWM later.
+/// What ends a persistent effect. Slice A shipped `.concentrationEnds`;
+/// Slice C adds `.rounds(_)` for Rage's 10-round timer and `.manual` for
+/// buffs the player has to end themselves.
 enum PersistenceEnd: Equatable {
     case concentrationEnds
+    /// Lasts `count` rounds. The character ticks down on Start New Turn and
+    /// the resolver drops the effect when the counter hits zero.
+    case rounds(_ count: Int)
+    /// No automatic end — the player drops it via the EffectsRow dismiss
+    /// menu. Used for "until you dismiss" buffs.
+    case manual
 }
 
 extension PersistenceEnd: Codable {
-    private enum CodingKeys: String, CodingKey { case type }
+    private enum CodingKeys: String, CodingKey { case type, count }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let type = try c.decode(String.self, forKey: .type)
         switch type {
         case "concentrationEnds": self = .concentrationEnds
+        case "rounds":
+            let n = try c.decode(Int.self, forKey: .count)
+            self = .rounds(n)
+        case "manual": self = .manual
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .type, in: c,
@@ -405,6 +455,10 @@ extension PersistenceEnd: Codable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         switch self {
         case .concentrationEnds: try c.encode("concentrationEnds", forKey: .type)
+        case .rounds(let n):
+            try c.encode("rounds", forKey: .type)
+            try c.encode(n, forKey: .count)
+        case .manual: try c.encode("manual", forKey: .type)
         }
     }
 }

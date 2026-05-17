@@ -25,37 +25,83 @@ enum TriggeredEffectResolver {
         var firedNames: [String] = []
 
         for active in character.activeEffects {
-            guard let effect = effect(for: active, in: content) else { continue }
-            guard case .onDamageRoll = effect.trigger else { continue }
-            guard case .addDamageDice(let dice, let typed) = effect.effect else { continue }
+            guard let ctx = effectContext(for: active, character: character, in: content) else { continue }
+            let effect = ctx.effect
+            // Both .automatic (Hex, Hunter's Mark) and .toggle (Rage) fold
+            // silently here once they're sitting in activeEffects — the toggle
+            // is essentially "automatic while turned on". .optIn never lands
+            // here; those go through `optInRiders`.
+            guard effect.activation != .optIn else { continue }
+            // Slice C: onDamageRoll now carries an optional filter so Rage can
+            // scope its flat bonus to melee weapons. Nil filter = always fires.
+            guard case .onDamageRoll(let filter) = effect.trigger else { continue }
+            if let filter, !filter.matches(weapon: weapon) { continue }
 
-            // Resolve the damage type. `.matchWeapon` requires a wielded
-            // weapon — without one the rider just doesn't fire (e.g. Hunter's
-            // Mark on an unarmed strike would have no type to copy).
-            let damageType: DamageType
-            switch typed {
-            case .fixed(let dt):
-                damageType = dt
-            case .matchWeapon:
-                guard let weaponDT = weapon?.damageType else { continue }
-                damageType = weaponDT
-            }
-
-            // Parse the rider's dice into a sub-formula so it can carry its
-            // own modifiers and groups (today just "1d6", but the schema
-            // tolerates richer strings for future homebrew riders).
-            guard var rider = try? DiceFormulaParser().parse(dice) else { continue }
-            rider.applyDamageType(damageType)
-
-            formula.groups.append(contentsOf: rider.groups)
-            for (type, value) in rider.typedModifiers {
-                formula.typedModifiers[type, default: 0] += value
-                if formula.typedModifiers[type] == 0 {
-                    formula.typedModifiers.removeValue(forKey: type)
+            switch effect.effect {
+            case .addDamageDice(let dice, let typed):
+                // Resolve the damage type. `.matchWeapon` requires a wielded
+                // weapon — without one the rider just doesn't fire (e.g.
+                // Hunter's Mark on an unarmed strike would have no type to copy).
+                let damageType: DamageType
+                switch typed {
+                case .fixed(let dt):
+                    damageType = dt
+                case .matchWeapon:
+                    guard let weaponDT = weapon?.damageType else { continue }
+                    damageType = weaponDT
                 }
+
+                // Parse the rider's dice into a sub-formula so it can carry its
+                // own modifiers and groups (today just "1d6", but the schema
+                // tolerates richer strings for future homebrew riders).
+                guard var rider = try? DiceFormulaParser().parse(dice) else { continue }
+                rider.applyDamageType(damageType)
+
+                formula.groups.append(contentsOf: rider.groups)
+                for (type, value) in rider.typedModifiers {
+                    formula.typedModifiers[type, default: 0] += value
+                    if formula.typedModifiers[type] == 0 {
+                        formula.typedModifiers.removeValue(forKey: type)
+                    }
+                }
+                // Untyped flat on a rider is unusual but handle it consistently.
+                formula.modifier += rider.modifier
+
+            case .addFlatDamage(let amount, let typed):
+                let value = amount.value(
+                    classLevel: ctx.classLevel,
+                    characterLevel: character.level
+                )
+                guard value != 0 else { continue }
+                // Untyped flat = bare modifier; typed flat routes through the
+                // typedModifiers bucket so the breakdown can attribute it
+                // (`.fixed(.force)` → magical missile-style bonuses). For
+                // Rage we pass nil → untyped, which just augments whatever the
+                // weapon's damage type was.
+                let resolvedType: DamageType?
+                switch typed {
+                case nil:
+                    resolvedType = nil
+                case .fixed(let dt):
+                    resolvedType = dt
+                case .matchWeapon:
+                    guard let weaponDT = weapon?.damageType else { continue }
+                    resolvedType = weaponDT
+                }
+                if let dt = resolvedType {
+                    formula.typedModifiers[dt, default: 0] += value
+                    if formula.typedModifiers[dt] == 0 {
+                        formula.typedModifiers.removeValue(forKey: dt)
+                    }
+                } else {
+                    formula.modifier += value
+                }
+
+            case .addScaledDamageDice:
+                // Scaled-dice effects are opt-in only today (Sneak Attack);
+                // they don't fold automatically.
+                continue
             }
-            // Untyped flat on a rider is unusual but handle it consistently.
-            formula.modifier += rider.modifier
 
             firedNames.append(effect.name)
         }
@@ -71,19 +117,56 @@ enum TriggeredEffectResolver {
         )
     }
 
-    /// Maps an `ActiveEffect` back to the `TriggeredEffect` payload that
-    /// lives on its content source. Slice A only resolves spell sources;
-    /// feature / item sources land with later slices.
-    private static func effect(
+    /// Combined effect + owning class level for an `ActiveEffect`. Feature
+    /// sources discover the owner class while looking up the payload, so
+    /// `LevelScaledValue.byClassLevel` resolves against the right level even
+    /// for multiclass characters. Spell-sourced effects don't have an owning
+    /// class — fall back to character level for those.
+    private struct EffectContext {
+        let effect: TriggeredEffect
+        let classLevel: Int
+    }
+
+    private static func effectContext(
         for active: ActiveEffect,
+        character: Character,
         in content: ContentStore
-    ) -> TriggeredEffect? {
+    ) -> EffectContext? {
         switch active.source {
         case .spell(let id):
-            return content.spellDefinition(id: id)?.grantsTriggeredEffect
-        case .feature, .item:
+            guard let effect = content.spellDefinition(id: id)?.grantsTriggeredEffect else { return nil }
+            return EffectContext(effect: effect, classLevel: character.level)
+        case .feature(let id):
+            return featureContext(featureID: id, character: character, content: content)
+        case .item:
             return nil
         }
+    }
+
+    /// Walks the character's class features (base + subclass, through level)
+    /// for the feature with `featureID`. Returns the triggered effect AND
+    /// the originating class's level so scaling tables resolve correctly for
+    /// multiclass characters (a L5 Rogue / L3 Barbarian's Rage uses 3, not 5).
+    private static func featureContext(
+        featureID: String,
+        character: Character,
+        content: ContentStore
+    ) -> EffectContext? {
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(
+                throughClassLevel: entry.level,
+                subclassID: subclassID
+            ) {
+                if resolved.feature.id == featureID, let effect = resolved.feature.triggeredEffect {
+                    return EffectContext(effect: effect, classLevel: entry.level)
+                }
+            }
+        }
+        return nil
     }
 
     // MARK: - Slice B: opt-in riders from class features
@@ -161,6 +244,12 @@ enum TriggeredEffectResolver {
             let n = count.value(classLevel: classLevel, characterLevel: character.level)
             guard n > 0 else { return nil }
             rider = (try? DiceFormulaParser().parse("\(n)\(die)")) ?? DiceFormula()
+
+        case .addFlatDamage:
+            // Flat-damage effects fold automatically (Rage) — they don't
+            // surface as opt-in chips. The auto path in
+            // `applyAutomaticDamageRiders` handles them.
+            return nil
         }
 
         rider.applyDamageType(damageType)

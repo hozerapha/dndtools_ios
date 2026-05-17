@@ -33,11 +33,13 @@ private struct ActionTile: View {
     let onTap: (ActionRow) -> Void
 
     /// A row is interactive when it has *anything* to do on tap: a roll to
-    /// hand off, a resource to consume, or a spell-cast sheet to open.
+    /// hand off, a resource to consume, a spell-cast sheet to open, or a
+    /// toggleable feature effect to flip (Rage).
     private var isInteractive: Bool {
         row.action.formula != nil
             || row.action.resourceCost != nil
             || row.castFromItem != nil
+            || row.toggleEffect != nil
     }
 
     var body: some View {

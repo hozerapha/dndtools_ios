@@ -275,11 +275,51 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         turnFlags.insert(flagID)
     }
 
-    /// Clear every once-per-turn flag — invoked by the sheet's Start New Turn
-    /// button. Long rest also calls this defensively so a new day never carries
-    /// over a stale flag.
+    /// Clear every once-per-turn flag AND tick down round timers on any
+    /// active effects with a finite duration (Rage, Bless). Effects whose
+    /// counter hits zero are removed — that's how Rage auto-ends after 10
+    /// rounds. Invoked by the sheet's Start New Turn button. Long rest also
+    /// calls this defensively so a new day never carries over a stale flag.
     mutating func startNewTurn() {
         turnFlags.removeAll()
+        for i in activeEffects.indices {
+            if let n = activeEffects[i].roundsRemaining {
+                activeEffects[i].roundsRemaining = n - 1
+            }
+        }
+        activeEffects.removeAll { ($0.roundsRemaining ?? 1) <= 0 }
+    }
+
+    // MARK: - Feature-sourced toggle effects (Rage)
+
+    /// Toggle a feature-granted effect (Barbarian Rage, etc.). When the
+    /// effect isn't active yet, activates it with the given duration and
+    /// records the feature id as the source so the resolver can look up the
+    /// payload. When it's already active, deactivates — the player just
+    /// ended Rage early. Idempotent on the activate path: re-tapping while
+    /// active drops it; it doesn't refresh the duration.
+    ///
+    /// The caller is responsible for the resource side (spending a Rage use)
+    /// — keeping that out of here lets the same helper service free toggles
+    /// later. Returns true when the toggle flipped to active, false when it
+    /// flipped to inactive — handy for the view to decide whether to pay the
+    /// cost.
+    @discardableResult
+    mutating func toggleFeatureEffect(
+        effectID: String,
+        featureID: String,
+        roundsRemaining: Int? = nil
+    ) -> Bool {
+        if activeEffects.contains(where: { $0.effectID == effectID }) {
+            activeEffects.removeAll { $0.effectID == effectID }
+            return false
+        }
+        activeEffects.append(ActiveEffect(
+            effectID: effectID,
+            source: .feature(featureID: featureID),
+            roundsRemaining: roundsRemaining
+        ))
+        return true
     }
 
     // MARK: - ASI mutators

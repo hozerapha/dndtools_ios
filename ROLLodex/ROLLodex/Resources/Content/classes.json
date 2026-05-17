@@ -303,5 +303,63 @@
     },
     "masteryCount": 2,
     "masteryRestrictions": []
+  },
+  {
+    "id": "barbarian",
+    "name": "Barbarian",
+    "hitDie": 12,
+    "primaryAbility": "strength",
+    "savingThrows": ["strength", "constitution"],
+    "armorProficiencies": ["light", "medium", "shield"],
+    "weaponProficiencies": ["simple", "martial"],
+    "levelFeatures": {
+      "1": [
+        {
+          "id": "rage",
+          "name": "Rage",
+          "description": "You can enter a Rage as a Bonus Action. While raging, melee weapon attacks you make with Strength deal extra damage (Rage Damage). The Rage lasts up to 10 rounds and ends early if you don't attack or take damage on your turn.",
+          "actionCost": "bonusAction",
+          "resource": {
+            "id": "barbarian_rage_uses",
+            "name": "Rage Uses",
+            "max": {
+              "byClassLevel": {
+                "1": 2, "3": 3, "6": 4, "12": 5, "17": 6, "20": 99
+              }
+            },
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          },
+          "triggeredEffect": {
+            "id": "rage_damage_bonus",
+            "name": "Rage",
+            "trigger": {
+              "type": "onDamageRoll",
+              "filter": {
+                "type": "weaponLacksProperty",
+                "properties": ["ammunition"]
+              }
+            },
+            "effect": {
+              "type": "addFlatDamage",
+              "amount": {
+                "byClassLevel": {
+                  "1": 2, "9": 3, "16": 4
+                }
+              }
+            },
+            "lifecycle": { "type": "persistent", "until": { "type": "rounds", "count": 10 } },
+            "activation": "toggle"
+          }
+        },
+        {
+          "id": "unarmored_defense_barbarian",
+          "name": "Unarmored Defense",
+          "description": "While you aren't wearing armor, your AC equals 10 + your Dexterity modifier + your Constitution modifier. You can use a Shield and still gain this benefit."
+        }
+      ]
+    },
+    "masteryCount": 2,
+    "masteryRestrictions": []
   }
 ]

@@ -11,7 +11,7 @@ struct TriggeredEffectTests {
         let original = TriggeredEffect(
             id: "hex_damage_rider",
             name: "Hex",
-            trigger: .onDamageRoll,
+            trigger: .onDamageRoll(filter: nil),
             effect: .addDamageDice(dice: "1d6", damageType: .fixed(.necrotic)),
             lifecycle: .persistent(until: .concentrationEnds)
         )
@@ -59,7 +59,7 @@ struct TriggeredEffectTests {
         #expect(hex?.name == "Hex")
         let effect = hex?.grantsTriggeredEffect
         #expect(effect?.id == "hex_damage_rider")
-        #expect(effect?.trigger == .onDamageRoll)
+        #expect(effect?.trigger == .onDamageRoll(filter: nil))
         if case .addDamageDice(let dice, let typed)? = effect?.effect {
             #expect(dice == "1d6")
             #expect(typed == .fixed(.necrotic))
@@ -260,7 +260,7 @@ struct TriggeredEffectTests {
         TriggeredEffect(
             id: "hex_damage_rider",
             name: "Hex",
-            trigger: .onDamageRoll,
+            trigger: .onDamageRoll(filter: nil),
             effect: .addDamageDice(dice: "1d6", damageType: .fixed(.necrotic)),
             lifecycle: .persistent(until: .concentrationEnds)
         )
@@ -270,7 +270,7 @@ struct TriggeredEffectTests {
         TriggeredEffect(
             id: "hunters_mark_damage_rider",
             name: "Hunter's Mark",
-            trigger: .onDamageRoll,
+            trigger: .onDamageRoll(filter: nil),
             effect: .addDamageDice(dice: "1d6", damageType: .matchWeapon),
             lifecycle: .persistent(until: .concentrationEnds)
         )
