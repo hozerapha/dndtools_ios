@@ -11,7 +11,6 @@ struct CharacterSheetView: View {
 
     @State private var showRestConfirm = false
     @State private var showLevelUp = false
-    @State private var showDeleteConfirm = false
     @State private var pendingRefreshes: [PendingRefresh] = []
     @State private var spellBeingCast: PendingSpellCast?
     /// Set when applying damage to a concentrating character; presents the
@@ -93,17 +92,6 @@ struct CharacterSheetView: View {
                     Label("Rest", systemImage: "moon.zzz.fill")
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button(role: .destructive) {
-                        showDeleteConfirm = true
-                    } label: {
-                        Label("Delete Character", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                }
-            }
         }
         .onChange(of: hasSpellcasting) { _, casts in
             // Defensive: a class swap that drops spellcasting while the user
@@ -128,14 +116,6 @@ struct CharacterSheetView: View {
             Button("Short Rest") { takeRest(.short) }
             Button("Long Rest")  { takeRest(.long) }
             Button("Cancel", role: .cancel) {}
-        }
-        .confirmationDialog("Delete Character", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
-            Button("Delete \\(character.name)", role: .destructive) {
-                selectedTab = .characters
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This cannot be undone.")
         }
         .sheet(isPresented: Binding(
             get: { !pendingRefreshes.isEmpty },

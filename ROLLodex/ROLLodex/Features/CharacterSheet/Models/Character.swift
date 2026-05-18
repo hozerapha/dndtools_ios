@@ -14,10 +14,6 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
     var classEntries: [ClassEntry]
     var abilityScores: [Ability: Int]
     var maxHP: Int
-    /// Sum of all hit-die values (starting max + level-up rolls/averages),
-    /// **without** Constitution modifier.  The CON bonus is applied
-    /// dynamically per level via `recalculateHP()`.
-    var rolledHP: Int
     var currentHP: Int
     var tempHP: Int
     var proficiencies: [ProficiencyKey: ProficiencyLevel]
@@ -69,7 +65,6 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         classEntries: [ClassEntry],
         abilityScores: [Ability: Int],
         maxHP: Int,
-        rolledHP: Int = 0,
         currentHP: Int = 0,
         tempHP: Int = 0,
         proficiencies: [ProficiencyKey: ProficiencyLevel] = [:],
@@ -94,14 +89,6 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         self.classEntries = classEntries
         self.abilityScores = abilityScores
         self.maxHP = maxHP
-        // Backward-compat: callers that still pass maxHP directly can leave
-        // rolledHP at 0; we derive it from the stored maxHP.
-        if rolledHP == 0 {
-            let conMod = CharacterCalculator.abilityModifier(score: abilityScores[.constitution] ?? 10)
-            self.rolledHP = max(1, maxHP - conMod)
-        } else {
-            self.rolledHP = rolledHP
-        }
         self.currentHP = currentHP == 0 ? maxHP : currentHP
         self.tempHP = tempHP
         self.proficiencies = proficiencies
@@ -123,7 +110,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
 
     private enum CodingKeys: String, CodingKey {
         case id, name, level, speciesID, backgroundID, classEntries
-        case abilityScores, maxHP, rolledHP, currentHP, tempHP
+        case abilityScores, maxHP, currentHP, tempHP
         case proficiencies, inventory, currency, notes
         case attunementSlotsOverride, resources, spells
         case featureSelections, conditions, concentratingSpellID
@@ -143,14 +130,6 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         classEntries = try container.decode([ClassEntry].self, forKey: .classEntries)
         abilityScores = try container.decode([Ability: Int].self, forKey: .abilityScores)
         maxHP = try container.decode(Int.self, forKey: .maxHP)
-        // Migrate old saves that lack rolledHP: derive it from maxHP minus the
-        // per-level CON bonus.
-        if let decodedRolled = try container.decodeIfPresent(Int.self, forKey: .rolledHP) {
-            rolledHP = decodedRolled
-        } else {
-            let conMod = CharacterCalculator.abilityModifier(score: abilityScores[.constitution] ?? 10)
-            rolledHP = max(1, maxHP - (level * conMod))
-        }
         currentHP = try container.decodeIfPresent(Int.self, forKey: .currentHP) ?? maxHP
         tempHP = try container.decodeIfPresent(Int.self, forKey: .tempHP) ?? 0
         inventory = try container.decode([InventoryItem].self, forKey: .inventory)
@@ -192,7 +171,6 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         try container.encode(classEntries, forKey: .classEntries)
         try container.encode(abilityScores, forKey: .abilityScores)
         try container.encode(maxHP, forKey: .maxHP)
-        try container.encode(rolledHP, forKey: .rolledHP)
         try container.encode(currentHP, forKey: .currentHP)
         try container.encode(tempHP, forKey: .tempHP)
         try container.encode(inventory, forKey: .inventory)
@@ -409,20 +387,6 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         // DC is the larger of 10 or half the damage taken (after temp HP).
         let dc = max(10, remaining / 2)
         return ConcentrationCheck(spellID: spellID, dc: dc, damageTaken: remaining)
-    }
-    // MARK: - HP recalculation (CON-dependent)
-
-    /// Recompute `maxHP` from `rolledHP + (level × CON modifier)` and adjust
-    /// `currentHP` accordingly.  Called after any change that could alter the
-    /// Constitution score or level.
-    mutating func recalculateHP() {
-        let conMod = CharacterCalculator.abilityModifier(score: abilityScores[.constitution] ?? 10)
-        let newMax = rolledHP + (level * conMod)
-        let delta = newMax - maxHP
-        maxHP = newMax
-        // If CON went up, heal by the difference; if down, clamp to new max
-        // but never drop below 1 (5e: ability drain can't outright kill).
-        currentHP = max(1, min(currentHP + delta, maxHP))
     }
 }
 

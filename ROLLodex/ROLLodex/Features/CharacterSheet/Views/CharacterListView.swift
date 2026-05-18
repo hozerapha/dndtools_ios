@@ -13,13 +13,6 @@ struct CharacterListView: View {
                     NavigationLink(value: character.id) {
                         CharacterRow(character: character)
                     }
-                    .contextMenu {
-                        Button(role: .destructive) {
-                            deleteCharacter(character)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    }
                 }
                 .onDelete(perform: delete)
             }
@@ -59,10 +52,6 @@ struct CharacterListView: View {
         }
     }
 
-    private func deleteCharacter(_ character: Character) {
-        characterStore.delete(id: character.id)
-    }
-
     private func finalizeDraft(_ draft: CharacterDraft) -> Character {
         var character = draft.toCharacter()
 
@@ -71,8 +60,6 @@ struct CharacterListView: View {
             for (ability, increase) in background.abilityScoreIncreases {
                 character.abilityScores[ability, default: 10] += increase
             }
-            // HP may change if CON was boosted by the background
-            character.recalculateHP()
             // Apply background skill proficiencies
             for skill in background.skillProficiencies {
                 character.proficiencies[.skill(skill)] = .proficient
