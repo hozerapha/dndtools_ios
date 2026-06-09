@@ -6,7 +6,7 @@ Guidance for Claude when working in this repository.
 
 **ROLLodex** (repo: `dndtools_ios`) — a SwiftUI iOS app that will become a toolset for tabletop RPG (D&D 5e-flavored) players. The name puns on Rolodex (a rotating index of cards) + ROLL (dice). The first feature is a **dice roller**; more tools (initiative tracker, character sheet, spell lookup, etc.) will be added later, so the app shell is built around a `TabView` with room to grow.
 
-The full feature breakdown for the dice roller and the phased build plan live in [PLAN.md](PLAN.md). Read it before suggesting structural changes.
+The full feature breakdown for the dice roller and the phased build plan live in [PLAN.md](PLAN.md); the character sheet (the second major feature, now substantially shipped: classes, leveling, spells, resources, conditions, triggered effects) has its own live plan in [PLAN_CharacterSheet.md](PLAN_CharacterSheet.md). Read those before suggesting structural changes.
 
 ## Collaboration mode
 
@@ -21,7 +21,7 @@ The full feature breakdown for the dice roller and the phased build plan live in
 
 - **Language:** Swift 5.9+
 - **UI:** SwiftUI
-- **Min iOS target:** 17.0 (so we can use `@Observable`, modern `NavigationStack`, `.sensoryFeedback`, `.presentationDetents`, etc.)
+- **Min iOS target:** 18.0 (`IPHONEOS_DEPLOYMENT_TARGET = 18.0` in the project; gives us `@Observable`, modern `NavigationStack`, `.sensoryFeedback`, `.presentationDetents`, etc.)
 - **State:** `@State` for local view state; `@Observable` classes for shared state (history, presets), injected via the environment.
 - **Persistence (v1):** `UserDefaults` + `Codable`. Migrate to **SwiftData** when the data model gets richer.
 - **3D dice:** SceneKit (`SCNView` / `SCNScene` / `SCNPhysicsBody`). RealityKit was tried first but its physics was hard to tune for natural dice behavior; SceneKit + default physics + `physicsWorld.speed = 3` matches D&D-Beyond-style feel. Reference implementation lived at `/Users/josecolina/gitpersonal/DiceRollDemo`.

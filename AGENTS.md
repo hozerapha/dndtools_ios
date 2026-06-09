@@ -27,7 +27,7 @@ The app name puns on Rolodex (rotating index of cards) + ROLL (dice).
 | State (local) | `@State` |
 | State (shared) | `@Observable` classes injected via `.environment()` |
 | Persistence | `UserDefaults` + `Codable` (JSON) |
-| Tests | Swift Testing (`@Test`, `#expect`). 18+ test files covering models, content decoding, actions, and features. |
+| Tests | Swift Testing (`@Test`, `#expect`). 21 test files / ~285 tests covering models, content decoding, calculators, actions, resources, spells, conditions, and triggered effects. |
 | Dependencies | None — no SwiftPM packages or CocoaPods. |
 
 The project uses `PBXFileSystemSynchronizedRootGroup` (Xcode 26.4). **New Swift files added from outside Xcode are NOT live-detected**; the user must quit and relaunch Xcode for the navigator/build to see them. Editing existing files is live.
@@ -61,9 +61,9 @@ ROLLodex/
           PresetStore.swift    # UserDefaults-backed saved formulas
         Views/                 # SwiftUI views
           DiceRollerView.swift # Main dice tab; hosts the 3D tray + controls
-          Dice3DPlaygroundView.swift  # Legacy SceneKit playground; not shown in TabView
-          DiceTrayView.swift   # 2D fallback tray (wood/felt background, token grid)
-          DieTokenView.swift   # 2D die token with colored shape + number
+          Dice3DPlaygroundView.swift  # Legacy SceneKit playground view (unreachable) + PRODUCTION DiceSceneController
+          DiceTrayView.swift   # DEAD CODE — 2D fallback tray, zero references (deletion candidate)
+          DieTokenView.swift   # DEAD CODE — only used by DiceTrayView (deletion candidate)
           DiePickerView.swift  # Tap to add, long-press to remove
           FormulaBarView.swift # Displays formula; tap to edit via text parser
           HistorySheet.swift   # Bottom sheet of past rolls
@@ -218,12 +218,13 @@ Do not add XCTest unless explicitly asked.
 
 - No network code exists.
 - No keychain usage.
-- User data (history, presets) is stored in `UserDefaults` (unencrypted). Character data (when implemented) is planned for `Documents/Characters/` as JSON.
+- User data (history, presets) is stored in `UserDefaults` (unencrypted). Character data lives in `Documents/Characters/` as one JSON file per character plus a `manifest.json`, written atomically.
 - No analytics or tracking code.
 
 ---
 
 ## Useful References
 
-- `PLAN.md` — Full phased implementation plan (dice roller + character sheet).
-- `CLAUDE.md` — Original collaboration guidelines for this repo.
+- `PLAN.md` — Phased implementation plan for the dice roller (all shipped) + original character-sheet outline.
+- `PLAN_CharacterSheet.md` — The live character-sheet plan: phase status table, shipped-reality notes, and the **"What's next" roadmap** (start here when picking up work).
+- `CLAUDE.md` — Original collaboration guidelines for this repo. (Note: its "min iOS 17.0" line is stale — the project's actual `IPHONEOS_DEPLOYMENT_TARGET` is 18.0, as recorded above.)

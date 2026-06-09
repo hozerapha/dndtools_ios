@@ -1772,7 +1772,7 @@ No UI tests in v1. Pure model + store tests only.
 
 ---
 
-## Status (as of 2026-05-17)
+## Status (as of 2026-06-09)
 
 | Phase | Status |
 |---|---|
@@ -1792,6 +1792,8 @@ No UI tests in v1. Pure model + store tests only.
 | M — Choices & multi-step prompts | **shipped (architecture complete)** — Slices A + B + C all landed. Substrate: `FeatureSelection` + 4 `SelectionSource` cases (weapons / fixedOptions / subclasses / abilityScoreIncrease), `SubclassDefinition` schema, `ClassDefinition.resolvedFeatures` aggregator threaded through every feature-walking site, `LevelUpSheet` with HP roll/average, and ASI mutators with score-cap + per-ability-cap enforcement. **Incremental content still to author** (not blocking): more subclasses (Battle Master / Eldritch Knight / wizard arcane traditions / cleric domains), sorcerer metamagic via existing `.fixedOptions`, ASI prompts on every class at L4/L8/L12/L16/L19, and a feat catalog + Origin/General feat picker. **Deferred architecture**: the heavier `ChoicePromptDefinition` / `ChoiceOutcome` recursive model the plan describes — pushed until a real use case needs nested choices (Feat → "+1 ability" sub-prompt, etc.). |
 | N — Damage typing in the dice tray | **shipped** — `DiceGroup` gained `damageType: DamageType?` (Codable optional, backwards-compat for legacy JSON), `DiceFormula.applyDamageType(_:)` + `displayStringWithTypes`, `RollResult.subtotalsByType` bucketing kept dice + flat modifier (modifier attaches to a sole damage type when groups share one; falls under `nil` for mixed/untyped). `ActionInterpreter.resolveWeaponDamage` stamps `weapon.damageType` onto produced groups; `resolveRawDamage` stamps the recipe's `damageType`. Spell upcast preserves the type implicitly because `SpellDefinition.scaledRecipe` keeps the recipe's `damageType` field. New `DamageBreakdownView` renders "5 slashing + 4 radiant" lines under the tray total and in history rows. Formula bar stays untyped for parser round-trip. **Known wart**: opening the formula bar editor on a typed roll and tapping Done re-parses the untyped text, losing the type — acceptable since typed rolls come from recipe dispatch, not bar edits. |
 | O — Triggered effects & active statuses | **Slices A + B + C all shipped.** *Slice A:* Hex + Hunter's Mark end-to-end via automatic damage riders folded into weapon damage formulas. *Slice B:* Rogue class + Sneak Attack as the canonical `.optIn` chip. *Slice C:* Barbarian L1 + Rage as the canonical `.toggle` rider with 10-round timer + per-LR resource. See the **Shipped reality** callout at the end of the Phase O section for the actual schema, divergences from the original sketch, and what's still open in this phase (Divine Smite / spell-slot cost, Battle Master / superiority dice, GWM 2024-shape on-hit, attack-roll triggers, etc.). |
+| Post-O — Rogue & Barbarian full progression | **shipped 2026-05-17** (`65213dd`). Rogue L1–20: Expertise (selection UI + skill picks), Sneak Attack scaling, Cunning Action, Uncanny Dodge, Evasion, Reliable Talent (d20 floor via new `DiceGroup.minimumValue` + `1d20min10` parser support), Slippery Mind (save-proficiency grants via `grantsProficiencies`), Stroke of Luck (reactive post-roll d20→20 prompt in the dice tab, consumes the L20 resource). Thief subclass (L3/9/13/17 features, incl. Use Magic Device's 4 attunement slots). Barbarian progression entries through L20. Tool proficiencies + auto-granted feature proficiencies; level-up applies pending proficiency picks. ~40 new tests. |
+| HP retroactive recalc + character-deletion UI | **attempted and REVERTED** (`131da6d`, reverted by `383c0db` the same day). The design — store `rolledHP` (die values without CON), derive `maxHP = rolledHP + level × CON mod`, migrate old saves, recalculate on every CON change (ASI, background finalization) — is still the right shape for retroactive CON handling, and the deletion UI (context-menu delete + confirmation) is independently wanted. **Before re-landing, establish why it was reverted** — see roadmap item 8. |
 
 ## Open Decisions (to resolve during implementation)
 
@@ -1806,7 +1808,72 @@ No UI tests in v1. Pure model + store tests only.
 
 ---
 
-*Last updated: 2026-05-17*
+*Last updated: 2026-06-09 — full codebase review + doc sync. See "Code health review" below.*
+
+### Code health review (2026-06-09)
+
+A full review pass (four parallel read-throughs: dice feature, rules engine,
+view layer, tests + bundled content) produced the findings below. Fixes
+already applied are marked ✅; everything else is tracked as roadmap items
+in "What's left".
+
+**Fixes applied in this pass (need one ⌘R + test run to confirm — no new files, no Xcode restart needed):**
+
+- ✅ `CharacterStore.save(_:)` no longer re-reads + re-decodes the character
+  file after every write. The sheet writes through `binding(for:)` on every
+  keystroke / HP tap, so the disk round-trip was pure overhead; the in-memory
+  array is now updated directly with the value that was just encoded.
+- ✅ `CharacterStore.load()`'s manifest-cleanup check compared against
+  `characters.count`, which is always 0 during init — so the manifest was
+  rewritten on **every launch**. It now compares the entry count before/after
+  cleanup, and the rewrite goes through the atomic `writeManifest` path
+  (the old inline write wasn't atomic).
+- ✅ `DiceSceneController.tickRestDetection()`'s force-unwrap
+  (`allStillSince!`) replaced with an unwrap-free equivalent.
+
+**Verified-correct during review (false alarms — no action needed):**
+
+- Stroke of Luck's value-override loop already bounds-checks
+  (`min(cursor + group.count, overriddenValues.count)`).
+- `RefreshResolutionSheet`'s `rolls` cache is `@State` inside sheet content —
+  it resets per presentation; no stale-roll bug.
+- 5e math audit came back clean: proficiency bonus `⌊(L−1)/4⌋+2`, spell save
+  DC `8+mod+prof`, spell attack bonus, AC (armor base / dex cap / shield),
+  concentration DC `max(10, dmg/2)` after temp-HP absorption, level-up HP
+  average with ≥1 clamp, Archery (+2 ranged) / Dueling (+2 single-wield melee)
+  gating, keep/drop/reroll/advantage dice logic, crit detection on kept dice
+  only, multiclass-aware `LevelScaledValue` resolution.
+
+**Known debt (each row maps to a roadmap item below):**
+
+| Finding | Where | Item |
+|---|---|---|
+| Reliable Talent hardcodes `classID == "rogue" && level >= 7` in Swift | `ActionInterpreter.swift` | 9a |
+| `stroke_of_luck` excluded from the action grid by raw string id | `CharacterActionDeriver.swift` | 9b |
+| Fighting-style mechanics keyed on raw option strings (`"archery"`, `"dueling"`) | `ActionInterpreter.swift` | 9c |
+| `CharacterStore.save` failures only `print` — the user never learns a save failed | `CharacterStore.swift` | 9d |
+| No content lint: dangling feat ids, unparseable dice strings, out-of-range `upcastEffect.recipeIndex`, `LevelScaledValue` tables with no level-1 entry — all fail silently at runtime | tests | 9e |
+| Backgrounds reference feats (`savage_attacker`, `magic_initiate_*`) that exist nowhere as content definitions | `backgrounds.json` | 11 |
+| `ContentStore` `fatalError`s on bad JSON — right for bundled content, fatal for Phase H user imports | `ContentStore.swift` | 12 |
+| `ForEach(… id: \.offset)` on the level-up new-features list (fragile identity) | `FeaturesView.swift` | 13 |
+| Character swipe-to-delete and spell long-press "forget" have no confirmation | `CharacterListView` / `SpellListView` | 13 |
+| No spell search in the add-spell picker; no spell-description preview short of opening the cast sheet | `SpellListView` | 13 |
+| DiceRoller core (adv/dis, keep/drop, reroll, d100 pairing, physics-values path) has no direct unit tests | tests | 10 |
+
+**Deletion candidates (zero references, confirmed by project-wide grep — flag only; deletions happen in Xcode, by hand):**
+
+- `Features/DiceRoller/Views/DiceTrayView.swift` — 2D fallback tray,
+  superseded by the 3D SceneKit tray. Self-contained (all helpers `private`).
+- `Features/DiceRoller/Views/DieTokenView.swift` — only ever used by
+  `DiceTrayView`.
+- The `Dice3DPlaygroundView` *view struct* (the sandbox screen) is
+  unreachable from the app — but its file hosts the **production**
+  `DiceSceneController`. Split the controller into its own file first
+  (item 13), then the view struct can go.
+- `ClassDefinition.masteryCount` / `masteryRestrictions` — still parsed,
+  no longer consulted (superseded by the `weapon_mastery` feature selection).
+- `Character`'s legacy `chosenWeaponMasteries` CodingKey — **keep** until a
+  save-format version bump; it's the migration path for old saves.
 
 ### What's left — cold-start hand-off
 
@@ -1836,17 +1903,12 @@ session.
   resolver lists it only after a melee hit, consuming the chip
   decrements a slot, applies `2d8 + 1d8/level above 1` radiant.
 
-**2. Bundle a real Rogue subclass at L3 (exercises level-up + subclass
-picker against live data — neither has been used end-to-end yet)**
-- Pick one: Thief (low-mechanics, easy auth), Assassin (Stealth + crit
-  bonuses, mostly descriptive), Arcane Trickster (spell-list subclass,
-  bigger but most interesting).
-- Subclass schema already lives in `SubclassDefinition`. Pattern: append
-  to a class's `subclasses: [...]` array in `classes.json`. The picker
-  UI in `LevelUpSheet` switches on the subclass `selection` block when
-  the character is at the class's `subclassLevel`.
-- Verify: create a Rogue, level up to 3, pick the subclass, see the
-  L3 features in the action grid; tap one if it has a recipe.
+**2. ~~Bundle a real Rogue subclass at L3~~ — DONE (`65213dd`)**
+- Thief shipped with L3/9/13/17 features (incl. Use Magic Device granting
+  4 attunement slots), covered by `RogueFeatureTests`. Champion (Fighter)
+  was already bundled. Remaining subclass authoring is folded into item 11.
+- Still worth one manual end-to-end pass on the simulator: create a Rogue,
+  level to 3, pick Thief, confirm L3+ features appear in the grid.
 
 **3. Phase O polish — visuals + content authoring (small, parallelizable)**
 - `EffectsRow` two-stripe layout: separate the orange "available
@@ -1892,14 +1954,154 @@ schema stabilised; now that it has, this is unblocked)**
 - **In-app content editor** (Phase I) — substantial UI surface; only
   worth picking up if hand-editing JSON has started to hurt.
 
+**8. Re-land the reverted HP/CON work (`131da6d` → reverted by `383c0db`)**
+- Step 0 — archaeology: `git show 131da6d` and figure out what broke. The
+  revert landed two hours after the commit with no explanatory message, so
+  treat the whole diff as suspect until proven otherwise. Candidate failure
+  modes to check first: the `rolledHP` migration mis-deriving values for
+  existing saves (`maxHP − level × conMod` goes wrong if CON ever changed
+  mid-career under the old model), and `currentHP` clamping when CON
+  *decreases*.
+- Step 1 — split the commit. The character-deletion UI (context-menu delete
+  on `CharacterListView` rows + toolbar overflow delete with confirmation on
+  `CharacterSheetView`) has nothing to do with HP math and can land alone.
+  It also fixes the "swipe-to-delete has no confirmation" gap from the code
+  health review.
+- Step 2 — re-land HP recalc behind its tests: restore
+  `HPRecalculationTests.swift` from the reverted commit, make it pass, and
+  add the missing case that presumably broke: migrate → level up → ASI CON
+  → verify `maxHP`/`currentHP` at each step, plus a decode of a real
+  pre-migration character file.
+- Acceptance: bumping CON via ASI retroactively raises max HP by
+  `level × 1` per modifier step; lowering it (homebrew/manual edit) lowers
+  HP without ever dropping `currentHP` below 1; old saves migrate losslessly.
+
+**9. Engine hardening (from the 2026-06-09 code health review)**
+- **9a. De-hardcode Reliable Talent.** `ActionInterpreter` checks
+  `classID == "rogue" && level >= 7` in Swift. Replace with data: add an
+  optional `skillCheckMinimum: LevelScaledValue` (or a
+  `TriggerEffect.minimumOnSkillChecks`) to `FeatureDefinition`, author it on
+  the Rogue L7 feature in `classes.json`, and have the interpreter walk
+  features instead of class ids. `MinimumValueTests` already pin the
+  behavior — they must pass unchanged.
+- **9b. De-hardcode the `stroke_of_luck` action-grid skip.** Add a
+  presentation flag (`FeatureKind.reactive` or `surfaceAsAction: false`) to
+  `FeatureDefinition`, set it in JSON, drop the string match in
+  `CharacterActionDeriver`.
+- **9c. Centralize magic strings.** `"archery"`, `"dueling"`,
+  `"weapon_mastery"`, `"fighting_style"`, the `"expertise"` prefix — collect
+  into one `FeatureIDs` namespace as a first step (grep-able, single point of
+  truth). Full data-driven fighting-style *mechanics* (so a homebrew style
+  can add bonuses without Swift) is a separate, bigger lift — defer until a
+  real homebrew case shows up.
+- **9d. Surface save failures.** `CharacterStore.save` currently `print`s
+  and moves on. Add `private(set) var lastSaveError: String?` on the store,
+  set/clear it in `save`, render a dismissible warning banner on
+  `CharacterSheetView` when non-nil. (Disk-full is the realistic trigger.)
+- **9e. Content lint test.** One new test file that walks ALL bundled JSON
+  and asserts cross-references: every background `feat`/`equipment` id
+  resolves (or is explicitly allow-listed as not-yet-authored), every
+  `actionRecipes` dice string parses, every `upcastEffect.recipeIndex` is in
+  bounds, every `TriggeredEffect` resource cost id exists, every
+  `LevelScaledValue` table has an entry ≤ its feature's grant level, no
+  duplicate ids within a file. This is the single highest-leverage test in
+  the backlog — it converts silent content-author errors into red tests.
+
+**10. Test gaps (beyond the content lint)**
+- `DiceRoller` core: `roll` ranges + die counts, advantage/disadvantage
+  keeps the right die, `keepHighest/keepLowest/dropHighest/dropLowest`
+  permutations, `rerollOnceIfAtMost` (incl. reroll-then-floor interaction),
+  `rerollIndices` + `resultFrom(values:)` physics path, d100 tens/ones
+  composition.
+- `CharacterStore.load()` manifest-cleanup regression test (the every-launch
+  rewrite bug fixed in this pass).
+- Spell-preparation rule enforcement (`PreparedRule` — wizard can't prepare
+  outside spellbook, etc.) once item 11's casters land.
+
+**11. Content authoring catalog (JSON-only work, no Swift)**
+Current bundle: 4/12 classes (Fighter, Wizard, Rogue, Barbarian), 3/9
+species, 3/16 backgrounds, ~18/40 weapons, 8/8 armor ✅, 14/14 conditions ✅,
+~11 spells (cantrips + L1). Suggested authoring order, each batch
+shippable alone:
+- **11a. Cleric** — first `preparedFromAll` caster; Channel Divinity as a
+  resource; Life Domain at the subclass level; needs a half-dozen L1 cleric
+  spells + healing word/cure wounds (heal recipes already exist).
+- **11b. Paladin** — pairs with item 1 (Divine Smite). Half-caster slot
+  table (the `SlotTable` shape already supports arbitrary progressions —
+  author the half-caster table, no schema change). Lay on Hands as a
+  `5 × level` pool resource (v1: spend via the resources card's manual
+  adjustment; a "spend N" prompt is polish).
+- **11c. Species + backgrounds sweep** — the 6 missing species and 13
+  missing backgrounds are descriptive-trait work; Dwarven Toughness-style
+  HP traits should wait for item 8's `rolledHP` model.
+- **11d. Weapons + gear sweep** — remaining ~22 SRD weapons (all have
+  existing property/mastery vocabulary), standard adventuring gear.
+- **11e. Spell batches** — all SRD cantrips, then L1, then L2–L3, gated per
+  bundled caster class. **Prereq:** decide how class spell lists are
+  encoded (per-spell `classes: [...]` array vs. per-class list) — the
+  add-spell picker needs it to filter once the catalog grows.
+- **11f. ASI prompts audit** — Fighter currently has ASI at 4/13/19; SRD
+  5.2.1 Fighter gets 4/6/8/12/14/16/19. Audit every bundled class's ASI
+  levels against the SRD while authoring.
+- **11g. Feat catalog** — Origin feats first (backgrounds already
+  reference `savage_attacker`, `magic_initiate_*` as dangling ids — item
+  9e will flag them). General feats need the ASI-vs-feat fork in
+  `LevelUpSheet`; that may finally force the deferred
+  `ChoicePromptDefinition` recursive model (a feat granting a +1 ability
+  sub-choice).
+- **11h. More subclasses** — Battle Master (needs
+  `TriggerCost.resource(id:amount:)` — small schema addition), Eldritch
+  Knight + Arcane Trickster (spell-list subclasses), Wizard Evoker.
+
+**12. Phase H — homebrew import/export (unblocked, schema is stable)**
+- Prereq: `ContentStore` decode path must become throwing/recoverable for
+  *imported* packs (bundled content keeps `fatalError` semantics). Reuse
+  item 9e's lint as the import validator — same invariants, surfaced as an
+  error sheet instead of a failing test.
+- Then as originally specced: `UIDocumentPicker` for `.json`/`.zip` import
+  into `Documents/Content/`, `ContentStore.reload()` with imported-shadows-
+  bundled id resolution, `ShareLink` export of characters and packs.
+- Resolve open decision #5 (resource-id namespacing, `<pack>.<id>`) before
+  the first external pack exists, not after.
+
+**13. UX + structure polish backlog (small, parallelizable)**
+- Confirmation dialogs: character delete (lands with item 8 step 1), spell
+  "forget".
+- Empty-name guard on character rename.
+- `.searchable` on the add-spell picker; spell-description preview without
+  opening the cast sheet (long-press or info button).
+- Attunement-cap feedback: tapping attune at 3/3 currently no-ops silently —
+  show a brief explanation instead.
+- Stable identity for the level-up new-features `ForEach` (use feature id,
+  not `\.offset`).
+- Split `DiceSceneController` out of `Dice3DPlaygroundView.swift` into its
+  own file (⚠️ new file → Xcode ⌘Q + relaunch). Unblocks deleting the dead
+  playground view struct; also the right moment to extract
+  `FaceGeometryBuilder` / rest-detection if the file is being touched anyway.
+- EffectsRow two-stripe divider + chip-rail wording sweep (carried over from
+  item 3).
+
+### Suggested order
+
+1. **Verify this pass:** ⌘R + run the test suite (CharacterStore changed —
+   `CharacterStoreTests` must stay green).
+2. **Item 9e (content lint)** — cheap, catches everything else's mistakes.
+3. **Item 8 step 1 (deletion UI)** then **item 8 steps 0+2 (HP re-land)**.
+4. **Item 4 (death saves)** — completes Phase G; small, self-contained.
+5. **Items 1 + 11b together (Paladin + Divine Smite)** — finishes Phase O's
+   opt-in story and proves the spell-slot cost path.
+6. **Item 11a (Cleric)** — first prepared caster, exercises `preparedFromAll`.
+7. **Item 12 (Phase H)** once 9e exists to power import validation.
+8. Items 9a–9d, 10, 13 interleave as palate cleansers between the above.
+
 ### How to resume
 
 In a new session, opening with "let's continue from PLAN_CharacterSheet's
 'What's left' section, pick #N" is enough — every entry above lists the
 files / schema cases / tests that would change, so the next session can
-start without re-reading the codebase first. The repo is clean as of the
-last commit; `git log --oneline -10` shows the recent shipping cadence
-(Slice A → polish → Slice B → polish → Slice C → polish).
+start without re-reading the codebase first. `git log --oneline -10` shows
+the recent shipping cadence; note that `131da6d` (HP recalc) was reverted
+and is item 8's subject, not shipped work.
 
 > This document is mutable. As phases L–O evolve and new SRD / expansion
 > content surfaces edge cases the schema doesn't cover, update the relevant

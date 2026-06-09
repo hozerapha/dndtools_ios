@@ -6,7 +6,7 @@ The plan is intentionally split into small phases so each step introduces one or
 
 ---
 
-## Status (as of 2026-05-17)
+## Status (as of 2026-06-09)
 
 Dice-roller phases 0–11 are all **shipped**. Phase 11 (3D dice) was implemented with **SceneKit + default physics + `physicsWorld.speed = 3`** rather than RealityKit — RealityKit's physics was hard to tune for natural dice behavior; rationale in `CLAUDE.md` ("Tech stack"). All other phase tech choices stuck.
 
@@ -18,8 +18,16 @@ Bonus capabilities shipped on top of the original phases (not in the table below
 - **Follow-up chip rail** in the dice tab — post-roll chips for chained damage rolls (weapon attack → damage) and opt-in/toggle rider alternatives (Sneak Attack, Rage, …). Each chip carries its own merged formula; tapping any one chip clears the rail (mutually exclusive damage choice).
 - **Compact dice-formula display** (`DiceFormula.compactDisplayString`) for chip subtitles when all groups share one damage type.
 - **`PendingRollStore`** cross-tab handoff with `followUps: [PendingFollowUp]` + `pendingCostsToApply: [TriggerCost]` side channels.
+- **Per-die minimum values** — `DiceGroup.minimumValue` clamps each die's result to a floor (Reliable Talent's "treat a 9 or lower as 10"). Parser round-trips the `1d20min10` suffix; floors apply after rerolls and before keep/drop.
+- **Stroke of Luck prompt** — when a rolling Rogue 20 has the resource available and the roll contains a d20, a post-roll chip offers to flip the d20 to a natural 20, consuming the resource and replacing the history entry.
 
-**Active work has moved to `PLAN_CharacterSheet.md`** (D&D 5.2.1 character manager built on top of the dice roller). See its Status table for current phase state.
+**Known dead code (deletion candidates — confirmed zero references, remove via Xcode when convenient):**
+
+- `Features/DiceRoller/Views/DiceTrayView.swift` — the 2D fallback tray; superseded by the 3D SceneKit tray.
+- `Features/DiceRoller/Views/DieTokenView.swift` — only ever used by `DiceTrayView`.
+- The `Dice3DPlaygroundView` view struct itself (the sandbox screen) is unreachable from the app — but its file also contains the **production** `DiceSceneController`, so the file must stay until the controller is split out into its own file.
+
+**Active work has moved to `PLAN_CharacterSheet.md`** (D&D 5.2.1 character manager built on top of the dice roller). See its Status table and "What's next" roadmap for current state.
 
 ---
 

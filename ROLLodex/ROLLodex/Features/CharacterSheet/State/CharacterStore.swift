@@ -45,7 +45,16 @@ final class CharacterStore {
             // earlier save left a `.tmp` orphan around.
             try data.write(to: url, options: .atomic)
             updateManifest(id: character.id, lastEdited: Date())
-            reloadCharacter(id: character.id)
+            // The value we just encoded IS the file's content — update the
+            // in-memory array directly instead of re-reading + re-decoding
+            // from disk. save() runs on every sheet binding write (each
+            // keystroke of a name edit, every HP tap), so the round-trip
+            // was pure overhead.
+            if let index = characters.firstIndex(where: { $0.id == character.id }) {
+                characters[index] = character
+            } else {
+                characters.append(character)
+            }
         } catch {
             print("Failed to save character: \(error)")
         }
@@ -82,6 +91,7 @@ final class CharacterStore {
 
     private func load() {
         var manifest = readManifest()
+        let entryCountBeforeCleanup = manifest.entries.count
         var loaded: [Character] = []
 
         // Load each character referenced in the manifest.
@@ -96,26 +106,14 @@ final class CharacterStore {
             return true
         }
 
-        // If manifest was cleaned up, rewrite it.
-        if loaded.count != characters.count {
-            try? encoder.encode(manifest).write(to: manifestURL)
+        // If manifest entries were dropped (orphaned ids), rewrite it.
+        // (Comparing against `characters.count` here was wrong — that's
+        // always 0 during init, so the manifest was rewritten every launch.)
+        if manifest.entries.count != entryCountBeforeCleanup {
+            writeManifest(manifest)
         }
 
         characters = loaded
-    }
-
-    private func reloadCharacter(id: UUID) {
-        let url = fileURL(for: id)
-        guard let data = try? Data(contentsOf: url),
-              let character = try? decoder.decode(Character.self, from: data) else {
-            return
-        }
-
-        if let index = characters.firstIndex(where: { $0.id == id }) {
-            characters[index] = character
-        } else {
-            characters.append(character)
-        }
     }
 
     // MARK: - Manifest

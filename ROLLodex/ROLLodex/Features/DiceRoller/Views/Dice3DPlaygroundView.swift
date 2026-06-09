@@ -2251,9 +2251,9 @@ final class DiceSceneController: NSObject {
         }
 
         if allStill {
-            if allStillSince == nil {
-                allStillSince = now
-            } else if now - allStillSince! >= requiredAllStillDuration {
+            let since = allStillSince ?? now
+            allStillSince = since
+            if now - since >= requiredAllStillDuration {
                 settleAllDice()
             }
         } else {
