@@ -32,10 +32,16 @@ struct LevelUpTests {
     }
 
     // MARK: - applyLevelUp
+    //
+    // `hpGain` is the DIE-ONLY value (roll or die average) — the CON share
+    // is layered on retroactively by `recalculateHP()`. The fighter fixture
+    // has CON 14 (+2), so each level contributes die + 2 to max HP.
 
     @Test func applyLevelUpBumpsLevelMaxAndCurrentHP() {
+        // maxHP 12 at L1/CON +2 → rolledHP 10. Roll a 6: rolledHP 16,
+        // new max = 16 + 2×2 = 20.
         var character = makeFighter(level: 1, maxHP: 12, currentHP: 12)
-        CharacterCalculator.applyLevelUp(to: &character, hpGain: 8, classID: "fighter")
+        CharacterCalculator.applyLevelUp(to: &character, hpGain: 6, classID: "fighter")
         #expect(character.level == 2)
         #expect(character.classEntries.first?.level == 2)
         #expect(character.maxHP == 20)
@@ -43,19 +49,20 @@ struct LevelUpTests {
     }
 
     @Test func applyLevelUpRespectsHPFloor() {
-        // Cruel CON: -5 modifier on a d6 cantrip-deficient character.
+        // A negative staged value still banks at least 1 die HP.
+        // maxHP 6 at L1/CON +2 → rolledHP 4. Clamped gain 1 → rolledHP 5,
+        // new max = 5 + 2×2 = 9.
         var character = makeFighter(level: 1, maxHP: 6, currentHP: 6)
         CharacterCalculator.applyLevelUp(to: &character, hpGain: -3, classID: "fighter")
-        // Gain clamps to 1.
-        #expect(character.maxHP == 7)
-        #expect(character.currentHP == 7)
+        #expect(character.maxHP == 9)
+        #expect(character.currentHP == 9)
     }
 
     @Test func applyLevelUpDoesNotOvershootCurrentHP() {
-        // Player was at half HP; level-up adds 8 to max + currentHP, but
-        // currentHP shouldn't exceed the new max.
+        // Player was at half HP; the level's delta (die 6 + CON 2 = 8) heals
+        // by the same amount, but currentHP shouldn't exceed the new max.
         var character = makeFighter(level: 1, maxHP: 12, currentHP: 6)
-        CharacterCalculator.applyLevelUp(to: &character, hpGain: 8, classID: "fighter")
+        CharacterCalculator.applyLevelUp(to: &character, hpGain: 6, classID: "fighter")
         #expect(character.maxHP == 20)
         // 6 + 8 = 14, which is ≤ 20 → currentHP = 14.
         #expect(character.currentHP == 14)
@@ -89,7 +96,8 @@ struct LevelUpTests {
         CharacterCalculator.applyLevelUp(to: &character, hpGain: 5, classID: "ranger")
         #expect(character.level == 2)
         #expect(character.classEntries.first?.level == 1)
-        #expect(character.maxHP == 15)
+        // maxHP 10 at L1/CON +2 → rolledHP 8; +5 die → 13; +2×2 CON = 17.
+        #expect(character.maxHP == 17)
     }
 
     // MARK: - Helpers

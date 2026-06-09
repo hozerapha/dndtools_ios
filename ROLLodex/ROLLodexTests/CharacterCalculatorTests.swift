@@ -5,6 +5,10 @@ struct CharacterCalculatorTests {
 
     @Test func abilityModifiers() {
         #expect(CharacterCalculator.abilityModifier(score: 1) == -5)
+        // Odd scores below 10 are the floor-vs-truncate trap: 9 is −1, not 0.
+        #expect(CharacterCalculator.abilityModifier(score: 3) == -4)
+        #expect(CharacterCalculator.abilityModifier(score: 7) == -2)
+        #expect(CharacterCalculator.abilityModifier(score: 9) == -1)
         #expect(CharacterCalculator.abilityModifier(score: 8) == -1)
         #expect(CharacterCalculator.abilityModifier(score: 10) == 0)
         #expect(CharacterCalculator.abilityModifier(score: 12) == 1)

@@ -193,9 +193,11 @@ struct LevelUpSheet: View {
     // MARK: - Commit
 
     private func commit() {
-        guard let gain = stagedHPGain, let entry = classEntry else { return }
+        guard let dieGain = stagedDieGain, let entry = classEntry else { return }
         var copy = character
-        CharacterCalculator.applyLevelUp(to: &copy, hpGain: gain, classID: entry.classID)
+        // Die-only value — applyLevelUp banks it into rolledHP and
+        // recalculateHP() layers the CON share on retroactively.
+        CharacterCalculator.applyLevelUp(to: &copy, hpGain: dieGain, classID: entry.classID)
         applyNewFeatureProficiencies(to: &copy)
         character = copy
         dismiss()
@@ -239,12 +241,19 @@ struct LevelUpSheet: View {
         CharacterCalculator.abilityModifier(score: character.abilityScores[.constitution] ?? 10)
     }
 
-    private var stagedHPGain: Int? {
-        if let r = stagedRoll { return r + conMod }
-        if usedAverage {
-            return CharacterCalculator.averageLevelUpHPGain(hitDie: hitDie, conMod: conMod)
-        }
+    /// Die-only value to bank into `rolledHP` — the roll itself or the die
+    /// average, WITHOUT the CON modifier (CON is applied retroactively by
+    /// `recalculateHP()` during commit).
+    private var stagedDieGain: Int? {
+        if let r = stagedRoll { return r }
+        if usedAverage { return hitDie / 2 + 1 }
         return nil
+    }
+
+    /// What the player sees as this level's HP change: die value + CON mod.
+    /// Display only — the commit path goes through `stagedDieGain`.
+    private var stagedHPGain: Int? {
+        stagedDieGain.map { $0 + conMod }
     }
 
     /// Selection prompts the character hasn't filled to capacity, across all

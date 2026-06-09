@@ -68,6 +68,14 @@ struct CharacterListView: View {
 
         // Apply class proficiencies
         if let classDef = contentStore.classDefinition(id: draft.classID) {
+            // Starting HP from the real class hit die + post-ASI CON. The
+            // draft's placeholder math runs before background ASIs land and
+            // assumes a d10 for every class, so both halves can be wrong here
+            // (a Soldier's +1 CON never reached HP; a Wizard started at d10).
+            character.rolledHP = classDef.hitDie.rawValue
+            character.recalculateHP()
+            character.currentHP = character.maxHP
+
             for ability in classDef.savingThrows {
                 character.proficiencies[.savingThrow(ability)] = .proficient
             }

@@ -45,16 +45,19 @@ struct HPEditorSheet: View {
                 }
 
                 Section("Max HP") {
-                    Stepper(value: $character.maxHP, in: 1...999) {
+                    // Route through setMaxHP so the manual edit writes into
+                    // rolledHP — otherwise the next CON-driven recalculation
+                    // would stomp it. setMaxHP also clamps current HP to the
+                    // new ceiling so we never display "12 / 10".
+                    Stepper(
+                        value: Binding(
+                            get: { character.maxHP },
+                            set: { character.setMaxHP($0) }
+                        ),
+                        in: 1...999
+                    ) {
                         LabeledContent("Maximum") {
                             Text("\(character.maxHP)").monospacedDigit()
-                        }
-                    }
-                    .onChange(of: character.maxHP) { _, new in
-                        // Clamp current HP to the new ceiling so we never
-                        // display "12 / 10".
-                        if character.currentHP > new {
-                            character.currentHP = new
                         }
                     }
                 }

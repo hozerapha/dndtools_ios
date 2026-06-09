@@ -1793,7 +1793,7 @@ No UI tests in v1. Pure model + store tests only.
 | N — Damage typing in the dice tray | **shipped** — `DiceGroup` gained `damageType: DamageType?` (Codable optional, backwards-compat for legacy JSON), `DiceFormula.applyDamageType(_:)` + `displayStringWithTypes`, `RollResult.subtotalsByType` bucketing kept dice + flat modifier (modifier attaches to a sole damage type when groups share one; falls under `nil` for mixed/untyped). `ActionInterpreter.resolveWeaponDamage` stamps `weapon.damageType` onto produced groups; `resolveRawDamage` stamps the recipe's `damageType`. Spell upcast preserves the type implicitly because `SpellDefinition.scaledRecipe` keeps the recipe's `damageType` field. New `DamageBreakdownView` renders "5 slashing + 4 radiant" lines under the tray total and in history rows. Formula bar stays untyped for parser round-trip. **Known wart**: opening the formula bar editor on a typed roll and tapping Done re-parses the untyped text, losing the type — acceptable since typed rolls come from recipe dispatch, not bar edits. |
 | O — Triggered effects & active statuses | **Slices A + B + C all shipped.** *Slice A:* Hex + Hunter's Mark end-to-end via automatic damage riders folded into weapon damage formulas. *Slice B:* Rogue class + Sneak Attack as the canonical `.optIn` chip. *Slice C:* Barbarian L1 + Rage as the canonical `.toggle` rider with 10-round timer + per-LR resource. See the **Shipped reality** callout at the end of the Phase O section for the actual schema, divergences from the original sketch, and what's still open in this phase (Divine Smite / spell-slot cost, Battle Master / superiority dice, GWM 2024-shape on-hit, attack-roll triggers, etc.). |
 | Post-O — Rogue & Barbarian full progression | **shipped 2026-05-17** (`65213dd`). Rogue L1–20: Expertise (selection UI + skill picks), Sneak Attack scaling, Cunning Action, Uncanny Dodge, Evasion, Reliable Talent (d20 floor via new `DiceGroup.minimumValue` + `1d20min10` parser support), Slippery Mind (save-proficiency grants via `grantsProficiencies`), Stroke of Luck (reactive post-roll d20→20 prompt in the dice tab, consumes the L20 resource). Thief subclass (L3/9/13/17 features, incl. Use Magic Device's 4 attunement slots). Barbarian progression entries through L20. Tool proficiencies + auto-granted feature proficiencies; level-up applies pending proficiency picks. ~40 new tests. |
-| HP retroactive recalc + character-deletion UI | **attempted and REVERTED** (`131da6d`, reverted by `383c0db` the same day). The design — store `rolledHP` (die values without CON), derive `maxHP = rolledHP + level × CON mod`, migrate old saves, recalculate on every CON change (ASI, background finalization) — is still the right shape for retroactive CON handling, and the deletion UI (context-menu delete + confirmation) is independently wanted. **Before re-landing, establish why it was reverted** — see roadmap item 8. |
+| HP retroactive recalc + character-deletion UI | **HP half re-landed 2026-06-09** (v2 of the reverted `131da6d`). Why the original was reverted, found by inspection: (a) the init fallback derived `rolledHP = maxHP − conMod` **without the level multiplier**, inflating HP for any level > 1 character on the next recalc — the commit's own `HPRecalculationTests` couldn't pass; (b) it changed `averageLevelUpHPGain`'s signature without updating `LevelUpTests`, so the test target didn't compile; (c) the HP editor's manual max-HP stepper wrote `maxHP` directly, which the next recalc would have stomped. v2 fixes all three: level-aware derivation + decode migration, `averageLevelUpHPGain(hitDie:conMod:)` kept as the display helper, and `setMaxHP(_:)` writes manual edits through `rolledHP`. Bonus fix: creation finalization now seeds HP from the real class hit die + post-background-ASI CON (previously every class started on a d10 and a background CON bump never reached HP). The **deletion-UI half** of the old commit is still pending — roadmap item 8. |
 
 ## Open Decisions (to resolve during implementation)
 
@@ -1830,6 +1830,11 @@ in "What's left".
   (the old inline write wasn't atomic).
 - ✅ `DiceSceneController.tickRestDetection()`'s force-unwrap
   (`allStillSince!`) replaced with an unwrap-free equivalent.
+- ✅ (2026-06-09, HP pass) `CharacterCalculator.abilityModifier` used Swift's
+  truncating division, so every odd score below 10 was one modifier too high
+  (9 → 0 instead of −1; 1 → −4 instead of −5 — the existing test for score 1
+  expected −5 and was **failing**). Now `score / 2 - 5`, the exact 5e floor.
+  Affects mods/saves/AC/attack math for low odd scores everywhere.
 
 **Verified-correct during review (false alarms — no action needed):**
 
@@ -1954,27 +1959,25 @@ schema stabilised; now that it has, this is unblocked)**
 - **In-app content editor** (Phase I) — substantial UI surface; only
   worth picking up if hand-editing JSON has started to hurt.
 
-**8. Re-land the reverted HP/CON work (`131da6d` → reverted by `383c0db`)**
-- Step 0 — archaeology: `git show 131da6d` and figure out what broke. The
-  revert landed two hours after the commit with no explanatory message, so
-  treat the whole diff as suspect until proven otherwise. Candidate failure
-  modes to check first: the `rolledHP` migration mis-deriving values for
-  existing saves (`maxHP − level × conMod` goes wrong if CON ever changed
-  mid-career under the old model), and `currentHP` clamping when CON
-  *decreases*.
-- Step 1 — split the commit. The character-deletion UI (context-menu delete
-  on `CharacterListView` rows + toolbar overflow delete with confirmation on
-  `CharacterSheetView`) has nothing to do with HP math and can land alone.
-  It also fixes the "swipe-to-delete has no confirmation" gap from the code
-  health review.
-- Step 2 — re-land HP recalc behind its tests: restore
-  `HPRecalculationTests.swift` from the reverted commit, make it pass, and
-  add the missing case that presumably broke: migrate → level up → ASI CON
-  → verify `maxHP`/`currentHP` at each step, plus a decode of a real
-  pre-migration character file.
-- Acceptance: bumping CON via ASI retroactively raises max HP by
-  `level × 1` per modifier step; lowering it (homebrew/manual edit) lowers
-  HP without ever dropping `currentHP` below 1; old saves migrate losslessly.
+**8. ~~Re-land the reverted HP/CON work~~ — HP half DONE 2026-06-09; deletion UI still open**
+- Shipped (see the Status-table entry for the revert post-mortem):
+  `Character.rolledHP` stores die-only HP; `recalculateHP()` derives
+  `maxHP = max(level, rolledHP + level × CON mod)` and shifts `currentHP`
+  by the delta (floors at 1 for the living, leaves the dying at 0); decode
+  migration back-derives `rolledHP` for old saves; the ASI mutators recalc
+  automatically when CON changes (so every picker path is covered);
+  `setMaxHP(_:)` writes manual max-HP edits through `rolledHP` so recalcs
+  preserve them; `applyLevelUp` banks the die-only gain; creation
+  finalization seeds HP from the real class hit die + post-ASI CON.
+  Tests: new `HPRecalculationTests.swift` (⚠️ new file — Xcode ⌘Q +
+  relaunch before building) + `LevelUpTests` updated to die-only semantics.
+- Known model edge (accepted): with severe CON penalties, 5e's
+  ≥1-HP-per-level rule is enforced as a total floor (`max(level, …)`)
+  rather than per-level clamping, since per-level die values aren't stored.
+- **Still open from the old commit:** the deletion affordances —
+  context-menu delete on `CharacterListView` rows + toolbar overflow
+  delete with a confirmation dialog on `CharacterSheetView`. Landing them
+  also closes the "swipe-to-delete has no confirmation" gap (item 13).
 
 **9. Engine hardening (from the 2026-06-09 code health review)**
 - **9a. De-hardcode Reliable Talent.** `ActionInterpreter` checks
@@ -2086,7 +2089,8 @@ shippable alone:
 1. **Verify this pass:** ⌘R + run the test suite (CharacterStore changed —
    `CharacterStoreTests` must stay green).
 2. **Item 9e (content lint)** — cheap, catches everything else's mistakes.
-3. **Item 8 step 1 (deletion UI)** then **item 8 steps 0+2 (HP re-land)**.
+3. **Item 8's remaining half** — character-deletion UI with confirmation
+   (the HP re-land shipped 2026-06-09).
 4. **Item 4 (death saves)** — completes Phase G; small, self-contained.
 5. **Items 1 + 11b together (Paladin + Divine Smite)** — finishes Phase O's
    opt-in story and proves the spell-slot cost path.

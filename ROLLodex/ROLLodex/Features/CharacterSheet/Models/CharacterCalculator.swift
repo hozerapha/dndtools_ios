@@ -2,7 +2,11 @@ import Foundation
 
 enum CharacterCalculator {
     static func abilityModifier(score: Int) -> Int {
-        (score - 10) / 2
+        // `(score - 10) / 2` truncates toward zero in Swift, giving odd
+        // scores below 10 a modifier one too high (9 → 0 instead of −1,
+        // 1 → −4 instead of −5). `score / 2 - 5` is the exact 5e floor
+        // for every non-negative score.
+        score / 2 - 5
     }
 
     static func proficiencyBonus(level: Int) -> Int {
@@ -120,9 +124,11 @@ enum CharacterCalculator {
         )
     }
 
-    /// HP gain at level-up if the player takes the average. 5e PHB rule:
-    /// `floor(hitDie/2) + 1 + CON mod`. Always ≥ 1 (CON penalty can't push
-    /// the gain below 1 — handled in `clampedLevelUpHPGain`).
+    /// Total HP change the player will SEE at level-up when taking the
+    /// average — die average + CON mod. 5e PHB rule: `floor(hitDie/2) + 1 +
+    /// CON mod`. Display/preview helper only: the value banked into
+    /// `rolledHP` by `applyLevelUp` is the die-only part; the CON share is
+    /// derived retroactively by `Character.recalculateHP()`.
     static func averageLevelUpHPGain(hitDie: Int, conMod: Int) -> Int {
         (hitDie / 2 + 1) + conMod
     }
@@ -133,22 +139,26 @@ enum CharacterCalculator {
         max(1, raw)
     }
 
-    /// Bumps the character's overall level, the matching class entry's level,
-    /// and adds the (clamped) HP gain to both max and current HP. Centralized
-    /// so the level-up sheet and any future automation share the same math.
+    /// Bumps the character's overall level and the matching class entry's
+    /// level, and banks the (clamped) **die-only** HP gain into `rolledHP` —
+    /// `hpGain` is the hit-die roll or die average WITHOUT the CON modifier.
+    /// `recalculateHP()` then derives the new max, so the per-level CON
+    /// bonus stays retroactive (a later CON change reflows every level).
+    /// Centralized so the level-up sheet and any future automation share
+    /// the same math.
     static func applyLevelUp(
         to character: inout Character,
         hpGain: Int,
         classID: String
     ) {
         let clampedGain = clampedLevelUpHPGain(hpGain)
-        character.maxHP += clampedGain
-        character.currentHP = min(character.currentHP + clampedGain, character.maxHP)
+        character.rolledHP += clampedGain
         character.level += 1
         if let idx = character.classEntries.firstIndex(where: { $0.classID == classID }) {
             let entry = character.classEntries[idx]
             character.classEntries[idx] = ClassEntry(classID: entry.classID, level: entry.level + 1)
         }
+        character.recalculateHP()
     }
 
     static func initiativeBonus(character: Character) -> Int {

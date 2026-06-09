@@ -14,6 +14,12 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
     var classEntries: [ClassEntry]
     var abilityScores: [Ability: Int]
     var maxHP: Int
+    /// Sum of every hit-die contribution (starting die max + each level-up's
+    /// roll or average), **without** any Constitution modifier. `maxHP` is
+    /// derived from this via `recalculateHP()` — keeping the die total
+    /// separate is what lets a CON change apply retroactively across all
+    /// levels instead of only at future level-ups.
+    var rolledHP: Int
     var currentHP: Int
     var tempHP: Int
     var proficiencies: [ProficiencyKey: ProficiencyLevel]
@@ -65,6 +71,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         classEntries: [ClassEntry],
         abilityScores: [Ability: Int],
         maxHP: Int,
+        rolledHP: Int? = nil,
         currentHP: Int = 0,
         tempHP: Int = 0,
         proficiencies: [ProficiencyKey: ProficiencyLevel] = [:],
@@ -89,6 +96,17 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         self.classEntries = classEntries
         self.abilityScores = abilityScores
         self.maxHP = maxHP
+        // When the caller doesn't supply rolledHP (older call sites, test
+        // fixtures), derive it so rolledHP + level × CON mod == maxHP. The
+        // reverted first attempt (131da6d) subtracted a single CON mod here
+        // regardless of level, which inflated HP for any level > 1 character
+        // on the next recalculation.
+        if let rolledHP {
+            self.rolledHP = rolledHP
+        } else {
+            let conMod = CharacterCalculator.abilityModifier(score: abilityScores[.constitution] ?? 10)
+            self.rolledHP = max(1, maxHP - level * conMod)
+        }
         self.currentHP = currentHP == 0 ? maxHP : currentHP
         self.tempHP = tempHP
         self.proficiencies = proficiencies
@@ -110,7 +128,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
 
     private enum CodingKeys: String, CodingKey {
         case id, name, level, speciesID, backgroundID, classEntries
-        case abilityScores, maxHP, currentHP, tempHP
+        case abilityScores, maxHP, rolledHP, currentHP, tempHP
         case proficiencies, inventory, currency, notes
         case attunementSlotsOverride, resources, spells
         case featureSelections, conditions, concentratingSpellID
@@ -130,6 +148,14 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         classEntries = try container.decode([ClassEntry].self, forKey: .classEntries)
         abilityScores = try container.decode([Ability: Int].self, forKey: .abilityScores)
         maxHP = try container.decode(Int.self, forKey: .maxHP)
+        // Migrate saves that predate rolledHP: back-derive the die total so
+        // the invariant rolledHP + level × CON mod == maxHP holds for them.
+        if let decodedRolled = try container.decodeIfPresent(Int.self, forKey: .rolledHP) {
+            rolledHP = decodedRolled
+        } else {
+            let conMod = CharacterCalculator.abilityModifier(score: abilityScores[.constitution] ?? 10)
+            rolledHP = max(1, maxHP - level * conMod)
+        }
         currentHP = try container.decodeIfPresent(Int.self, forKey: .currentHP) ?? maxHP
         tempHP = try container.decodeIfPresent(Int.self, forKey: .tempHP) ?? 0
         inventory = try container.decode([InventoryItem].self, forKey: .inventory)
@@ -171,6 +197,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         try container.encode(classEntries, forKey: .classEntries)
         try container.encode(abilityScores, forKey: .abilityScores)
         try container.encode(maxHP, forKey: .maxHP)
+        try container.encode(rolledHP, forKey: .rolledHP)
         try container.encode(currentHP, forKey: .currentHP)
         try container.encode(tempHP, forKey: .tempHP)
         try container.encode(inventory, forKey: .inventory)
@@ -350,6 +377,11 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         updated.append(ability.rawValue)
         featureSelections[selectionID] = updated
         abilityScores[ability] = (abilityScores[ability] ?? 10) + 1
+        // CON feeds max HP retroactively — recalc here so every UI path
+        // that routes through the ASI mutators gets it for free.
+        if ability == .constitution {
+            recalculateHP()
+        }
     }
 
     /// Reverse one ASI pick for `ability`. No-op when the ability has no
@@ -366,6 +398,40 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         }
         featureSelections[selectionID] = updated
         abilityScores[ability] = max(1, (abilityScores[ability] ?? 10) - 1)
+        if ability == .constitution {
+            recalculateHP()
+        }
+    }
+
+    // MARK: - HP recalculation (retroactive CON)
+
+    /// Recompute `maxHP` as `rolledHP + level × CON modifier` and shift
+    /// `currentHP` by the same delta — so a CON change (ASI, background,
+    /// manual edit) applies retroactively to every level, not just future
+    /// level-ups. Floored at `level` (5e's "at least 1 HP per level"
+    /// guarantee, applied to the total since we don't store per-level dice).
+    /// A character at 0 HP stays at 0 — recalculation never wakes the dying.
+    mutating func recalculateHP() {
+        let conMod = CharacterCalculator.abilityModifier(score: abilityScores[.constitution] ?? 10)
+        let newMax = max(level, rolledHP + level * conMod)
+        let delta = newMax - maxHP
+        guard delta != 0 else { return }
+        maxHP = newMax
+        if currentHP > 0 {
+            currentHP = min(max(1, currentHP + delta), maxHP)
+        }
+    }
+
+    /// Manual max-HP edit (HP editor sheet). Writes the change through to
+    /// `rolledHP` so the next `recalculateHP()` preserves the edit instead
+    /// of stomping it back to the computed value.
+    mutating func setMaxHP(_ newMax: Int) {
+        let clamped = max(1, newMax)
+        rolledHP += clamped - maxHP
+        maxHP = clamped
+        if currentHP > maxHP {
+            currentHP = maxHP
+        }
     }
 
     /// Apply `amount` damage. Drains temp HP first (per 5e), then chips
