@@ -6,11 +6,27 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		314267D32FD8E364001CA984 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 317BBFF92FA596A000B43F42 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 317BC0002FA596A000B43F42;
+			remoteInfo = ROLLodex;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		314267CF2FD8E364001CA984 /* ROLLodexTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ROLLodexTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		317BC0012FA596A000B43F42 /* ROLLodex.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ROLLodex.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		314267D02FD8E364001CA984 /* ROLLodexTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ROLLodexTests;
+			sourceTree = "<group>";
+		};
 		317BC0032FA596A000B43F42 /* ROLLodex */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ROLLodex;
@@ -19,6 +35,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		314267CC2FD8E364001CA984 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		317BBFFE2FA596A000B43F42 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				317BC0032FA596A000B43F42 /* ROLLodex */,
+				314267D02FD8E364001CA984 /* ROLLodexTests */,
 				317BC0022FA596A000B43F42 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				317BC0012FA596A000B43F42 /* ROLLodex.app */,
+				314267CF2FD8E364001CA984 /* ROLLodexTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,6 +73,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		314267CE2FD8E364001CA984 /* ROLLodexTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 314267D72FD8E364001CA984 /* Build configuration list for PBXNativeTarget "ROLLodexTests" */;
+			buildPhases = (
+				314267CB2FD8E364001CA984 /* Sources */,
+				314267CC2FD8E364001CA984 /* Frameworks */,
+				314267CD2FD8E364001CA984 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				314267D42FD8E364001CA984 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				314267D02FD8E364001CA984 /* ROLLodexTests */,
+			);
+			name = ROLLodexTests;
+			packageProductDependencies = (
+			);
+			productName = ROLLodexTests;
+			productReference = 314267CF2FD8E364001CA984 /* ROLLodexTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		317BC0002FA596A000B43F42 /* ROLLodex */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 317BC00C2FA596A100B43F42 /* Build configuration list for PBXNativeTarget "ROLLodex" */;
@@ -80,6 +128,10 @@
 				LastSwiftUpdateCheck = 2640;
 				LastUpgradeCheck = 2640;
 				TargetAttributes = {
+					314267CE2FD8E364001CA984 = {
+						CreatedOnToolsVersion = 26.4;
+						TestTargetID = 317BC0002FA596A000B43F42;
+					};
 					317BC0002FA596A000B43F42 = {
 						CreatedOnToolsVersion = 26.4;
 					};
@@ -100,11 +152,19 @@
 			projectRoot = "";
 			targets = (
 				317BC0002FA596A000B43F42 /* ROLLodex */,
+				314267CE2FD8E364001CA984 /* ROLLodexTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		314267CD2FD8E364001CA984 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		317BBFFF2FA596A000B43F42 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -115,6 +175,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		314267CB2FD8E364001CA984 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		317BBFFD2FA596A000B43F42 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -124,7 +191,59 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		314267D42FD8E364001CA984 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 317BC0002FA596A000B43F42 /* ROLLodex */;
+			targetProxy = 314267D32FD8E364001CA984 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		314267D52FD8E364001CA984 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jcol.ROLLodexTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ROLLodex.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ROLLodex";
+			};
+			name = Debug;
+		};
+		314267D62FD8E364001CA984 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jcol.ROLLodexTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ROLLodex.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ROLLodex";
+			};
+			name = Release;
+		};
 		317BC00A2FA596A100B43F42 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -315,6 +434,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		314267D72FD8E364001CA984 /* Build configuration list for PBXNativeTarget "ROLLodexTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				314267D52FD8E364001CA984 /* Debug */,
+				314267D62FD8E364001CA984 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		317BBFFC2FA596A000B43F42 /* Build configuration list for PBXProject "ROLLodex" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

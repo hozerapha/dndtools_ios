@@ -1,7 +1,11 @@
 import Foundation
 
 struct DiceFormulaParser {
-    enum ParseError: Error, LocalizedError {
+    // nonisolated + Equatable so tests can match thrown values from
+    // Swift Testing's nonisolated #expect(throws:) machinery — the module's
+    // default MainActor isolation would otherwise make the synthesized
+    // conformance unusable there.
+    nonisolated enum ParseError: Error, LocalizedError, Equatable {
         case empty
         case invalidToken(String)
         case invalidDieSize(Int)

@@ -39,9 +39,14 @@ struct MinimumValueTests {
         let b = DiceGroup(kind: .d20, count: 1, minimumValue: 10)
         let c = DiceGroup(kind: .d20, count: 1, minimumValue: 5)
         let d = DiceGroup(kind: .d20, count: 1)
-        #expect(a == b)
-        #expect(a != c)
-        #expect(a != d)
+        // Compare outside #expect: the macro's expansion is nonisolated and
+        // can't use DiceGroup's MainActor-isolated Equatable conformance.
+        let matchesSameMinimum = a == b
+        let matchesDifferentMinimum = a == c
+        let matchesMissingMinimum = a == d
+        #expect(matchesSameMinimum)
+        #expect(!matchesDifferentMinimum)
+        #expect(!matchesMissingMinimum)
     }
 
     // MARK: - Parser

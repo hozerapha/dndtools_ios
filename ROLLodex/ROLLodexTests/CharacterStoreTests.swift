@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import SwiftUI
 @testable import ROLLodex
 
 struct CharacterStoreTests {

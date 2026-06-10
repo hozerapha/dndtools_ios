@@ -202,6 +202,32 @@ Tests use **Swift Testing** (`import Testing`, `@Test`, `#expect`). The test tar
 
 Do not add XCTest unless explicitly asked.
 
+### Test target build settings (hard-won, 2026-06-09)
+
+The `ROLLodexTests` target was recreated after an Xcode update orphaned the
+original (the autocreated test plan showed "0 test targets"). If it ever needs
+recreating again, three settings must match the app target or the suite won't
+build/run:
+
+- **iOS Deployment Target = 18.0** — a fresh target defaults to the newest
+  SDK, which won't match installed simulators.
+- **Default Actor Isolation (`SWIFT_DEFAULT_ACTOR_ISOLATION`) = MainActor** —
+  must match the app target; otherwise every app-module conformance
+  (Equatable / Codable / Hashable) is "MainActor-isolated" and unusable from
+  nonisolated test code.
+- **Swift Language Version = 5.0** (matches the app).
+
+Toolchain strictness that bit us on the same day:
+
+- `#expect(throws: someErrorValue)` requires the error type to conform to
+  `Equatable` (older toolchains were lenient).
+- Member-import visibility: each test file must directly `import Foundation`
+  / `import SwiftUI` for the APIs it touches — nothing leaks through
+  `@testable import ROLLodex` anymore.
+- `#expect(a == b)` on app-module types expands into nonisolated macro code
+  that cannot use MainActor-isolated conformances. Hoist the comparison into
+  a local `let` and `#expect` the Bool, or mark the model type `nonisolated`.
+
 ---
 
 ## What Not to Do

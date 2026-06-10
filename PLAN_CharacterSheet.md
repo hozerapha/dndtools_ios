@@ -1857,11 +1857,11 @@ in "What's left".
 | `stroke_of_luck` excluded from the action grid by raw string id | `CharacterActionDeriver.swift` | 9b |
 | Fighting-style mechanics keyed on raw option strings (`"archery"`, `"dueling"`) | `ActionInterpreter.swift` | 9c |
 | `CharacterStore.save` failures only `print` — the user never learns a save failed | `CharacterStore.swift` | 9d |
-| No content lint: dangling feat ids, unparseable dice strings, out-of-range `upcastEffect.recipeIndex`, `LevelScaledValue` tables with no level-1 entry — all fail silently at runtime | tests | 9e |
+| ~~No content lint~~ — ✅ closed 2026-06-09 (`ContentLintTests.swift`) | tests | 9e |
 | Backgrounds reference feats (`savage_attacker`, `magic_initiate_*`) that exist nowhere as content definitions | `backgrounds.json` | 11 |
 | `ContentStore` `fatalError`s on bad JSON — right for bundled content, fatal for Phase H user imports | `ContentStore.swift` | 12 |
 | `ForEach(… id: \.offset)` on the level-up new-features list (fragile identity) | `FeaturesView.swift` | 13 |
-| Character swipe-to-delete and spell long-press "forget" have no confirmation | `CharacterListView` / `SpellListView` | 13 |
+| ~~Character swipe-to-delete~~ ✅ confirmed-delete shipped 2026-06-09; spell long-press "forget" still unconfirmed | `SpellListView` | 13 |
 | No spell search in the add-spell picker; no spell-description preview short of opening the cast sheet | `SpellListView` | 13 |
 | DiceRoller core (adv/dis, keep/drop, reroll, d100 pairing, physics-values path) has no direct unit tests | tests | 10 |
 
@@ -1959,7 +1959,7 @@ schema stabilised; now that it has, this is unblocked)**
 - **In-app content editor** (Phase I) — substantial UI surface; only
   worth picking up if hand-editing JSON has started to hurt.
 
-**8. ~~Re-land the reverted HP/CON work~~ — HP half DONE 2026-06-09; deletion UI still open**
+**8. ~~Re-land the reverted HP/CON work~~ — DONE 2026-06-09 (both halves)**
 - Shipped (see the Status-table entry for the revert post-mortem):
   `Character.rolledHP` stores die-only HP; `recalculateHP()` derives
   `maxHP = max(level, rolledHP + level × CON mod)` and shifts `currentHP`
@@ -1974,10 +1974,14 @@ schema stabilised; now that it has, this is unblocked)**
 - Known model edge (accepted): with severe CON penalties, 5e's
   ≥1-HP-per-level rule is enforced as a total floor (`max(level, …)`)
   rather than per-level clamping, since per-level die values aren't stored.
-- **Still open from the old commit:** the deletion affordances —
-  context-menu delete on `CharacterListView` rows + toolbar overflow
-  delete with a confirmation dialog on `CharacterSheetView`. Landing them
-  also closes the "swipe-to-delete has no confirmation" gap (item 13).
+- **Deletion UI also shipped 2026-06-09:** context-menu delete on
+  `CharacterListView` rows, swipe-to-delete now stages a confirmation
+  dialog instead of firing immediately, and the sheet's toolbar gained an
+  overflow menu with a confirmed delete that pops back to the list before
+  removing the file (the store mutation waits out the pop animation so the
+  screen doesn't flash "Character not found"). Note: the reverted version's
+  delete button only switched tabs — it never actually called
+  `characterStore.delete`; this one does.
 
 **9. Engine hardening (from the 2026-06-09 code health review)**
 - **9a. De-hardcode Reliable Talent.** `ActionInterpreter` checks
@@ -2001,14 +2005,18 @@ schema stabilised; now that it has, this is unblocked)**
   and moves on. Add `private(set) var lastSaveError: String?` on the store,
   set/clear it in `save`, render a dismissible warning banner on
   `CharacterSheetView` when non-nil. (Disk-full is the realistic trigger.)
-- **9e. Content lint test.** One new test file that walks ALL bundled JSON
-  and asserts cross-references: every background `feat`/`equipment` id
-  resolves (or is explicitly allow-listed as not-yet-authored), every
-  `actionRecipes` dice string parses, every `upcastEffect.recipeIndex` is in
-  bounds, every `TriggeredEffect` resource cost id exists, every
-  `LevelScaledValue` table has an entry ≤ its feature's grant level, no
-  duplicate ids within a file. This is the single highest-leverage test in
-  the backlog — it converts silent content-author errors into red tests.
+- **9e. ~~Content lint test~~ — DONE 2026-06-09.** `ContentLintTests.swift`
+  walks ALL bundled JSON: id uniqueness per file, across the
+  gear/weapons/armor item namespace, and globally for resource/effect ids;
+  background feat/equipment references (with an explicit
+  `knownUnauthoredIDs` allow-list covering the 3 feats + 8 flavor items
+  awaiting items 11d/11g, plus a staleness check that fails when an
+  allow-listed id becomes real content); every dice string parses (recipes,
+  weapon damage/versatile, refresh rolls, rider dice, composed max-upcast
+  formulas); upcast `recipeIndex` bounds + scalability; `byClassLevel`
+  tables reach their grant level; item-use costs and cast spells resolve;
+  subclass picker wiring matches the aggregator's convention key. Phase H
+  should reuse these invariants as its import validator.
 
 **10. Test gaps (beyond the content lint)**
 - `DiceRoller` core: `roll` ranges + die counts, advantage/disadvantage
@@ -2068,8 +2076,8 @@ shippable alone:
   the first external pack exists, not after.
 
 **13. UX + structure polish backlog (small, parallelizable)**
-- Confirmation dialogs: character delete (lands with item 8 step 1), spell
-  "forget".
+- ~~Confirmation dialog: character delete~~ (done with item 8). Spell
+  "forget" confirmation still open.
 - Empty-name guard on character rename.
 - `.searchable` on the add-spell picker; spell-description preview without
   opening the cast sheet (long-press or info button).
@@ -2088,9 +2096,9 @@ shippable alone:
 
 1. **Verify this pass:** ⌘R + run the test suite (CharacterStore changed —
    `CharacterStoreTests` must stay green).
-2. **Item 9e (content lint)** — cheap, catches everything else's mistakes.
-3. **Item 8's remaining half** — character-deletion UI with confirmation
-   (the HP re-land shipped 2026-06-09).
+2. ~~Item 9e (content lint)~~ — done 2026-06-09.
+3. ~~Item 8~~ — done 2026-06-09 (HP re-land + deletion UI, both surfaces
+   confirmed).
 4. **Item 4 (death saves)** — completes Phase G; small, self-contained.
 5. **Items 1 + 11b together (Paladin + Divine Smite)** — finishes Phase O's
    opt-in story and proves the spell-slot cost path.

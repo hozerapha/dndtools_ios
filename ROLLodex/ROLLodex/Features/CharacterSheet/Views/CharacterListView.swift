@@ -5,6 +5,10 @@ struct CharacterListView: View {
     @Environment(CharacterStore.self) private var characterStore
     @Environment(ContentStore.self) private var contentStore
     @State private var showCreation = false
+    /// Character staged for deletion — set by swipe or context menu, executed
+    /// only after the confirmation dialog. Deleting removes the JSON file,
+    /// so a lone swipe shouldn't be enough.
+    @State private var pendingDelete: Character?
 
     var body: some View {
         NavigationStack {
@@ -13,8 +17,17 @@ struct CharacterListView: View {
                     NavigationLink(value: character.id) {
                         CharacterRow(character: character)
                     }
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            pendingDelete = character
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
                 }
-                .onDelete(perform: delete)
+                .onDelete { offsets in
+                    pendingDelete = offsets.first.map { characterStore.characters[$0] }
+                }
             }
             .navigationTitle("Characters")
             .toolbar {
@@ -42,13 +55,22 @@ struct CharacterListView: View {
                     ContentUnavailableView("Character not found", systemImage: "person.crop.circle.badge.exclamationmark")
                 }
             }
-        }
-    }
-
-    private func delete(at offsets: IndexSet) {
-        for index in offsets {
-            let character = characterStore.characters[index]
-            characterStore.delete(id: character.id)
+            .confirmationDialog(
+                "Delete Character",
+                isPresented: Binding(
+                    get: { pendingDelete != nil },
+                    set: { if !$0 { pendingDelete = nil } }
+                ),
+                titleVisibility: .visible,
+                presenting: pendingDelete
+            ) { character in
+                Button("Delete \(character.name)", role: .destructive) {
+                    characterStore.delete(id: character.id)
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: { character in
+                Text("This permanently removes \(character.name) and cannot be undone.")
+            }
         }
     }
 
