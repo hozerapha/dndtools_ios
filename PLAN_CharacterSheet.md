@@ -2161,25 +2161,58 @@ that item 13 already wanted.
   is blocked mid-roll so the scene can't be torn down under the physics.
   Reroll modifiers honored via the same `rerollIndices` → rethrow flow
   the main tray uses. Still wanted: Reduce Motion numbers-only fallback.
-- **14c. Adopt at the call sites — death saves DONE 2026-06-09, rest open:**
+- **14c. ~~Adopt at the call sites~~ — ALL FOUR DONE 2026-06-09:**
   - ✅ Death saves: the tracker row's Roll chip opens the mini tray; the
     result auto-tallies via `Character.applyDeathSaveRoll(_:)` (10+
     success, <10 failure, nat 1 = two failures, nat 20 = regain 1 HP
     through the existing heal path). Manual circles stay for table rolls.
     Covered in `DeathSaveTests`.
-  - Level-up HP: replace the hidden `Int.random` roll button with the
-    mini tray; the die-only value banks into `rolledHP`. (LevelUpSheet
-    hosts its own overlay — the component is self-contained.)
-  - Concentration saves: roll CON save in place, auto pass/fail vs DC
-    (manual buttons stay).
-  - Refresh rolls (`RefreshResolutionSheet`): the reroll button uses the
-    mini tray instead of hidden RNG.
+  - ✅ Level-up HP: the Roll button tumbles the hit die in the mini tray
+    (was hidden `Int.random`); the settled die-only value stages into
+    `rolledHP`. LevelUpSheet hosts its own overlay.
+  - ✅ Concentration saves: the Con save rolls in place with the
+    character's bonus; failing the DC drops concentration automatically
+    (the sheet's manual pass/fail buttons stay for table dice). The
+    old roll-to-dice-tab handoff and its `onRollSave` callback were
+    removed.
+  - ✅ Refresh rolls: `RefreshResolutionSheet` rows start EMPTY — nothing
+    is pre-rolled, the dice are the point. The dice button rolls each
+    refresh in the mini tray (or the player types a table-rolled value);
+    Apply stays disabled until every row holds a number, since a blank
+    row would silently refresh by 0.
   - Weapon/check/save rolls keep the full-tray handoff (they want
     adv/dis, riders, and the big-tray theater) — the mini tray is for
     "one die, answer now" moments.
 - **14d. Polish (later):** per-prompt "roll resolution" preference
   (mini tray / full tray / type it manually) — this finally realizes
   Phase I.5's `RollPrompt` concept and absorbs open decision #8.
+
+**15. Ability score generation methods (added 2026-06-09 — lands before Cleric)**
+
+The creation flow's Abilities step currently hard-codes 27-point buy.
+Add a method picker with three modes:
+
+- **Point Buy** — what exists today (27 points, 8–15 range). Stays the
+  default.
+- **Standard Array** — assign 15 / 14 / 13 / 12 / 10 / 8, each exactly
+  once. UI: tap an ability, tap a value (or a compact menu per row);
+  validation = every array value used once.
+- **Rolled** — roll six values in the Quick Roll mini tray (its first
+  consumer inside the creation flow). Default formula `4d6kh3`, shown in
+  an editable field validated by `DiceFormulaParser` (any custom house
+  formula works — `3d6`, `2d6+6`, …). Roll all six, then assign results
+  to abilities like the standard array. "Reroll all" allowed until the
+  step is confirmed; individual die results are recorded to history.
+
+Implementation notes:
+- `CharacterDraft` gains `abilityMethod` + per-method validation —
+  `isComplete` currently requires `isValidPointBuy`, which must branch
+  (array: exact multiset match; rolled: six assigned values from the
+  rolled set).
+- `AbilitiesStep` in `CharacterCreationView` grows the picker + an
+  assignment UI shared by array/rolled modes.
+- Tests: per-method draft validation, array-uniqueness, rolled-pool
+  assignment, formula validation fallback.
 - **Risks/notes:** a second SCNView is cheap when only one is on screen
   at a time (the magnifier proved the pattern); physics results are
   already canonicalized via `DiceRoller.resultFrom(formula:values:)`;
@@ -2194,11 +2227,13 @@ that item 13 already wanted.
    confirmed).
 4. ~~Item 4 (death saves)~~ — done 2026-06-09.
 5. ~~Items 1 + 11b (Paladin + Divine Smite)~~ — done 2026-06-09.
-6. **Item 14 (Quick Roll mini tray)** — next major item; step 14a doubles
-   as item 13's `DiceSceneController` extraction.
-7. **Item 11a (Cleric)** — first prepared caster, exercises `preparedFromAll`.
-8. **Item 12 (Phase H)** — 9e's lint becomes the import validator.
-9. Items 9a–9d, 10, 13 interleave as palate cleansers between the above.
+6. ~~Item 14 (Quick Roll mini tray)~~ — done 2026-06-09 (14a–14c; 14d
+   remains as later polish).
+7. **Item 15 (ability score generation: point buy / standard array /
+   rolled)** — next up.
+8. **Item 11a (Cleric)** — first prepared caster, exercises `preparedFromAll`.
+9. **Item 12 (Phase H)** — 9e's lint becomes the import validator.
+10. Items 9a–9d, 10, 13 interleave as palate cleansers between the above.
 
 ### How to resume
 

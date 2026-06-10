@@ -3,13 +3,11 @@ import SwiftUI
 /// Modal sheet that walks the user through every refresh that needs a dice
 /// roll resolved (Wand of Magic Missiles' `1d6+1` at long rest, etc.).
 ///
-/// Phase I MVP: each row shows a TextField pre-populated with a behind-the-
-/// scenes roll result, plus a reroll button if the user wants a fresh hidden
-/// value. The user can also type their own number (matching the `manual`
-/// resolution mode) — useful for tables that roll physical dice. `tray` mode
-/// for refresh rolls is deferred (the user would have to leave this sheet,
-/// roll on the dice tab, and come back — that coordination lands in a later
-/// pass).
+/// Each refresh row waits for the player to resolve it: tap the dice button
+/// to tumble the formula in the Quick Roll mini tray (the settled total
+/// lands in the row), or type a number rolled at the table. Nothing is
+/// pre-rolled — the dice are the point. Apply stays disabled until every
+/// row has a value.
 struct RefreshResolutionSheet: View {
     @Binding var character: Character
     let pendingRefreshes: [PendingRefresh]
@@ -18,6 +16,9 @@ struct RefreshResolutionSheet: View {
     @Environment(ContentStore.self) private var content
     @Environment(\.dismiss) private var dismiss
     @State private var rolls: [String: String] = [:]
+    @State private var quickRoll: QuickRollRequest?
+    /// Which refresh row the open mini tray is rolling for.
+    @State private var quickRollTargetID: String?
 
     var body: some View {
         NavigationStack {
@@ -36,7 +37,7 @@ struct RefreshResolutionSheet: View {
                 } header: {
                     Text("Refresh rolls")
                 } footer: {
-                    Text("Each row is pre-rolled behind the scenes. Tap the field to type your own value, or use the dice button to re-roll.")
+                    Text("Tap the dice button to roll each refresh, or type a value you rolled at the table.")
                 }
             }
             .navigationTitle("Apply Rest")
@@ -51,20 +52,46 @@ struct RefreshResolutionSheet: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Apply") { apply() }
                         .bold()
-                }
-            }
-            .onAppear {
-                if rolls.isEmpty {
-                    for refresh in pendingRefreshes {
-                        rolls[refresh.id] = String(rollHidden(refresh.formula))
-                    }
+                        .disabled(!allRowsResolved)
                 }
             }
         }
+        .overlay {
+            if let request = quickRoll {
+                QuickRollOverlay(
+                    request: request,
+                    onResult: { result in
+                        if let id = quickRollTargetID {
+                            rolls[id] = String(result.total)
+                        }
+                    },
+                    onDismiss: {
+                        quickRoll = nil
+                        quickRollTargetID = nil
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
+        }
+        .animation(.snappy(duration: 0.2), value: quickRoll != nil)
+    }
+
+    /// Every row needs a parseable number before Apply unlocks — applying a
+    /// blank row would silently refresh by 0.
+    private var allRowsResolved: Bool {
+        pendingRefreshes.allSatisfy { Int(rolls[$0.id] ?? "") != nil }
     }
 
     private func reroll(_ refresh: PendingRefresh) {
-        rolls[refresh.id] = String(rollHidden(refresh.formula))
+        // Real dice in the mini tray; the settled total lands in the row.
+        // Parse failure (content-authored formulas, shouldn't happen) falls
+        // back to a hidden roll so the row stays usable.
+        guard let parsed = try? DiceFormulaParser().parse(refresh.formula) else {
+            rolls[refresh.id] = String(rollHidden(refresh.formula))
+            return
+        }
+        quickRollTargetID = refresh.id
+        quickRoll = QuickRollRequest(formula: parsed, label: "\(refresh.resourceName) refresh")
     }
 
     private func apply() {
@@ -118,12 +145,12 @@ private struct RefreshRow: View {
                     .focused($focused)
                     .textFieldStyle(.roundedBorder)
                 Button(action: onReroll) {
-                    Image(systemName: "arrow.clockwise.circle.fill")
+                    Image(systemName: "dice.fill")
                         .font(.title3)
                         .foregroundStyle(Color.accentColor)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Reroll \(refresh.resourceName)")
+                .accessibilityLabel("Roll \(refresh.resourceName)")
             }
         }
         .padding(.vertical, 2)

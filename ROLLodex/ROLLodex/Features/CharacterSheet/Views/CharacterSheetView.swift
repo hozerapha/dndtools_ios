@@ -177,12 +177,8 @@ struct CharacterSheetView: View {
             .presentationDetents([.large])
         }
         .sheet(item: $pendingConcentrationCheck) { check in
-            ConcentrationSaveSheet(
-                character: $character,
-                check: check,
-                onRollSave: handleStandaloneRoll
-            )
-            .presentationDetents([.medium])
+            ConcentrationSaveSheet(character: $character, check: check)
+                .presentationDetents([.medium])
         }
         .sheet(isPresented: $showAddCondition) {
             AddConditionSheet(character: $character)

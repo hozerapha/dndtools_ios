@@ -1,19 +1,17 @@
 import SwiftUI
 
 /// Surfaced after the character takes damage while concentrating. Shows the
-/// DC, lets the player either roll the Constitution save (handed off to the
-/// dice tab like any other save) or call it manually with the pass/fail
-/// buttons. Failing drops concentration.
+/// DC, lets the player roll the Constitution save right here in the Quick
+/// Roll mini tray — the outcome auto-applies against the DC (fail drops
+/// concentration) — or call it manually with the pass/fail buttons for
+/// physical-dice tables.
 struct ConcentrationSaveSheet: View {
     @Binding var character: Character
     let check: ConcentrationCheck
-    /// Called when the player taps the roll button. The host pushes the save
-    /// onto the dice tab and dismisses this sheet. The host then decides
-    /// whether to clear concentration based on the player's reported outcome.
-    let onRollSave: (ResolvedAction) -> Void
 
     @Environment(ContentStore.self) private var content
     @Environment(\.dismiss) private var dismiss
+    @State private var quickRoll: QuickRollRequest?
 
     var body: some View {
         NavigationStack {
@@ -33,6 +31,27 @@ struct ConcentrationSaveSheet: View {
                 }
             }
         }
+        .overlay {
+            if let request = quickRoll {
+                QuickRollOverlay(
+                    request: request,
+                    onResult: { result in
+                        // The app rolled it, so it's trusted: failing the DC
+                        // drops concentration immediately. The overlay stays
+                        // up so the player sees the number vs the DC behind.
+                        if result.total < check.dc {
+                            character.stopConcentrating()
+                        }
+                    },
+                    onDismiss: {
+                        quickRoll = nil
+                        dismiss()
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
+        }
+        .animation(.snappy(duration: 0.2), value: quickRoll != nil)
     }
 
     private var damageLine: some View {
@@ -62,9 +81,21 @@ struct ConcentrationSaveSheet: View {
 
     private var rollButton: some View {
         Button {
-            let action = saveAction()
-            onRollSave(action)
-            dismiss()
+            let resolved = ActionInterpreter.resolve(
+                recipe: .savingThrow(ability: .constitution),
+                character: character,
+                weapon: nil
+            )
+            var formula = resolved.formula
+            if formula == nil {
+                var d20 = DiceFormula()
+                d20.groups.append(DiceGroup(kind: .d20, count: 1))
+                formula = d20
+            }
+            quickRoll = QuickRollRequest(
+                formula: formula ?? DiceFormula(),
+                label: "Concentration save (DC \(check.dc))"
+            )
         } label: {
             Label("Roll Con Save", systemImage: "dice.fill")
                 .font(.subheadline.weight(.semibold))
@@ -101,22 +132,5 @@ struct ConcentrationSaveSheet: View {
 
     private var spellName: String? {
         content.spellDefinition(id: check.spellID)?.name
-    }
-
-    /// Resolve a Con save with the character's bonus baked in, so the dice tab
-    /// fires the same as any other save.
-    private func saveAction() -> ResolvedAction {
-        let resolved = ActionInterpreter.resolve(
-            recipe: .savingThrow(ability: .constitution),
-            character: character,
-            weapon: nil
-        )
-        // Cleaner history label than the on-sheet button form.
-        return ResolvedAction(
-            id: "concentration_save_\(check.spellID)",
-            label: "Concentration save (DC \(check.dc))",
-            formula: resolved.formula,
-            description: resolved.description
-        )
     }
 }

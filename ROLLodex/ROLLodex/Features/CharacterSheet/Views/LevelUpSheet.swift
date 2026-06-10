@@ -13,10 +13,12 @@ struct LevelUpSheet: View {
     @Environment(ContentStore.self) private var content
     @Environment(\.dismiss) private var dismiss
 
-    /// Set when the player picks "Roll" — opaque inline d{hitDie}.
+    /// Set when the player picks "Roll" — the hit die lands in the Quick
+    /// Roll mini tray and its total is staged here.
     @State private var stagedRoll: Int?
     /// Set when the player picks "Take Average" — locks the staged gain.
     @State private var usedAverage: Bool = false
+    @State private var quickRoll: QuickRollRequest?
 
     var body: some View {
         NavigationStack {
@@ -47,6 +49,20 @@ struct LevelUpSheet: View {
                 }
             }
         }
+        .overlay {
+            if let request = quickRoll {
+                QuickRollOverlay(
+                    request: request,
+                    onResult: { result in
+                        stagedRoll = result.total
+                        usedAverage = false
+                    },
+                    onDismiss: { quickRoll = nil }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
+        }
+        .animation(.snappy(duration: 0.2), value: quickRoll != nil)
     }
 
     // MARK: - Sections
@@ -86,8 +102,11 @@ struct LevelUpSheet: View {
 
     private var rollButton: some View {
         Button {
-            stagedRoll = Int.random(in: 1...hitDie)
-            usedAverage = false
+            // Real dice, not hidden RNG: the hit die tumbles in the mini
+            // tray and the settled total comes back via the overlay.
+            var formula = DiceFormula()
+            formula.groups.append(DiceGroup(kind: DieKind(rawValue: hitDie) ?? .d8, count: 1))
+            quickRoll = QuickRollRequest(formula: formula, label: "Level-Up HP (1d\(hitDie))")
         } label: {
             VStack(spacing: 2) {
                 Label("Roll", systemImage: "dice.fill")
