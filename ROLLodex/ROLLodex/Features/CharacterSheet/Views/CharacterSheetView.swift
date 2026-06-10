@@ -23,6 +23,9 @@ struct CharacterSheetView: View {
     /// Open by `.sheet(isPresented:)` toggle; `pendingAddCondition` carries
     /// nothing on its own — the picker is one-shot.
     @State private var showAddCondition = false
+    /// In-sheet mini dice tray (death saves today; level-up HP and
+    /// concentration saves adopt it in 14c). Non-nil presents the overlay.
+    @State private var quickRoll: QuickRollRequest?
     /// Which sub-tab of the character sheet is showing. The header (badges,
     /// HP bar, stat pills) stays fixed above the picker so every tab can see
     /// "who am I and how am I doing right now".
@@ -189,6 +192,17 @@ struct CharacterSheetView: View {
             LevelUpSheet(character: $character)
                 .presentationDetents([.large])
         }
+        .overlay {
+            if let request = quickRoll {
+                QuickRollOverlay(
+                    request: request,
+                    onResult: { applyDeathSaveResult($0) },
+                    onDismiss: { quickRoll = nil }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
+        }
+        .animation(.snappy(duration: 0.2), value: quickRoll != nil)
     }
 
     // MARK: - Deletion
@@ -520,20 +534,18 @@ struct CharacterSheetView: View {
         selectedTab = .dice
     }
 
-    /// Hand a labeled d20 to the dice tab for a death save. The result comes
-    /// back via the player's eyes, not data — they tap the matching circle on
-    /// the tracker row (10+ succeeds; nat 1 counts twice; nat 20 = regain 1 HP).
+    /// Roll a death-save d20 in the in-sheet mini tray. The app rolled the
+    /// die, so the result is trusted — `applyDeathSaveResult` tallies it
+    /// automatically (the manual circles remain for physical-dice tables).
     private func rollDeathSave() {
         var formula = DiceFormula()
         formula.groups.append(DiceGroup(kind: .d20, count: 1))
-        pendingRoll.pendingCharacterID = character.id
-        pendingRoll.pending = ResolvedAction(
-            id: "death_save",
-            label: "Death Save",
-            formula: formula,
-            description: "10+ succeeds · nat 1 = 2 failures · nat 20 = regain 1 HP"
-        )
-        selectedTab = .dice
+        quickRoll = QuickRollRequest(formula: formula, label: "Death Save")
+    }
+
+    private func applyDeathSaveResult(_ result: RollResult) {
+        let die = result.dieRolls.first?.value ?? result.total
+        character.applyDeathSaveRoll(die)
     }
 
     private func historyLabel(for recipe: ActionRecipe) -> String? {

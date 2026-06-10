@@ -452,6 +452,23 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         }
     }
 
+    /// Apply a rolled death-save d20 (5e): 10+ success, below 10 failure,
+    /// nat 1 counts twice, nat 20 means regain 1 HP — which clears the tally
+    /// via the `currentHP` observer. No-op unless actually dying.
+    mutating func applyDeathSaveRoll(_ die: Int) {
+        guard currentHP == 0 else { return }
+        if die == 20 {
+            currentHP = 1
+        } else if die == 1 {
+            deathSaves.recordFailure()
+            deathSaves.recordFailure()
+        } else if die >= 10 {
+            deathSaves.recordSuccess()
+        } else {
+            deathSaves.recordFailure()
+        }
+    }
+
     /// Apply `amount` damage. Drains temp HP first (per 5e), then chips
     /// current HP. Returns a pending `ConcentrationCheck` when the character
     /// was concentrating and actually took damage to current HP (temp-only

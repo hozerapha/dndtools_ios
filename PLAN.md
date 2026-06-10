@@ -25,7 +25,7 @@ Bonus capabilities shipped on top of the original phases (not in the table below
 
 - `Features/DiceRoller/Views/DiceTrayView.swift` — the 2D fallback tray; superseded by the 3D SceneKit tray.
 - `Features/DiceRoller/Views/DieTokenView.swift` — only ever used by `DiceTrayView`.
-- The `Dice3DPlaygroundView` view struct itself (the sandbox screen) is unreachable from the app — but its file also contains the **production** `DiceSceneController`, so the file must stay until the controller is split out into its own file.
+- `Features/DiceRoller/Views/Dice3DPlaygroundView.swift` — as of 2026-06-09 the production `DiceSceneController` lives in its own file (`DiceSceneController.swift`), so this file is purely the unreachable sandbox view and can be deleted outright.
 
 **Active work has moved to `PLAN_CharacterSheet.md`** (D&D 5.2.1 character manager built on top of the dice roller). See its Status table and "What's next" roadmap for current state.
 

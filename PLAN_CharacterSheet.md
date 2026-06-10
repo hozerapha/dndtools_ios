@@ -2109,12 +2109,81 @@ shippable alone:
   show a brief explanation instead.
 - Stable identity for the level-up new-features `ForEach` (use feature id,
   not `\.offset`).
-- Split `DiceSceneController` out of `Dice3DPlaygroundView.swift` into its
-  own file (⚠️ new file → Xcode ⌘Q + relaunch). Unblocks deleting the dead
-  playground view struct; also the right moment to extract
-  `FaceGeometryBuilder` / rest-detection if the file is being touched anyway.
+- ~~Split `DiceSceneController` out of `Dice3DPlaygroundView.swift`~~ —
+  done 2026-06-09 as item 14a. The playground file is now purely the dead
+  sandbox view: deletion candidate. (`FaceGeometryBuilder` / rest-detection
+  extraction remains optional future tidying.)
 - EffectsRow two-stripe divider + chip-rail wording sweep (carried over from
   item 3).
+
+**14. Quick Roll mini tray (added 2026-06-09 — slotted as the next major item)**
+
+Small in-sheet rolls (death saves, level-up HP, concentration saves, refresh
+rolls) currently either tab-hop to the full dice tray or resolve via hidden
+`Int.random`. Replace both with a small floating 3D tray that appears over
+the character sheet, rolls 1–2 physical dice immediately, shows the result,
+and hands the number back to the caller — unintrusive, but carries the
+app's dice-roller DNA into the sheet. (Same spirit as the existing
+press-to-magnify overlay: a second SCNView onto purpose-built content.)
+
+Why it lands ahead of content work: it upgrades four already-shipped
+surfaces at once, and its step 0 is the `DiceSceneController` file split
+that item 13 already wanted.
+
+- **14a. ~~Extract the controller~~ — DONE 2026-06-09** (closes item 13's
+  split too). `DiceSceneController.swift` now holds the production engine
+  (controller, `Dice3DKind`/`DieRole`, `SceneKitView`, `MagnifierView`,
+  async wrappers); `Dice3DPlaygroundView.swift` is down to the 115-line
+  legacy sandbox view and is now a clean **deletion candidate** (remove
+  via Xcode whenever). The controller gained `TrayFraming`
+  (`.standard` / `.compact`), tuned with live feedback:
+  - Compact camera: pure top-down at (0, 17, 0), 52° FOV (explicit
+    up/front vectors — `look(at:)` is degenerate straight down). Whole
+    floor in frame; after settle, `focusCameraOnSettledDice()` glides
+    the camera (position-only, stays top-down) to ~5 units above the
+    dice centroid so the face fills the small viewport.
+  - Compact physics: world speed 2.4 + gravity −7.5 (legible parabolic
+    apex), containment ceiling lowered to ~13 so a die can never pass
+    the y=17 lens.
+  - Compact throw: mostly-vertical pop (5–8) with gentle random drift
+    (2–4.5) and a strong tumble (3–5) around a uniformly random axis —
+    settles near center, randomization comes from spin.
+  - Standard throw also fixed: guaranteed horizontal magnitude (6–12)
+    replaces per-axis ±10, which could lob a die straight up to land
+    on the same face. Camera/physics on the main tab unchanged.
+- **14b. ~~`QuickRollView`~~ — DONE 2026-06-09.** `QuickRollRequest`
+  (formula + label, fresh identity per request) +
+  `QuickRollOverlay`: dimmed backdrop, floating material card with its
+  own compact-framed controller/scene, dice thrown on appear, total
+  (gold on nat 20, red on nat 1) once settled, result recorded to
+  `HistoryStore` (the dice tab's history stays the single ledger) and
+  handed back via `onResult` exactly once. Dismissal (tap-away / Done)
+  is blocked mid-roll so the scene can't be torn down under the physics.
+  Reroll modifiers honored via the same `rerollIndices` → rethrow flow
+  the main tray uses. Still wanted: Reduce Motion numbers-only fallback.
+- **14c. Adopt at the call sites — death saves DONE 2026-06-09, rest open:**
+  - ✅ Death saves: the tracker row's Roll chip opens the mini tray; the
+    result auto-tallies via `Character.applyDeathSaveRoll(_:)` (10+
+    success, <10 failure, nat 1 = two failures, nat 20 = regain 1 HP
+    through the existing heal path). Manual circles stay for table rolls.
+    Covered in `DeathSaveTests`.
+  - Level-up HP: replace the hidden `Int.random` roll button with the
+    mini tray; the die-only value banks into `rolledHP`. (LevelUpSheet
+    hosts its own overlay — the component is self-contained.)
+  - Concentration saves: roll CON save in place, auto pass/fail vs DC
+    (manual buttons stay).
+  - Refresh rolls (`RefreshResolutionSheet`): the reroll button uses the
+    mini tray instead of hidden RNG.
+  - Weapon/check/save rolls keep the full-tray handoff (they want
+    adv/dis, riders, and the big-tray theater) — the mini tray is for
+    "one die, answer now" moments.
+- **14d. Polish (later):** per-prompt "roll resolution" preference
+  (mini tray / full tray / type it manually) — this finally realizes
+  Phase I.5's `RollPrompt` concept and absorbs open decision #8.
+- **Risks/notes:** a second SCNView is cheap when only one is on screen
+  at a time (the magnifier proved the pattern); physics results are
+  already canonicalized via `DiceRoller.resultFrom(formula:values:)`;
+  keep the mini tray one-formula-at-a-time (no chip rail).
 
 ### Suggested order
 
@@ -2125,9 +2194,11 @@ shippable alone:
    confirmed).
 4. ~~Item 4 (death saves)~~ — done 2026-06-09.
 5. ~~Items 1 + 11b (Paladin + Divine Smite)~~ — done 2026-06-09.
-6. **Item 11a (Cleric)** — first prepared caster, exercises `preparedFromAll`.
-7. **Item 12 (Phase H)** once 9e exists to power import validation.
-8. Items 9a–9d, 10, 13 interleave as palate cleansers between the above.
+6. **Item 14 (Quick Roll mini tray)** — next major item; step 14a doubles
+   as item 13's `DiceSceneController` extraction.
+7. **Item 11a (Cleric)** — first prepared caster, exercises `preparedFromAll`.
+8. **Item 12 (Phase H)** — 9e's lint becomes the import validator.
+9. Items 9a–9d, 10, 13 interleave as palate cleansers between the above.
 
 ### How to resume
 

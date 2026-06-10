@@ -108,6 +108,41 @@ struct DeathSaveTests {
         #expect(character.deathSaves.isEmpty)
     }
 
+    // MARK: - Rolled-save auto-tally (Quick Roll path)
+
+    @Test func rolledSaveOutcomesFollowFiveE() {
+        var character = makeFighter()
+        character.currentHP = 0
+
+        character.applyDeathSaveRoll(10) // success at exactly 10
+        #expect(character.deathSaves.successes == 1)
+
+        character.applyDeathSaveRoll(9)  // failure below 10
+        #expect(character.deathSaves.failures == 1)
+
+        character.applyDeathSaveRoll(1)  // nat 1 counts twice
+        #expect(character.deathSaves.failures == 3)
+        #expect(character.deathSaves.isDead)
+    }
+
+    @Test func rolledNatTwentyRegainsOneHPAndClearsTally() {
+        var character = makeFighter()
+        character.currentHP = 0
+        character.deathSaves.successes = 2
+        character.deathSaves.failures = 1
+
+        character.applyDeathSaveRoll(20)
+        #expect(character.currentHP == 1)
+        #expect(character.deathSaves.isEmpty)
+    }
+
+    @Test func rolledSaveIsNoOpWhenNotDying() {
+        var character = makeFighter()
+        character.applyDeathSaveRoll(1)
+        #expect(character.deathSaves.isEmpty)
+        #expect(character.currentHP == 12)
+    }
+
     // MARK: - Thresholds
 
     @Test func stableAndDeadThresholds() {
