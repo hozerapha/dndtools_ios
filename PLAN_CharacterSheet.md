@@ -2187,32 +2187,29 @@ that item 13 already wanted.
   (mini tray / full tray / type it manually) — this finally realizes
   Phase I.5's `RollPrompt` concept and absorbs open decision #8.
 
-**15. Ability score generation methods (added 2026-06-09 — lands before Cleric)**
+**15. ~~Ability score generation methods~~ — DONE 2026-06-09**
 
-The creation flow's Abilities step currently hard-codes 27-point buy.
-Add a method picker with three modes:
+The creation flow's Abilities step gained a segmented method picker:
 
-- **Point Buy** — what exists today (27 points, 8–15 range). Stays the
-  default.
-- **Standard Array** — assign 15 / 14 / 13 / 12 / 10 / 8, each exactly
-  once. UI: tap an ability, tap a value (or a compact menu per row);
-  validation = every array value used once.
-- **Rolled** — roll six values in the Quick Roll mini tray (its first
-  consumer inside the creation flow). Default formula `4d6kh3`, shown in
-  an editable field validated by `DiceFormulaParser` (any custom house
-  formula works — `3d6`, `2d6+6`, …). Roll all six, then assign results
-  to abilities like the standard array. "Reroll all" allowed until the
-  step is confirmed; individual die results are recorded to history.
+- **Point Buy** — unchanged (27 points, 8–15 steppers). Still the default.
+- **Standard Array** — assign 15 / 14 / 13 / 12 / 10 / 8 via a per-ability
+  menu that only offers values still unassigned; Clear takes a pick back.
+- **Rolled** — editable house formula (default `4d6kh3`; validated by the
+  parser, must contain dice, ≤ 12 of them, all with 3D models since it's
+  headed for the mini tray). Six "Roll N of 6" taps each tumble the
+  formula in the Quick Roll overlay (creation is its 5th consumer);
+  totals fill a visible pool (clamped ≥ 1 against vicious house
+  formulas), then assign like the array — multiset-aware, so two rolled
+  12s are two assignable 12s. "Reroll All" clears pool + assignments and
+  unlocks the formula field (locked mid-pool so provenance stays honest).
+  Every roll lands in the shared history ("Ability roll 3 of 6 (4d6kh3)").
 
-Implementation notes:
-- `CharacterDraft` gains `abilityMethod` + per-method validation —
-  `isComplete` currently requires `isValidPointBuy`, which must branch
-  (array: exact multiset match; rolled: six assigned values from the
-  rolled set).
-- `AbilitiesStep` in `CharacterCreationView` grows the picker + an
-  assignment UI shared by array/rolled modes.
-- Tests: per-method draft validation, array-uniqueness, rolled-pool
-  assignment, formula validation fallback.
+Mechanics: `AbilityScoreMethod` + `setAbilityMethod` (point buy reseeds
+8s; assignment modes clear to "unassigned" = missing key),
+`setRolledScores`, multiset `availableValues(excluding:)`, and
+`isAbilityAssignmentValid` replacing the hard-coded point-buy gate in
+`isComplete`. Next-button gating switched to the method-aware check.
+Tests: `AbilityScoreMethodTests.swift` (12 tests — ⚠️ new file).
 - **Risks/notes:** a second SCNView is cheap when only one is on screen
   at a time (the magnifier proved the pattern); physics results are
   already canonicalized via `DiceRoller.resultFrom(formula:values:)`;
@@ -2229,9 +2226,9 @@ Implementation notes:
 5. ~~Items 1 + 11b (Paladin + Divine Smite)~~ — done 2026-06-09.
 6. ~~Item 14 (Quick Roll mini tray)~~ — done 2026-06-09 (14a–14c; 14d
    remains as later polish).
-7. **Item 15 (ability score generation: point buy / standard array /
-   rolled)** — next up.
-8. **Item 11a (Cleric)** — first prepared caster, exercises `preparedFromAll`.
+7. ~~Item 15 (ability score generation)~~ — done 2026-06-09.
+8. **Item 11a (Cleric)** — next up: first prepared caster, exercises
+   `preparedFromAll`.
 9. **Item 12 (Phase H)** — 9e's lint becomes the import validator.
 10. Items 9a–9d, 10, 13 interleave as palate cleansers between the above.
 
