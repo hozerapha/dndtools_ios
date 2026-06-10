@@ -97,9 +97,9 @@ enum TriggeredEffectResolver {
                     formula.modifier += value
                 }
 
-            case .addScaledDamageDice:
-                // Scaled-dice effects are opt-in only today (Sneak Attack);
-                // they don't fold automatically.
+            case .addScaledDamageDice, .addSlotScaledDamageDice:
+                // Scaled-dice effects are opt-in only today (Sneak Attack,
+                // Divine Smite); they don't fold automatically.
                 continue
             }
 
@@ -199,15 +199,32 @@ enum TriggeredEffectResolver {
                       effect.activation == .optIn,
                       case .onAttackHit(let filter) = effect.trigger else { continue }
                 if let filter, !filter.matches(weapon: weapon) { continue }
-                // Once-per-turn cost: skip if the flag is already set.
-                if case .oncePerTurn(let flag)? = effect.cost,
-                   character.hasTurnFlag(flag) { continue }
+
+                // Cost gating. Once-per-turn: skip if the flag is already
+                // set. Spell slot: skip if nothing in range is available;
+                // otherwise remember the (lowest) level the chip will spend
+                // so slot-scaled dice match the slot actually paid.
+                var slotLevelToUse: Int?
+                switch effect.cost {
+                case .oncePerTurn(let flag):
+                    if character.hasTurnFlag(flag) { continue }
+                case .spellSlot(let minLevel, let maxLevel):
+                    guard let lowest = ResourceCalculator.lowestAvailableSlotLevel(
+                        min: minLevel, max: maxLevel,
+                        character: character, content: content
+                    ) else { continue }
+                    slotLevelToUse = lowest
+                case nil:
+                    break
+                }
+
                 guard let chip = buildChip(
                     for: effect,
                     weapon: weapon,
                     baseDamage: baseDamage,
                     character: character,
-                    classLevel: entry.level
+                    classLevel: entry.level,
+                    slotLevel: slotLevelToUse
                 ) else { continue }
                 out.append(chip)
             }
@@ -224,7 +241,8 @@ enum TriggeredEffectResolver {
         weapon: WeaponDefinition?,
         baseDamage: ResolvedAction,
         character: Character,
-        classLevel: Int
+        classLevel: Int,
+        slotLevel: Int? = nil
     ) -> PendingFollowUp? {
         guard let baseFormula = baseDamage.formula else { return nil }
 
@@ -244,6 +262,19 @@ enum TriggeredEffectResolver {
             let n = count.value(classLevel: classLevel, characterLevel: character.level)
             guard n > 0 else { return nil }
             rider = (try? DiceFormulaParser().parse("\(n)\(die)")) ?? DiceFormula()
+
+        case .addSlotScaledDamageDice(let baseDice, let extraDice, let typed):
+            // Scales by the slot the chip will spend, not by class level.
+            // No eligible slot → the gating in optInRiders already skipped
+            // us, but guard anyway for direct callers.
+            guard let resolvedType = resolveDamageType(typed, weapon: weapon),
+                  let slotLevel,
+                  case .spellSlot(let minLevel, _)? = effect.cost else { return nil }
+            damageType = resolvedType
+            let extraLevels = max(0, slotLevel - minLevel)
+            let composed = ([baseDice] + Array(repeating: extraDice, count: extraLevels))
+                .joined(separator: "+")
+            rider = (try? DiceFormulaParser().parse(composed)) ?? DiceFormula()
 
         case .addFlatDamage:
             // Flat-damage effects fold automatically (Rage) — they don't
@@ -266,17 +297,30 @@ enum TriggeredEffectResolver {
         }
         merged.modifier += rider.modifier
 
+        // Concretize a slot-range cost to the level this chip actually
+        // spends, so the sheet consumes exactly the slot whose dice the
+        // player saw. The prompt names the level for the same reason.
+        let cost: TriggerCost?
+        let prompt: String
+        if let slotLevel {
+            cost = .spellSlot(minLevel: slotLevel, maxLevel: slotLevel)
+            prompt = "\(effect.name) (L\(slotLevel) slot)"
+        } else {
+            cost = effect.cost
+            prompt = effect.name
+        }
+
         let mergedAction = ResolvedAction(
             id: "merged_\(baseDamage.id)_\(effect.id)",
-            label: "\(baseDamage.label) + \(effect.name)",
+            label: "\(baseDamage.label) + \(prompt)",
             formula: merged,
             description: merged.displayString
         )
         return PendingFollowUp(
             id: "rider_\(effect.id)",
             action: mergedAction,
-            cost: effect.cost,
-            chipPrompt: effect.name
+            cost: cost,
+            chipPrompt: prompt
         )
     }
 

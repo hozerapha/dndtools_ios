@@ -353,6 +353,13 @@ struct ContentLintTests {
             lintLevelTable(count, grantLevel: grantLevel, context: "\(context) effect \(effect.id) count")
         case .addFlatDamage(let amount, _):
             lintLevelTable(amount, grantLevel: grantLevel, context: "\(context) effect \(effect.id) amount")
+        case .addSlotScaledDamageDice(let base, let extra, _):
+            assertParses(base, context: "\(context) effect \(effect.id) baseDice")
+            assertParses(extra, context: "\(context) effect \(effect.id) extraDicePerSlotLevel")
+            // Slot scaling is meaningless without a slot cost to set the level.
+            if case .spellSlot? = effect.cost {} else {
+                Issue.record("\(context) effect \(effect.id) uses addSlotScaledDamageDice without a spellSlot cost")
+            }
         }
     }
 

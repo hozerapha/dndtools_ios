@@ -115,13 +115,26 @@ struct CharacterSheetView: View {
         }
         .onChange(of: pendingRoll.pendingCostsToApply) { _, costs in
             guard !costs.isEmpty else { return }
-            // Apply each cost the dice tab parked (once-per-turn flags so far)
-            // to the bound character, then clear the queue so the same chip
-            // can't double-debit on a re-render.
+            // Apply each cost the dice tab parked to the bound character,
+            // then clear the queue so the same chip can't double-debit on a
+            // re-render.
             for cost in costs {
                 switch cost {
                 case .oncePerTurn(let flag):
                     character.setTurnFlag(flag)
+                case .spellSlot(let minLevel, let maxLevel):
+                    // The resolver concretizes the range to one level before
+                    // parking the chip, so this consumes exactly the slot the
+                    // player saw. If it was spent elsewhere in between (edge
+                    // case), the consume no-ops rather than over-charging.
+                    if let level = ResourceCalculator.lowestAvailableSlotLevel(
+                        min: minLevel, max: maxLevel,
+                        character: character, content: content
+                    ) {
+                        ResourceCalculator.consumeSpellSlot(
+                            level: level, in: &character, content: content
+                        )
+                    }
                 }
             }
             pendingRoll.pendingCostsToApply = []

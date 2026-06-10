@@ -646,5 +646,272 @@
     },
     "masteryCount": 2,
     "masteryRestrictions": []
+  },
+  {
+    "id": "paladin",
+    "name": "Paladin",
+    "hitDie": 10,
+    "primaryAbility": "strength",
+    "savingThrows": ["wisdom", "charisma"],
+    "armorProficiencies": ["light", "medium", "heavy", "shield"],
+    "weaponProficiencies": ["simple", "martial"],
+    "subclassLevel": 3,
+    "spellcasting": {
+      "ability": "charisma",
+      "preparedRule": "preparedFromAll",
+      "cantripsKnown": 0,
+      "spellsKnown": null,
+      "slotTable": {
+        "kind": "fullCaster",
+        "table": {
+          "1": { "1": 2 },
+          "3": { "1": 3 },
+          "5": { "1": 4, "2": 2 },
+          "7": { "1": 4, "2": 3 },
+          "9": { "1": 4, "2": 3, "3": 2 },
+          "11": { "1": 4, "2": 3, "3": 3 },
+          "13": { "1": 4, "2": 3, "3": 3, "4": 1 },
+          "15": { "1": 4, "2": 3, "3": 3, "4": 2 },
+          "17": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 1 },
+          "19": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2 }
+        }
+      },
+      "ritualCasting": false,
+      "spellcastingFocus": true
+    },
+    "levelFeatures": {
+      "1": [
+        {
+          "id": "lay_on_hands",
+          "name": "Lay on Hands",
+          "description": "You have a pool of healing power that replenishes when you finish a Long Rest. As a Bonus Action, you can touch a creature and draw from the pool to restore Hit Points equal to the amount you spend (maximum: 5 × your Paladin level). You can also expend 5 points to remove the Poisoned condition. Spend from the pool below; v1 has no targeted-heal prompt.",
+          "actionCost": "bonusAction",
+          "kind": "active",
+          "resource": {
+            "id": "paladin_lay_on_hands",
+            "name": "Lay on Hands Pool",
+            "max": {
+              "byClassLevel": {
+                "1": 5, "2": 10, "3": 15, "4": 20, "5": 25,
+                "6": 30, "7": 35, "8": 40, "9": 45, "10": 50,
+                "11": 55, "12": 60, "13": 65, "14": 70, "15": 75,
+                "16": 80, "17": 85, "18": 90, "19": 95, "20": 100
+              }
+            },
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          }
+        },
+        {
+          "id": "paladin_spellcasting",
+          "name": "Spellcasting",
+          "description": "You can cast prepared Paladin spells using Charisma as your spellcasting ability. You can use a Holy Symbol as a Spellcasting Focus.",
+          "kind": "passive"
+        },
+        {
+          "id": "weapon_mastery",
+          "name": "Weapon Mastery",
+          "description": "Your training with weapons lets you exploit each weapon's unique properties. You gain the Mastery property of two Simple or Martial weapons of your choice. Whenever you finish a Long Rest, you can practice with different weapons and change one of those weapon choices.",
+          "kind": "selection",
+          "selection": {
+            "id": "weapon_mastery",
+            "prompt": "Choose 2 weapons whose Mastery property you can use",
+            "count": { "byClassLevel": { "1": 2 } },
+            "optionsSource": { "type": "weapons", "proficientOnly": true }
+          }
+        }
+      ],
+      "2": [
+        {
+          "id": "paladin_fighting_style",
+          "name": "Fighting Style",
+          "description": "You gain a Fighting Style feat of your choice. The chosen style modifies your attack rolls, damage, or AC depending on the option.",
+          "kind": "selection",
+          "selection": {
+            "id": "fighting_style",
+            "prompt": "Choose a Fighting Style",
+            "count": 1,
+            "optionsSource": {
+              "type": "fixedOptions",
+              "options": [
+                {
+                  "id": "defense",
+                  "name": "Defense",
+                  "description": "While you are wearing armor, you gain a +1 bonus to AC."
+                },
+                {
+                  "id": "dueling",
+                  "name": "Dueling",
+                  "description": "When you are wielding a melee weapon in one hand and no other weapons, you gain a +2 bonus to damage rolls with that weapon."
+                },
+                {
+                  "id": "great_weapon_fighting",
+                  "name": "Great Weapon Fighting",
+                  "description": "When you roll a 1 or 2 on a damage die for an attack you make with a melee weapon that you are wielding with two hands, you can reroll the die and must use the new roll. The weapon must have the two-handed or versatile property."
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "paladins_smite",
+          "name": "Paladin's Smite",
+          "description": "You always have the Divine Smite spell prepared. When you hit a creature with a melee weapon, you can expend a spell slot to deal extra Radiant damage: 2d8 for a 1st-level slot, plus 1d8 per slot level above 1st.",
+          "kind": "passive",
+          "triggeredEffect": {
+            "id": "divine_smite",
+            "name": "Divine Smite",
+            "trigger": {
+              "type": "onAttackHit",
+              "filter": { "type": "weaponLacksProperty", "properties": ["ammunition"] }
+            },
+            "effect": {
+              "type": "addSlotScaledDamageDice",
+              "baseDice": "2d8",
+              "extraDicePerSlotLevel": "1d8",
+              "damageType": "radiant"
+            },
+            "lifecycle": { "type": "oneShot" },
+            "activation": "optIn",
+            "cost": { "type": "spellSlot", "minLevel": 1, "maxLevel": 5 }
+          }
+        }
+      ],
+      "3": [
+        {
+          "id": "channel_divinity",
+          "name": "Channel Divinity",
+          "description": "You can channel divine energy to fuel magical effects granted by your subclass. You regain one expended use when you finish a Short Rest, and all uses when you finish a Long Rest.",
+          "kind": "active",
+          "resource": {
+            "id": "paladin_channel_divinity",
+            "name": "Channel Divinity",
+            "max": { "byClassLevel": { "3": 2, "11": 3 } },
+            "refreshOn": "shortRest",
+            "refreshAmount": { "fixed": 1 }
+          }
+        }
+      ],
+      "4": [
+        {
+          "id": "paladin_asi_4",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "kind": "selection",
+          "selection": {
+            "id": "paladin_asi_4",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "5": [
+        {
+          "id": "paladin_extra_attack",
+          "name": "Extra Attack",
+          "description": "You can attack twice instead of once whenever you take the Attack action on your turn.",
+          "kind": "passive"
+        },
+        {
+          "id": "faithful_steed",
+          "name": "Faithful Steed",
+          "description": "You always have the Find Steed spell prepared, and you can cast it once without expending a spell slot. You regain that free use when you finish a Long Rest.",
+          "kind": "passive"
+        }
+      ],
+      "6": [
+        {
+          "id": "aura_of_protection",
+          "name": "Aura of Protection",
+          "description": "You and allies within 10 feet of you gain a bonus to saving throws equal to your Charisma modifier (minimum +1) while you are conscious. (Mechanical save bonus not yet applied automatically — add it to rolls manually.)",
+          "kind": "passive"
+        }
+      ],
+      "8": [
+        {
+          "id": "paladin_asi_8",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "kind": "selection",
+          "selection": {
+            "id": "paladin_asi_8",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "10": [
+        {
+          "id": "aura_of_courage",
+          "name": "Aura of Courage",
+          "description": "You and allies within 10 feet of you have Immunity to the Frightened condition while you are conscious.",
+          "kind": "passive"
+        }
+      ],
+      "11": [
+        {
+          "id": "radiant_strikes",
+          "name": "Radiant Strikes",
+          "description": "Your strikes carry divine power: when you hit with a melee weapon or an Unarmed Strike, the target takes an extra 1d8 Radiant damage. (Not yet folded into damage rolls automatically — add 1d8 radiant manually.)",
+          "kind": "passive"
+        }
+      ],
+      "12": [
+        {
+          "id": "paladin_asi_12",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "kind": "selection",
+          "selection": {
+            "id": "paladin_asi_12",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "14": [
+        {
+          "id": "restoring_touch",
+          "name": "Restoring Touch",
+          "description": "When you use Lay on Hands on a creature, you can also remove one or more of these conditions: Blinded, Charmed, Deafened, Frightened, Paralyzed, or Stunned. Each removed condition costs 5 points from the pool.",
+          "kind": "passive"
+        }
+      ],
+      "16": [
+        {
+          "id": "paladin_asi_16",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "kind": "selection",
+          "selection": {
+            "id": "paladin_asi_16",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "18": [
+        {
+          "id": "aura_expansion",
+          "name": "Aura Expansion",
+          "description": "Your Aura of Protection extends to 30 feet instead of 10 feet.",
+          "kind": "passive"
+        }
+      ],
+      "19": [
+        {
+          "id": "paladin_epic_boon",
+          "name": "Epic Boon",
+          "description": "You gain an Epic Boon feat or another feat of your choice. (Feat catalog not yet authored — record your pick in notes.)",
+          "kind": "passive"
+        }
+      ]
+    },
+    "masteryCount": 2,
+    "masteryRestrictions": []
   }
 ]

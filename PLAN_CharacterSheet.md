@@ -1697,7 +1697,7 @@ each new field, encode-when-non-default for each new field):
 | `TriggerCondition.onTurnStart` | not shipped | Reserved for Rage's "do nothing for a turn → end" semantics; we use the honor-system Start New Turn button instead. |
 | `AttackFilter.weaponCategory` / `.weaponDamageType` / `.hadAdvantage` / `.allyWithin5ft` | not shipped | Sneak Attack's "advantage OR ally within 5 ft" is approximated as the property filter alone — the trust/checkbox prompt isn't surfaced. |
 | `TriggerEffect.advantage` / `.disadvantage` / `.rerollOne` / `.attackPenalty` | not shipped | Reckless Attack, Halfling Lucky, GWM penalty all need these. The resolver currently only folds into damage formulas, not attack-mode or reroll mechanics. |
-| `TriggerCost.spellSlot(minLevel:maxLevel:)` | not shipped | Blocks Divine Smite. |
+| `TriggerCost.spellSlot(minLevel:maxLevel:)` | **shipped 2026-06-09** | Divine Smite live. Lowest-available-slot policy; the resolver concretizes the cost to the chosen level so the chip's dice and the slot paid always agree. Paired with the new `TriggerEffect.addSlotScaledDamageDice`. |
 | `TriggerCost.resource(id:amount:)` | not shipped | Blocks Battle Master maneuvers and any other once-per-something-else costs. |
 | `TypedOrMatch.matchSpell` | not shipped | Only matters for spell-sourced opt-in damage riders (Divine Smite's "+1d8 radiant vs undead/fiend"). |
 | `PersistenceEnd.endOfTurn` / `.shortRest` / `.longRest` | not shipped | All current persistent effects use `.concentrationEnds`, `.rounds(_)`, or `.manual`. |
@@ -1886,27 +1886,38 @@ Picking up in a fresh session? These are the live threads, ordered by how
 self-contained each one is. Pick whichever matches the appetite for the
 session.
 
-**1. Paladin + Divine Smite (finishes Phase O's opt-in story)**
-- New: `TriggerCost.spellSlot(minLevel: Int, maxLevel: Int)` case
-  alongside the existing `oncePerTurn`. JSON shape:
-  `{"type":"spellSlot","minLevel":1,"maxLevel":5}`.
-- New: `TypedOrMatch.matchSpell` (only needed for Divine Smite's `+1d8`
-  vs undead/fiend variant — defer if you skip the toggle-by-target flow).
-- Resolver: `optInRiders` already iterates `.optIn` triggers from class
-  features. Add a `spellSlot` cost path that, on chip tap, prompts the
-  player for a slot level (reuse `SpellCastSheet` UX) before applying
-  `addScaledDamageDice` with `count = slotLevel + 1`.
-- Character work: bundle Paladin L1 in `classes.json` with Lay on Hands
-  (already works under existing schema) + Divine Smite triggered effect.
-  Needs Paladin spell slot table on `ClassDefinition.spellcasting`.
-- Wiring: `PendingFollowUp` already carries an optional `cost`; extend
-  the dice-tab consume path to route `spellSlot` costs to a slot picker
-  before firing. Or — simpler — gate Divine Smite chip rendering by
-  "have any slot available" and consume the lowest slot silently for
-  v1 (a "pick slot level" UI is its own polish).
-- Test: `DivineSmiteTests.swift` — bundled Paladin loads with smite,
-  resolver lists it only after a melee hit, consuming the chip
-  decrements a slot, applies `2d8 + 1d8/level above 1` radiant.
+**1. ~~Paladin + Divine Smite~~ — DONE 2026-06-09 (finishes Phase O's opt-in story)**
+- Shipped: `TriggerCost.spellSlot(minLevel:maxLevel:)` (JSON
+  `{"type":"spellSlot","minLevel":1,"maxLevel":5}`) and a new
+  `TriggerEffect.addSlotScaledDamageDice(baseDice:extraDicePerSlotLevel:damageType:)`
+  — dice that scale by the SLOT paid, not class level (Divine Smite:
+  `2d8` + `1d8`/level, radiant).
+- Resolver policy (v1, as planned): the chip is gated by "any slot
+  available in range" and uses the **lowest** one. `buildChip`
+  concretizes the cost to that exact level and names it on the chip
+  ("Divine Smite (L1 slot)"), so the slot consumed always matches the
+  dice the player saw. `ResourceCalculator` gained
+  `lowestAvailableSlotLevel(min:max:)` + `consumeSpellSlot(level:)`
+  (class-agnostic via the `.spellSlot` display hint, so multiclass
+  casters spend their cheapest eligible slot). The sheet's
+  `pendingCostsToApply` switch handles the new case.
+- Content: Paladin in `classes.json` — d10, WIS/CHA saves, all armor +
+  shields, half-caster CHA slot table (the `fullCaster` SlotTable shape
+  with the 2024 half-caster progression, no schema change), Lay on
+  Hands as a 5×level pool (spend via the resources card in v1),
+  Weapon Mastery (2), Fighting Style at L2 (shares the `fighting_style`
+  selection id so the existing Defense/Dueling calculators apply),
+  Paladin's Smite at L2, Channel Divinity at L3 (2 uses, +1 on short
+  rest), ASIs at 4/8/12/16, descriptive majors through L19.
+- Deferred, by design: `TypedOrMatch.matchSpell` and the +1d8 vs
+  undead/fiend variant; a pick-your-slot UI (upcast smite) — the
+  lowest-slot policy stands until that polish lands; Aura of
+  Protection's save bonus and Radiant Strikes' auto +1d8 (both need an
+  always-on feature-rider pass; their descriptions say "apply manually").
+- Tests: `DivineSmiteTests.swift` (11 tests) — schema round-trips,
+  bundled Paladin wiring, half-caster slot synthesis at L1/L5,
+  lowest-slot selection + drained-pool fallback to L2 (3d8), ranged
+  weapons filtered, no-slots gating, slot consumption + overdraft.
 
 **2. ~~Bundle a real Rogue subclass at L3~~ — DONE (`65213dd`)**
 - Thief shipped with L3/9/13/17 features (incl. Use Magic Device granting
@@ -2049,11 +2060,12 @@ shippable alone:
 - **11a. Cleric** — first `preparedFromAll` caster; Channel Divinity as a
   resource; Life Domain at the subclass level; needs a half-dozen L1 cleric
   spells + healing word/cure wounds (heal recipes already exist).
-- **11b. Paladin** — pairs with item 1 (Divine Smite). Half-caster slot
-  table (the `SlotTable` shape already supports arbitrary progressions —
-  author the half-caster table, no schema change). Lay on Hands as a
-  `5 × level` pool resource (v1: spend via the resources card's manual
-  adjustment; a "spend N" prompt is polish).
+- **11b. ~~Paladin~~ — DONE 2026-06-09** with item 1. Class authored
+  L1–L19 (mechanical: Lay on Hands pool, smite, Channel Divinity,
+  fighting style, weapon mastery, ASIs; descriptive: auras, Radiant
+  Strikes, Extra Attack). Still wanted later: paladin spell-list
+  entries (bless, divine favor — lands with 11e), a subclass at L3,
+  and mechanical auras.
 - **11c. Species + backgrounds sweep** — the 6 missing species and 13
   missing backgrounds are descriptive-trait work; Dwarven Toughness-style
   HP traits should wait for item 8's `rolledHP` model.
@@ -2112,8 +2124,7 @@ shippable alone:
 3. ~~Item 8~~ — done 2026-06-09 (HP re-land + deletion UI, both surfaces
    confirmed).
 4. ~~Item 4 (death saves)~~ — done 2026-06-09.
-5. **Items 1 + 11b together (Paladin + Divine Smite)** — finishes Phase O's
-   opt-in story and proves the spell-slot cost path.
+5. ~~Items 1 + 11b (Paladin + Divine Smite)~~ — done 2026-06-09.
 6. **Item 11a (Cleric)** — first prepared caster, exercises `preparedFromAll`.
 7. **Item 12 (Phase H)** once 9e exists to power import validation.
 8. Items 9a–9d, 10, 13 interleave as palate cleansers between the above.

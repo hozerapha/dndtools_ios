@@ -231,10 +231,16 @@ enum TriggerCost: Equatable {
     /// One use per turn, tracked via `Character.turnFlags`. The flag is set
     /// when the player fires the chip and cleared by Start New Turn.
     case oncePerTurn(flagID: String)
+    /// Consume one spell slot of level `minLevel...maxLevel` (Divine Smite:
+    /// 1–5). v1 policy: the LOWEST currently-available slot in range is
+    /// consumed; effects that scale by slot level use that same level. The
+    /// resolver concretizes the range to the chosen level before parking the
+    /// cost on a chip, so the slot paid always matches the dice shown.
+    case spellSlot(minLevel: Int, maxLevel: Int)
 }
 
 extension TriggerCost: Codable {
-    private enum CodingKeys: String, CodingKey { case type, flagID }
+    private enum CodingKeys: String, CodingKey { case type, flagID, minLevel, maxLevel }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -243,6 +249,10 @@ extension TriggerCost: Codable {
         case "oncePerTurn":
             let flag = try c.decode(String.self, forKey: .flagID)
             self = .oncePerTurn(flagID: flag)
+        case "spellSlot":
+            let minLevel = try c.decode(Int.self, forKey: .minLevel)
+            let maxLevel = try c.decode(Int.self, forKey: .maxLevel)
+            self = .spellSlot(minLevel: minLevel, maxLevel: maxLevel)
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .type, in: c,
@@ -257,6 +267,10 @@ extension TriggerCost: Codable {
         case .oncePerTurn(let flag):
             try c.encode("oncePerTurn", forKey: .type)
             try c.encode(flag, forKey: .flagID)
+        case .spellSlot(let minLevel, let maxLevel):
+            try c.encode("spellSlot", forKey: .type)
+            try c.encode(minLevel, forKey: .minLevel)
+            try c.encode(maxLevel, forKey: .maxLevel)
         }
     }
 }
@@ -281,10 +295,20 @@ enum TriggerEffect: Equatable {
     /// type the weapon already deals); a fixed type routes through
     /// `typedModifiers` so the breakdown can attribute it.
     case addFlatDamage(amount: LevelScaledValue, damageType: TypedOrMatch?)
+    /// Append dice that scale with the SPELL SLOT paid via the effect's
+    /// `.spellSlot` cost (not class level): `baseDice` when the lowest-eligible
+    /// slot is used, plus `extraDicePerSlotLevel` once per slot level above
+    /// the cost's `minLevel`. Divine Smite: base `2d8`, `1d8` extra, radiant.
+    /// Only meaningful with a `.spellSlot` cost — the resolver skips it
+    /// otherwise.
+    case addSlotScaledDamageDice(baseDice: String, extraDicePerSlotLevel: String, damageType: TypedOrMatch)
 }
 
 extension TriggerEffect: Codable {
-    private enum CodingKeys: String, CodingKey { case type, dice, damageType, count, die, amount }
+    private enum CodingKeys: String, CodingKey {
+        case type, dice, damageType, count, die, amount
+        case baseDice, extraDicePerSlotLevel
+    }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -303,6 +327,11 @@ extension TriggerEffect: Codable {
             let amount = try c.decode(LevelScaledValue.self, forKey: .amount)
             let dmg = try c.decodeIfPresent(TypedOrMatch.self, forKey: .damageType)
             self = .addFlatDamage(amount: amount, damageType: dmg)
+        case "addSlotScaledDamageDice":
+            let base = try c.decode(String.self, forKey: .baseDice)
+            let extra = try c.decode(String.self, forKey: .extraDicePerSlotLevel)
+            let dmg = try c.decode(TypedOrMatch.self, forKey: .damageType)
+            self = .addSlotScaledDamageDice(baseDice: base, extraDicePerSlotLevel: extra, damageType: dmg)
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .type, in: c,
@@ -327,6 +356,11 @@ extension TriggerEffect: Codable {
             try c.encode("addFlatDamage", forKey: .type)
             try c.encode(amount, forKey: .amount)
             try c.encodeIfPresent(dmg, forKey: .damageType)
+        case .addSlotScaledDamageDice(let base, let extra, let dmg):
+            try c.encode("addSlotScaledDamageDice", forKey: .type)
+            try c.encode(base, forKey: .baseDice)
+            try c.encode(extra, forKey: .extraDicePerSlotLevel)
+            try c.encode(dmg, forKey: .damageType)
         }
     }
 }

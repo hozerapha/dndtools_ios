@@ -177,6 +177,47 @@ enum ResourceCalculator {
         return Swift.max(0, Swift.min(raw, max))
     }
 
+    // MARK: - Spell slots
+
+    /// Lowest spell-slot level in `minLevel...maxLevel` with at least one
+    /// slot remaining, across every slot pool the character has (class-
+    /// agnostic via the `.spellSlot` display hint, so a multiclass caster's
+    /// cheapest eligible slot wins). Nil when nothing in range is available —
+    /// callers use that to suppress slot-fueled chips (Divine Smite).
+    static func lowestAvailableSlotLevel(
+        min minLevel: Int,
+        max maxLevel: Int,
+        character: Character,
+        content: ContentStore
+    ) -> Int? {
+        availableResources(character: character, content: content)
+            .compactMap { resolved -> Int? in
+                guard case .spellSlot(let level)? = resolved.definition.displayHint,
+                      (minLevel...maxLevel).contains(level),
+                      resolved.current > 0 else { return nil }
+                return level
+            }
+            .min()
+    }
+
+    /// Spend one spell slot of exactly `level`. Returns false when no pool of
+    /// that level has a slot left.
+    @discardableResult
+    static func consumeSpellSlot(
+        level: Int,
+        in character: inout Character,
+        content: ContentStore
+    ) -> Bool {
+        let pools = availableResources(character: character, content: content)
+        guard let resolved = pools.first(where: { resolved in
+            if case .spellSlot(let l)? = resolved.definition.displayHint {
+                return l == level && resolved.current > 0
+            }
+            return false
+        }) else { return false }
+        return consume(amount: 1, from: resolved.id, in: &character, content: content)
+    }
+
     // MARK: - Mutations
 
     /// Decrement a pool by `amount`. Returns whether the consumption succeeded

@@ -199,6 +199,8 @@ struct EffectsRow: View {
             parts.append(diceLine(dice: "N\(die)", typed: typed))
         case .addFlatDamage(_, let typed):
             parts.append(flatLine(typed: typed))
+        case .addSlotScaledDamageDice(let base, let extra, let typed):
+            parts.append(diceLine(dice: "\(base) + \(extra)/slot level", typed: typed))
         }
         switch effect.lifecycle {
         case .persistent(.concentrationEnds):
