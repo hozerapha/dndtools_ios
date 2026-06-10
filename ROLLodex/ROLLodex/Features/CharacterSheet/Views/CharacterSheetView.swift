@@ -200,6 +200,9 @@ struct CharacterSheetView: View {
     private var stickyHeader: some View {
         VStack(spacing: 10) {
             headerCard
+            if character.currentHP == 0 {
+                DeathSavesRow(character: $character, onRoll: rollDeathSave)
+            }
             ConditionsRow(character: $character) {
                 showAddCondition = true
             }
@@ -500,6 +503,22 @@ struct CharacterSheetView: View {
             label: historyLabel,
             formula: formula,
             description: resolved.description
+        )
+        selectedTab = .dice
+    }
+
+    /// Hand a labeled d20 to the dice tab for a death save. The result comes
+    /// back via the player's eyes, not data — they tap the matching circle on
+    /// the tracker row (10+ succeeds; nat 1 counts twice; nat 20 = regain 1 HP).
+    private func rollDeathSave() {
+        var formula = DiceFormula()
+        formula.groups.append(DiceGroup(kind: .d20, count: 1))
+        pendingRoll.pendingCharacterID = character.id
+        pendingRoll.pending = ResolvedAction(
+            id: "death_save",
+            label: "Death Save",
+            formula: formula,
+            description: "10+ succeeds · nat 1 = 2 failures · nat 20 = regain 1 HP"
         )
         selectedTab = .dice
     }

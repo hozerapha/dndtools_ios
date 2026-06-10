@@ -20,8 +20,20 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
     /// separate is what lets a CON change apply retroactively across all
     /// levels instead of only at future level-ups.
     var rolledHP: Int
-    var currentHP: Int
+    var currentHP: Int {
+        didSet {
+            // 5e: regaining ANY hit points ends the dying state — both death
+            // save counters reset. Observers don't fire during init/decode,
+            // so loading a dying character preserves its counters.
+            if oldValue == 0 && currentHP > 0 {
+                deathSaves = DeathSaveState()
+            }
+        }
+    }
     var tempHP: Int
+    /// Death-save tally while at 0 HP. Empty for conscious characters; the
+    /// sheet only surfaces the tracker when `currentHP == 0`.
+    var deathSaves: DeathSaveState
     var proficiencies: [ProficiencyKey: ProficiencyLevel]
     var inventory: [InventoryItem]
     var currency: Currency
@@ -109,6 +121,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         }
         self.currentHP = currentHP == 0 ? maxHP : currentHP
         self.tempHP = tempHP
+        self.deathSaves = DeathSaveState()
         self.proficiencies = proficiencies
         self.inventory = inventory
         self.currency = currency
@@ -128,7 +141,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
 
     private enum CodingKeys: String, CodingKey {
         case id, name, level, speciesID, backgroundID, classEntries
-        case abilityScores, maxHP, rolledHP, currentHP, tempHP
+        case abilityScores, maxHP, rolledHP, currentHP, tempHP, deathSaves
         case proficiencies, inventory, currency, notes
         case attunementSlotsOverride, resources, spells
         case featureSelections, conditions, concentratingSpellID
@@ -158,6 +171,8 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         }
         currentHP = try container.decodeIfPresent(Int.self, forKey: .currentHP) ?? maxHP
         tempHP = try container.decodeIfPresent(Int.self, forKey: .tempHP) ?? 0
+        // Pre-death-save characters decode with a clean tally.
+        deathSaves = try container.decodeIfPresent(DeathSaveState.self, forKey: .deathSaves) ?? DeathSaveState()
         inventory = try container.decode([InventoryItem].self, forKey: .inventory)
         currency = try container.decodeIfPresent(Currency.self, forKey: .currency) ?? Currency()
         notes = try container.decodeIfPresent(String.self, forKey: .notes) ?? ""
@@ -200,6 +215,9 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         try container.encode(rolledHP, forKey: .rolledHP)
         try container.encode(currentHP, forKey: .currentHP)
         try container.encode(tempHP, forKey: .tempHP)
+        if !deathSaves.isEmpty {
+            try container.encode(deathSaves, forKey: .deathSaves)
+        }
         try container.encode(inventory, forKey: .inventory)
         try container.encode(currency, forKey: .currency)
         try container.encode(notes, forKey: .notes)
@@ -448,12 +466,36 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
             remaining -= absorbed
         }
         guard remaining > 0 else { return nil }
+        let wasAlreadyDying = currentHP == 0
         currentHP = max(0, currentHP - remaining)
+        // 5e: damage taken while already at 0 HP costs a death-save failure
+        // (two on a crit — the app can't know, the player taps the second).
+        if wasAlreadyDying {
+            deathSaves.recordFailure()
+        }
         guard let spellID = concentratingSpellID else { return nil }
         // DC is the larger of 10 or half the damage taken (after temp HP).
         let dc = max(10, remaining / 2)
         return ConcentrationCheck(spellID: spellID, dc: dc, damageTaken: remaining)
     }
+}
+
+/// Death-save tally (5e: three successes → stable, three failures → dead).
+/// Counters live on the character so they survive app restarts mid-combat;
+/// they reset automatically when the character regains any HP (see
+/// `Character.currentHP.didSet`). Honor-system MVP: the player rolls the d20
+/// (the tracker row hands one to the dice tab) and taps the matching circle;
+/// damage while dying auto-records a failure via `applyDamage`.
+struct DeathSaveState: Codable, Equatable, Hashable {
+    var successes: Int = 0
+    var failures: Int = 0
+
+    var isEmpty: Bool { successes == 0 && failures == 0 }
+    var isStable: Bool { successes >= 3 }
+    var isDead: Bool { failures >= 3 }
+
+    mutating func recordSuccess() { successes = min(3, successes + 1) }
+    mutating func recordFailure() { failures = min(3, failures + 1) }
 }
 
 /// Returned by `Character.applyDamage` when the hit interrupts concentration.

@@ -1782,7 +1782,7 @@ No UI tests in v1. Pure model + store tests only.
 | D — Characters tab & creation flow | shipped |
 | E — Read-only character sheet | shipped |
 | F — Action engine, buttons, dice handoff | shipped |
-| G — Editing characters | shipped (death saves still deferred) |
+| G — Editing characters | shipped (death saves shipped 2026-06-09 — see roadmap item 4) |
 | H — Custom content import / export | **deferred** until I–O stabilize the schema |
 | I — Resources & rest cycle | shipped |
 | J — Spells | shipped (incl. `spellAttack` recipe + attack→damage follow-up chip) |
@@ -1799,7 +1799,7 @@ No UI tests in v1. Pure model + store tests only.
 
 1. **Tab layout:** Does the 3D playground tab stay, or move to a Settings/dev panel? (3D playground tab has been removed; legacy file kept for reference.)
 2. **Character portrait:** Placeholder in v1, or camera/photo picker? (Placeholder shipped; picker deferred.)
-3. **Death saves:** Track in Phase L alongside conditions.
+3. **Death saves:** Track in Phase L alongside conditions. (Shipped 2026-06-09 as a header tracker row — see roadmap item 4.)
 4. **Multi-classing:** Out of scope for v1, but character JSON already stores `classEntries: [ClassEntry]` — multi-class UI and proficiency reconciliation land alongside Phase M's level-up flow.
 5. **Resource ID collisions across content packs:** Since resource IDs are flat strings and homebrew packs can override bundled IDs, define a namespacing convention (`<pack>.<resourceID>`) before Phase H ships.
 6. **Per-stack item charges:** Two of the same wand currently share one pool. Revisit if a real case appears in play.
@@ -1931,10 +1931,22 @@ session.
     STR melee attacks and to attacks against you. Needs
     `TriggerEffect.advantage(target:)` (NOT shipped).
 
-**4. Phase G follow-ups (death saves still deferred)**
-- 3 successes / 3 failures, persistence on the `Character`. UI: a small
-  row near HP. Reset on regaining HP. Crit-rest (rolled a nat-1 / nat-20
-  on the d20 → 2 failures / instant stabilise).
+**4. ~~Phase G follow-ups: death saves~~ — DONE 2026-06-09**
+- `DeathSaveState` (successes/failures, clamped 0–3, `isStable`/`isDead`)
+  lives on `Character.deathSaves`; decode-safe default, encoded only when
+  non-empty. Counters reset automatically when `currentHP` goes 0 → positive
+  (a `didSet` on `currentHP`, so every heal path — header +1, HP editor,
+  long rest — gets it for free). `applyDamage` while already at 0 HP
+  auto-records one failure (the crit's second failure is a manual tap —
+  the app can't see the attacker's die).
+- UI: `DeathSavesRow` appears in the sheet's sticky header only at 0 HP —
+  Dying/Stable/Dead badge, two rows of three tappable circles (re-tap to
+  undo), a Roll chip that hands a labeled d20 to the dice tab, and the
+  rules reminder line ("10+ succeeds · nat 1 = 2 fails · nat 20 = regain
+  1 HP"). Honor-system: the player reads the die and taps the circle.
+- Tests: `DeathSaveTests.swift` (10 tests) — legacy decode, round-trip,
+  encode-omission, damage-while-dying, drop-to-zero non-failure, temp-HP
+  absorption, cap-at-three, heal reset, thresholds.
 
 **5. Phase H — Custom content import / export (deferred until Phase O
 schema stabilised; now that it has, this is unblocked)**
@@ -2099,7 +2111,7 @@ shippable alone:
 2. ~~Item 9e (content lint)~~ — done 2026-06-09.
 3. ~~Item 8~~ — done 2026-06-09 (HP re-land + deletion UI, both surfaces
    confirmed).
-4. **Item 4 (death saves)** — completes Phase G; small, self-contained.
+4. ~~Item 4 (death saves)~~ — done 2026-06-09.
 5. **Items 1 + 11b together (Paladin + Divine Smite)** — finishes Phase O's
    opt-in story and proves the spell-slot cost path.
 6. **Item 11a (Cleric)** — first prepared caster, exercises `preparedFromAll`.
