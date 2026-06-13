@@ -1801,17 +1801,17 @@ license condition, not optional). Suggested home: Settings → About / Credits.
 
 Per the license: do **not** add any other WotC attribution beyond the above,
 and don't imply endorsement. "Compatible with fifth edition" / "5E compatible"
-is permitted. (This is an open action item — see roadmap item 16.)
+is permitted. (Shipped 2026-06-13 in Settings → Legal & Attribution; item 16.)
 
 ### Audit verdict (2026-06-13)
 The entire current bundle is SRD-clean at the inventory level: 6 classes
 (all SRD), 3 subclasses (Champion / Thief / Life Domain — exactly the SRD
 ones), 3 species (Human/Elf/Dwarf), 3 backgrounds (Acolyte/Sage/Soldier of
 the 4 SRD), 14 spells (all SRD incl. Hex, Hunter's Mark, Shield), all
-weapons/armor/conditions/gear, and the 2 referenced feats. The only open
-compliance item is the missing **attribution notice** (roadmap item 16).
-Description-text wording should track SRD phrasing (which is CC-licensed) as
-content is authored — never PHB-exclusive wording.
+weapons/armor/conditions/gear, and the 2 referenced feats. The attribution
+notice shipped 2026-06-13 (Settings → Legal & Attribution; item 16), so the
+bundle is fully compliant. Description-text wording should track SRD phrasing
+(which is CC-licensed) as content is authored — never PHB-exclusive wording.
 
 ---
 
@@ -2188,13 +2188,11 @@ Suggested authoring order, each batch shippable alone:
   `TriggerCost.resource(id:amount:)`, but as engine groundwork for the
   pack, not bundled content.)
 
-**16. SRD attribution notice (MANDATORY, blocks any SRD-content release)**
-CC-BY-4.0 *requires* the SRD attribution statement be shown in-app — it's the
-license condition for using the bundled content at all, so this gates launch.
-Add a Credits/Legal row to the **Settings** tab (Phase H already added the
-tab) rendering the exact statement from the "Attribution" section above, with
-tappable links to the SRD and the CC-BY license. Don't add other WotC
-attribution or imply endorsement; "5E compatible" is allowed. Small, ~1 view.
+**16. ~~SRD attribution notice~~ — DONE 2026-06-13.** Settings tab gained a
+"Legal & Attribution" section: the verbatim CC-BY statement (text-selectable),
+tappable links to the SRD and the CC-BY-4.0 license, and a footer noting "5E
+compatible / not affiliated with or endorsed by Wizards of the Coast." The
+license condition for shipping SRD content is now satisfied.
 
 **12. ~~Phase H — homebrew import/export~~ — DONE 2026-06-13**
 - Bundled content keeps `fatalError` (build bug); imported packs go through

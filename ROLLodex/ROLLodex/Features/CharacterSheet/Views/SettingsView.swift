@@ -37,6 +37,7 @@ struct SettingsView: View {
                 devSection
                 #endif
                 aboutSection
+                legalSection
             }
             .navigationTitle("Settings")
             .fileImporter(
@@ -181,6 +182,37 @@ struct SettingsView: View {
             LabeledContent("Bundled spells", value: "\(content.spells.count)")
         }
     }
+
+    /// CC-BY-4.0 requires this attribution statement to appear in-app — it's
+    /// the license condition for using the bundled SRD content, not optional.
+    /// The statement text is shown verbatim; the two source links are also
+    /// surfaced as tappable rows. Per the license: no other WotC attribution,
+    /// no implied endorsement.
+    private var legalSection: some View {
+        Section {
+            Text(Self.srdAttribution)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+            Link("System Reference Document 5.2.1",
+                 destination: URL(string: "https://www.dndbeyond.com/srd")!)
+            Link("Creative Commons Attribution 4.0 (CC BY 4.0)",
+                 destination: URL(string: "https://creativecommons.org/licenses/by/4.0/legalcode")!)
+        } header: {
+            Text("Legal & Attribution")
+        } footer: {
+            Text("ROLLodex is compatible with fifth edition. Not affiliated with or endorsed by Wizards of the Coast.")
+        }
+    }
+
+    /// Verbatim CC-BY attribution statement from SRD 5.2.1's Legal Information.
+    private static let srdAttribution = """
+    This work includes material from the System Reference Document 5.2.1 \
+    (“SRD 5.2.1”) by Wizards of the Coast LLC, available at \
+    https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the \
+    Creative Commons Attribution 4.0 International License, available at \
+    https://creativecommons.org/licenses/by/4.0/legalcode.
+    """
 
     // MARK: - Import handling
 
