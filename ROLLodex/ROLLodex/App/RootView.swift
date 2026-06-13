@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppTab: String, Hashable {
-    case dice, characters
+    case dice, characters, settings
 }
 
 struct RootView: View {
@@ -25,6 +25,12 @@ struct RootView: View {
                     Label("Characters", systemImage: "person.2")
                 }
                 .tag(AppTab.characters)
+
+            SettingsView()
+                .tabItem {
+                    Label("Settings", systemImage: "gearshape")
+                }
+                .tag(AppTab.settings)
         }
         .environment(history)
         .environment(presets)

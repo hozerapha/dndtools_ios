@@ -41,7 +41,7 @@ ROLLodex/
   ROLLodex.xcodeproj/          # Xcode project — managed via Xcode, not by hand
   ROLLodex/
     App/
-      RootView.swift           # TabView shell; injects HistoryStore, PresetStore, ContentStore, CharacterStore, PendingRollStore
+      RootView.swift           # TabView shell (Dice / Characters / Settings); injects HistoryStore, PresetStore, ContentStore, CharacterStore, PendingRollStore
     ROLLodexApp.swift          # @main entry point
     Features/
       DiceRoller/
@@ -97,7 +97,7 @@ ROLLodex/
           (and more)
         State/                 # @Observable stores
           CharacterStore.swift # File-system persisted characters
-          ContentStore.swift   # Bundled JSON loader
+          ContentStore.swift   # Bundled JSON loader + imported-pack overlay (Documents/Content)
           PendingRollStore.swift # Cross-tab action handoff
         Views/                 # SwiftUI views
           CharacterSheetView.swift
@@ -168,7 +168,7 @@ The `DiceRollerView` drives the controller through an async flow:
 | `HistoryStore` | `@Observable class` | Environment | `UserDefaults` | `history.rolls.v2` — JSON-encoded `[RollResult]`, max 200 entries. |
 | `PresetStore` | `@Observable class` | Environment | `UserDefaults` | `presets.v2` — JSON-encoded `[Preset]`. |
 | `CharacterStore` | `@Observable class` | Environment | File System | `Documents/Characters/<uuid>.json` + `manifest.json`. Atomic writes. |
-| `ContentStore` | `@Observable class` | Environment | Bundled JSON | Loaded from app bundle at init (not persisted). |
+| `ContentStore` | `@Observable class` | Environment | Bundled JSON + `Documents/Content/` | Bundled SRD at init; imported `.json` packs overlaid on top (shadow bundled by id). `reload()` after import/remove. |
 | `PendingRollStore` | `@Observable class` | Environment | In-memory only | Cross-tab handoff queue. |
 
 All stores read from their source on `init` and write on every mutation. No debouncing currently.

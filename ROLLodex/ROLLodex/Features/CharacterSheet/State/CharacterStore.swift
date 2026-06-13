@@ -60,6 +60,62 @@ final class CharacterStore {
         }
     }
 
+    // MARK: - Import (Phase H)
+
+    enum ImportError: LocalizedError {
+        case unreadable
+        case malformed(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .unreadable:           return "Couldn't read the selected file."
+            case .malformed(let detail): return "That isn't a valid character file.\n\(detail)"
+            }
+        }
+    }
+
+    /// Decode a user-selected character `.json`, give it a FRESH id, and save.
+    /// The new id means importing your own export makes a copy rather than
+    /// clobbering the original (characters are keyed by id on disk and in the
+    /// sheet's binding). Returns the imported character on success.
+    @discardableResult
+    func importCharacter(from url: URL) throws -> Character {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+
+        guard let raw = try? Data(contentsOf: url) else { throw ImportError.unreadable }
+        return try importCharacter(data: raw)
+    }
+
+    /// Core import: validate `data` as a `Character`, reassign a fresh id, save.
+    /// Shared by the file picker and the dev paste box.
+    @discardableResult
+    func importCharacter(data raw: Data) throws -> Character {
+        // Decode once purely to validate it's a real character (clean error).
+        do {
+            _ = try decoder.decode(Character.self, from: raw)
+        } catch {
+            throw ImportError.malformed(error.localizedDescription)
+        }
+
+        let reidentified = try reassignID(raw)
+        // Safe to force-try the decode: reassignID round-trips the same bytes
+        // that just decoded, only swapping the id string.
+        let character = try decoder.decode(Character.self, from: reidentified)
+        save(character)
+        return character
+    }
+
+    /// Swap the top-level `id` for a fresh UUID without touching the rest of
+    /// the document — keeps us from having to thread a giant memberwise init.
+    private func reassignID(_ data: Data) throws -> Data {
+        guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw ImportError.malformed("Root is not a JSON object.")
+        }
+        object["id"] = UUID().uuidString
+        return try JSONSerialization.data(withJSONObject: object)
+    }
+
     func delete(id: UUID) {
         let url = fileURL(for: id)
         try? FileManager.default.removeItem(at: url)

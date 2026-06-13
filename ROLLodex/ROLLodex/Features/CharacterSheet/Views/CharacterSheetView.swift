@@ -100,6 +100,12 @@ struct CharacterSheetView: View {
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
+                    ShareLink(
+                        item: ExportedCharacter(character: character),
+                        preview: SharePreview(character.name)
+                    ) {
+                        Label("Export Character", systemImage: "square.and.arrow.up")
+                    }
                     Button(role: .destructive) {
                         showDeleteConfirm = true
                     } label: {

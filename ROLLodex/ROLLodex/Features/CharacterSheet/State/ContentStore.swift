@@ -13,8 +13,20 @@ final class ContentStore {
     private(set) var spells: [String: SpellDefinition] = [:]
     private(set) var conditions: [String: ConditionDefinition] = [:]
 
-    init() {
-        loadBundledContent()
+    /// User-imported packs live here (one `.json` per pack), separate from the
+    /// read-only bundled SRD. Overlaid on top of bundled content at load,
+    /// shadowing by id.
+    private let importedContentDirectory: URL
+
+    convenience init() {
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        self.init(importedContentDirectory: documents.appendingPathComponent("Content"))
+    }
+
+    init(importedContentDirectory: URL) {
+        self.importedContentDirectory = importedContentDirectory
+        try? FileManager.default.createDirectory(at: importedContentDirectory, withIntermediateDirectories: true)
+        reload()
     }
 
     // MARK: - Lookups
@@ -85,15 +97,31 @@ final class ContentStore {
 
     // MARK: - Loading
 
-    private func loadBundledContent() {
-        classes = loadDictionary(from: "classes", decode: [ClassDefinition].self)
-        species = loadDictionary(from: "species", decode: [SpeciesDefinition].self)
-        backgrounds = loadDictionary(from: "backgrounds", decode: [BackgroundDefinition].self)
-        weapons = loadDictionary(from: "weapons", decode: [WeaponDefinition].self)
-        armor = loadDictionary(from: "armor", decode: [ArmorDefinition].self)
-        gear = loadDictionary(from: "gear", decode: [ItemDefinition].self)
-        spells = loadDictionary(from: "spells", decode: [SpellDefinition].self)
-        conditions = loadDictionary(from: "conditions", decode: [ConditionDefinition].self)
+    /// (Re)build every content dictionary: bundled SRD as the base, then each
+    /// imported pack overlaid on top so imported entries shadow bundled ones
+    /// by id. Packs are applied in filename order (last wins on a collision
+    /// between two imported packs). Called on init and after any import/remove.
+    func reload() {
+        let packs = loadImportedPacks().map(\.pack)
+        classes     = merged(loadDictionary(from: "classes", decode: [ClassDefinition].self), packs.compactMap(\.classes))
+        species     = merged(loadDictionary(from: "species", decode: [SpeciesDefinition].self), packs.compactMap(\.species))
+        backgrounds = merged(loadDictionary(from: "backgrounds", decode: [BackgroundDefinition].self), packs.compactMap(\.backgrounds))
+        weapons     = merged(loadDictionary(from: "weapons", decode: [WeaponDefinition].self), packs.compactMap(\.weapons))
+        armor       = merged(loadDictionary(from: "armor", decode: [ArmorDefinition].self), packs.compactMap(\.armor))
+        gear        = merged(loadDictionary(from: "gear", decode: [ItemDefinition].self), packs.compactMap(\.gear))
+        spells      = merged(loadDictionary(from: "spells", decode: [SpellDefinition].self), packs.compactMap(\.spells))
+        conditions  = merged(loadDictionary(from: "conditions", decode: [ConditionDefinition].self), packs.compactMap(\.conditions))
+    }
+
+    private func merged<T: Identifiable>(
+        _ base: [String: T],
+        _ imported: [[T]]
+    ) -> [String: T] where T.ID == String {
+        var dict = base
+        for array in imported {
+            for item in array { dict[item.id] = item }
+        }
+        return dict
     }
 
     private func loadDictionary<T: Codable & Identifiable>(
@@ -122,5 +150,131 @@ final class ContentStore {
         } catch {
             fatalError("Failed to decode \(filename).json: \(error)")
         }
+    }
+
+    // MARK: - Imported packs (Phase H)
+
+    /// What can go wrong importing a user-supplied pack. Unlike bundled
+    /// content (a `fatalError` build bug), imported packs fail gracefully
+    /// into an error sheet.
+    enum ImportError: LocalizedError {
+        case unreadable
+        case malformed(String)
+        case invalid([String])
+
+        var errorDescription: String? {
+            switch self {
+            case .unreadable:
+                return "Couldn't read the selected file."
+            case .malformed(let detail):
+                return "That isn't a valid content pack.\n\(detail)"
+            case .invalid(let issues):
+                return issues.joined(separator: "\n")
+            }
+        }
+    }
+
+    /// One imported pack as shown in Settings.
+    struct ImportedPackInfo: Identifiable {
+        let fileName: String
+        let name: String
+        let summary: String
+        var id: String { fileName }
+    }
+
+    private struct LoadedPack {
+        let fileName: String
+        let pack: ContentPack
+    }
+
+    /// Validate a user-selected `.json` content pack, persist it into
+    /// `Documents/Content/`, and reload. Throws `ImportError` (with a
+    /// human-readable message) on any failure so the caller can surface a
+    /// sheet. Returns the decoded pack for the success summary.
+    @discardableResult
+    func importPack(from url: URL) throws -> ContentPack {
+        // Files from the document picker are security-scoped.
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+
+        guard let data = try? Data(contentsOf: url) else { throw ImportError.unreadable }
+        return try importPack(data: data, suggestedName: url.deletingPathExtension().lastPathComponent)
+    }
+
+    /// Core import: validate `data` as a `ContentPack`, persist, reload.
+    /// Shared by the file picker and the dev paste box. `suggestedName` is the
+    /// fallback display name when the pack JSON omits its own `name`.
+    @discardableResult
+    func importPack(data: Data, suggestedName: String?) throws -> ContentPack {
+        let pack: ContentPack
+        do {
+            pack = try JSONDecoder().decode(ContentPack.self, from: data)
+        } catch {
+            throw ImportError.malformed(error.localizedDescription)
+        }
+
+        let issues = ContentValidator.validate(pack)
+        guard issues.isEmpty else { throw ImportError.invalid(issues) }
+
+        // Filename derives from the pack's display name; re-importing a
+        // same-named pack replaces it (the common "fix a bug and re-import"
+        // case). Persist the ORIGINAL bytes so what's stored is exactly what
+        // validated.
+        let displayName = pack.name ?? suggestedName ?? "Imported Pack"
+        let dest = importedContentDirectory.appendingPathComponent("\(sanitize(displayName)).json")
+        try data.write(to: dest, options: .atomic)
+
+        reload()
+        return pack
+    }
+
+    /// Imported packs currently on disk, for the Settings list.
+    var importedPacks: [ImportedPackInfo] {
+        loadImportedPacks().map { loaded in
+            ImportedPackInfo(
+                fileName: loaded.fileName,
+                name: loaded.pack.name ?? (loaded.fileName as NSString).deletingPathExtension,
+                summary: loaded.pack.summary
+            )
+        }
+    }
+
+    /// Remove an imported pack file and reload (bundled content for any ids it
+    /// shadowed re-surfaces automatically).
+    func removeImportedPack(fileName: String) {
+        let url = importedContentDirectory.appendingPathComponent(fileName)
+        try? FileManager.default.removeItem(at: url)
+        reload()
+    }
+
+    private func loadImportedPacks() -> [LoadedPack] {
+        let fm = FileManager.default
+        guard let urls = try? fm.contentsOfDirectory(
+            at: importedContentDirectory,
+            includingPropertiesForKeys: nil
+        ) else { return [] }
+
+        return urls
+            .filter { $0.pathExtension.lowercased() == "json" }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+            .compactMap { url in
+                guard let data = try? Data(contentsOf: url),
+                      let pack = try? JSONDecoder().decode(ContentPack.self, from: data)
+                else { return nil }
+                return LoadedPack(fileName: url.lastPathComponent, pack: pack)
+            }
+    }
+
+    /// Collapse a display name to a filesystem-safe slug for the pack file.
+    private func sanitize(_ name: String) -> String {
+        let allowed = CharacterSet.alphanumerics
+        // `Swift.Character` is explicit because this module's `Character` is
+        // the D&D model type, which would otherwise shadow the grapheme.
+        var slug = ""
+        for scalar in name.unicodeScalars {
+            slug.append(allowed.contains(scalar) ? Swift.Character(scalar) : "-")
+        }
+        let trimmed = slug.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        return trimmed.isEmpty ? "imported-pack" : trimmed
     }
 }

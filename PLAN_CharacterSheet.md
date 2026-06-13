@@ -1783,7 +1783,7 @@ No UI tests in v1. Pure model + store tests only.
 | E — Read-only character sheet | shipped |
 | F — Action engine, buttons, dice handoff | shipped |
 | G — Editing characters | shipped (death saves shipped 2026-06-09 — see roadmap item 4) |
-| H — Custom content import / export | **deferred** until I–O stabilize the schema |
+| H — Custom content import / export | **shipped 2026-06-13** — `ContentPack` JSON envelope (optional typed array per category), `ContentValidator` (the lint's id-hygiene + dice-parse invariants as production code), `ContentStore` imported layer in `Documents/Content/` (bundled base, imported shadows by id, `reload()` after import/remove), `importPack`/`removeImportedPack`/`importedPacks`. Character export via `ExportedCharacter` Transferable (`ShareLink` in the sheet's ⋯ menu); character import + content-pack import in a new **Settings tab** (`fileImporter`, fresh-id on character import so it never clobbers). `.zip` archives deferred (would need a zip dependency — single-JSON envelope ships instead). |
 | I — Resources & rest cycle | shipped |
 | J — Spells | shipped (incl. `spellAttack` recipe + attack→damage follow-up chip) |
 | K — Items with charges & spell access | shipped (Wand of Magic Missiles end-to-end) |
@@ -1959,11 +1959,10 @@ session.
   encode-omission, damage-while-dying, drop-to-zero non-failure, temp-HP
   absorption, cap-at-three, heal reset, thresholds.
 
-**5. Phase H — Custom content import / export (deferred until Phase O
-schema stabilised; now that it has, this is unblocked)**
-- See Phase H section above. `UIDocumentPicker` for import,
-  `ShareLink` for per-character JSON export. Validate against the
-  bundled JSON schemas before writing into `Documents/Content/`.
+**5. ~~Phase H — Custom content import / export~~ — DONE 2026-06-13.**
+See the Status-table row and roadmap item 12 for what shipped. (Future
+follow-ups: `.zip` pack archives, per-pack export from Settings, and
+`<pack>.<id>` namespacing if third-party collisions ever bite.)
 
 **6. Phase M open content debt (the architecture is done, the catalog isn't)**
 - Subclasses at the right level for every bundled class.
@@ -2104,16 +2103,25 @@ shippable alone:
   `TriggerCost.resource(id:amount:)` — small schema addition), Eldritch
   Knight + Arcane Trickster (spell-list subclasses), Wizard Evoker.
 
-**12. Phase H — homebrew import/export (unblocked, schema is stable)**
-- Prereq: `ContentStore` decode path must become throwing/recoverable for
-  *imported* packs (bundled content keeps `fatalError` semantics). Reuse
-  item 9e's lint as the import validator — same invariants, surfaced as an
-  error sheet instead of a failing test.
-- Then as originally specced: `UIDocumentPicker` for `.json`/`.zip` import
-  into `Documents/Content/`, `ContentStore.reload()` with imported-shadows-
-  bundled id resolution, `ShareLink` export of characters and packs.
-- Resolve open decision #5 (resource-id namespacing, `<pack>.<id>`) before
-  the first external pack exists, not after.
+**12. ~~Phase H — homebrew import/export~~ — DONE 2026-06-13**
+- Bundled content keeps `fatalError` (build bug); imported packs go through
+  a recoverable path — `ContentStore.importPack` throws `ImportError`
+  (unreadable / malformed / invalid-with-issue-list) into a Settings alert.
+- `ContentValidator.validate(_:)` lifts item 9e's invariants (non-empty
+  unique ids per category, parseable dice) into production code; the lint
+  test and the importer now share the same checks.
+- `ContentStore` reads `Documents/Content/*.json` as `ContentPack`
+  envelopes, overlaid on bundled by id (imported shadows; filename order =
+  last-wins between packs). `fileImporter` (not `UIDocumentPicker`) drives
+  both import flows; `.json` only (`.zip` deferred — needs a dependency).
+- Character export: `ExportedCharacter` Transferable + `ShareLink` in the
+  sheet ⋯ menu. Import: Settings `fileImporter`, fresh UUID via
+  `reassignID` so importing your own export copies rather than clobbers.
+- **Open decision #5 resolved (for now):** imported ids are raw and
+  shadow bundled on collision — the deliberate override mechanism, not a
+  conflict. A `<pack>.<id>` namespace is still deferred; revisit only if
+  accidental collisions between *different third-party* packs become a
+  real problem. The importer/validator are the seam to add it at.
 
 **13. UX + structure polish backlog (small, parallelizable)**
 - ~~Confirmation dialog: character delete~~ (done with item 8). Spell
@@ -2244,8 +2252,9 @@ Tests: `AbilityScoreMethodTests.swift` (12 tests — ⚠️ new file).
    remains as later polish).
 7. ~~Item 15 (ability score generation)~~ — done 2026-06-09.
 8. ~~Item 11a (Cleric)~~ — done 2026-06-10.
-9. **Item 12 (Phase H)** — next up: 9e's lint becomes the import validator.
-10. Items 9a–9d, 10, 13 interleave as palate cleansers between the above.
+9. ~~Item 12 (Phase H)~~ — done 2026-06-13 (9e's lint became the validator).
+10. Items 9a–9d, 10, 13 interleave as palate cleansers; content authoring
+    (item 11) continues alongside.
 
 ### How to resume
 
