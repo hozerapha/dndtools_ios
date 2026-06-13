@@ -1726,7 +1726,32 @@ each new field, encode-when-non-default for each new field):
 
 ---
 
-## SRD Content Reference (v1)
+## SRD Content Reference (verified against SRD 5.2.1, 2026-06-13)
+
+> Authoritative inventory from the actual SRD 5.2.1 PDF (CC-BY-4.0). The
+> bundled core app must stay within this list; PHB / expansion content is
+> importable-pack-only. **CC-BY attribution is mandatory** — the exact
+> statement (see "Attribution" below) must appear in-app.
+
+### Classes (12) and their ONE SRD subclass each
+The SRD includes all 12 classes but exactly one subclass per class. Bundled
+core content may use **only these subclasses**; any other subclass (Battle
+Master, Eldritch Knight, Arcane Trickster, etc.) is PHB-only.
+
+| Class | SRD subclass | Bundled? |
+|---|---|---|
+| Barbarian | Path of the Berserker | class ✓ / subclass ✗ |
+| Bard | College of Lore | ✗ |
+| Cleric | Life Domain | ✓ ✓ |
+| Druid | Circle of the Land | ✗ |
+| Fighter | Champion | ✓ ✓ |
+| Monk | Warrior of the Open Hand | ✗ |
+| Paladin | Oath of Devotion | class ✓ / subclass ✗ |
+| Ranger | Hunter | ✗ |
+| Rogue | Thief | ✓ ✓ |
+| Sorcerer | Draconic Sorcery | ✗ |
+| Warlock | Fiend Patron | ✗ |
+| Wizard | Evoker | class ✓ / subclass ✗ |
 
 ### Classes (Level 1)
 | Class | Hit Die | Primary | Saves | Armor | Weapons | Mastery |
@@ -1744,17 +1769,49 @@ each new field, encode-when-non-default for each new field):
 | Warlock | d8 | CHA | WIS, CHA | Light | Simple | — |
 | Wizard | d6 | INT | INT, WIS | None | Daggers, Darts, Slings, Quarterstaff, Light Xbow | — |
 
-### Species
-Dragonborn, Dwarf, Elf, Gnome, Goblin, Halfling, Human, Orc, Tiefling.
+### Species (9 in the SRD)
+Dragonborn, Dwarf, Elf, Gnome, **Goliath**, Halfling, Human, Orc, Tiefling.
+> Correction: the SRD has **Goliath, not Goblin** (Goblin is not in SRD 5.2.1).
+> Bundled: Human, Elf, Dwarf. Remaining SRD: Dragonborn, Gnome, Goliath,
+> Halfling, Orc, Tiefling.
 
-### Backgrounds (16)
-Acolyte, Artisan, Charlatan, Criminal, Entertainer, Farmer, Guard, Guide, Hermit, Merchant, Noble, Sage, Sailor, Scribe, Soldier, Wayfarer.
+### Backgrounds (only 4 in the SRD)
+Acolyte, Criminal, Sage, Soldier.
+> Correction: the SRD has **only these 4** backgrounds — the earlier
+> "16 backgrounds" list (Artisan, Charlatan, Entertainer, Noble, …) was the
+> PHB roster, NOT the SRD. Bundled: Acolyte, Sage, Soldier. Remaining SRD:
+> **Criminal** (that's the whole gap).
+> The bundled background feats (Savage Attacker, Magic Initiate) are SRD feats ✓.
 
 ### Weapon Mastery (8 properties)
 Cleave, Graze, Nick, Push, Sap, Slow, Topple, Vex.
 
 ### Skills (18)
 Acrobatics(DEX), Animal Handling(WIS), Arcana(INT), Athletics(STR), Deception(CHA), History(INT), Insight(WIS), Intimidation(CHA), Investigation(INT), Medicine(WIS), Nature(INT), Perception(WIS), Performance(CHA), Persuasion(CHA), Religion(INT), Sleight of Hand(DEX), Stealth(DEX), Survival(WIS).
+
+### Attribution (MANDATORY — CC-BY-4.0)
+Using SRD content **requires** displaying this exact statement in-app (it's the
+license condition, not optional). Suggested home: Settings → About / Credits.
+
+> This work includes material from the System Reference Document 5.2.1
+> ("SRD 5.2.1") by Wizards of the Coast LLC, available at
+> https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative
+> Commons Attribution 4.0 International License, available at
+> https://creativecommons.org/licenses/by/4.0/legalcode.
+
+Per the license: do **not** add any other WotC attribution beyond the above,
+and don't imply endorsement. "Compatible with fifth edition" / "5E compatible"
+is permitted. (This is an open action item — see roadmap item 16.)
+
+### Audit verdict (2026-06-13)
+The entire current bundle is SRD-clean at the inventory level: 6 classes
+(all SRD), 3 subclasses (Champion / Thief / Life Domain — exactly the SRD
+ones), 3 species (Human/Elf/Dwarf), 3 backgrounds (Acolyte/Sage/Soldier of
+the 4 SRD), 14 spells (all SRD incl. Hex, Hunter's Mark, Shield), all
+weapons/armor/conditions/gear, and the 2 referenced feats. The only open
+compliance item is the missing **attribution notice** (roadmap item 16).
+Description-text wording should track SRD phrasing (which is CC-licensed) as
+content is authored — never PHB-exclusive wording.
 
 ---
 
@@ -2060,11 +2117,24 @@ follow-ups: `.zip` pack archives, per-pack export from Settings, and
   (the every-launch rewrite bug). Spell-preparation rule enforcement
   (`PreparedRule`) once more casters land.
 
-**11. Content authoring catalog (JSON-only work, no Swift)**
-Current bundle: 4/12 classes (Fighter, Wizard, Rogue, Barbarian), 3/9
-species, 3/16 backgrounds, ~18/40 weapons, 8/8 armor ✅, 14/14 conditions ✅,
-~11 spells (cantrips + L1). Suggested authoring order, each batch
-shippable alone:
+**11. Content authoring catalog — SRD 5.2.1 ONLY (JSON-only work, no Swift)**
+Goal restated after the 2026-06-13 SRD audit: get the bundle to **100% of
+SRD 5.2.1, and nothing beyond it**. Verified SRD totals (not PHB):
+- **Classes 6/12 done** (Fighter, Wizard, Rogue, Barbarian, Paladin, Cleric).
+  Remaining: **Bard, Druid, Monk, Ranger, Sorcerer, Warlock.**
+- **Subclasses 3/12 done** (Champion, Thief, Life Domain). Remaining must be
+  the SRD one-per-class: Berserker, College of Lore, Circle of the Land,
+  Warrior of the Open Hand, **Oath of Devotion** (Paladin — bundled class
+  lacks its subclass), Hunter, Draconic Sorcery, Fiend Patron, **Evoker**
+  (Wizard — same). NO Battle Master / EK / Arcane Trickster (PHB-only).
+- **Species 3/9 done** (Human, Elf, Dwarf). Remaining: Dragonborn, Gnome,
+  Goliath, Halfling, Orc, Tiefling. (Goliath, not Goblin.)
+- **Backgrounds 3/4 done** (Acolyte, Sage, Soldier). Remaining: **Criminal**
+  — that's the entire gap; the SRD has only 4.
+- Armor 8/8 ✅, conditions 14/14 ✅, weapons + gear nearly complete, ~14
+  spells of the (large) SRD spell list.
+
+Suggested authoring order, each batch shippable alone:
 - **11a. ~~Cleric~~ — DONE 2026-06-10.** Sixth class, first
   `preparedFromAll` caster: d8, WIS/CHA saves, full-caster WIS slot
   table, cantrips 3→4→5. Features L1–L20: Divine Order + Blessed Strikes
@@ -2090,9 +2160,10 @@ shippable alone:
   Strikes, Extra Attack). Still wanted later: paladin spell-list
   entries (bless, divine favor — lands with 11e), a subclass at L3,
   and mechanical auras.
-- **11c. Species + backgrounds sweep** — the 6 missing species and 13
-  missing backgrounds are descriptive-trait work; Dwarven Toughness-style
-  HP traits should wait for item 8's `rolledHP` model.
+- **11c. Species + backgrounds sweep** — the 6 missing SRD species
+  (Dragonborn, Gnome, Goliath, Halfling, Orc, Tiefling) plus the **one**
+  missing SRD background (Criminal) are mostly descriptive-trait work.
+  Dwarven Toughness-style HP traits build on item 8's `rolledHP` model.
 - **11d. Weapons + gear sweep** — remaining ~22 SRD weapons (all have
   existing property/mastery vocabulary), standard adventuring gear.
 - **11e. Spell batches** — all SRD cantrips, then L1, then L2–L3, gated per
@@ -2108,9 +2179,22 @@ shippable alone:
   `LevelUpSheet`; that may finally force the deferred
   `ChoicePromptDefinition` recursive model (a feat granting a +1 ability
   sub-choice).
-- **11h. More subclasses** — Battle Master (needs
-  `TriggerCost.resource(id:amount:)` — small schema addition), Eldritch
-  Knight + Arcane Trickster (spell-list subclasses), Wizard Evoker.
+- **11h. More subclasses — SRD one-per-class ONLY.** Author the remaining
+  SRD subclasses (Berserker, College of Lore, Circle of the Land, Warrior
+  of the Open Hand, Oath of Devotion, Hunter, Draconic Sorcery, Fiend
+  Patron, Evoker). **Battle Master / Eldritch Knight / Arcane Trickster
+  are PHB-only — they belong in an importable pack, never the bundle.**
+  (Battle Master's superiority dice still motivate
+  `TriggerCost.resource(id:amount:)`, but as engine groundwork for the
+  pack, not bundled content.)
+
+**16. SRD attribution notice (MANDATORY, blocks any SRD-content release)**
+CC-BY-4.0 *requires* the SRD attribution statement be shown in-app — it's the
+license condition for using the bundled content at all, so this gates launch.
+Add a Credits/Legal row to the **Settings** tab (Phase H already added the
+tab) rendering the exact statement from the "Attribution" section above, with
+tappable links to the SRD and the CC-BY license. Don't add other WotC
+attribution or imply endorsement; "5E compatible" is allowed. Small, ~1 view.
 
 **12. ~~Phase H — homebrew import/export~~ — DONE 2026-06-13**
 - Bundled content keeps `fatalError` (build bug); imported packs go through
