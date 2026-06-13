@@ -7,22 +7,36 @@ enum ActionRecipe: Codable, Equatable {
     case skillCheck(skill: Skill)
     case savingThrow(ability: Ability)
     case saveDC(ability: Ability)
-    case heal(dice: String, addLevel: Bool, label: String)
+    /// `addSpellcastingMod` adds the caster's spellcasting ability modifier
+    /// to the total (2024 Cure Wounds = 2d8 + mod, Divine Spark = 1d8 + WIS).
+    /// Resolved at interpret time from the `spellcastingAbility` parameter.
+    case heal(dice: String, addLevel: Bool, addSpellcastingMod: Bool, label: String)
     /// Self-contained damage formula — used by spells (Magic Missile 3d4+3,
-    /// Sacred Flame 1d8, etc.) where the dice and ability mod are part of the
-    /// spell text rather than derived from a weapon. `damageType` is
-    /// informational; the dice tab just rolls the formula.
-    case rawDamage(dice: String, damageType: DamageType, label: String)
+    /// Sacred Flame 1d8, etc.) where the dice are part of the spell text
+    /// rather than derived from a weapon. `damageType` is informational; the
+    /// dice tab just rolls the formula. `addSpellcastingMod` mirrors `heal`'s.
+    case rawDamage(dice: String, damageType: DamageType, addSpellcastingMod: Bool, label: String)
     /// Spell attack roll: d20 + spellcasting ability mod + proficiency. The
     /// caster's spellcasting ability is resolved at interpret time, not stored
     /// here, so this same recipe works for any caster.
     case spellAttack(label: String)
+
+    /// Factory overloads preserving the pre-`addSpellcastingMod` call shape —
+    /// existing Swift construction sites (tests, fixtures) keep compiling and
+    /// default to no modifier, matching the old behavior.
+    static func heal(dice: String, addLevel: Bool, label: String) -> ActionRecipe {
+        .heal(dice: dice, addLevel: addLevel, addSpellcastingMod: false, label: label)
+    }
+
+    static func rawDamage(dice: String, damageType: DamageType, label: String) -> ActionRecipe {
+        .rawDamage(dice: dice, damageType: damageType, addSpellcastingMod: false, label: label)
+    }
 }
 
 extension ActionRecipe {
     private enum CodingKeys: String, CodingKey {
         case type, abilityOverride, finesse, dieOverride, addAbility, versatile
-        case ability, skill, dice, addLevel, label, damageType
+        case ability, skill, dice, addLevel, label, damageType, addSpellcastingMod
     }
 
     init(from decoder: Decoder) throws {
@@ -60,14 +74,16 @@ extension ActionRecipe {
         case "heal":
             let dice = try container.decode(String.self, forKey: .dice)
             let addLevel = try container.decodeIfPresent(Bool.self, forKey: .addLevel) ?? false
+            let addMod = try container.decodeIfPresent(Bool.self, forKey: .addSpellcastingMod) ?? false
             let label = try container.decodeIfPresent(String.self, forKey: .label) ?? "Heal"
-            self = .heal(dice: dice, addLevel: addLevel, label: label)
+            self = .heal(dice: dice, addLevel: addLevel, addSpellcastingMod: addMod, label: label)
 
         case "rawDamage":
             let dice = try container.decode(String.self, forKey: .dice)
             let damageType = try container.decode(DamageType.self, forKey: .damageType)
+            let addMod = try container.decodeIfPresent(Bool.self, forKey: .addSpellcastingMod) ?? false
             let label = try container.decodeIfPresent(String.self, forKey: .label) ?? "Damage"
-            self = .rawDamage(dice: dice, damageType: damageType, label: label)
+            self = .rawDamage(dice: dice, damageType: damageType, addSpellcastingMod: addMod, label: label)
 
         case "spellAttack":
             let label = try container.decodeIfPresent(String.self, forKey: .label) ?? "Spell Attack"
@@ -113,16 +129,20 @@ extension ActionRecipe {
             try container.encode("saveDC", forKey: .type)
             try container.encode(ability, forKey: .ability)
 
-        case .heal(let dice, let addLevel, let label):
+        case .heal(let dice, let addLevel, let addMod, let label):
             try container.encode("heal", forKey: .type)
             try container.encode(dice, forKey: .dice)
             try container.encode(addLevel, forKey: .addLevel)
+            // Encode only when set so pre-existing content round-trips
+            // byte-for-byte.
+            if addMod { try container.encode(addMod, forKey: .addSpellcastingMod) }
             try container.encode(label, forKey: .label)
 
-        case .rawDamage(let dice, let damageType, let label):
+        case .rawDamage(let dice, let damageType, let addMod, let label):
             try container.encode("rawDamage", forKey: .type)
             try container.encode(dice, forKey: .dice)
             try container.encode(damageType, forKey: .damageType)
+            if addMod { try container.encode(addMod, forKey: .addSpellcastingMod) }
             try container.encode(label, forKey: .label)
 
         case .spellAttack(let label):

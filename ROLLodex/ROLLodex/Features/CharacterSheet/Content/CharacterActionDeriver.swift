@@ -347,7 +347,11 @@ enum CharacterActionDeriver {
                     let resolved = ActionInterpreter.resolve(
                         recipe: recipe,
                         character: character,
-                        weapon: nil
+                        weapon: nil,
+                        // Lets feature recipes flagged addSpellcastingMod
+                        // (Divine Spark's 1d8 + WIS) resolve against the
+                        // owning class's casting stat.
+                        spellcastingAbility: cls.spellcasting?.ability
                     )
                     // Prefer the feature name as the label so the button reads
                     // "Second Wind" rather than the interpreter's generic title.

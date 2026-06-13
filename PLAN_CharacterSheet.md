@@ -2057,9 +2057,25 @@ Current bundle: 4/12 classes (Fighter, Wizard, Rogue, Barbarian), 3/9
 species, 3/16 backgrounds, ~18/40 weapons, 8/8 armor ✅, 14/14 conditions ✅,
 ~11 spells (cantrips + L1). Suggested authoring order, each batch
 shippable alone:
-- **11a. Cleric** — first `preparedFromAll` caster; Channel Divinity as a
-  resource; Life Domain at the subclass level; needs a half-dozen L1 cleric
-  spells + healing word/cure wounds (heal recipes already exist).
+- **11a. ~~Cleric~~ — DONE 2026-06-10.** Sixth class, first
+  `preparedFromAll` caster: d8, WIS/CHA saves, full-caster WIS slot
+  table, cantrips 3→4→5. Features L1–L20: Divine Order + Blessed Strikes
+  as `.fixedOptions` selections (picks recorded; granted profs/cantrip
+  not auto-applied — noted in text), Channel Divinity as a short-rest
+  resource (2/3/4 uses) whose **Divine Spark** ships as two real recipes
+  (heal + radiant damage, both `1d8 + WIS`), Divine Intervention as a
+  1/LR resource, ASIs at 4/8/12/16. **Life Domain** subclass at L3
+  (Disciple of Life, Domain Spells, Preserve Life; L6 Blessed Healer;
+  L17 Supreme Healing — descriptive). Spells: Guidance, Healing Word
+  (2d4+mod, upcast +2d4), Bless + Shield of Faith (descriptive until
+  attack-roll riders land), and Cure Wounds updated to 2024 numbers
+  (2d8+mod, upcast +2d8).
+  **Engine addition:** `ActionRecipe.heal`/`.rawDamage` gained
+  `addSpellcastingMod` (decode-default false; legacy JSON and Swift
+  call sites unaffected via factory overloads); the interpreter resolves
+  it from `spellcastingAbility`, and `CharacterActionDeriver.featureRows`
+  now passes the owning class's casting stat so feature recipes like
+  Divine Spark resolve correctly. Tests: `ClericTests.swift` (11 tests).
 - **11b. ~~Paladin~~ — DONE 2026-06-09** with item 1. Class authored
   L1–L19 (mechanical: Lay on Hands pool, smite, Channel Divinity,
   fighting style, weapon mastery, ASIs; descriptive: auras, Radiant
@@ -2227,9 +2243,8 @@ Tests: `AbilityScoreMethodTests.swift` (12 tests — ⚠️ new file).
 6. ~~Item 14 (Quick Roll mini tray)~~ — done 2026-06-09 (14a–14c; 14d
    remains as later polish).
 7. ~~Item 15 (ability score generation)~~ — done 2026-06-09.
-8. **Item 11a (Cleric)** — next up: first prepared caster, exercises
-   `preparedFromAll`.
-9. **Item 12 (Phase H)** — 9e's lint becomes the import validator.
+8. ~~Item 11a (Cleric)~~ — done 2026-06-10.
+9. **Item 12 (Phase H)** — next up: 9e's lint becomes the import validator.
 10. Items 9a–9d, 10, 13 interleave as palate cleansers between the above.
 
 ### How to resume

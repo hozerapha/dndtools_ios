@@ -161,7 +161,7 @@ struct SpellTests {
             upcastEffect: .extraDicePerLevel(recipeIndex: 0, dice: "1d4+1")
         )
         let recipes = spell.recipes(castAtLevel: 1)
-        if case .rawDamage(let dice, _, _) = recipes[0] {
+        if case .rawDamage(let dice, _, _, _) = recipes[0] {
             #expect(dice == "3d4+3")
         } else {
             Issue.record("Expected rawDamage at base level")
@@ -184,7 +184,7 @@ struct SpellTests {
             upcastEffect: .extraDicePerLevel(recipeIndex: 0, dice: "1d4+1")
         )
         let recipes = spell.recipes(castAtLevel: 3)
-        guard case .rawDamage(let dice, _, _) = recipes[0] else {
+        guard case .rawDamage(let dice, _, _, _) = recipes[0] else {
             Issue.record("Expected rawDamage")
             return
         }
@@ -209,7 +209,7 @@ struct SpellTests {
             actionRecipes: [.rawDamage(dice: "1d10", damageType: .fire, label: "Fire Bolt")]
         )
         let recipes = spell.recipes(castAtLevel: 5)
-        if case .rawDamage(let dice, _, _) = recipes[0] {
+        if case .rawDamage(let dice, _, _, _) = recipes[0] {
             #expect(dice == "1d10")
         } else {
             Issue.record("Expected rawDamage")

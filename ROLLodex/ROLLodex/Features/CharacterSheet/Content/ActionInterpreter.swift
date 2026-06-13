@@ -1,8 +1,10 @@
 import Foundation
 
 enum ActionInterpreter {
-    /// `spellcastingAbility` is only consulted for `.spellAttack` — every other
-    /// recipe ignores it. `fightingStyle` modifies weapon attack / damage rolls
+    /// `spellcastingAbility` is consulted by `.spellAttack` and by
+    /// `.heal` / `.rawDamage` recipes flagged `addSpellcastingMod` (2024 Cure
+    /// Wounds = 2d8 + mod, Divine Spark = 1d8 + WIS) — every other recipe
+    /// ignores it. `fightingStyle` modifies weapon attack / damage rolls
     /// (Archery +2 ranged attack, Dueling +2 damage when single-wielding melee).
     /// Both default to nil so callers that don't care can keep the bare API.
     static func resolve(
@@ -44,11 +46,22 @@ enum ActionInterpreter {
         case .saveDC(let ability):
             return resolveSaveDC(character: character, ability: ability)
 
-        case .heal(let dice, let addLevel, let label):
-            return resolveHeal(character: character, dice: dice, addLevel: addLevel, label: label)
+        case .heal(let dice, let addLevel, let addSpellcastingMod, let label):
+            return resolveHeal(
+                character: character,
+                dice: dice,
+                addLevel: addLevel,
+                spellcastingMod: addSpellcastingMod ? spellcastingMod(character, spellcastingAbility) : nil,
+                label: label
+            )
 
-        case .rawDamage(let dice, let damageType, let label):
-            return resolveRawDamage(dice: dice, damageType: damageType, label: label)
+        case .rawDamage(let dice, let damageType, let addSpellcastingMod, let label):
+            return resolveRawDamage(
+                dice: dice,
+                damageType: damageType,
+                spellcastingMod: addSpellcastingMod ? spellcastingMod(character, spellcastingAbility) : nil,
+                label: label
+            )
 
         case .spellAttack(let label):
             return resolveSpellAttack(
@@ -93,6 +106,7 @@ enum ActionInterpreter {
     private static func resolveRawDamage(
         dice: String,
         damageType: DamageType,
+        spellcastingMod: Int? = nil,
         label: String
     ) -> ResolvedAction {
         // Spell formulas can carry inline modifiers ("3d4+3"). The simple
@@ -101,12 +115,25 @@ enum ActionInterpreter {
         // back to an empty formula if anything goes wrong.
         var formula = (try? DiceFormulaParser().parse(dice)) ?? DiceFormula()
         formula.applyDamageType(damageType)
+        // Untyped flat is fine: when every group shares one damage type the
+        // result breakdown attributes the modifier to that type anyway.
+        if let mod = spellcastingMod {
+            formula.modifier += mod
+        }
         return ResolvedAction(
             id: "raw_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))",
             label: label,
             formula: formula,
-            description: dice
+            description: spellcastingMod.map { "\(dice) + spell mod (\($0 >= 0 ? "+" : "")\($0))" } ?? dice
         )
+    }
+
+    /// Caster's spellcasting ability modifier, or nil when the caller didn't
+    /// supply an ability (the flag then degrades to a bare-dice roll rather
+    /// than guessing a stat).
+    private static func spellcastingMod(_ character: Character, _ ability: Ability?) -> Int? {
+        guard let ability else { return nil }
+        return CharacterCalculator.abilityModifier(score: character.abilityScores[ability] ?? 10)
     }
 
     // MARK: - Private helpers
@@ -338,15 +365,21 @@ enum ActionInterpreter {
         character: Character,
         dice: String,
         addLevel: Bool,
+        spellcastingMod: Int? = nil,
         label: String
     ) -> ResolvedAction {
-        let formula = parseDieString(dice, modifier: addLevel ? character.level : 0)
+        let modifier = (addLevel ? character.level : 0) + (spellcastingMod ?? 0)
+        let formula = parseDieString(dice, modifier: modifier)
+
+        var parts = [dice]
+        if addLevel { parts.append("level (\(character.level))") }
+        if let mod = spellcastingMod { parts.append("spell mod (\(mod >= 0 ? "+" : "")\(mod))") }
 
         return ResolvedAction(
             id: "heal_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))",
             label: label,
             formula: formula,
-            description: addLevel ? "\(dice) + level (\(character.level))" : dice
+            description: parts.joined(separator: " + ")
         )
     }
 

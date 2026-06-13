@@ -403,7 +403,7 @@ struct DamageTypingTests {
         let spell = try JSONDecoder().decode(SpellDefinition.self, from: Self.magicMissileJSON)
         let recipes = spell.recipes(castAtLevel: 3)
         // Sanity: still rawDamage carrying the same damage type.
-        guard case .rawDamage(_, let damageType, _) = recipes.first else {
+        guard case .rawDamage(_, let damageType, _, _) = recipes.first else {
             Issue.record("Expected rawDamage recipe")
             return
         }

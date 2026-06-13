@@ -317,8 +317,8 @@ struct ContentLintTests {
     private func diceStrings(in recipes: [ActionRecipe]) -> [String] {
         recipes.compactMap { recipe in
             switch recipe {
-            case .heal(let dice, _, _):         return dice
-            case .rawDamage(let dice, _, _):    return dice
+            case .heal(let dice, _, _, _):      return dice
+            case .rawDamage(let dice, _, _, _): return dice
             default:                            return nil
             }
         }

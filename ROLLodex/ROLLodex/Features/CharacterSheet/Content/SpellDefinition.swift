@@ -102,10 +102,10 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
     private static func scaledRecipe(_ recipe: ActionRecipe, extraDice: String, times: Int) -> ActionRecipe {
         let extra = Array(repeating: extraDice, count: times).joined(separator: "+")
         switch recipe {
-        case .rawDamage(let dice, let damageType, let label):
-            return .rawDamage(dice: "\(dice)+\(extra)", damageType: damageType, label: label)
-        case .heal(let dice, let addLevel, let label):
-            return .heal(dice: "\(dice)+\(extra)", addLevel: addLevel, label: label)
+        case .rawDamage(let dice, let damageType, let addMod, let label):
+            return .rawDamage(dice: "\(dice)+\(extra)", damageType: damageType, addSpellcastingMod: addMod, label: label)
+        case .heal(let dice, let addLevel, let addMod, let label):
+            return .heal(dice: "\(dice)+\(extra)", addLevel: addLevel, addSpellcastingMod: addMod, label: label)
         default:
             return recipe
         }

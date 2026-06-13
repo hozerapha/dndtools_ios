@@ -79,12 +79,12 @@
     "range": { "type": "touch" },
     "components": { "verbal": true, "somatic": true },
     "duration": { "type": "instantaneous" },
-    "description": "A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier. This spell has no effect on undead or constructs.",
-    "higherLevel": "When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.",
+    "description": "A creature you touch regains a number of hit points equal to 2d8 + your spellcasting ability modifier. This spell has no effect on undead or constructs.",
+    "higherLevel": "When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 2d8 for each slot level above 1st.",
     "actionRecipes": [
-      { "type": "heal", "dice": "1d8", "addLevel": false, "label": "Cure Wounds" }
+      { "type": "heal", "dice": "2d8", "addLevel": false, "addSpellcastingMod": true, "label": "Cure Wounds" }
     ],
-    "upcastEffect": { "type": "extraDicePerLevel", "recipeIndex": 0, "dice": "1d8" }
+    "upcastEffect": { "type": "extraDicePerLevel", "recipeIndex": 0, "dice": "2d8" }
   },
   {
     "id": "detect_magic",
@@ -148,6 +148,59 @@
     "components": { "verbal": true, "material": "a small feather or piece of down" },
     "duration": { "type": "minutes", "value": 1 },
     "description": "Choose up to five falling creatures within range. A falling creature's rate of descent slows to 60 feet per round until the spell ends. If the creature lands before the spell ends, it takes no falling damage and can land on its feet, and the spell ends for that creature.",
+    "actionRecipes": []
+  },
+  {
+    "id": "guidance",
+    "name": "Guidance",
+    "level": 0,
+    "school": "divination",
+    "castingTime": { "type": "action" },
+    "range": { "type": "touch" },
+    "components": { "verbal": true, "somatic": true },
+    "duration": { "type": "concentration", "value": 1 },
+    "description": "You touch a willing creature. Once before the spell ends, the target can roll 1d4 and add the number rolled to one ability check of its choice. (Add the d4 to the check manually.)",
+    "actionRecipes": []
+  },
+  {
+    "id": "healing_word",
+    "name": "Healing Word",
+    "level": 1,
+    "school": "abjuration",
+    "castingTime": { "type": "bonusAction" },
+    "range": { "type": "feet", "value": 60 },
+    "components": { "verbal": true },
+    "duration": { "type": "instantaneous" },
+    "description": "A creature of your choice that you can see within range regains hit points equal to 2d4 + your spellcasting ability modifier. This spell has no effect on undead or constructs.",
+    "higherLevel": "When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 2d4 for each slot level above 1st.",
+    "actionRecipes": [
+      { "type": "heal", "dice": "2d4", "addLevel": false, "addSpellcastingMod": true, "label": "Healing Word" }
+    ],
+    "upcastEffect": { "type": "extraDicePerLevel", "recipeIndex": 0, "dice": "2d4" }
+  },
+  {
+    "id": "bless",
+    "name": "Bless",
+    "level": 1,
+    "school": "enchantment",
+    "castingTime": { "type": "action" },
+    "range": { "type": "feet", "value": 30 },
+    "components": { "verbal": true, "somatic": true, "material": "a herb, oil, or incense worth 1+ GP, which the spell consumes" },
+    "duration": { "type": "concentration", "value": 1 },
+    "description": "You bless up to three creatures within range. Whenever a blessed target makes an attack roll or a saving throw before the spell ends, the target adds 1d4 to the roll. (Attack-roll riders aren't automated yet — add the d4 manually.)",
+    "higherLevel": "When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.",
+    "actionRecipes": []
+  },
+  {
+    "id": "shield_of_faith",
+    "name": "Shield of Faith",
+    "level": 1,
+    "school": "abjuration",
+    "castingTime": { "type": "bonusAction" },
+    "range": { "type": "feet", "value": 60 },
+    "components": { "verbal": true, "somatic": true, "material": "a small parchment with a bit of holy text written on it" },
+    "duration": { "type": "concentration", "value": 10 },
+    "description": "A shimmering field surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration. (AC buffs aren't automated yet — adjust manually if it targets you.)",
     "actionRecipes": []
   }
 ]

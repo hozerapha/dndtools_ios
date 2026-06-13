@@ -913,5 +913,308 @@
     },
     "masteryCount": 2,
     "masteryRestrictions": []
+  },
+  {
+    "id": "cleric",
+    "name": "Cleric",
+    "hitDie": 8,
+    "primaryAbility": "wisdom",
+    "savingThrows": ["wisdom", "charisma"],
+    "armorProficiencies": ["light", "medium", "shield"],
+    "weaponProficiencies": ["simple"],
+    "subclassLevel": 3,
+    "spellcasting": {
+      "ability": "wisdom",
+      "preparedRule": "preparedFromAll",
+      "cantripsKnown": {
+        "byClassLevel": { "1": 3, "4": 4, "10": 5 }
+      },
+      "spellsKnown": null,
+      "slotTable": {
+        "kind": "fullCaster",
+        "table": {
+          "1": { "1": 2 },
+          "2": { "1": 3 },
+          "3": { "1": 4, "2": 2 },
+          "4": { "1": 4, "2": 3 },
+          "5": { "1": 4, "2": 3, "3": 2 },
+          "6": { "1": 4, "2": 3, "3": 3 },
+          "7": { "1": 4, "2": 3, "3": 3, "4": 1 },
+          "8": { "1": 4, "2": 3, "3": 3, "4": 2 },
+          "9": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 1 },
+          "10": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2 },
+          "11": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1 },
+          "13": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1 },
+          "15": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1, "8": 1 },
+          "17": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1, "8": 1, "9": 1 },
+          "18": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 1, "7": 1, "8": 1, "9": 1 },
+          "19": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 2, "7": 1, "8": 1, "9": 1 },
+          "20": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 2, "7": 2, "8": 1, "9": 1 }
+        }
+      },
+      "ritualCasting": true,
+      "spellcastingFocus": true
+    },
+    "levelFeatures": {
+      "1": [
+        {
+          "id": "cleric_spellcasting",
+          "name": "Spellcasting",
+          "description": "You can cast prepared Cleric spells using Wisdom as your spellcasting ability. You can use a Holy Symbol as a Spellcasting Focus, and you can cast prepared Cleric spells with the Ritual tag as rituals.",
+          "kind": "passive"
+        },
+        {
+          "id": "divine_order",
+          "name": "Divine Order",
+          "description": "You have dedicated yourself to one sacred role. Protector: trained for battle, you gain proficiency with Martial weapons and Heavy armor. Thaumaturge: you know one extra Cleric cantrip and add your Wisdom modifier to Arcana and Religion checks. (Picks are recorded; the granted proficiencies/cantrip aren't auto-applied yet.)",
+          "kind": "selection",
+          "selection": {
+            "id": "divine_order",
+            "prompt": "Choose your Divine Order",
+            "count": 1,
+            "optionsSource": {
+              "type": "fixedOptions",
+              "options": [
+                {
+                  "id": "protector",
+                  "name": "Protector",
+                  "description": "Trained for battle: gain proficiency with Martial weapons and Heavy armor."
+                },
+                {
+                  "id": "thaumaturge",
+                  "name": "Thaumaturge",
+                  "description": "You know one extra Cleric cantrip, and add your Wisdom modifier to Intelligence (Arcana) and Intelligence (Religion) checks."
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "2": [
+        {
+          "id": "channel_divinity",
+          "name": "Channel Divinity",
+          "description": "You can channel divine energy directly from the Outer Planes. Divine Spark (Magic action): point your Holy Symbol at a creature within 30 feet — roll 1d8 + your Wisdom modifier and either restore that many Hit Points or force a Constitution save against that much Radiant or Necrotic damage (half on success). The d8 becomes 2d8 at level 7, 3d8 at 13, and 4d8 at 18 — add the extra dice manually for now. Turn Undead (Magic action): each undead within 30 feet must make a Wisdom save or be Frightened and Incapacitated for 1 minute. You regain one expended use on a Short Rest, and all uses on a Long Rest.",
+          "kind": "active",
+          "resource": {
+            "id": "cleric_channel_divinity",
+            "name": "Channel Divinity",
+            "max": {
+              "byClassLevel": { "2": 2, "6": 3, "18": 4 }
+            },
+            "refreshOn": "shortRest",
+            "refreshAmount": { "fixed": 1 }
+          },
+          "actionRecipes": [
+            {
+              "type": "heal",
+              "dice": "1d8",
+              "addSpellcastingMod": true,
+              "label": "Divine Spark (Heal)"
+            },
+            {
+              "type": "rawDamage",
+              "dice": "1d8",
+              "damageType": "radiant",
+              "addSpellcastingMod": true,
+              "label": "Divine Spark (Damage)"
+            }
+          ]
+        }
+      ],
+      "3": [
+        {
+          "id": "cleric_subclass",
+          "name": "Cleric Subclass",
+          "description": "You gain a Cleric subclass of your choice, a specialization that grants you features at level 3 and again at levels 6 and 17.",
+          "kind": "selection",
+          "selection": {
+            "id": "cleric_subclass",
+            "prompt": "Choose your Divine Domain",
+            "count": 1,
+            "optionsSource": {
+              "type": "subclasses",
+              "parentClassID": "cleric"
+            }
+          }
+        }
+      ],
+      "4": [
+        {
+          "id": "cleric_asi_4",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "kind": "selection",
+          "selection": {
+            "id": "cleric_asi_4",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "5": [
+        {
+          "id": "sear_undead",
+          "name": "Sear Undead",
+          "description": "Whenever you use Turn Undead, you can roll a number of d8s equal to your Wisdom modifier (minimum of one die) — each undead that fails its save takes Radiant damage equal to the roll's total. This damage doesn't end the turn effect.",
+          "kind": "passive"
+        }
+      ],
+      "7": [
+        {
+          "id": "blessed_strikes",
+          "name": "Blessed Strikes",
+          "description": "Divine power infuses you in battle. Divine Strike: once per turn when you hit with a weapon, deal an extra 1d8 Radiant or Necrotic damage. Potent Spellcasting: add your Wisdom modifier to the damage of your Cleric cantrips. (Picks are recorded; the bonus damage isn't auto-applied yet.)",
+          "kind": "selection",
+          "selection": {
+            "id": "blessed_strikes",
+            "prompt": "Choose your Blessed Strikes option",
+            "count": 1,
+            "optionsSource": {
+              "type": "fixedOptions",
+              "options": [
+                {
+                  "id": "divine_strike",
+                  "name": "Divine Strike",
+                  "description": "Once on each of your turns when you hit a creature with a weapon, deal an extra 1d8 Radiant or Necrotic damage."
+                },
+                {
+                  "id": "potent_spellcasting",
+                  "name": "Potent Spellcasting",
+                  "description": "Add your Wisdom modifier to the damage you deal with your Cleric cantrips."
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "8": [
+        {
+          "id": "cleric_asi_8",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "kind": "selection",
+          "selection": {
+            "id": "cleric_asi_8",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "10": [
+        {
+          "id": "divine_intervention",
+          "name": "Divine Intervention",
+          "description": "You can call on your deity to intervene: as a Magic action, cast any Cleric spell of level 5 or lower without expending a spell slot or needing material components. Once you use this feature, you can't use it again until you finish a Long Rest.",
+          "kind": "active",
+          "resource": {
+            "id": "cleric_divine_intervention",
+            "name": "Divine Intervention",
+            "max": 1,
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          }
+        }
+      ],
+      "12": [
+        {
+          "id": "cleric_asi_12",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "kind": "selection",
+          "selection": {
+            "id": "cleric_asi_12",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "14": [
+        {
+          "id": "improved_blessed_strikes",
+          "name": "Improved Blessed Strikes",
+          "description": "Your Blessed Strikes option improves. Divine Strike: the extra damage increases to 2d8. Potent Spellcasting: when you cast a Cleric cantrip and deal damage with it, you can give vitality to yourself or another creature within 60 feet — temporary Hit Points equal to twice your Wisdom modifier.",
+          "kind": "passive"
+        }
+      ],
+      "16": [
+        {
+          "id": "cleric_asi_16",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "kind": "selection",
+          "selection": {
+            "id": "cleric_asi_16",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "19": [
+        {
+          "id": "cleric_epic_boon",
+          "name": "Epic Boon",
+          "description": "You gain an Epic Boon feat or another feat of your choice. (Feat catalog not yet authored — record your pick in notes.)",
+          "kind": "passive"
+        }
+      ],
+      "20": [
+        {
+          "id": "greater_divine_intervention",
+          "name": "Greater Divine Intervention",
+          "description": "When you use Divine Intervention, you can cast Wish with it. When you do, you can't use Divine Intervention again until you finish 2d4 Long Rests.",
+          "kind": "passive"
+        }
+      ]
+    },
+    "subclasses": [
+      {
+        "id": "life_domain",
+        "name": "Life Domain",
+        "description": "The Life Domain focuses on the positive energy that helps sustain all life: soothing the hurt and the sick, and standing against the forces of death.",
+        "levelFeatures": {
+          "3": [
+            {
+              "id": "disciple_of_life",
+              "name": "Disciple of Life",
+              "description": "When a spell you cast with a spell slot restores Hit Points, the target regains additional Hit Points equal to 2 + the slot's level. (Add the bonus manually for now.)",
+              "kind": "passive"
+            },
+            {
+              "id": "life_domain_spells",
+              "name": "Life Domain Spells",
+              "description": "You always have certain spells prepared: Aid, Bless, Cure Wounds, Lesser Restoration, Mass Healing Word, Revivify, and more as you gain levels. (Only some of these are in the bundled spell list so far — add the rest from the picker when authored.)",
+              "kind": "passive"
+            },
+            {
+              "id": "preserve_life",
+              "name": "Preserve Life",
+              "description": "Channel Divinity option (Magic action): present your Holy Symbol and distribute Hit Points equal to five times your Cleric level among Bloodied creatures within 30 feet (none can exceed half its HP max). Spend one Channel Divinity use from the resources card when you use this.",
+              "kind": "passive"
+            }
+          ],
+          "6": [
+            {
+              "id": "blessed_healer",
+              "name": "Blessed Healer",
+              "description": "The healing spells you cast on others heal you as well: when you cast a spell with a spell slot that restores Hit Points to a creature other than you, you regain Hit Points equal to 2 + the slot's level.",
+              "kind": "passive"
+            }
+          ],
+          "17": [
+            {
+              "id": "supreme_healing",
+              "name": "Supreme Healing",
+              "description": "When you would normally roll one or more dice to restore Hit Points to a creature with a spell or Channel Divinity, don't roll — use the highest number possible for each die.",
+              "kind": "passive"
+            }
+          ]
+        }
+      }
+    ]
   }
 ]
