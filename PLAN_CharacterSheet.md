@@ -2047,15 +2047,18 @@ follow-ups: `.zip` pack archives, per-pack export from Settings, and
   should reuse these invariants as its import validator.
 
 **10. Test gaps (beyond the content lint)**
-- `DiceRoller` core: `roll` ranges + die counts, advantage/disadvantage
-  keeps the right die, `keepHighest/keepLowest/dropHighest/dropLowest`
-  permutations, `rerollOnceIfAtMost` (incl. reroll-then-floor interaction),
-  `rerollIndices` + `resultFrom(values:)` physics path, d100 tens/ones
-  composition.
-- `CharacterStore.load()` manifest-cleanup regression test (the every-launch
-  rewrite bug fixed in this pass).
-- Spell-preparation rule enforcement (`PreparedRule` — wizard can't prepare
-  outside spellbook, etc.) once item 11's casters land.
+- **~~`DiceRoller` core~~ — DONE 2026-06-13** (`DiceRollerTests.swift`):
+  range/count invariants per die kind, advantage keeps the higher die /
+  disadvantage the lower / mode ignored when the formula isn't a lone d20,
+  all four keep/drop permutations, `rerollIndices` (with group offsets),
+  the `minimumValue` floor (incl. floor-after-keep/drop and a statistical
+  "never below floor"), `resultFrom` multi-group mapping + mode + crit
+  detection respecting kept-dice-only. (d100 is a plain 1–100 die at the
+  `DiceRoller` layer — the tens/ones split is purely the SceneKit
+  controller's concern, covered separately by the 3D path.)
+- Still open: `CharacterStore.load()` manifest-cleanup regression test
+  (the every-launch rewrite bug). Spell-preparation rule enforcement
+  (`PreparedRule`) once more casters land.
 
 **11. Content authoring catalog (JSON-only work, no Swift)**
 Current bundle: 4/12 classes (Fighter, Wizard, Rogue, Barbarian), 3/9
