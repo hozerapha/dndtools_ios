@@ -1853,10 +1853,10 @@ in "What's left".
 
 | Finding | Where | Item |
 |---|---|---|
-| Reliable Talent hardcodes `classID == "rogue" && level >= 7` in Swift | `ActionInterpreter.swift` | 9a |
-| `stroke_of_luck` excluded from the action grid by raw string id | `CharacterActionDeriver.swift` | 9b |
-| Fighting-style mechanics keyed on raw option strings (`"archery"`, `"dueling"`) | `ActionInterpreter.swift` | 9c |
-| `CharacterStore.save` failures only `print` — the user never learns a save failed | `CharacterStore.swift` | 9d |
+| ~~Reliable Talent hardcodes `classID == "rogue" && level >= 7`~~ ✅ 2026-06-13 — `FeatureDefinition.skillCheckMinimum` + `CharacterCalculator.skillCheckFloor` | — | 9a |
+| ~~`stroke_of_luck` excluded by raw string id~~ ✅ 2026-06-13 — `FeatureDefinition.surfacesAsAction` | — | 9b |
+| ~~Fighting-style mechanics keyed on raw option strings~~ ✅ 2026-06-13 — `FeatureIDs` namespace | — | 9c |
+| ~~`CharacterStore.save` failures only `print`~~ ✅ 2026-06-13 — `lastSaveError` + sheet banner | — | 9d |
 | ~~No content lint~~ — ✅ closed 2026-06-09 (`ContentLintTests.swift`) | tests | 9e |
 | Backgrounds reference feats (`savage_attacker`, `magic_initiate_*`) that exist nowhere as content definitions | `backgrounds.json` | 11 |
 | `ContentStore` `fatalError`s on bad JSON — right for bundled content, fatal for Phase H user imports | `ContentStore.swift` | 12 |
@@ -2005,28 +2005,34 @@ follow-ups: `.zip` pack archives, per-pack export from Settings, and
   delete button only switched tabs — it never actually called
   `characterStore.delete`; this one does.
 
-**9. Engine hardening (from the 2026-06-09 code health review)**
-- **9a. De-hardcode Reliable Talent.** `ActionInterpreter` checks
-  `classID == "rogue" && level >= 7` in Swift. Replace with data: add an
-  optional `skillCheckMinimum: LevelScaledValue` (or a
-  `TriggerEffect.minimumOnSkillChecks`) to `FeatureDefinition`, author it on
-  the Rogue L7 feature in `classes.json`, and have the interpreter walk
-  features instead of class ids. `MinimumValueTests` already pin the
-  behavior — they must pass unchanged.
-- **9b. De-hardcode the `stroke_of_luck` action-grid skip.** Add a
-  presentation flag (`FeatureKind.reactive` or `surfaceAsAction: false`) to
-  `FeatureDefinition`, set it in JSON, drop the string match in
-  `CharacterActionDeriver`.
-- **9c. Centralize magic strings.** `"archery"`, `"dueling"`,
-  `"weapon_mastery"`, `"fighting_style"`, the `"expertise"` prefix — collect
-  into one `FeatureIDs` namespace as a first step (grep-able, single point of
-  truth). Full data-driven fighting-style *mechanics* (so a homebrew style
-  can add bonuses without Swift) is a separate, bigger lift — defer until a
-  real homebrew case shows up.
-- **9d. Surface save failures.** `CharacterStore.save` currently `print`s
-  and moves on. Add `private(set) var lastSaveError: String?` on the store,
-  set/clear it in `save`, render a dismissible warning banner on
-  `CharacterSheetView` when non-nil. (Disk-full is the realistic trigger.)
+**9. Engine hardening (from the 2026-06-09 code health review) — 9a–9e DONE**
+- **9a. ~~De-hardcode Reliable Talent~~ — DONE 2026-06-13.**
+  `FeatureDefinition.skillCheckMinimum: LevelScaledValue?` (Rogue L7
+  `reliable_talent` carries `{ "byClassLevel": { "7": 10 } }`).
+  `CharacterCalculator.skillCheckFloor(character:content:)` walks resolved
+  features for the max floor; `dispatchRoll` passes it into
+  `ActionInterpreter.resolve(skillCheckFloor:)`, which applies it only on
+  proficient skills. No `classID == "rogue"` left. Tests in
+  `MinimumValueTests` + `RogueFeatureTests` rewritten to the data-driven
+  chain (the interpreter is content-free, so the floor is computed by the
+  content-aware caller and passed in — my earlier "must pass unchanged"
+  note was wrong; the cleaner architecture required updating them).
+- **9b. ~~De-hardcode the `stroke_of_luck` skip~~ — DONE 2026-06-13.**
+  `FeatureDefinition.surfacesAsAction: Bool` (default true);
+  `stroke_of_luck` sets it false. The deriver skips non-surfacing features
+  generically; the resource still appears in the resources card and is
+  consumed by the dice tab as before.
+- **9c. ~~Centralize magic strings~~ — DONE 2026-06-13.** `FeatureIDs`
+  namespace (`fightingStyle`, `weaponMastery`, `expertiseMarker`,
+  `FightingStyle.archery/.defense/.dueling`) replaces the scattered
+  literals in `CharacterCalculator`, `ActionInterpreter`, and `Character`'s
+  legacy migration. Full data-driven fighting-style *mechanics* still
+  deferred — this was just the string-centralization step.
+- **9d. ~~Surface save failures~~ — DONE 2026-06-13.**
+  `CharacterStore.lastSaveError: String?` (set on a failed `save`, cleared
+  on the next success or `clearSaveError()`); `CharacterSheetView` shows a
+  dismissible red banner in the sticky header when non-nil. Tested by
+  yanking the store's directory mid-save.
 - **9e. ~~Content lint test~~ — DONE 2026-06-09.** `ContentLintTests.swift`
   walks ALL bundled JSON: id uniqueness per file, across the
   gear/weapons/armor item namespace, and globally for resource/effect ids;

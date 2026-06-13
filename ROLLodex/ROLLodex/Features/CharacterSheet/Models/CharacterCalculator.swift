@@ -49,8 +49,31 @@ enum CharacterCalculator {
     /// feature IDs.
     private static func hasExpertise(in skill: Skill, character: Character) -> Bool {
         character.featureSelections.contains { key, values in
-            key.contains("expertise") && values.contains(skill.rawValue)
+            key.contains(FeatureIDs.expertiseMarker) && values.contains(skill.rawValue)
         }
+    }
+
+    /// The highest skill-check floor any of the character's features impose
+    /// (Reliable Talent → 10 from Rogue 7). Returns nil when none apply. The
+    /// floor only takes effect on skills the character is proficient in — the
+    /// interpreter applies that gate; this just reports the value. Walks
+    /// resolved features so subclass-granted variants scale by the right
+    /// class level.
+    @MainActor
+    static func skillCheckFloor(character: Character, content: ContentStore) -> Int? {
+        var best: Int?
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
+                guard let scaled = resolved.feature.skillCheckMinimum else { continue }
+                let value = scaled.value(classLevel: entry.level, characterLevel: character.level)
+                if value > 0 { best = max(best ?? 0, value) }
+            }
+        }
+        return best
     }
 
     static func saveBonus(
@@ -101,7 +124,7 @@ enum CharacterCalculator {
         wearingArmor: Bool
     ) -> Int {
         guard wearingArmor,
-              character.featureSelections["fighting_style"]?.first == "defense"
+              character.featureSelections[FeatureIDs.fightingStyle]?.first == FeatureIDs.FightingStyle.defense
         else { return 0 }
         return 1
     }
@@ -114,7 +137,7 @@ enum CharacterCalculator {
         character: Character,
         content: ContentStore
     ) -> FightingStyleEffects {
-        let style = character.featureSelections["fighting_style"]?.first
+        let style = character.featureSelections[FeatureIDs.fightingStyle]?.first
         let equippedWeapons = character.inventory
             .filter { $0.equipped }
             .compactMap { content.weaponDefinition(id: $0.itemID) }
@@ -257,7 +280,7 @@ enum CharacterCalculator {
             ]?.first
             for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
                 guard let selection = resolved.feature.selection,
-                      selection.id == "weapon_mastery" else { continue }
+                      selection.id == FeatureIDs.weaponMastery else { continue }
                 total += selection.count.value(
                     classLevel: entry.level,
                     characterLevel: character.level
@@ -277,7 +300,7 @@ enum CharacterCalculator {
         content: ContentStore
     ) -> Bool {
         guard weaponMasterySlotCount(character: character, content: content) > 0 else { return false }
-        return (character.featureSelections["weapon_mastery"] ?? []).contains(weaponID)
+        return (character.featureSelections[FeatureIDs.weaponMastery] ?? []).contains(weaponID)
     }
 
     /// Per-weapon attack + damage breakdown shown in the inventory description.

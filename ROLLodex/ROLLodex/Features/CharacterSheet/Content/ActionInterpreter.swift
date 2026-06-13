@@ -7,12 +7,18 @@ enum ActionInterpreter {
     /// ignores it. `fightingStyle` modifies weapon attack / damage rolls
     /// (Archery +2 ranged attack, Dueling +2 damage when single-wielding melee).
     /// Both default to nil so callers that don't care can keep the bare API.
+    /// `skillCheckFloor`, when non-nil, is the minimum d20 value a skill
+    /// check is treated as (Reliable Talent → 10). The caller computes it
+    /// from the character's features via `CharacterCalculator.skillCheckFloor`
+    /// (the interpreter has no content access); it only takes effect on
+    /// skills the character is proficient in.
     static func resolve(
         recipe: ActionRecipe,
         character: Character,
         weapon: WeaponDefinition?,
         spellcastingAbility: Ability? = nil,
-        fightingStyle: FightingStyleEffects? = nil
+        fightingStyle: FightingStyleEffects? = nil,
+        skillCheckFloor: Int? = nil
     ) -> ResolvedAction {
         switch recipe {
         case .weaponAttack(let abilityOverride, let finesse):
@@ -38,7 +44,7 @@ enum ActionInterpreter {
             return resolveAbilityCheck(character: character, ability: ability)
 
         case .skillCheck(let skill):
-            return resolveSkillCheck(character: character, skill: skill)
+            return resolveSkillCheck(character: character, skill: skill, skillCheckFloor: skillCheckFloor)
 
         case .savingThrow(let ability):
             return resolveSavingThrow(character: character, ability: ability)
@@ -171,7 +177,7 @@ enum ActionInterpreter {
         // this to weapons with the ammunition property — bows, crossbows,
         // etc. — not thrown melee weapons).
         let archeryBonus: Int = {
-            guard fightingStyle?.style == "archery",
+            guard fightingStyle?.style == FeatureIDs.FightingStyle.archery,
                   let weapon, weapon.properties.contains(.ammunition)
             else { return 0 }
             return 2
@@ -235,7 +241,7 @@ enum ActionInterpreter {
         // and intrinsic two-handed weapons are excluded — Dueling only applies
         // to one-handed melee swings.
         let duelingBonus: Int = {
-            guard fightingStyle?.style == "dueling",
+            guard fightingStyle?.style == FeatureIDs.FightingStyle.dueling,
                   fightingStyle?.onlyOneWeaponEquipped == true,
                   let weapon,
                   !weapon.properties.contains(.ammunition),
@@ -289,25 +295,28 @@ enum ActionInterpreter {
 
     private static func resolveSkillCheck(
         character: Character,
-        skill: Skill
+        skill: Skill,
+        skillCheckFloor: Int?
     ) -> ResolvedAction {
         let mod = CharacterCalculator.skillModifier(character: character, skill: skill)
 
-        let applyReliableTalent = hasReliableTalent(character: character)
-            && (character.proficiencies[.skill(skill)] == .proficient
-                || character.proficiencies[.skill(skill)] == .expertise)
+        // The floor (Reliable Talent) only applies to skills you're
+        // proficient in — feature-driven now, no class-name check here.
+        let isProficient = character.proficiencies[.skill(skill)] == .proficient
+            || character.proficiencies[.skill(skill)] == .expertise
+        let floor = isProficient ? skillCheckFloor : nil
 
         var formula = DiceFormula()
         formula.groups.append(DiceGroup(
             kind: .d20,
             count: 1,
-            minimumValue: applyReliableTalent ? 10 : nil
+            minimumValue: floor
         ))
         formula.modifier = mod
 
         var description = "1d20 + \(skill.ability.abbreviation) (skill)"
-        if applyReliableTalent {
-            description += " — Reliable Talent (floor 10)"
+        if let floor {
+            description += " — floor \(floor)"
         }
 
         return ResolvedAction(
@@ -316,14 +325,6 @@ enum ActionInterpreter {
             formula: formula,
             description: description
         )
-    }
-
-    /// Reliable Talent applies when the character has at least 7 levels in
-    /// Rogue and is proficient in the skill. This mirrors the class table
-    /// directly; if future subclasses delay the feature, this will need to
-    /// switch to a content-store lookup.
-    private static func hasReliableTalent(character: Character) -> Bool {
-        character.classEntries.contains { $0.classID == "rogue" && $0.level >= 7 }
     }
 
     private static func resolveSavingThrow(

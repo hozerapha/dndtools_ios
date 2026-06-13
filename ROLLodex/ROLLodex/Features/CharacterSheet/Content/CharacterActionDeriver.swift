@@ -279,6 +279,10 @@ enum CharacterActionDeriver {
                 subclassID: subclassID
             ) {
                 let feature = resolvedFeature.feature
+                // Reactive features (Stroke of Luck) own a resource but get no
+                // action-grid row — the dice tab handles them after a roll.
+                // Data-driven now, no feature-id string match.
+                guard feature.surfacesAsAction else { continue }
                 let cost = feature.resource.map { ResourceCost(resourceID: $0.id, amount: 1) }
                 let resolvedResource = feature.resource.flatMap { def in
                     ResourceCalculator.availableResources(character: character, content: content)
@@ -325,9 +329,6 @@ enum CharacterActionDeriver {
                 }
 
                 if feature.actionRecipes.isEmpty, cost != nil {
-                    // Stroke of Luck is handled reactively by the dice tab
-                    // after any d20 roll — don't show a do-nothing consume row.
-                    if feature.id == "stroke_of_luck" { continue }
 
                     // Resource-only feature (e.g. Action Surge): no roll, but
                     // tapping the button still consumes a charge.

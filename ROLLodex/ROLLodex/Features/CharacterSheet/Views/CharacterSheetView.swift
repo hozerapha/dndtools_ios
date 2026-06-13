@@ -207,6 +207,30 @@ struct CharacterSheetView: View {
         .animation(.snappy(duration: 0.2), value: quickRoll != nil)
     }
 
+    /// Persistent-error banner: edits flow through `binding(for:)` → `save`,
+    /// so a failed write would otherwise vanish into a console print. This
+    /// keeps it in the player's face until a save succeeds or they dismiss.
+    private func saveErrorBanner(_ message: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.white)
+            Text(message)
+                .font(.caption)
+                .foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Button {
+                characterStore.clearSaveError()
+            } label: {
+                Image(systemName: "xmark")
+                    .foregroundStyle(.white)
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.red, in: RoundedRectangle(cornerRadius: 10))
+    }
+
     // MARK: - Deletion
 
     /// Pop back to the list FIRST, then remove the character. Deleting while
@@ -228,6 +252,9 @@ struct CharacterSheetView: View {
     /// stat pills. Sits outside the ScrollView so it never scrolls away.
     private var stickyHeader: some View {
         VStack(spacing: 10) {
+            if let saveError = characterStore.lastSaveError {
+                saveErrorBanner(saveError)
+            }
             headerCard
             if character.currentHP == 0 {
                 DeathSavesRow(character: $character, onRoll: rollDeathSave)
@@ -519,7 +546,9 @@ struct CharacterSheetView: View {
         let resolved = ActionInterpreter.resolve(
             recipe: recipe,
             character: character,
-            weapon: nil
+            weapon: nil,
+            // Reliable Talent et al. — feature-derived skill-check floor.
+            skillCheckFloor: CharacterCalculator.skillCheckFloor(character: character, content: content)
         )
         let formula = applyAdvantage(to: resolved.formula, mode: mode)
         // The interpreter's label includes the modifier ("Athletics +5") for

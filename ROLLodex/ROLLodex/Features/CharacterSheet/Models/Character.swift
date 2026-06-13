@@ -183,8 +183,8 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         var selections = try container.decodeIfPresent([String: [String]].self, forKey: .featureSelections) ?? [:]
         if let legacyMasteries = try container.decodeIfPresent([String].self, forKey: .chosenWeaponMasteries),
            !legacyMasteries.isEmpty,
-           selections["weapon_mastery"] == nil {
-            selections["weapon_mastery"] = legacyMasteries
+           selections[FeatureIDs.weaponMastery] == nil {
+            selections[FeatureIDs.weaponMastery] = legacyMasteries
         }
         featureSelections = selections
         conditions = try container.decodeIfPresent([CharacterCondition].self, forKey: .conditions) ?? []

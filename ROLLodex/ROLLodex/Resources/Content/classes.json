@@ -409,7 +409,8 @@
           "id": "reliable_talent",
           "name": "Reliable Talent",
           "description": "When making an ability check using a skill or tool proficiency, treat a d20 roll of 9 or lower as a 10.",
-          "kind": "passive"
+          "kind": "passive",
+          "skillCheckMinimum": { "byClassLevel": { "7": 10 } }
         }
       ],
       "8": [
@@ -519,6 +520,7 @@
           "description": "If you fail a D20 Test, you can turn the roll into a 20. Once you use this feature, you can't do so again until you finish a Short or Long Rest.",
           "kind": "active",
           "actionCost": "free",
+          "surfacesAsAction": false,
           "resource": {
             "id": "rogue_stroke_of_luck",
             "name": "Stroke of Luck",

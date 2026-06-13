@@ -179,7 +179,12 @@ struct RogueFeatureTests {
 
     // MARK: - Reliable Talent
 
-    @Test func reliableTalentAppearsOnSkillCheckDescriptionForRogue7() {
+    // End-to-end against bundled content: the floor is now feature-derived
+    // (Rogue L7 `reliable_talent` carries `skillCheckMinimum`), computed by
+    // `CharacterCalculator.skillCheckFloor` and applied by the interpreter.
+
+    @Test @MainActor func reliableTalentFloorsProficientSkillForRogue7() {
+        let content = ContentStore()
         let character = Character(
             name: "Lazlo", level: 7,
             speciesID: "human", backgroundID: "criminal",
@@ -188,15 +193,17 @@ struct RogueFeatureTests {
             maxHP: 10,
             proficiencies: [.skill(.stealth): .proficient]
         )
+        let floor = CharacterCalculator.skillCheckFloor(character: character, content: content)
         let resolved = ActionInterpreter.resolve(
             recipe: .skillCheck(skill: .stealth),
-            character: character,
-            weapon: nil
+            character: character, weapon: nil,
+            skillCheckFloor: floor
         )
-        #expect(resolved.description?.contains("Reliable Talent") == true)
+        #expect(resolved.formula?.groups.first?.minimumValue == 10)
     }
 
-    @Test func reliableTalentSkippedForNonProficientSkill() {
+    @Test @MainActor func reliableTalentSkippedForNonProficientSkill() {
+        let content = ContentStore()
         let character = Character(
             name: "Lazlo", level: 7,
             speciesID: "human", backgroundID: "criminal",
@@ -205,15 +212,17 @@ struct RogueFeatureTests {
             maxHP: 10,
             proficiencies: [:]
         )
+        let floor = CharacterCalculator.skillCheckFloor(character: character, content: content)
         let resolved = ActionInterpreter.resolve(
             recipe: .skillCheck(skill: .athletics),
-            character: character,
-            weapon: nil
+            character: character, weapon: nil,
+            skillCheckFloor: floor
         )
-        #expect(resolved.description?.contains("Reliable Talent") == false)
+        #expect(resolved.formula?.groups.first?.minimumValue == nil)
     }
 
-    @Test func reliableTalentSkippedBelowRogue7() {
+    @Test @MainActor func reliableTalentSkippedBelowRogue7() {
+        let content = ContentStore()
         let character = Character(
             name: "Lazlo", level: 6,
             speciesID: "human", backgroundID: "criminal",
@@ -222,12 +231,14 @@ struct RogueFeatureTests {
             maxHP: 10,
             proficiencies: [.skill(.stealth): .proficient]
         )
+        let floor = CharacterCalculator.skillCheckFloor(character: character, content: content)
+        #expect(floor == nil)
         let resolved = ActionInterpreter.resolve(
             recipe: .skillCheck(skill: .stealth),
-            character: character,
-            weapon: nil
+            character: character, weapon: nil,
+            skillCheckFloor: floor
         )
-        #expect(resolved.description?.contains("Reliable Talent") == false)
+        #expect(resolved.formula?.groups.first?.minimumValue == nil)
     }
 
     // MARK: - Tool proficiencies from class

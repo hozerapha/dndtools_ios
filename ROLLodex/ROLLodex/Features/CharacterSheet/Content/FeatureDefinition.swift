@@ -35,10 +35,22 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
     /// damage rider, future Rage's automatic STR-damage boost, etc. Nil for
     /// features without a trigger hook (most features).
     let triggeredEffect: TriggeredEffect?
+    /// Minimum floor this feature imposes on the character's skill checks
+    /// (Reliable Talent: treat a d20 ≤ 9 as 10 from Rogue level 7). The floor
+    /// only applies to skills the character is proficient in — that gate
+    /// stays in the interpreter. Resolved against the owning class level so a
+    /// future subclass could grant it at a different level without code.
+    let skillCheckMinimum: LevelScaledValue?
+    /// Whether this feature should appear as a tappable row in the action
+    /// grid. False for reactive features the dice tab handles after a roll
+    /// (Stroke of Luck) — they still own their resource pool, they just
+    /// don't get a do-nothing button. Defaults true.
+    let surfacesAsAction: Bool
 
     private enum CodingKeys: String, CodingKey {
         case id, name, description, actionRecipes
         case attunementSlots, resource, grantsProficiencies, kind, selection, actionCost, triggeredEffect
+        case skillCheckMinimum, surfacesAsAction
     }
 
     init(
@@ -52,7 +64,9 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         kind: FeatureKind = .passive,
         selection: FeatureSelection? = nil,
         actionCost: ActionCost? = nil,
-        triggeredEffect: TriggeredEffect? = nil
+        triggeredEffect: TriggeredEffect? = nil,
+        skillCheckMinimum: LevelScaledValue? = nil,
+        surfacesAsAction: Bool = true
     ) {
         self.id = id
         self.name = name
@@ -65,6 +79,8 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         self.selection = selection
         self.actionCost = actionCost
         self.triggeredEffect = triggeredEffect
+        self.skillCheckMinimum = skillCheckMinimum
+        self.surfacesAsAction = surfacesAsAction
     }
 
     init(from decoder: Decoder) throws {
@@ -78,6 +94,8 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         grantsProficiencies = try c.decodeIfPresent([ProficiencyKey].self, forKey: .grantsProficiencies)
         selection = try c.decodeIfPresent(FeatureSelection.self, forKey: .selection)
         triggeredEffect = try c.decodeIfPresent(TriggeredEffect.self, forKey: .triggeredEffect)
+        skillCheckMinimum = try c.decodeIfPresent(LevelScaledValue.self, forKey: .skillCheckMinimum)
+        surfacesAsAction = try c.decodeIfPresent(Bool.self, forKey: .surfacesAsAction) ?? true
         // Explicit JSON wins; otherwise default to .action when the feature
         // surfaces a tappable recipe, and nil for pure passives.
         if let declared = try c.decodeIfPresent(ActionCost.self, forKey: .actionCost) {

@@ -20,6 +20,9 @@ struct SettingsView: View {
     @State private var showImporter = false
 
     @State private var alert: SettingsAlert?
+    /// Pack staged for deletion — removing a pack drops its content (and
+    /// re-surfaces any bundled ids it shadowed), so it gets an explicit prompt.
+    @State private var pendingPackDelete: ContentStore.ImportedPackInfo?
 
     #if DEBUG
     @State private var pasteTarget: ImportTarget?
@@ -58,6 +61,22 @@ struct SettingsView: View {
             } message: { alert in
                 Text(alert.message)
             }
+            .confirmationDialog(
+                "Delete Content Pack",
+                isPresented: Binding(
+                    get: { pendingPackDelete != nil },
+                    set: { if !$0 { pendingPackDelete = nil } }
+                ),
+                titleVisibility: .visible,
+                presenting: pendingPackDelete
+            ) { pack in
+                Button("Delete \(pack.name)", role: .destructive) {
+                    content.removeImportedPack(fileName: pack.fileName)
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: { pack in
+                Text("Removes \(pack.summary) from this pack. Any bundled content it overrode will return. This can't be undone, but you can re-import the pack.")
+            }
             #if DEBUG
             .sheet(item: $pasteTarget) { target in
                 PasteImportSheet(
@@ -94,10 +113,22 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                }
-                .onDelete { offsets in
-                    for index in offsets {
-                        content.removeImportedPack(fileName: packs[index].fileName)
+                    // Explicit per-row action in addition to swipe, so the
+                    // delete affordance is discoverable. Both stage the
+                    // confirmation rather than removing outright.
+                    .swipeActions {
+                        Button(role: .destructive) {
+                            pendingPackDelete = pack
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            pendingPackDelete = pack
+                        } label: {
+                            Label("Delete Pack", systemImage: "trash")
+                        }
                     }
                 }
             }

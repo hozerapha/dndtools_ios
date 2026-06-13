@@ -35,6 +35,34 @@ struct CharacterStoreTests {
         #expect(store.character(id: character.id)?.name == "Test")
     }
 
+    @Test func saveFailureSurfacesAndClearsOnSuccess() {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let store = CharacterStore(directory: dir)
+        #expect(store.lastSaveError == nil)
+
+        // Remove the directory out from under the store so the atomic write
+        // has nowhere to land — the failure must surface, not vanish.
+        try? FileManager.default.removeItem(at: dir)
+        store.save(makeSampleCharacter(name: "Doomed"))
+        #expect(store.lastSaveError != nil)
+
+        // A subsequent successful save clears the banner state.
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        store.save(makeSampleCharacter(name: "Saved"))
+        #expect(store.lastSaveError == nil)
+    }
+
+    @Test func clearSaveErrorDismissesBannerState() {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let store = CharacterStore(directory: dir)
+        try? FileManager.default.removeItem(at: dir)
+        store.save(makeSampleCharacter())
+        #expect(store.lastSaveError != nil)
+
+        store.clearSaveError()
+        #expect(store.lastSaveError == nil)
+    }
+
     @Test func saveAndReload() {
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let store1 = CharacterStore(directory: tempDir)

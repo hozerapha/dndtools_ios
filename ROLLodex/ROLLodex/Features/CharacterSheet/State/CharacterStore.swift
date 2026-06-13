@@ -6,6 +6,10 @@ import SwiftUI
 @MainActor
 final class CharacterStore {
     private(set) var characters: [Character] = []
+    /// Set when the most recent `save` failed (disk full, permissions, …).
+    /// The sheet shows a banner so a silent loss can't pass unnoticed.
+    /// Cleared by the next successful save or `clearSaveError()`.
+    private(set) var lastSaveError: String?
 
     private let directory: URL
     private let manifestURL: URL
@@ -55,9 +59,17 @@ final class CharacterStore {
             } else {
                 characters.append(character)
             }
+            lastSaveError = nil
         } catch {
+            // Don't lose this silently — the sheet surfaces lastSaveError.
             print("Failed to save character: \(error)")
+            lastSaveError = "Couldn't save \(character.name): \(error.localizedDescription)"
         }
+    }
+
+    /// Dismiss the save-failure banner.
+    func clearSaveError() {
+        lastSaveError = nil
     }
 
     // MARK: - Import (Phase H)

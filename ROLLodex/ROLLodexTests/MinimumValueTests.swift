@@ -148,9 +148,15 @@ struct MinimumValueTests {
         #expect(result.dieRolls[0].value == 4)
     }
 
-    // MARK: - ActionInterpreter / Reliable Talent
+    // MARK: - Reliable Talent (data-driven skill-check floor)
+    //
+    // The floor is now feature-derived: `CharacterCalculator.skillCheckFloor`
+    // reads it from bundled content (Rogue L7 `reliable_talent` carries
+    // `skillCheckMinimum`), and `ActionInterpreter.resolve` applies the
+    // passed-in floor only on proficient skills. No `classID == "rogue"`.
 
-    @Test func reliableTalentSetsMinimumValueOnSkillCheck() {
+    @Test @MainActor func reliableTalentFloorFromContentAtRogue7() {
+        let content = ContentStore()
         let character = Character(
             name: "Lazlo", level: 7,
             speciesID: "human", backgroundID: "criminal",
@@ -159,32 +165,11 @@ struct MinimumValueTests {
             maxHP: 10,
             proficiencies: [.skill(.stealth): .proficient]
         )
-        let resolved = ActionInterpreter.resolve(
-            recipe: .skillCheck(skill: .stealth),
-            character: character,
-            weapon: nil
-        )
-        #expect(resolved.formula?.groups.first?.minimumValue == 10)
+        #expect(CharacterCalculator.skillCheckFloor(character: character, content: content) == 10)
     }
 
-    @Test func noReliableTalentWithoutProficiency() {
-        let character = Character(
-            name: "Lazlo", level: 7,
-            speciesID: "human", backgroundID: "criminal",
-            classEntries: [ClassEntry(classID: "rogue", level: 7)],
-            abilityScores: [.strength: 10],
-            maxHP: 10,
-            proficiencies: [:]
-        )
-        let resolved = ActionInterpreter.resolve(
-            recipe: .skillCheck(skill: .athletics),
-            character: character,
-            weapon: nil
-        )
-        #expect(resolved.formula?.groups.first?.minimumValue == nil)
-    }
-
-    @Test func noReliableTalentBelowRogue7() {
+    @Test @MainActor func noFloorBelowRogue7() {
+        let content = ContentStore()
         let character = Character(
             name: "Lazlo", level: 6,
             speciesID: "human", backgroundID: "criminal",
@@ -193,10 +178,48 @@ struct MinimumValueTests {
             maxHP: 10,
             proficiencies: [.skill(.stealth): .proficient]
         )
+        #expect(CharacterCalculator.skillCheckFloor(character: character, content: content) == nil)
+    }
+
+    @Test func floorAppliesToSkillCheckOnlyWhenProficient() {
+        let character = Character(
+            name: "Lazlo", level: 7,
+            speciesID: "human", backgroundID: "criminal",
+            classEntries: [ClassEntry(classID: "rogue", level: 7)],
+            abilityScores: [.dexterity: 16],
+            maxHP: 10,
+            proficiencies: [.skill(.stealth): .proficient]
+        )
+        // Proficient → floor lands on the d20 group.
+        let proficient = ActionInterpreter.resolve(
+            recipe: .skillCheck(skill: .stealth),
+            character: character, weapon: nil,
+            skillCheckFloor: 10
+        )
+        #expect(proficient.formula?.groups.first?.minimumValue == 10)
+
+        // Not proficient → the floor is ignored even when passed.
+        let notProficient = ActionInterpreter.resolve(
+            recipe: .skillCheck(skill: .athletics),
+            character: character, weapon: nil,
+            skillCheckFloor: 10
+        )
+        #expect(notProficient.formula?.groups.first?.minimumValue == nil)
+    }
+
+    @Test func noFloorMeansNoMinimum() {
+        let character = Character(
+            name: "Lazlo", level: 7,
+            speciesID: "human", backgroundID: "criminal",
+            classEntries: [ClassEntry(classID: "rogue", level: 7)],
+            abilityScores: [.dexterity: 16],
+            maxHP: 10,
+            proficiencies: [.skill(.stealth): .proficient]
+        )
         let resolved = ActionInterpreter.resolve(
             recipe: .skillCheck(skill: .stealth),
-            character: character,
-            weapon: nil
+            character: character, weapon: nil,
+            skillCheckFloor: nil
         )
         #expect(resolved.formula?.groups.first?.minimumValue == nil)
     }
