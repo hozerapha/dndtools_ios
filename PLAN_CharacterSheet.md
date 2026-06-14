@@ -2129,8 +2129,8 @@ SRD 5.2.1, and nothing beyond it**. Verified SRD totals (not PHB):
   (Wizard — same). NO Battle Master / EK / Arcane Trickster (PHB-only).
 - **Species 3/9 done** (Human, Elf, Dwarf). Remaining: Dragonborn, Gnome,
   Goliath, Halfling, Orc, Tiefling. (Goliath, not Goblin.)
-- **Backgrounds 3/4 done** (Acolyte, Sage, Soldier). Remaining: **Criminal**
-  — that's the entire gap; the SRD has only 4.
+- **Backgrounds 4/4 done ✅** (Acolyte, Sage, Soldier, Criminal — 2026-06-13).
+  The SRD has only these 4; backgrounds are SRD-complete.
 - Armor 8/8 ✅, conditions 14/14 ✅, weapons + gear nearly complete, ~14
   spells of the (large) SRD spell list.
 
@@ -2160,10 +2160,30 @@ Suggested authoring order, each batch shippable alone:
   Strikes, Extra Attack). Still wanted later: paladin spell-list
   entries (bless, divine favor — lands with 11e), a subclass at L3,
   and mechanical auras.
-- **11c. Species + backgrounds sweep** — the 6 missing SRD species
-  (Dragonborn, Gnome, Goliath, Halfling, Orc, Tiefling) plus the **one**
-  missing SRD background (Criminal) are mostly descriptive-trait work.
-  Dwarven Toughness-style HP traits build on item 8's `rolledHP` model.
+- **11c. Species + backgrounds sweep** — ~~Criminal background~~ DONE
+  2026-06-13 (backgrounds now 4/4 SRD-complete). Also shipped: **player-chosen
+  background ability bonuses** (the 2024 distribute rule). `BackgroundDefinition`
+  now declares `abilityScoreOptions: [Ability]` (the three eligible) instead of
+  a baked spread; `CharacterDraft.backgroundAbilityBonuses` holds the player's
+  pick (+2/+1 or +1 to all three) with `isValidBackgroundBonus(options:)`
+  validation; the creation flow's Abilities step has a focused/balanced picker
+  showing base→final, gating Next; `finalizeDraft` applies it clamped to 20.
+  Also shipped 2026-06-13: **class skill-proficiency choice** — the missing
+  "choose N skills from the class list." Modeled as a real **feature
+  selection** (new `SelectionSource.skillsFrom([Skill])`), authored as an L1
+  "Skill Proficiencies" feature per class (id `<class>_class_skills`,
+  SRD-verified: Rogue 4 of 10, others 2). Resolved **content-free** by
+  `CharacterCalculator.skillProficiencyLevel` via a `class_skills` marker —
+  the same live-read trick as Expertise — so the skills list, skill modifier,
+  and skill checks all pick it up with no signature changes, AND it's
+  **editable in the Features tab on any character**, not gated behind
+  creation. Picked at creation too (the `ClassSkills` step seeds
+  `featureSelections` at finalize; background skills shown locked so picks
+  aren't wasted; Expertise can now upgrade a class-skill grant). And a
+  tool-name display fix (`ToolNames` — "thieves_tools" → "Thieves' Tools").
+  Remaining: the 6 missing SRD species (Dragonborn, Gnome, Goliath, Halfling,
+  Orc, Tiefling), mostly descriptive-trait work. Dwarven Toughness-style HP
+  traits build on item 8's `rolledHP` model.
 - **11d. Weapons + gear sweep** — remaining ~22 SRD weapons (all have
   existing property/mastery vocabulary), standard adventuring gear.
 - **11e. Spell batches** — all SRD cantrips, then L1, then L2–L3, gated per
@@ -2193,6 +2213,20 @@ Suggested authoring order, each batch shippable alone:
 tappable links to the SRD and the CC-BY-4.0 license, and a footer noting "5E
 compatible / not affiliated with or endorsed by Wizards of the Coast." The
 license condition for shipping SRD content is now satisfied.
+
+**17. Feature-granted action options on the Actions tab (next up)**
+Surface what a character's features actually *let them do*, which today is
+invisible: e.g. Rogue's Cunning Action grants Dash / Disengage / Hide as a
+Bonus Action, but the Actions tab only shows the Stealth skill chip. Scope
+(per the 2026-06-13 discussion): NOT a flashy dump of the universal SRD
+action list — keep that minimal (a comma-separated reference at most, or
+omit). The real ask is **character-specific, feature-derived** entries:
+informational rows for the action options a feature confers, grouped by
+economy (Action / Bonus Action / Reaction), with the rule text as a
+tooltip/expandable. Likely needs a content field on features to declare the
+named options they grant (e.g. Cunning Action → [Dash, Disengage, Hide] @
+bonus action) plus a compact info-row renderer on the Actions tab. Drives
+"ease of information," not a reference book.
 
 **12. ~~Phase H — homebrew import/export~~ — DONE 2026-06-13**
 - Bundled content keeps `fatalError` (build bug); imported packs go through

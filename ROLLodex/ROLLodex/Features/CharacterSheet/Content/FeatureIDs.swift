@@ -17,6 +17,11 @@ enum FeatureIDs {
     /// `expertise_6`, …) — the calculator treats a skill listed under such a
     /// selection as having expertise.
     static let expertiseMarker = "expertise"
+    /// Substring marker on a class's level-1 skill-proficiency selection id
+    /// (`rogue_class_skills`, …) — the calculator treats a skill listed under
+    /// such a selection as proficient, resolved live from `featureSelections`
+    /// (same content-free trick as expertise) so it's re-editable anywhere.
+    static let classSkillsMarker = "class_skills"
 
     /// Option ids inside the `fighting_style` selection whose mechanical
     /// effects the calculator / interpreter apply directly.

@@ -4,11 +4,47 @@
     "name": "Fighter",
     "hitDie": 10,
     "primaryAbility": "strength",
-    "savingThrows": ["strength", "constitution"],
-    "armorProficiencies": ["light", "medium", "heavy", "shield"],
-    "weaponProficiencies": ["simple", "martial"],
+    "savingThrows": [
+      "strength",
+      "constitution"
+    ],
+    "armorProficiencies": [
+      "light",
+      "medium",
+      "heavy",
+      "shield"
+    ],
+    "weaponProficiencies": [
+      "simple",
+      "martial"
+    ],
     "levelFeatures": {
       "1": [
+        {
+          "id": "fighter_class_skills",
+          "name": "Skill Proficiencies",
+          "description": "Choose 2 skills from your Fighter list.",
+          "kind": "selection",
+          "selection": {
+            "id": "fighter_class_skills",
+            "prompt": "Choose 2 skills",
+            "count": 2,
+            "optionsSource": {
+              "type": "skillsFrom",
+              "skills": [
+                "acrobatics",
+                "animal_handling",
+                "athletics",
+                "history",
+                "insight",
+                "intimidation",
+                "persuasion",
+                "perception",
+                "survival"
+              ]
+            }
+          }
+        },
         {
           "id": "fighting_style",
           "name": "Fighting Style",
@@ -58,9 +94,17 @@
           "resource": {
             "id": "fighter_second_wind",
             "name": "Second Wind Uses",
-            "max": { "byClassLevel": { "1": 2, "4": 3, "10": 4 } },
+            "max": {
+              "byClassLevel": {
+                "1": 2,
+                "4": 3,
+                "10": 4
+              }
+            },
             "refreshOn": "shortRest",
-            "refreshAmount": { "fixed": 1 }
+            "refreshAmount": {
+              "fixed": 1
+            }
           },
           "actionRecipes": [
             {
@@ -79,8 +123,15 @@
           "selection": {
             "id": "weapon_mastery",
             "prompt": "Choose 3 weapons whose Mastery property you can use",
-            "count": { "byClassLevel": { "1": 3 } },
-            "optionsSource": { "type": "weapons", "proficientOnly": true }
+            "count": {
+              "byClassLevel": {
+                "1": 3
+              }
+            },
+            "optionsSource": {
+              "type": "weapons",
+              "proficientOnly": true
+            }
           }
         }
       ],
@@ -93,7 +144,12 @@
           "resource": {
             "id": "fighter_action_surge",
             "name": "Action Surge",
-            "max": { "byClassLevel": { "2": 1, "17": 2 } },
+            "max": {
+              "byClassLevel": {
+                "2": 1,
+                "17": 2
+              }
+            },
             "refreshOn": "shortRest",
             "refreshAmount": "all"
           }
@@ -109,7 +165,10 @@
             "id": "fighter_subclass",
             "prompt": "Choose a Martial Archetype",
             "count": 1,
-            "optionsSource": { "type": "subclasses", "parentClassID": "fighter" }
+            "optionsSource": {
+              "type": "subclasses",
+              "parentClassID": "fighter"
+            }
           }
         }
       ],
@@ -123,7 +182,10 @@
             "id": "fighter_asi_4",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ]
@@ -164,11 +226,31 @@
                 "optionsSource": {
                   "type": "fixedOptions",
                   "options": [
-                    { "id": "archery", "name": "Archery", "description": "+2 bonus to attack rolls with ranged weapons." },
-                    { "id": "defense", "name": "Defense", "description": "While wearing armor, +1 bonus to AC." },
-                    { "id": "dueling", "name": "Dueling", "description": "+2 damage when wielding a melee weapon in one hand with no other weapons." },
-                    { "id": "great_weapon_fighting", "name": "Great Weapon Fighting", "description": "Reroll 1s and 2s on damage dice with two-handed melee weapons." },
-                    { "id": "two_weapon_fighting", "name": "Two-Weapon Fighting", "description": "Add your ability modifier to the damage of the second attack when two-weapon fighting." }
+                    {
+                      "id": "archery",
+                      "name": "Archery",
+                      "description": "+2 bonus to attack rolls with ranged weapons."
+                    },
+                    {
+                      "id": "defense",
+                      "name": "Defense",
+                      "description": "While wearing armor, +1 bonus to AC."
+                    },
+                    {
+                      "id": "dueling",
+                      "name": "Dueling",
+                      "description": "+2 damage when wielding a melee weapon in one hand with no other weapons."
+                    },
+                    {
+                      "id": "great_weapon_fighting",
+                      "name": "Great Weapon Fighting",
+                      "description": "Reroll 1s and 2s on damage dice with two-handed melee weapons."
+                    },
+                    {
+                      "id": "two_weapon_fighting",
+                      "name": "Two-Weapon Fighting",
+                      "description": "Add your ability modifier to the damage of the second attack when two-weapon fighting."
+                    }
                   ]
                 }
               }
@@ -197,11 +279,37 @@
     "name": "Wizard",
     "hitDie": 6,
     "primaryAbility": "intelligence",
-    "savingThrows": ["intelligence", "wisdom"],
+    "savingThrows": [
+      "intelligence",
+      "wisdom"
+    ],
     "armorProficiencies": [],
     "weaponProficiencies": [],
     "levelFeatures": {
       "1": [
+        {
+          "id": "wizard_class_skills",
+          "name": "Skill Proficiencies",
+          "description": "Choose 2 skills from your Wizard list.",
+          "kind": "selection",
+          "selection": {
+            "id": "wizard_class_skills",
+            "prompt": "Choose 2 skills",
+            "count": 2,
+            "optionsSource": {
+              "type": "skillsFrom",
+              "skills": [
+                "arcana",
+                "history",
+                "insight",
+                "investigation",
+                "medicine",
+                "nature",
+                "religion"
+              ]
+            }
+          }
+        },
         {
           "id": "spellcasting",
           "name": "Spellcasting",
@@ -221,28 +329,138 @@
     "spellcasting": {
       "ability": "intelligence",
       "preparedRule": "preparedFromBook",
-      "cantripsKnown": { "byClassLevel": { "1": 3, "4": 4, "10": 5 } },
+      "cantripsKnown": {
+        "byClassLevel": {
+          "1": 3,
+          "4": 4,
+          "10": 5
+        }
+      },
       "spellsKnown": null,
       "slotTable": {
         "kind": "fullCaster",
         "table": {
-          "1":  { "1": 2 },
-          "2":  { "1": 3 },
-          "3":  { "1": 4, "2": 2 },
-          "4":  { "1": 4, "2": 3 },
-          "5":  { "1": 4, "2": 3, "3": 2 },
-          "6":  { "1": 4, "2": 3, "3": 3 },
-          "7":  { "1": 4, "2": 3, "3": 3, "4": 1 },
-          "8":  { "1": 4, "2": 3, "3": 3, "4": 2 },
-          "9":  { "1": 4, "2": 3, "3": 3, "4": 3, "5": 1 },
-          "10": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2 },
-          "11": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1 },
-          "13": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1 },
-          "15": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1, "8": 1 },
-          "17": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1, "8": 1, "9": 1 },
-          "18": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 1, "7": 1, "8": 1, "9": 1 },
-          "19": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 2, "7": 1, "8": 1, "9": 1 },
-          "20": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 2, "7": 2, "8": 1, "9": 1 }
+          "1": {
+            "1": 2
+          },
+          "2": {
+            "1": 3
+          },
+          "3": {
+            "1": 4,
+            "2": 2
+          },
+          "4": {
+            "1": 4,
+            "2": 3
+          },
+          "5": {
+            "1": 4,
+            "2": 3,
+            "3": 2
+          },
+          "6": {
+            "1": 4,
+            "2": 3,
+            "3": 3
+          },
+          "7": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 1
+          },
+          "8": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 2
+          },
+          "9": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 1
+          },
+          "10": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2
+          },
+          "11": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1
+          },
+          "13": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1
+          },
+          "15": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1,
+            "8": 1
+          },
+          "17": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "18": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "19": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 2,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "20": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 2,
+            "7": 2,
+            "8": 1,
+            "9": 1
+          }
         }
       },
       "ritualCasting": true,
@@ -254,12 +472,48 @@
     "name": "Rogue",
     "hitDie": 8,
     "primaryAbility": "dexterity",
-    "savingThrows": ["dexterity", "intelligence"],
-    "armorProficiencies": ["light"],
-    "weaponProficiencies": ["simple", "martial"],
-    "toolProficiencies": ["thieves_tools"],
+    "savingThrows": [
+      "dexterity",
+      "intelligence"
+    ],
+    "armorProficiencies": [
+      "light"
+    ],
+    "weaponProficiencies": [
+      "simple",
+      "martial"
+    ],
+    "toolProficiencies": [
+      "thieves_tools"
+    ],
     "levelFeatures": {
       "1": [
+        {
+          "id": "rogue_class_skills",
+          "name": "Skill Proficiencies",
+          "description": "Choose 4 skills from your Rogue list.",
+          "kind": "selection",
+          "selection": {
+            "id": "rogue_class_skills",
+            "prompt": "Choose 4 skills",
+            "count": 4,
+            "optionsSource": {
+              "type": "skillsFrom",
+              "skills": [
+                "acrobatics",
+                "athletics",
+                "deception",
+                "insight",
+                "intimidation",
+                "investigation",
+                "perception",
+                "persuasion",
+                "sleight_of_hand",
+                "stealth"
+              ]
+            }
+          }
+        },
         {
           "id": "expertise",
           "name": "Expertise",
@@ -269,7 +523,10 @@
             "id": "expertise",
             "prompt": "Choose 2 skill proficiencies for Expertise",
             "count": 2,
-            "optionsSource": { "type": "skills", "proficientOnly": true }
+            "optionsSource": {
+              "type": "skills",
+              "proficientOnly": true
+            }
           }
         },
         {
@@ -283,29 +540,45 @@
               "type": "onAttackHit",
               "filter": {
                 "type": "weaponHasProperty",
-                "properties": ["finesse", "ammunition"]
+                "properties": [
+                  "finesse",
+                  "ammunition"
+                ]
               }
             },
             "effect": {
               "type": "addScaledDamageDice",
               "count": {
                 "byClassLevel": {
-                  "1": 1, "3": 2, "5": 3, "7": 4, "9": 5,
-                  "11": 6, "13": 7, "15": 8, "17": 9, "19": 10
+                  "1": 1,
+                  "3": 2,
+                  "5": 3,
+                  "7": 4,
+                  "9": 5,
+                  "11": 6,
+                  "13": 7,
+                  "15": 8,
+                  "17": 9,
+                  "19": 10
                 }
               },
               "die": "d6",
               "damageType": "$weapon"
             },
-            "lifecycle": { "type": "oneShot" },
+            "lifecycle": {
+              "type": "oneShot"
+            },
             "activation": "optIn",
-            "cost": { "type": "oncePerTurn", "flagID": "sneak_attack" }
+            "cost": {
+              "type": "oncePerTurn",
+              "flagID": "sneak_attack"
+            }
           }
         },
         {
           "id": "thieves_cant",
           "name": "Thieves' Cant",
-          "description": "You know Thieves' Cant — a secret mix of dialect, jargon, and code that allows you to hide messages in seemingly normal conversation. You also know one other language of your choice."
+          "description": "You know Thieves' Cant \u2014 a secret mix of dialect, jargon, and code that allows you to hide messages in seemingly normal conversation. You also know one other language of your choice."
         },
         {
           "id": "weapon_mastery",
@@ -315,8 +588,15 @@
           "selection": {
             "id": "weapon_mastery",
             "prompt": "Choose 2 weapons whose Mastery property you can use",
-            "count": { "byClassLevel": { "1": 2 } },
-            "optionsSource": { "type": "weapons", "proficientOnly": true }
+            "count": {
+              "byClassLevel": {
+                "1": 2
+              }
+            },
+            "optionsSource": {
+              "type": "weapons",
+              "proficientOnly": true
+            }
           }
         }
       ],
@@ -345,7 +625,10 @@
             "id": "rogue_subclass",
             "prompt": "Choose a Roguish Archetype",
             "count": 1,
-            "optionsSource": { "type": "subclasses", "parentClassID": "rogue" }
+            "optionsSource": {
+              "type": "subclasses",
+              "parentClassID": "rogue"
+            }
           }
         },
         {
@@ -366,7 +649,10 @@
             "id": "rogue_asi_4",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -374,7 +660,7 @@
         {
           "id": "cunning_strike",
           "name": "Cunning Strike",
-          "description": "When you deal Sneak Attack damage, you can add one Cunning Strike effect by forgoing the listed number of Sneak Attack dice (DC = 8 + DEX mod + Proficiency Bonus). Initial options: Poison (1d6) — Con save or Poisoned for 1 minute; Trip (1d6) — Dex save or Prone (Large or smaller); Withdraw (1d6) — move up to half Speed without provoking Opportunity Attacks.",
+          "description": "When you deal Sneak Attack damage, you can add one Cunning Strike effect by forgoing the listed number of Sneak Attack dice (DC = 8 + DEX mod + Proficiency Bonus). Initial options: Poison (1d6) \u2014 Con save or Poisoned for 1 minute; Trip (1d6) \u2014 Dex save or Prone (Large or smaller); Withdraw (1d6) \u2014 move up to half Speed without provoking Opportunity Attacks.",
           "kind": "passive"
         },
         {
@@ -394,7 +680,10 @@
             "id": "expertise_6",
             "prompt": "Choose 2 more skill proficiencies for Expertise",
             "count": 2,
-            "optionsSource": { "type": "skills", "proficientOnly": true }
+            "optionsSource": {
+              "type": "skills",
+              "proficientOnly": true
+            }
           }
         }
       ],
@@ -410,7 +699,11 @@
           "name": "Reliable Talent",
           "description": "When making an ability check using a skill or tool proficiency, treat a d20 roll of 9 or lower as a 10.",
           "kind": "passive",
-          "skillCheckMinimum": { "byClassLevel": { "7": 10 } }
+          "skillCheckMinimum": {
+            "byClassLevel": {
+              "7": 10
+            }
+          }
         }
       ],
       "8": [
@@ -423,7 +716,10 @@
             "id": "rogue_asi_8",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -438,7 +734,10 @@
             "id": "rogue_asi_10",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -460,7 +759,10 @@
             "id": "rogue_asi_12",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -469,7 +771,7 @@
         {
           "id": "devious_strikes",
           "name": "Devious Strikes",
-          "description": "You learn new Cunning Strike options: Daze (2d6) — Con save or on its next turn it can only do one of move, action, or bonus action; Knock Out (6d6) — Con save or Unconscious for 1 minute (repeats save each turn); Obscure (3d6) — Dex save or Blinded until the end of its next turn.",
+          "description": "You learn new Cunning Strike options: Daze (2d6) \u2014 Con save or on its next turn it can only do one of move, action, or bonus action; Knock Out (6d6) \u2014 Con save or Unconscious for 1 minute (repeats save each turn); Obscure (3d6) \u2014 Dex save or Blinded until the end of its next turn.",
           "kind": "passive"
         }
       ],
@@ -479,7 +781,10 @@
           "name": "Slippery Mind",
           "description": "You gain proficiency in Wisdom and Charisma saving throws.",
           "kind": "passive",
-          "grantsProficiencies": ["savingThrow_wisdom", "savingThrow_charisma"]
+          "grantsProficiencies": [
+            "savingThrow_wisdom",
+            "savingThrow_charisma"
+          ]
         }
       ],
       "16": [
@@ -492,7 +797,10 @@
             "id": "rogue_asi_16",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -595,11 +903,43 @@
     "name": "Barbarian",
     "hitDie": 12,
     "primaryAbility": "strength",
-    "savingThrows": ["strength", "constitution"],
-    "armorProficiencies": ["light", "medium", "shield"],
-    "weaponProficiencies": ["simple", "martial"],
+    "savingThrows": [
+      "strength",
+      "constitution"
+    ],
+    "armorProficiencies": [
+      "light",
+      "medium",
+      "shield"
+    ],
+    "weaponProficiencies": [
+      "simple",
+      "martial"
+    ],
     "levelFeatures": {
       "1": [
+        {
+          "id": "barbarian_class_skills",
+          "name": "Skill Proficiencies",
+          "description": "Choose 2 skills from your Barbarian list.",
+          "kind": "selection",
+          "selection": {
+            "id": "barbarian_class_skills",
+            "prompt": "Choose 2 skills",
+            "count": 2,
+            "optionsSource": {
+              "type": "skillsFrom",
+              "skills": [
+                "animal_handling",
+                "athletics",
+                "intimidation",
+                "nature",
+                "perception",
+                "survival"
+              ]
+            }
+          }
+        },
         {
           "id": "rage",
           "name": "Rage",
@@ -610,7 +950,12 @@
             "name": "Rage Uses",
             "max": {
               "byClassLevel": {
-                "1": 2, "3": 3, "6": 4, "12": 5, "17": 6, "20": 99
+                "1": 2,
+                "3": 3,
+                "6": 4,
+                "12": 5,
+                "17": 6,
+                "20": 99
               }
             },
             "refreshOn": "longRest",
@@ -623,18 +968,28 @@
               "type": "onDamageRoll",
               "filter": {
                 "type": "weaponLacksProperty",
-                "properties": ["ammunition"]
+                "properties": [
+                  "ammunition"
+                ]
               }
             },
             "effect": {
               "type": "addFlatDamage",
               "amount": {
                 "byClassLevel": {
-                  "1": 2, "9": 3, "16": 4
+                  "1": 2,
+                  "9": 3,
+                  "16": 4
                 }
               }
             },
-            "lifecycle": { "type": "persistent", "until": { "type": "rounds", "count": 10 } },
+            "lifecycle": {
+              "type": "persistent",
+              "until": {
+                "type": "rounds",
+                "count": 10
+              }
+            },
             "activation": "toggle"
           }
         },
@@ -654,9 +1009,20 @@
     "name": "Paladin",
     "hitDie": 10,
     "primaryAbility": "strength",
-    "savingThrows": ["wisdom", "charisma"],
-    "armorProficiencies": ["light", "medium", "heavy", "shield"],
-    "weaponProficiencies": ["simple", "martial"],
+    "savingThrows": [
+      "wisdom",
+      "charisma"
+    ],
+    "armorProficiencies": [
+      "light",
+      "medium",
+      "heavy",
+      "shield"
+    ],
+    "weaponProficiencies": [
+      "simple",
+      "martial"
+    ],
     "subclassLevel": 3,
     "spellcasting": {
       "ability": "charisma",
@@ -666,16 +1032,56 @@
       "slotTable": {
         "kind": "fullCaster",
         "table": {
-          "1": { "1": 2 },
-          "3": { "1": 3 },
-          "5": { "1": 4, "2": 2 },
-          "7": { "1": 4, "2": 3 },
-          "9": { "1": 4, "2": 3, "3": 2 },
-          "11": { "1": 4, "2": 3, "3": 3 },
-          "13": { "1": 4, "2": 3, "3": 3, "4": 1 },
-          "15": { "1": 4, "2": 3, "3": 3, "4": 2 },
-          "17": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 1 },
-          "19": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2 }
+          "1": {
+            "1": 2
+          },
+          "3": {
+            "1": 3
+          },
+          "5": {
+            "1": 4,
+            "2": 2
+          },
+          "7": {
+            "1": 4,
+            "2": 3
+          },
+          "9": {
+            "1": 4,
+            "2": 3,
+            "3": 2
+          },
+          "11": {
+            "1": 4,
+            "2": 3,
+            "3": 3
+          },
+          "13": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 1
+          },
+          "15": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 2
+          },
+          "17": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 1
+          },
+          "19": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2
+          }
         }
       },
       "ritualCasting": false,
@@ -684,9 +1090,31 @@
     "levelFeatures": {
       "1": [
         {
+          "id": "paladin_class_skills",
+          "name": "Skill Proficiencies",
+          "description": "Choose 2 skills from your Paladin list.",
+          "kind": "selection",
+          "selection": {
+            "id": "paladin_class_skills",
+            "prompt": "Choose 2 skills",
+            "count": 2,
+            "optionsSource": {
+              "type": "skillsFrom",
+              "skills": [
+                "athletics",
+                "insight",
+                "intimidation",
+                "medicine",
+                "persuasion",
+                "religion"
+              ]
+            }
+          }
+        },
+        {
           "id": "lay_on_hands",
           "name": "Lay on Hands",
-          "description": "You have a pool of healing power that replenishes when you finish a Long Rest. As a Bonus Action, you can touch a creature and draw from the pool to restore Hit Points equal to the amount you spend (maximum: 5 × your Paladin level). You can also expend 5 points to remove the Poisoned condition. Spend from the pool below; v1 has no targeted-heal prompt.",
+          "description": "You have a pool of healing power that replenishes when you finish a Long Rest. As a Bonus Action, you can touch a creature and draw from the pool to restore Hit Points equal to the amount you spend (maximum: 5 \u00d7 your Paladin level). You can also expend 5 points to remove the Poisoned condition. Spend from the pool below; v1 has no targeted-heal prompt.",
           "actionCost": "bonusAction",
           "kind": "active",
           "resource": {
@@ -694,10 +1122,26 @@
             "name": "Lay on Hands Pool",
             "max": {
               "byClassLevel": {
-                "1": 5, "2": 10, "3": 15, "4": 20, "5": 25,
-                "6": 30, "7": 35, "8": 40, "9": 45, "10": 50,
-                "11": 55, "12": 60, "13": 65, "14": 70, "15": 75,
-                "16": 80, "17": 85, "18": 90, "19": 95, "20": 100
+                "1": 5,
+                "2": 10,
+                "3": 15,
+                "4": 20,
+                "5": 25,
+                "6": 30,
+                "7": 35,
+                "8": 40,
+                "9": 45,
+                "10": 50,
+                "11": 55,
+                "12": 60,
+                "13": 65,
+                "14": 70,
+                "15": 75,
+                "16": 80,
+                "17": 85,
+                "18": 90,
+                "19": 95,
+                "20": 100
               }
             },
             "refreshOn": "longRest",
@@ -718,8 +1162,15 @@
           "selection": {
             "id": "weapon_mastery",
             "prompt": "Choose 2 weapons whose Mastery property you can use",
-            "count": { "byClassLevel": { "1": 2 } },
-            "optionsSource": { "type": "weapons", "proficientOnly": true }
+            "count": {
+              "byClassLevel": {
+                "1": 2
+              }
+            },
+            "optionsSource": {
+              "type": "weapons",
+              "proficientOnly": true
+            }
           }
         }
       ],
@@ -765,7 +1216,12 @@
             "name": "Divine Smite",
             "trigger": {
               "type": "onAttackHit",
-              "filter": { "type": "weaponLacksProperty", "properties": ["ammunition"] }
+              "filter": {
+                "type": "weaponLacksProperty",
+                "properties": [
+                  "ammunition"
+                ]
+              }
             },
             "effect": {
               "type": "addSlotScaledDamageDice",
@@ -773,9 +1229,15 @@
               "extraDicePerSlotLevel": "1d8",
               "damageType": "radiant"
             },
-            "lifecycle": { "type": "oneShot" },
+            "lifecycle": {
+              "type": "oneShot"
+            },
             "activation": "optIn",
-            "cost": { "type": "spellSlot", "minLevel": 1, "maxLevel": 5 }
+            "cost": {
+              "type": "spellSlot",
+              "minLevel": 1,
+              "maxLevel": 5
+            }
           }
         }
       ],
@@ -788,9 +1250,16 @@
           "resource": {
             "id": "paladin_channel_divinity",
             "name": "Channel Divinity",
-            "max": { "byClassLevel": { "3": 2, "11": 3 } },
+            "max": {
+              "byClassLevel": {
+                "3": 2,
+                "11": 3
+              }
+            },
             "refreshOn": "shortRest",
-            "refreshAmount": { "fixed": 1 }
+            "refreshAmount": {
+              "fixed": 1
+            }
           }
         }
       ],
@@ -804,7 +1273,10 @@
             "id": "paladin_asi_4",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -826,7 +1298,7 @@
         {
           "id": "aura_of_protection",
           "name": "Aura of Protection",
-          "description": "You and allies within 10 feet of you gain a bonus to saving throws equal to your Charisma modifier (minimum +1) while you are conscious. (Mechanical save bonus not yet applied automatically — add it to rolls manually.)",
+          "description": "You and allies within 10 feet of you gain a bonus to saving throws equal to your Charisma modifier (minimum +1) while you are conscious. (Mechanical save bonus not yet applied automatically \u2014 add it to rolls manually.)",
           "kind": "passive"
         }
       ],
@@ -840,7 +1312,10 @@
             "id": "paladin_asi_8",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -856,7 +1331,7 @@
         {
           "id": "radiant_strikes",
           "name": "Radiant Strikes",
-          "description": "Your strikes carry divine power: when you hit with a melee weapon or an Unarmed Strike, the target takes an extra 1d8 Radiant damage. (Not yet folded into damage rolls automatically — add 1d8 radiant manually.)",
+          "description": "Your strikes carry divine power: when you hit with a melee weapon or an Unarmed Strike, the target takes an extra 1d8 Radiant damage. (Not yet folded into damage rolls automatically \u2014 add 1d8 radiant manually.)",
           "kind": "passive"
         }
       ],
@@ -870,7 +1345,10 @@
             "id": "paladin_asi_12",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -892,7 +1370,10 @@
             "id": "paladin_asi_16",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -908,7 +1389,7 @@
         {
           "id": "paladin_epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat or another feat of your choice. (Feat catalog not yet authored — record your pick in notes.)",
+          "description": "You gain an Epic Boon feat or another feat of your choice. (Feat catalog not yet authored \u2014 record your pick in notes.)",
           "kind": "passive"
         }
       ]
@@ -921,37 +1402,154 @@
     "name": "Cleric",
     "hitDie": 8,
     "primaryAbility": "wisdom",
-    "savingThrows": ["wisdom", "charisma"],
-    "armorProficiencies": ["light", "medium", "shield"],
-    "weaponProficiencies": ["simple"],
+    "savingThrows": [
+      "wisdom",
+      "charisma"
+    ],
+    "armorProficiencies": [
+      "light",
+      "medium",
+      "shield"
+    ],
+    "weaponProficiencies": [
+      "simple"
+    ],
     "subclassLevel": 3,
     "spellcasting": {
       "ability": "wisdom",
       "preparedRule": "preparedFromAll",
       "cantripsKnown": {
-        "byClassLevel": { "1": 3, "4": 4, "10": 5 }
+        "byClassLevel": {
+          "1": 3,
+          "4": 4,
+          "10": 5
+        }
       },
       "spellsKnown": null,
       "slotTable": {
         "kind": "fullCaster",
         "table": {
-          "1": { "1": 2 },
-          "2": { "1": 3 },
-          "3": { "1": 4, "2": 2 },
-          "4": { "1": 4, "2": 3 },
-          "5": { "1": 4, "2": 3, "3": 2 },
-          "6": { "1": 4, "2": 3, "3": 3 },
-          "7": { "1": 4, "2": 3, "3": 3, "4": 1 },
-          "8": { "1": 4, "2": 3, "3": 3, "4": 2 },
-          "9": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 1 },
-          "10": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2 },
-          "11": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1 },
-          "13": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1 },
-          "15": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1, "8": 1 },
-          "17": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1, "8": 1, "9": 1 },
-          "18": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 1, "7": 1, "8": 1, "9": 1 },
-          "19": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 2, "7": 1, "8": 1, "9": 1 },
-          "20": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 2, "7": 2, "8": 1, "9": 1 }
+          "1": {
+            "1": 2
+          },
+          "2": {
+            "1": 3
+          },
+          "3": {
+            "1": 4,
+            "2": 2
+          },
+          "4": {
+            "1": 4,
+            "2": 3
+          },
+          "5": {
+            "1": 4,
+            "2": 3,
+            "3": 2
+          },
+          "6": {
+            "1": 4,
+            "2": 3,
+            "3": 3
+          },
+          "7": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 1
+          },
+          "8": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 2
+          },
+          "9": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 1
+          },
+          "10": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2
+          },
+          "11": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1
+          },
+          "13": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1
+          },
+          "15": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1,
+            "8": 1
+          },
+          "17": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "18": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "19": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 2,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "20": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 2,
+            "7": 2,
+            "8": 1,
+            "9": 1
+          }
         }
       },
       "ritualCasting": true,
@@ -959,6 +1557,27 @@
     },
     "levelFeatures": {
       "1": [
+        {
+          "id": "cleric_class_skills",
+          "name": "Skill Proficiencies",
+          "description": "Choose 2 skills from your Cleric list.",
+          "kind": "selection",
+          "selection": {
+            "id": "cleric_class_skills",
+            "prompt": "Choose 2 skills",
+            "count": 2,
+            "optionsSource": {
+              "type": "skillsFrom",
+              "skills": [
+                "history",
+                "insight",
+                "medicine",
+                "persuasion",
+                "religion"
+              ]
+            }
+          }
+        },
         {
           "id": "cleric_spellcasting",
           "name": "Spellcasting",
@@ -996,16 +1615,22 @@
         {
           "id": "channel_divinity",
           "name": "Channel Divinity",
-          "description": "You can channel divine energy directly from the Outer Planes. Divine Spark (Magic action): point your Holy Symbol at a creature within 30 feet — roll 1d8 + your Wisdom modifier and either restore that many Hit Points or force a Constitution save against that much Radiant or Necrotic damage (half on success). The d8 becomes 2d8 at level 7, 3d8 at 13, and 4d8 at 18 — add the extra dice manually for now. Turn Undead (Magic action): each undead within 30 feet must make a Wisdom save or be Frightened and Incapacitated for 1 minute. You regain one expended use on a Short Rest, and all uses on a Long Rest.",
+          "description": "You can channel divine energy directly from the Outer Planes. Divine Spark (Magic action): point your Holy Symbol at a creature within 30 feet \u2014 roll 1d8 + your Wisdom modifier and either restore that many Hit Points or force a Constitution save against that much Radiant or Necrotic damage (half on success). The d8 becomes 2d8 at level 7, 3d8 at 13, and 4d8 at 18 \u2014 add the extra dice manually for now. Turn Undead (Magic action): each undead within 30 feet must make a Wisdom save or be Frightened and Incapacitated for 1 minute. You regain one expended use on a Short Rest, and all uses on a Long Rest.",
           "kind": "active",
           "resource": {
             "id": "cleric_channel_divinity",
             "name": "Channel Divinity",
             "max": {
-              "byClassLevel": { "2": 2, "6": 3, "18": 4 }
+              "byClassLevel": {
+                "2": 2,
+                "6": 3,
+                "18": 4
+              }
             },
             "refreshOn": "shortRest",
-            "refreshAmount": { "fixed": 1 }
+            "refreshAmount": {
+              "fixed": 1
+            }
           },
           "actionRecipes": [
             {
@@ -1051,7 +1676,10 @@
             "id": "cleric_asi_4",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -1059,7 +1687,7 @@
         {
           "id": "sear_undead",
           "name": "Sear Undead",
-          "description": "Whenever you use Turn Undead, you can roll a number of d8s equal to your Wisdom modifier (minimum of one die) — each undead that fails its save takes Radiant damage equal to the roll's total. This damage doesn't end the turn effect.",
+          "description": "Whenever you use Turn Undead, you can roll a number of d8s equal to your Wisdom modifier (minimum of one die) \u2014 each undead that fails its save takes Radiant damage equal to the roll's total. This damage doesn't end the turn effect.",
           "kind": "passive"
         }
       ],
@@ -1101,7 +1729,10 @@
             "id": "cleric_asi_8",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -1130,7 +1761,10 @@
             "id": "cleric_asi_12",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -1138,7 +1772,7 @@
         {
           "id": "improved_blessed_strikes",
           "name": "Improved Blessed Strikes",
-          "description": "Your Blessed Strikes option improves. Divine Strike: the extra damage increases to 2d8. Potent Spellcasting: when you cast a Cleric cantrip and deal damage with it, you can give vitality to yourself or another creature within 60 feet — temporary Hit Points equal to twice your Wisdom modifier.",
+          "description": "Your Blessed Strikes option improves. Divine Strike: the extra damage increases to 2d8. Potent Spellcasting: when you cast a Cleric cantrip and deal damage with it, you can give vitality to yourself or another creature within 60 feet \u2014 temporary Hit Points equal to twice your Wisdom modifier.",
           "kind": "passive"
         }
       ],
@@ -1152,7 +1786,10 @@
             "id": "cleric_asi_16",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -1160,7 +1797,7 @@
         {
           "id": "cleric_epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat or another feat of your choice. (Feat catalog not yet authored — record your pick in notes.)",
+          "description": "You gain an Epic Boon feat or another feat of your choice. (Feat catalog not yet authored \u2014 record your pick in notes.)",
           "kind": "passive"
         }
       ],
@@ -1189,7 +1826,7 @@
             {
               "id": "life_domain_spells",
               "name": "Life Domain Spells",
-              "description": "You always have certain spells prepared: Aid, Bless, Cure Wounds, Lesser Restoration, Mass Healing Word, Revivify, and more as you gain levels. (Only some of these are in the bundled spell list so far — add the rest from the picker when authored.)",
+              "description": "You always have certain spells prepared: Aid, Bless, Cure Wounds, Lesser Restoration, Mass Healing Word, Revivify, and more as you gain levels. (Only some of these are in the bundled spell list so far \u2014 add the rest from the picker when authored.)",
               "kind": "passive"
             },
             {
@@ -1211,7 +1848,7 @@
             {
               "id": "supreme_healing",
               "name": "Supreme Healing",
-              "description": "When you would normally roll one or more dice to restore Hit Points to a creature with a spell or Channel Divinity, don't roll — use the highest number possible for each die.",
+              "description": "When you would normally roll one or more dice to restore Hit Points to a creature with a spell or Channel Divinity, don't roll \u2014 use the highest number possible for each die.",
               "kind": "passive"
             }
           ]

@@ -201,4 +201,79 @@ struct AbilityScoreMethodTests {
         ]
         #expect(draft.isComplete)
     }
+
+    // MARK: - Background ability bonus distribution (2024)
+
+    private let soldierOptions: [Ability] = [.strength, .dexterity, .constitution]
+
+    @Test func backgroundBonusFocusedSpreadIsValid() {
+        var draft = CharacterDraft()
+        draft.backgroundAbilityBonuses = [.strength: 2, .constitution: 1]
+        #expect(draft.isValidBackgroundBonus(options: soldierOptions))
+    }
+
+    @Test func backgroundBonusBalancedSpreadIsValid() {
+        var draft = CharacterDraft()
+        draft.backgroundAbilityBonuses = [.strength: 1, .dexterity: 1, .constitution: 1]
+        #expect(draft.isValidBackgroundBonus(options: soldierOptions))
+    }
+
+    @Test func emptyBonusIsInvalid() {
+        let draft = CharacterDraft()
+        #expect(!draft.isValidBackgroundBonus(options: soldierOptions))
+    }
+
+    @Test func bonusOutsideOptionsIsInvalid() {
+        var draft = CharacterDraft()
+        // Intelligence isn't one of the Soldier's three options.
+        draft.backgroundAbilityBonuses = [.strength: 2, .intelligence: 1]
+        #expect(!draft.isValidBackgroundBonus(options: soldierOptions))
+    }
+
+    // MARK: - Class skill choice
+
+    private let rogueOptions: [Skill] = [
+        .acrobatics, .athletics, .deception, .insight, .intimidation,
+        .investigation, .perception, .persuasion, .sleightOfHand, .stealth
+    ]
+
+    @Test func classSkillChoiceValidWithExactDistinctPicks() {
+        var draft = CharacterDraft()
+        draft.classSkillChoices = [.acrobatics, .deception, .perception, .stealth]
+        #expect(draft.isValidClassSkillChoice(count: 4, options: rogueOptions))
+    }
+
+    @Test func classSkillChoiceRejectsWrongCountDuplicatesAndOutsiders() {
+        var draft = CharacterDraft()
+        // Too few.
+        draft.classSkillChoices = [.acrobatics, .deception, .perception]
+        #expect(!draft.isValidClassSkillChoice(count: 4, options: rogueOptions))
+        // Duplicate (4 entries, 3 distinct).
+        draft.classSkillChoices = [.acrobatics, .acrobatics, .perception, .stealth]
+        #expect(!draft.isValidClassSkillChoice(count: 4, options: rogueOptions))
+        // A skill not on the list (Arcana isn't a rogue option).
+        draft.classSkillChoices = [.acrobatics, .deception, .perception, .arcana]
+        #expect(!draft.isValidClassSkillChoice(count: 4, options: rogueOptions))
+    }
+
+    @Test func emptyClassSkillChoiceIsTriviallyValid() {
+        let draft = CharacterDraft()
+        #expect(draft.isValidClassSkillChoice(count: 0, options: []))
+    }
+
+    @Test func incompleteOrIllegalSpreadsAreInvalid() {
+        var draft = CharacterDraft()
+        // Only the +2 chosen.
+        draft.backgroundAbilityBonuses = [.strength: 2]
+        #expect(!draft.isValidBackgroundBonus(options: soldierOptions))
+        // Two +2s.
+        draft.backgroundAbilityBonuses = [.strength: 2, .dexterity: 2]
+        #expect(!draft.isValidBackgroundBonus(options: soldierOptions))
+        // Only two +1s (not all three).
+        draft.backgroundAbilityBonuses = [.strength: 1, .dexterity: 1]
+        #expect(!draft.isValidBackgroundBonus(options: soldierOptions))
+        // A +3 somewhere.
+        draft.backgroundAbilityBonuses = [.strength: 3]
+        #expect(!draft.isValidBackgroundBonus(options: soldierOptions))
+    }
 }

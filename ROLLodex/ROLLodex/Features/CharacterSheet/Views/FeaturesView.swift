@@ -293,6 +293,14 @@ struct SelectionSheet: View {
                 max: maxPicks,
                 proficientOnly: proficientOnly
             )
+        case .skillsFrom(let options):
+            SkillSelectionList(
+                character: $character,
+                selectionID: selection.id,
+                max: maxPicks,
+                proficientOnly: false,
+                explicitOptions: options
+            )
         }
     }
 
@@ -667,6 +675,10 @@ private struct SkillSelectionList: View {
     let selectionID: String
     let max: Int
     let proficientOnly: Bool
+    /// When set (`.skillsFrom`), the picker offers exactly these skills (a
+    /// class's level-1 list). Nil falls back to the full list / proficient
+    /// filter (`.skills`, used by Expertise).
+    var explicitOptions: [Skill]? = nil
 
     var body: some View {
         ScrollView {
@@ -688,11 +700,15 @@ private struct SkillSelectionList: View {
     }
 
     private var eligibleSkills: [Skill] {
+        if let explicitOptions {
+            return explicitOptions.sorted { $0.displayName < $1.displayName }
+        }
         let all = Skill.allCases.sorted { $0.displayName < $1.displayName }
         guard proficientOnly else { return all }
+        // Resolve via the calculator so a skill made proficient by a class
+        // skill-choice (not stored in `proficiencies`) is still expertise-able.
         return all.filter { skill in
-            let level = character.proficiencies[.skill(skill)] ?? .none
-            return level == .proficient || level == .expertise
+            CharacterCalculator.skillProficiencyLevel(character: character, skill: skill) != .none
         }
     }
 
@@ -716,8 +732,23 @@ private struct SkillSelectionList: View {
         character.featureSelections[selectionID] = current
     }
 
+    /// For a `.skillsFrom` grant: a skill the character already has from
+    /// ANOTHER source (background, or a different class-skill selection)
+    /// shouldn't be pickable here — granting it again would waste the choice.
+    /// Only meaningful when offering an explicit options list.
+    private func alreadyHaveElsewhere(_ skill: Skill) -> Bool {
+        guard explicitOptions != nil else { return false }
+        if (character.proficiencies[.skill(skill)] ?? .none) != .none { return true }
+        return character.featureSelections.contains { key, values in
+            key != selectionID
+                && key.contains(FeatureIDs.classSkillsMarker)
+                && values.contains(skill.rawValue)
+        }
+    }
+
     @ViewBuilder
     private func skillRow(_ skill: Skill) -> some View {
+        let locked = alreadyHaveElsewhere(skill)
         Button {
             togglePick(skill)
         } label: {
@@ -733,12 +764,19 @@ private struct SkillSelectionList: View {
                         .foregroundStyle(.tertiary)
                 }
                 Spacer()
+                if locked {
+                    Text("Already proficient")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
+        .disabled(locked)
+        .opacity(locked ? 0.5 : 1)
     }
 }
 

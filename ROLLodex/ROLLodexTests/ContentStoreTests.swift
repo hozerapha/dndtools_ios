@@ -15,6 +15,19 @@ struct ContentStoreTests {
         #expect(fighter?.armorProficiencies.contains(.heavy) == true)
         #expect(fighter?.weaponProficiencies.contains(.martial) == true)
         #expect(fighter?.masteryCount == 3)
+        // 2024 class skill choice (modeled as an L1 .skillsFrom selection).
+        #expect(fighter?.skillProficiencySelection?.selection.count.value(classLevel: 1, characterLevel: 1) == 2)
+    }
+
+    @Test func rogueSkillChoiceIsChooseFourOfTen() {
+        let store = ContentStore()
+        let sel = store.classDefinition(id: "rogue")?.skillProficiencySelection
+        #expect(sel?.selection.count.value(classLevel: 1, characterLevel: 1) == 4)
+        #expect(sel?.options.count == 10)
+        #expect(sel?.options.contains(.stealth) == true)
+        #expect(sel?.options.contains(.sleightOfHand) == true)
+        // Selection id carries the marker the calculator resolves on.
+        #expect(sel?.selection.id.contains("class_skills") == true)
     }
 
     @Test func loadsWizardClass() {
@@ -40,6 +53,14 @@ struct ContentStoreTests {
         #expect(store.backgroundDefinition(id: "soldier")?.name == "Soldier")
         #expect(store.backgroundDefinition(id: "sage")?.skillProficiencies.contains(.arcana) == true)
         #expect(store.backgroundDefinition(id: "acolyte")?.feat == "magic_initiate_cleric")
+        // Criminal completes the SRD's 4 backgrounds.
+        let criminal = store.backgroundDefinition(id: "criminal")
+        #expect(criminal?.feat == "alert")
+        #expect(criminal?.skillProficiencies.contains(.stealth) == true)
+        #expect(criminal?.skillProficiencies.contains(.sleightOfHand) == true)
+        // 2024 backgrounds list three boostable abilities (player distributes).
+        #expect(criminal?.abilityScoreOptions == [.dexterity, .constitution, .intelligence])
+        #expect(store.backgroundDefinition(id: "soldier")?.abilityScoreOptions.count == 3)
     }
 
     @Test func loadsWeapons() {

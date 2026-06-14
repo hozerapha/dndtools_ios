@@ -85,6 +85,19 @@ struct ClassDefinition: Codable, Identifiable, Equatable {
         subclassLevel       = try c.decodeIfPresent(Int.self, forKey: .subclassLevel)
     }
 
+    /// The level-1 skill-proficiency selection this class grants (Rogue: 4 of
+    /// 10; most: 2), if any. Modeled as a normal feature selection with a
+    /// `.skillsFrom` source so the Features tab renders + re-edits it like any
+    /// other choice. Returns the selection plus its resolved option list.
+    var skillProficiencySelection: (selection: FeatureSelection, options: [Skill])? {
+        for feature in levelFeatures[1] ?? [] {
+            if let sel = feature.selection, case .skillsFrom(let options) = sel.optionsSource {
+                return (sel, options)
+            }
+        }
+        return nil
+    }
+
     /// Convention-key for storing a character's chosen subclass under
     /// `Character.featureSelections`. Centralized so the picker, the
     /// aggregator, and content authors agree on the spelling.

@@ -17,39 +17,45 @@ enum CharacterCalculator {
         character: Character,
         skill: Skill
     ) -> Int {
-        let ability = skill.ability
-        let score = character.abilityScores[ability] ?? 10
-        let abilityMod = abilityModifier(score: score)
-        let baseProfLevel = character.proficiencies[.skill(skill)] ?? .none
+        let abilityMod = abilityModifier(score: character.abilityScores[skill.ability] ?? 10)
         let profBonus = proficiencyBonus(level: character.level)
-
-        let profLevel: ProficiencyLevel
-        switch baseProfLevel {
-        case .none:
-            profLevel = hasExpertise(in: skill, character: character) ? .expertise : .none
-        case .proficient:
-            profLevel = hasExpertise(in: skill, character: character) ? .expertise : .proficient
-        case .expertise:
-            profLevel = .expertise
-        }
-
-        switch profLevel {
-        case .none:
-            return abilityMod
-        case .proficient:
-            return abilityMod + profBonus
-        case .expertise:
-            return abilityMod + (profBonus * 2)
+        switch skillProficiencyLevel(character: character, skill: skill) {
+        case .none:       return abilityMod
+        case .proficient: return abilityMod + profBonus
+        case .expertise:  return abilityMod + (profBonus * 2)
         }
     }
 
-    /// True when any class feature selection whose ID contains "expertise"
-    /// lists this skill as one of its picks. This convention lets Rogues,
-    /// Bards, and any future class use the same mechanism without hard-coding
-    /// feature IDs.
+    /// The character's effective proficiency in a skill, resolved from every
+    /// source: stored proficiencies (background grants), class skill-choice
+    /// selections (`.skillsFrom`, granting proficiency), and expertise
+    /// selections (upgrading to expertise). Content-free — it reads
+    /// `featureSelections` by marker, the same trick that makes these picks
+    /// re-editable anywhere (creation, Features tab) with no extra wiring.
+    static func skillProficiencyLevel(character: Character, skill: Skill) -> ProficiencyLevel {
+        let stored = character.proficiencies[.skill(skill)] ?? .none
+        let proficient = stored == .proficient || stored == .expertise
+            || hasClassSkillProficiency(in: skill, character: character)
+        guard proficient else { return .none }
+        let expertise = stored == .expertise || hasExpertise(in: skill, character: character)
+        return expertise ? .expertise : .proficient
+    }
+
+    /// True when an expertise selection (id containing `expertise`) lists this
+    /// skill. The convention lets any class use the mechanism without
+    /// hard-coding feature IDs.
     private static func hasExpertise(in skill: Skill, character: Character) -> Bool {
         character.featureSelections.contains { key, values in
             key.contains(FeatureIDs.expertiseMarker) && values.contains(skill.rawValue)
+        }
+    }
+
+    /// True when a class skill-choice selection (id containing `class_skills`)
+    /// lists this skill — granting base proficiency, resolved live so the pick
+    /// is editable from creation or the Features tab interchangeably.
+    private static func hasClassSkillProficiency(in skill: Skill, character: Character) -> Bool {
+        character.featureSelections.contains { key, values in
+            key.contains(FeatureIDs.classSkillsMarker) && values.contains(skill.rawValue)
         }
     }
 

@@ -75,13 +75,17 @@ enum SelectionSource: Codable, Equatable {
     /// restricts to skills the character already has proficiency in (used by
     /// Expertise and similar features).
     case skills(proficientOnly: Bool)
+    /// Pick from a SPECIFIC list of skills, GRANTING proficiency in the picks
+    /// (a class's level-1 "choose N skills" grant). Distinct from `.skills`,
+    /// which picks from skills already proficient (Expertise).
+    case skillsFrom(options: [Skill])
 
     private enum CodingKeys: String, CodingKey {
-        case type, proficientOnly, options, parentClassID, perAbilityMax
+        case type, proficientOnly, options, parentClassID, perAbilityMax, skills
     }
 
     private enum Kind: String, Codable {
-        case weapons, fixedOptions, subclasses, abilityScoreIncrease, skills
+        case weapons, fixedOptions, subclasses, abilityScoreIncrease, skills, skillsFrom
     }
 
     init(from decoder: Decoder) throws {
@@ -102,6 +106,9 @@ enum SelectionSource: Codable, Equatable {
         case .skills:
             let proficient = try c.decodeIfPresent(Bool.self, forKey: .proficientOnly) ?? false
             self = .skills(proficientOnly: proficient)
+        case .skillsFrom:
+            let options = try c.decode([Skill].self, forKey: .skills)
+            self = .skillsFrom(options: options)
         }
     }
 
@@ -123,6 +130,9 @@ enum SelectionSource: Codable, Equatable {
         case .skills(let proficient):
             try c.encode(Kind.skills, forKey: .type)
             try c.encode(proficient, forKey: .proficientOnly)
+        case .skillsFrom(let options):
+            try c.encode(Kind.skillsFrom, forKey: .type)
+            try c.encode(options, forKey: .skills)
         }
     }
 }

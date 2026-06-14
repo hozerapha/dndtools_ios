@@ -36,7 +36,9 @@ private struct SkillRow: View {
 
     var body: some View {
         let mod = CharacterCalculator.skillModifier(character: character, skill: skill)
-        let level = character.proficiencies[.skill(skill)] ?? .none
+        // Resolved level (background + class-skill grants + expertise), so the
+        // dot reflects class skills picked at creation or in the Features tab.
+        let level = CharacterCalculator.skillProficiencyLevel(character: character, skill: skill)
 
         HStack(spacing: 8) {
             ProficiencyDot(level: level)

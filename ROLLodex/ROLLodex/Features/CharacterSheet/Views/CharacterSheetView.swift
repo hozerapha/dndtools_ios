@@ -834,7 +834,7 @@ struct CharacterSheetView: View {
     private var toolProfs: [String] {
         character.proficiencies.compactMap { key, level in
             guard level != .none, case .tool(let name) = key else { return nil }
-            return name
+            return ToolNames.display(name)
         }.sorted()
     }
 
