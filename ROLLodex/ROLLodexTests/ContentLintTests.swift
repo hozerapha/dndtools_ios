@@ -124,6 +124,11 @@ struct ContentLintTests {
             for dice in diceStrings(in: entry.feature.actionRecipes) {
                 assertParses(dice, context: entry.context)
             }
+            // Granted-action options can carry their own rolls.
+            let grantedRecipes = entry.feature.grantedActions.compactMap(\.recipe)
+            for dice in diceStrings(in: grantedRecipes) {
+                assertParses(dice, context: "\(entry.context) granted action")
+            }
             if let resource = entry.feature.resource {
                 lintResource(resource, grantLevel: entry.grantLevel, context: entry.context)
             }

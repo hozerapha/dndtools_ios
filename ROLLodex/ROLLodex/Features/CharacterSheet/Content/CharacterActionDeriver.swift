@@ -17,22 +17,37 @@ struct ActionRow: Identifiable, Equatable {
     /// `TriggeredEffect` on/off (Barbarian Rage). The handler reads this
     /// to skip the dice handoff and call `Character.toggleFeatureEffect`.
     let toggleEffect: ToggleEffectContext?
+    /// Display fields for the economy list, mirroring `GrantedAction` so
+    /// interactive rows render with the same shape as granted options:
+    /// a clean title, a gray subtitle (the roll/cost summary), and a rules
+    /// `detail` behind an info disclosure. `title` falls back to the action
+    /// label (used for the dice-history handoff) when not set.
+    let title: String?
+    let subtitle: String?
+    let detail: String?
 
     init(
         action: ResolvedAction,
         badge: String?,
         isExhausted: Bool = false,
         castFromItem: ItemSpellCastContext? = nil,
-        toggleEffect: ToggleEffectContext? = nil
+        toggleEffect: ToggleEffectContext? = nil,
+        title: String? = nil,
+        subtitle: String? = nil,
+        detail: String? = nil
     ) {
         self.action = action
         self.badge = badge
         self.isExhausted = isExhausted
         self.castFromItem = castFromItem
         self.toggleEffect = toggleEffect
+        self.title = title
+        self.subtitle = subtitle
+        self.detail = detail
     }
 
     var id: String { action.id }
+    var displayTitle: String { title ?? action.label }
 }
 
 /// Routing payload for a "toggle a feature effect" row. The sheet uses this
@@ -323,7 +338,10 @@ enum CharacterActionDeriver {
                             roundsRemaining: rounds,
                             resourceID: feature.resource?.id,
                             isActive: isActive
-                        )
+                        ),
+                        title: isActive ? "End \(feature.name)" : feature.name,
+                        subtitle: isActive ? "Active" : nil,
+                        detail: feature.description
                     ))
                     continue
                 }
@@ -340,7 +358,10 @@ enum CharacterActionDeriver {
                         resourceCost: cost,
                         actionCost: feature.actionCost
                     )
-                    rows.append(ActionRow(action: action, badge: badge, isExhausted: isExhausted))
+                    rows.append(ActionRow(
+                        action: action, badge: badge, isExhausted: isExhausted,
+                        title: feature.name, detail: feature.description
+                    ))
                     continue
                 }
 
@@ -364,7 +385,14 @@ enum CharacterActionDeriver {
                         resourceCost: cost,
                         actionCost: feature.actionCost
                     )
-                    rows.append(ActionRow(action: labeled, badge: badge, isExhausted: isExhausted))
+                    // Clean title (feature name) + gray subtitle (the roll
+                    // summary, when distinct) + rules detail — matches the
+                    // granted-option row shape for a cohesive list.
+                    let summary = resolved.label == feature.name ? nil : resolved.label
+                    rows.append(ActionRow(
+                        action: labeled, badge: badge, isExhausted: isExhausted,
+                        title: feature.name, subtitle: summary, detail: feature.description
+                    ))
                 }
             }
         }
@@ -383,7 +411,10 @@ enum CharacterActionDeriver {
                         formula: resolved.formula,
                         description: resolved.description
                     )
-                    rows.append(ActionRow(action: labeled, badge: nil))
+                    rows.append(ActionRow(
+                        action: labeled, badge: nil,
+                        title: trait.name, detail: trait.description
+                    ))
                 }
             }
         }
@@ -457,7 +488,10 @@ enum CharacterActionDeriver {
                         action: action,
                         badge: badge,
                         isExhausted: isExhausted,
-                        castFromItem: context
+                        castFromItem: context,
+                        title: use.name,
+                        subtitle: costSubtitle(amount: use.cost.amount, extraPerLevel: extra),
+                        detail: content.itemDescription(forItemID: inv.itemID)
                     ))
 
                 case .actionRecipes(let recipes):
@@ -479,7 +513,10 @@ enum CharacterActionDeriver {
                         rows.append(ActionRow(
                             action: labeled,
                             badge: badge,
-                            isExhausted: isExhausted
+                            isExhausted: isExhausted,
+                            title: use.name,
+                            subtitle: resolved.label == use.name ? nil : resolved.label,
+                            detail: content.itemDescription(forItemID: inv.itemID)
                         ))
                     }
                 }
@@ -496,4 +533,40 @@ enum CharacterActionDeriver {
         }
         return basePart
     }
+
+    // MARK: - Granted actions (feature-conferred turn options)
+
+    /// Every named action option the character's features confer (Cunning
+    /// Action → Dash / Disengage / Hide), flattened and tagged with the
+    /// source feature. The Actions tab groups these by economy so the player
+    /// can see their whole turn — including non-rollable options that never
+    /// appeared before. Resolved through the same feature walk as everything
+    /// else, so subclass grants are included.
+    static func grantedActions(for character: Character, content: ContentStore) -> [GrantedActionRow] {
+        var rows: [GrantedActionRow] = []
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
+                for granted in resolved.feature.grantedActions {
+                    rows.append(GrantedActionRow(
+                        id: "\(resolved.feature.id)_\(granted.name)",
+                        featureName: resolved.feature.name,
+                        action: granted
+                    ))
+                }
+            }
+        }
+        return rows
+    }
+}
+
+/// One flattened granted-action option for the Actions-tab economy view.
+struct GrantedActionRow: Identifiable, Equatable {
+    let id: String
+    let featureName: String
+    let action: GrantedAction
+    var cost: ActionCost { action.cost }
 }

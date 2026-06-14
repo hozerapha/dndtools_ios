@@ -304,7 +304,14 @@ struct CharacterSheetView: View {
                 onAttack: handleWeaponAttack,
                 onDamage: handleStandaloneRoll
             )
-            ActionButtonGrid(sections: actionSections, onTap: handleActionTap)
+            // One cohesive economy-grouped list: interactive feature/item
+            // rows and feature-granted options together, by turn cost.
+            ActionEconomyView(
+                interactiveRows: actionSections.flatMap(\.rows),
+                grantedRows: CharacterActionDeriver.grantedActions(for: character, content: content),
+                onTap: handleActionTap,
+                onRoll: { dispatchRoll($0, mode: .normal) }
+            )
         }
     }
 

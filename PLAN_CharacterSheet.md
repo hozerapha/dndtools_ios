@@ -2214,19 +2214,36 @@ tappable links to the SRD and the CC-BY-4.0 license, and a footer noting "5E
 compatible / not affiliated with or endorsed by Wizards of the Coast." The
 license condition for shipping SRD content is now satisfied.
 
-**17. Feature-granted action options on the Actions tab (next up)**
-Surface what a character's features actually *let them do*, which today is
-invisible: e.g. Rogue's Cunning Action grants Dash / Disengage / Hide as a
-Bonus Action, but the Actions tab only shows the Stealth skill chip. Scope
-(per the 2026-06-13 discussion): NOT a flashy dump of the universal SRD
-action list — keep that minimal (a comma-separated reference at most, or
-omit). The real ask is **character-specific, feature-derived** entries:
-informational rows for the action options a feature confers, grouped by
-economy (Action / Bonus Action / Reaction), with the rule text as a
-tooltip/expandable. Likely needs a content field on features to declare the
-named options they grant (e.g. Cunning Action → [Dash, Disengage, Hide] @
-bonus action) plus a compact info-row renderer on the Actions tab. Drives
-"ease of information," not a reference book.
+**17b. Actions tab unified into one economy-grouped list (2026-06-13).**
+Per follow-up feedback, the separate big-button "Features" grid felt
+incohesive next to the new economy list. `ActionEconomyView` (renamed from
+`GrantedActionsView`) now renders BOTH the interactive feature/item rows
+(Second Wind, Rage toggle, Fast Hands, Cast …, routed through the existing
+`handleActionTap`) AND the granted options, grouped by turn economy
+(Action / Bonus / Reaction / Free / Movement). `ActionButtonGrid.swift` is
+now **dead code** (nothing references it; `SheetCard` lives in
+`CharacterSheetView`) — deletion candidate, left in place per the no-delete
+rule. Weapon attacks keep their bespoke `AttacksView` above the list.
+Future: verbose interactive labels ("Fast Hands: Sleight of Hand +7") could
+be broken into granted-action options like Cunning Action.
+
+**17. ~~Feature-granted action options on the Actions tab~~ — DONE 2026-06-13.**
+New `GrantedAction {name, description?, cost, recipe?}` content type +
+`FeatureDefinition.grantedActions: [GrantedAction]`.
+`CharacterActionDeriver.grantedActions(for:content:)` flattens them across
+the character's features (tagged with the source feature);
+`GrantedActionsView` on the Actions tab renders them grouped by economy
+(Action / Bonus / Reaction / Free / Movement) — rollable options
+(`recipe != nil`) are tappable and dispatch to the dice tab, informational
+ones expand to show the SRD rule on tap. NOT a universal SRD action dump —
+only what the character's features grant. Fixed the root annoyance: Cunning
+Action was hacked as a single `skillCheck: stealth` recipe (hence "I only
+see Stealth"); it now declares Dash / Disengage (info) + Hide (rolls
+Stealth) as bonus-action grants, `surfacesAsAction: false` so it no longer
+mis-renders as a grid button. Uncanny Dodge surfaced as a Reaction. Tests in
+`RogueFeatureTests`; content lint walks granted-action recipe dice.
+**Future:** author granted actions for more classes/features; species traits
+could gain `grantedActions` too (only class features carry them today).
 
 **12. ~~Phase H — homebrew import/export~~ — DONE 2026-06-13**
 - Bundled content keeps `fatalError` (build bug); imported packs go through

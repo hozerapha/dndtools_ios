@@ -285,4 +285,47 @@ struct RogueFeatureTests {
         let f = try JSONDecoder().decode(FeatureDefinition.self, from: json)
         #expect(f.grantsProficiencies == nil)
     }
+
+    // MARK: - Granted actions (feature-conferred turn options)
+
+    @Test func grantedActionDecodesWithAndWithoutRecipe() throws {
+        let json = """
+        [
+          { "name": "Dash", "cost": "bonusAction", "description": "Move again." },
+          { "name": "Hide", "cost": "bonusAction", "recipe": { "type": "skillCheck", "skill": "stealth" } }
+        ]
+        """.data(using: .utf8)!
+        let actions = try JSONDecoder().decode([GrantedAction].self, from: json)
+        #expect(actions.count == 2)
+        #expect(actions[0].recipe == nil)
+        #expect(actions[0].description == "Move again.")
+        #expect(actions[1].recipe == .skillCheck(skill: .stealth))
+    }
+
+    @Test func cunningActionSurfacesAsGrantedBonusOptionsNotAStealthButton() {
+        let store = ContentStore()
+        let rogue = Character(
+            name: "Lazlo", level: 5,
+            speciesID: "human", backgroundID: "criminal",
+            classEntries: [ClassEntry(classID: "rogue", level: 5)],
+            abilityScores: [.dexterity: 16],
+            maxHP: 28
+        )
+        let granted = CharacterActionDeriver.grantedActions(for: rogue, content: store)
+        let names = Set(granted.map(\.action.name))
+        #expect(names.isSuperset(of: ["Dash", "Disengage", "Hide", "Uncanny Dodge"]))
+
+        // Hide rolls Stealth as a Bonus Action; Dash is informational.
+        let hide = granted.first { $0.action.name == "Hide" }
+        #expect(hide?.cost == .bonusAction)
+        #expect(hide?.action.recipe == .skillCheck(skill: .stealth))
+        #expect(granted.first { $0.action.name == "Dash" }?.action.recipe == nil)
+        // Uncanny Dodge is a Reaction.
+        #expect(granted.first { $0.action.name == "Uncanny Dodge" }?.cost == .reaction)
+
+        // Cunning Action no longer mis-renders as a "Stealth" button in the grid.
+        let featureLabels = CharacterActionDeriver.sections(for: rogue, content: store)
+            .first { $0.id == "features" }?.rows.map(\.action.label) ?? []
+        #expect(!featureLabels.contains { $0.contains("Cunning Action") })
+    }
 }

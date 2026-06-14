@@ -46,11 +46,16 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
     /// (Stroke of Luck) — they still own their resource pool, they just
     /// don't get a do-nothing button. Defaults true.
     let surfacesAsAction: Bool
+    /// Named action options this feature confers, shown on the Actions tab
+    /// grouped by economy (Cunning Action → Dash / Disengage / Hide). Each
+    /// may carry its own roll. Empty for features that grant no discrete
+    /// action options.
+    let grantedActions: [GrantedAction]
 
     private enum CodingKeys: String, CodingKey {
         case id, name, description, actionRecipes
         case attunementSlots, resource, grantsProficiencies, kind, selection, actionCost, triggeredEffect
-        case skillCheckMinimum, surfacesAsAction
+        case skillCheckMinimum, surfacesAsAction, grantedActions
     }
 
     init(
@@ -66,7 +71,8 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         actionCost: ActionCost? = nil,
         triggeredEffect: TriggeredEffect? = nil,
         skillCheckMinimum: LevelScaledValue? = nil,
-        surfacesAsAction: Bool = true
+        surfacesAsAction: Bool = true,
+        grantedActions: [GrantedAction] = []
     ) {
         self.id = id
         self.name = name
@@ -81,6 +87,7 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         self.triggeredEffect = triggeredEffect
         self.skillCheckMinimum = skillCheckMinimum
         self.surfacesAsAction = surfacesAsAction
+        self.grantedActions = grantedActions
     }
 
     init(from decoder: Decoder) throws {
@@ -96,6 +103,7 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         triggeredEffect = try c.decodeIfPresent(TriggeredEffect.self, forKey: .triggeredEffect)
         skillCheckMinimum = try c.decodeIfPresent(LevelScaledValue.self, forKey: .skillCheckMinimum)
         surfacesAsAction = try c.decodeIfPresent(Bool.self, forKey: .surfacesAsAction) ?? true
+        grantedActions = try c.decodeIfPresent([GrantedAction].self, forKey: .grantedActions) ?? []
         // Explicit JSON wins; otherwise default to .action when the feature
         // surfaces a tappable recipe, and nil for pure passives.
         if let declared = try c.decodeIfPresent(ActionCost.self, forKey: .actionCost) {

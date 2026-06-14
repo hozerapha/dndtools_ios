@@ -605,12 +605,28 @@
           "id": "cunning_action",
           "name": "Cunning Action",
           "description": "On your turn, you can take one of the following as a Bonus Action: Dash, Disengage, or Hide.",
-          "kind": "active",
+          "kind": "passive",
           "actionCost": "bonusAction",
-          "actionRecipes": [
+          "surfacesAsAction": false,
+          "grantedActions": [
             {
-              "type": "skillCheck",
-              "skill": "stealth"
+              "name": "Dash",
+              "cost": "bonusAction",
+              "description": "Gain extra movement equal to your Speed for the current turn."
+            },
+            {
+              "name": "Disengage",
+              "cost": "bonusAction",
+              "description": "Your movement doesn't provoke Opportunity Attacks for the rest of the turn."
+            },
+            {
+              "name": "Hide",
+              "cost": "bonusAction",
+              "description": "Make a Dexterity (Stealth) check to hide, per the Hide action.",
+              "recipe": {
+                "type": "skillCheck",
+                "skill": "stealth"
+              }
             }
           ]
         }
@@ -667,7 +683,14 @@
           "id": "uncanny_dodge",
           "name": "Uncanny Dodge",
           "description": "When a visible attacker hits you, use your Reaction to halve the damage (round down).",
-          "kind": "passive"
+          "kind": "passive",
+          "grantedActions": [
+            {
+              "name": "Uncanny Dodge",
+              "cost": "reaction",
+              "description": "When an attacker you can see hits you with an attack roll, use your Reaction to halve the attack's damage against you."
+            }
+          ]
         }
       ],
       "6": [
