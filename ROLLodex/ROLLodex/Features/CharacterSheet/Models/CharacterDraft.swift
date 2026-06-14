@@ -41,6 +41,14 @@ struct CharacterDraft {
     var rolledScores: [Int] = []
     /// Editable house formula for `.rolled`; each of the six rolls uses it.
     var rollFormula: String = "4d6kh3"
+    /// The player's chosen distribution of the background's ability bonus
+    /// across its three eligible abilities — `{dex: 2, con: 1}` or
+    /// `{dex: 1, con: 1, int: 1}`. Applied on top of the base scores at
+    /// finalize. Empty until chosen.
+    var backgroundAbilityBonuses: [Ability: Int] = [:]
+    /// Skills the player chose from the class's `skillChoices` list, applied
+    /// as proficiencies at finalize. Empty until chosen.
+    var classSkillChoices: [Skill] = []
 
     static let standardArray = [15, 14, 13, 12, 10, 8]
 
@@ -72,6 +80,28 @@ struct CharacterDraft {
     private func assignedValuesMatch(_ pool: [Int]) -> Bool {
         let assigned = Ability.allCases.compactMap { abilityScores[$0] }
         return assigned.count == 6 && assigned.sorted() == pool.sorted()
+    }
+
+    /// True when the player has picked exactly `count` distinct skills, all
+    /// from `options`. A class with no skill choice (count 0 / empty options)
+    /// is trivially satisfied.
+    func isValidClassSkillChoice(count: Int, options: [Skill]) -> Bool {
+        guard count > 0, !options.isEmpty else { return true }
+        return classSkillChoices.count == count
+            && Set(classSkillChoices).count == count
+            && classSkillChoices.allSatisfy { options.contains($0) }
+    }
+
+    /// True when the chosen background bonuses form a legal 2024 spread over
+    /// `options`: every boosted ability is one of the three options, and the
+    /// nonzero amounts are either {+2, +1} or {+1, +1, +1}. An empty choice
+    /// is invalid (the player must pick).
+    func isValidBackgroundBonus(options: [Ability]) -> Bool {
+        guard backgroundAbilityBonuses.keys.allSatisfy({ options.contains($0) }) else { return false }
+        let amounts = options.map { backgroundAbilityBonuses[$0] ?? 0 }
+        guard amounts.allSatisfy({ (0...2).contains($0) }) else { return false }
+        let nonzero = amounts.filter { $0 > 0 }.sorted(by: >)
+        return nonzero == [2, 1] || nonzero == [1, 1, 1]
     }
 
     // MARK: - Method switching & assignment helpers

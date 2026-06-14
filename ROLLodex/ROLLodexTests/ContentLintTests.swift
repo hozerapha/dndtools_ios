@@ -20,11 +20,12 @@ struct ContentLintTests {
     /// definition — remove it from this list at that point.
     static let knownUnauthoredIDs: Set<String> = [
         // Feats — no feat catalog exists yet.
-        "savage_attacker", "magic_initiate_wizard", "magic_initiate_cleric",
+        "savage_attacker", "magic_initiate_wizard", "magic_initiate_cleric", "alert",
         // Background equipment flavor items.
         "common_clothes", "insignia_of_rank", "gaming_set",
         "bottle_of_ink", "small_knife", "letter_from_colleague",
         "holy_symbol", "prayer_book",
+        "thieves_tools", "crowbar", "pouch", "travelers_clothes",
     ]
 
     // MARK: - Id uniqueness

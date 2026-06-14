@@ -75,6 +75,41 @@ struct CharacterCalculatorTests {
         #expect(mod == 7) // +3 DEX + 6 expertise (prof bonus 3 * 2)
     }
 
+    @Test func classSkillSelectionGrantsProficiencyLive() {
+        // Proficiency comes from a class skill-choice selection (not the
+        // stored proficiencies dict), resolved live by marker.
+        let character = Character(
+            name: "Test", level: 1,
+            speciesID: "human", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "rogue", level: 1)],
+            abilityScores: [.dexterity: 16],
+            maxHP: 8,
+            featureSelections: ["rogue_class_skills": ["stealth", "perception"]]
+        )
+        #expect(CharacterCalculator.skillProficiencyLevel(character: character, skill: .stealth) == .proficient)
+        #expect(CharacterCalculator.skillModifier(character: character, skill: .stealth) == 5) // +3 DEX + 2 PB
+        // A skill not picked stays unproficient.
+        #expect(CharacterCalculator.skillProficiencyLevel(character: character, skill: .acrobatics) == .none)
+    }
+
+    @Test func expertiseUpgradesAClassSkillGrant() {
+        // Class skill grants proficiency; an expertise selection upgrades it
+        // even though it's never in the stored proficiencies dict.
+        let character = Character(
+            name: "Test", level: 5,
+            speciesID: "human", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "rogue", level: 5)],
+            abilityScores: [.dexterity: 16],
+            maxHP: 30,
+            featureSelections: [
+                "rogue_class_skills": ["stealth"],
+                "expertise": ["stealth"]
+            ]
+        )
+        #expect(CharacterCalculator.skillProficiencyLevel(character: character, skill: .stealth) == .expertise)
+        #expect(CharacterCalculator.skillModifier(character: character, skill: .stealth) == 9) // +3 + 6
+    }
+
     @Test func saveBonusWithoutProficiency() {
         let character = Character(
             name: "Test",

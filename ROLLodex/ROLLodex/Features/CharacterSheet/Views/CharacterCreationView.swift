@@ -25,10 +25,14 @@ struct CharacterCreationView: View {
                     }
                 case .classSelection:
                     ClassStep(draft: $draft, contentStore: contentStore) {
+                        path.append(CreationStep.classSkills)
+                    }
+                case .classSkills:
+                    ClassSkillsStep(draft: $draft, contentStore: contentStore) {
                         path.append(CreationStep.abilities)
                     }
                 case .abilities:
-                    AbilitiesStep(draft: $draft) {
+                    AbilitiesStep(draft: $draft, contentStore: contentStore) {
                         path.append(CreationStep.review)
                     }
                 case .review:
@@ -42,7 +46,7 @@ struct CharacterCreationView: View {
 }
 
 private enum CreationStep: Hashable {
-    case species, background, classSelection, abilities, review
+    case species, background, classSelection, classSkills, abilities, review
 }
 
 // MARK: - Name Step
@@ -127,6 +131,11 @@ private struct BackgroundStep: View {
 
     private func backgroundRow(_ background: BackgroundDefinition) -> some View {
         Button {
+            // Switching backgrounds invalidates any prior bonus picks (they
+            // may reference abilities the new background doesn't offer).
+            if draft.backgroundID != background.id {
+                draft.backgroundAbilityBonuses = [:]
+            }
             draft.backgroundID = background.id
             onNext()
         } label: {
@@ -168,6 +177,10 @@ private struct ClassStep: View {
 
     private func classRow(_ classDef: ClassDefinition) -> some View {
         Button {
+            // Changing class invalidates prior skill picks (different list).
+            if draft.classID != classDef.id {
+                draft.classSkillChoices = []
+            }
             draft.classID = classDef.id
             onNext()
         } label: {
@@ -190,10 +203,104 @@ private struct ClassStep: View {
     }
 }
 
+// MARK: - Class Skills Step
+
+/// Pick the class's level-1 skill proficiencies (Rogue: 4 of 10; most: 2).
+/// Background skills are already granted, so those are shown as locked-in to
+/// avoid wasting a class pick on a duplicate.
+private struct ClassSkillsStep: View {
+    @Binding var draft: CharacterDraft
+    let contentStore: ContentStore
+    let onNext: () -> Void
+
+    /// (count, options) for the class's level-1 skill choice, if any.
+    private var choice: (count: Int, options: [Skill])? {
+        guard let sel = contentStore.classDefinition(id: draft.classID)?.skillProficiencySelection
+        else { return nil }
+        let count = sel.selection.count.value(classLevel: 1, characterLevel: 1)
+        return (count, sel.options)
+    }
+
+    private var backgroundSkills: Set<Skill> {
+        Set(contentStore.backgroundDefinition(id: draft.backgroundID)?.skillProficiencies ?? [])
+    }
+
+    var body: some View {
+        Form {
+            if let choice {
+                let remaining = choice.count - draft.classSkillChoices.count
+                Section {
+                    ForEach(choice.options, id: \.self) { skill in
+                        skillRow(skill, count: choice.count)
+                    }
+                } header: {
+                    Text("Choose \(choice.count) skills")
+                } footer: {
+                    Text(remaining > 0
+                         ? "Pick \(remaining) more."
+                         : "All set. Skills already from your background are marked.")
+                }
+            } else {
+                Text("This class grants no skill choice.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .navigationTitle("Skills")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Next", action: onNext)
+                    .disabled(!draft.isValidClassSkillChoice(
+                        count: choice?.count ?? 0, options: choice?.options ?? []))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func skillRow(_ skill: Skill, count: Int) -> some View {
+        let fromBackground = backgroundSkills.contains(skill)
+        let picked = draft.classSkillChoices.contains(skill)
+        let atLimit = draft.classSkillChoices.count >= count
+        Button {
+            toggle(skill, count: count)
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(skill.displayName)
+                    Text(skill.ability.abbreviation)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if fromBackground {
+                    Text("Background")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                } else if picked {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        // Can't pick a background skill (already have it), and can't exceed
+        // the limit without first deselecting.
+        .disabled(fromBackground || (atLimit && !picked))
+        .opacity(fromBackground ? 0.5 : 1)
+    }
+
+    private func toggle(_ skill: Skill, count: Int) {
+        if let i = draft.classSkillChoices.firstIndex(of: skill) {
+            draft.classSkillChoices.remove(at: i)
+        } else if draft.classSkillChoices.count < count {
+            draft.classSkillChoices.append(skill)
+        }
+    }
+}
+
 // MARK: - Abilities Step
 
 private struct AbilitiesStep: View {
     @Binding var draft: CharacterDraft
+    let contentStore: ContentStore
     let onNext: () -> Void
 
     @State private var quickRoll: QuickRollRequest?
@@ -222,12 +329,14 @@ private struct AbilitiesStep: View {
             case .rolled:
                 rolledSections
             }
+
+            backgroundBonusSection
         }
         .navigationTitle("Ability Scores")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Next", action: onNext)
-                    .disabled(!draft.isAbilityAssignmentValid)
+                    .disabled(!draft.isAbilityAssignmentValid || !backgroundBonusValid)
             }
         }
         .overlay {
@@ -279,6 +388,137 @@ private struct AbilitiesStep: View {
             get: { draft.abilityMethod },
             set: { draft.setAbilityMethod($0) }
         )
+    }
+
+    // MARK: Background ability bonus (2024: +2/+1, or +1 to all three)
+
+    private enum BonusMode { case focused, balanced }
+
+    private var backgroundOptions: [Ability] {
+        contentStore.backgroundDefinition(id: draft.backgroundID)?.abilityScoreOptions ?? []
+    }
+
+    /// Empty options (no/unknown background) shouldn't trap the player.
+    private var backgroundBonusValid: Bool {
+        let opts = backgroundOptions
+        return opts.isEmpty || draft.isValidBackgroundBonus(options: opts)
+    }
+
+    private var plusTwoAbility: Ability? {
+        backgroundOptions.first { draft.backgroundAbilityBonuses[$0] == 2 }
+    }
+    private var plusOneAbility: Ability? {
+        backgroundOptions.first { draft.backgroundAbilityBonuses[$0] == 1 }
+    }
+
+    /// Derived from the draft so the draft stays the single source of truth:
+    /// "balanced" only when all three options sit at +1.
+    private var bonusMode: BonusMode {
+        let opts = backgroundOptions
+        if opts.count == 3, opts.allSatisfy({ draft.backgroundAbilityBonuses[$0] == 1 }) {
+            return .balanced
+        }
+        return .focused
+    }
+
+    private var bonusModeBinding: Binding<BonusMode> {
+        Binding(
+            get: { bonusMode },
+            set: { newMode in
+                switch newMode {
+                case .balanced:
+                    draft.backgroundAbilityBonuses = Dictionary(
+                        uniqueKeysWithValues: backgroundOptions.map { ($0, 1) }
+                    )
+                case .focused:
+                    draft.backgroundAbilityBonuses = [:] // clear so the player picks +2 then +1
+                }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private var backgroundBonusSection: some View {
+        let opts = backgroundOptions
+        if !opts.isEmpty {
+            Section {
+                Picker("Spread", selection: bonusModeBinding) {
+                    Text("+2 / +1").tag(BonusMode.focused)
+                    Text("+1 to all three").tag(BonusMode.balanced)
+                }
+                .pickerStyle(.segmented)
+
+                if bonusMode == .focused {
+                    abilityMenu(label: "+2 to", current: plusTwoAbility, choices: opts) { setPlusTwo($0) }
+                    abilityMenu(label: "+1 to", current: plusOneAbility,
+                                choices: opts.filter { $0 != plusTwoAbility }) { setPlusOne($0) }
+                }
+
+                ForEach(opts, id: \.self) { ability in
+                    bonusPreviewRow(ability)
+                }
+            } header: {
+                Text("Background Bonus")
+            } footer: {
+                Text("Your \(backgroundName) background boosts these three abilities. Choose +2 and +1, or +1 to all three.")
+            }
+        }
+    }
+
+    private func abilityMenu(
+        label: String, current: Ability?, choices: [Ability], set: @escaping (Ability) -> Void
+    ) -> some View {
+        Menu {
+            ForEach(choices, id: \.self) { ability in
+                Button(ability.rawValue.capitalized) { set(ability) }
+            }
+        } label: {
+            HStack {
+                Text(label)
+                Spacer()
+                Text(current?.abbreviation ?? "Choose")
+                    .foregroundStyle(current == nil ? .secondary : .primary)
+            }
+        }
+    }
+
+    private func bonusPreviewRow(_ ability: Ability) -> some View {
+        let bonus = draft.backgroundAbilityBonuses[ability] ?? 0
+        return HStack {
+            Text(ability.abbreviation)
+                .font(.subheadline.weight(.semibold))
+                .frame(width: 44, alignment: .leading)
+            Spacer()
+            if let base = draft.abilityScores[ability] {
+                Text("\(base) + \(bonus) = \(min(Character.abilityScoreCeiling, base + bonus))")
+                    .font(.subheadline.monospacedDigit())
+            } else {
+                Text(bonus > 0 ? "+\(bonus)" : "—")
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var backgroundName: String {
+        contentStore.backgroundDefinition(id: draft.backgroundID)?.name ?? "selected"
+    }
+
+    /// Keep exactly one +2 and one +1 across the options as the player picks.
+    private func setPlusTwo(_ ability: Ability) {
+        var b = draft.backgroundAbilityBonuses
+        for key in b.keys where b[key] == 2 { b[key] = nil }
+        if b[ability] == 1 { b[ability] = nil } // can't be both
+        b[ability] = 2
+        draft.backgroundAbilityBonuses = b
+    }
+
+    private func setPlusOne(_ ability: Ability) {
+        var b = draft.backgroundAbilityBonuses
+        for key in b.keys where b[key] == 1 { b[key] = nil }
+        if b[ability] == 2 { b[ability] = nil }
+        b[ability] = 1
+        draft.backgroundAbilityBonuses = b
     }
 
     // MARK: Point buy
@@ -545,9 +785,17 @@ private struct ReviewStep: View {
 
             Section("Ability Scores") {
                 ForEach(Ability.allCases) { ability in
-                    let score = draft.abilityScores[ability, default: 8]
+                    // Final = base + chosen background bonus (clamped to 20),
+                    // matching what finalizeDraft will persist.
+                    let base = draft.abilityScores[ability, default: 8]
+                    let bonus = draft.backgroundAbilityBonuses[ability] ?? 0
+                    let score = min(Character.abilityScoreCeiling, base + bonus)
                     let mod = CharacterCalculator.abilityModifier(score: score)
-                    LabeledContent(ability.abbreviation, value: "\(score) (\(mod >= 0 ? "+" : "")\(mod))")
+                    let suffix = bonus > 0 ? " (incl. +\(bonus) background)" : ""
+                    LabeledContent(
+                        ability.abbreviation,
+                        value: "\(score) (\(mod >= 0 ? "+" : "")\(mod))\(suffix)"
+                    )
                 }
             }
         }

@@ -77,15 +77,26 @@ struct CharacterListView: View {
     private func finalizeDraft(_ draft: CharacterDraft) -> Character {
         var character = draft.toCharacter()
 
-        // Apply background ability score increases
+        // Apply the player's chosen background ability bonuses (clamped to
+        // the 5e ceiling of 20).
+        for (ability, increase) in draft.backgroundAbilityBonuses {
+            character.abilityScores[ability, default: 10] = min(
+                Character.abilityScoreCeiling,
+                (character.abilityScores[ability] ?? 10) + increase
+            )
+        }
+        // Apply background skill proficiencies
         if let background = contentStore.backgroundDefinition(id: draft.backgroundID) {
-            for (ability, increase) in background.abilityScoreIncreases {
-                character.abilityScores[ability, default: 10] += increase
-            }
-            // Apply background skill proficiencies
             for skill in background.skillProficiencies {
                 character.proficiencies[.skill(skill)] = .proficient
             }
+        }
+        // Seed the class skill-choice selection from the player's creation
+        // picks. Stored in featureSelections (not proficiencies) so the
+        // Features tab can re-edit it; the calculator resolves these as
+        // proficiency live.
+        if let sel = contentStore.classDefinition(id: draft.classID)?.skillProficiencySelection {
+            character.featureSelections[sel.selection.id] = draft.classSkillChoices.map(\.rawValue)
         }
 
         // Apply class proficiencies
