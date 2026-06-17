@@ -23,6 +23,14 @@ struct SpellCastSheet: View {
     /// picker shows charge costs per level and the consumed pool is the item's
     /// resource, not the character's spell slots.
     let itemContext: ItemSpellCastContext?
+    /// Fallback casting ability for species-granted spells. Used only when the
+    /// character has no class spellcasting ability of its own (a Tiefling
+    /// Fighter casting Fire Bolt). Nil otherwise.
+    let innateAbility: Ability?
+    /// When non-nil, this leveled spell is a species grant with a once-per-Long-
+    /// Rest free cast; the sheet shows a "Cast free" path that spends this pool
+    /// instead of a slot.
+    let freeCastResourceID: String?
     /// Called for each roll tap. `followUp` is non-nil when the primary roll
     /// has a natural next step (attack → damage); the dice tab parks it until
     /// the primary lands.
@@ -43,11 +51,15 @@ struct SpellCastSheet: View {
         character: Binding<Character>,
         spell: SpellDefinition,
         itemContext: ItemSpellCastContext? = nil,
+        innateAbility: Ability? = nil,
+        freeCastResourceID: String? = nil,
         onRoll: @escaping (_ action: ResolvedAction, _ followUp: ResolvedAction?) -> Void
     ) {
         self._character = character
         self.spell = spell
         self.itemContext = itemContext
+        self.innateAbility = innateAbility
+        self.freeCastResourceID = freeCastResourceID
         self.onRoll = onRoll
         // Item-driven cast starts at the item's base level; otherwise the
         // spell's natural base.
@@ -62,6 +74,7 @@ struct SpellCastSheet: View {
                     metadataGrid
                     if showsPicker { slotPicker }
                     if canCastAsRitual { ritualSection }
+                    if let pool = freeCastPool { freeCastSection(pool) }
                     if !rollEntries.isEmpty { rollsSection }
                     descriptionCard
                     if let higher = spell.higherLevel, !higher.isEmpty {
@@ -240,6 +253,73 @@ struct SpellCastSheet: View {
         }
     }
 
+    /// "Cast free" affordance for a leveled species-granted spell — the SRD's
+    /// "once per Long Rest without a slot." Spends the grant's free-use pool
+    /// rather than a spell slot, then fires the spell's rolls (if any).
+    private func freeCastSection(_ pool: ResolvedResource) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                handleFreeCastTap()
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "sparkle")
+                        .font(.title3)
+                        .foregroundStyle(.purple)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Cast free (Innate)")
+                            .font(.subheadline.weight(.semibold))
+                        Text("\(pool.current) / \(pool.max) per Long Rest · no slot")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "arrow.right.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.purple)
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.purple.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.purple.opacity(0.35), lineWidth: 0.5)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(slotConsumed || pool.current == 0)
+            .opacity(slotConsumed || pool.current == 0 ? 0.5 : 1)
+        }
+    }
+
+    private func handleFreeCastTap() {
+        if shouldPromptConcentrationSwap {
+            pendingSwapAction = PendingSwap { performFreeCast() }
+            return
+        }
+        performFreeCast()
+    }
+
+    private func performFreeCast() {
+        guard let resID = freeCastResourceID else { return }
+        let ok = ResourceCalculator.consume(amount: 1, from: resID, in: &character, content: content)
+        guard ok else { return }
+        slotConsumed = true
+        commitConcentrationIfNeeded()
+        // Fire the primary roll (attack or damage); a chained damage roll
+        // surfaces as a follow-up in the dice tab, same as a ritual cast.
+        if let primary = rollEntries.first {
+            onRoll(primary.action, followUp(for: primary))
+        }
+        dismiss()
+    }
+
+    /// The grant's free-cast pool, when this is a leveled species grant.
+    private var freeCastPool: ResolvedResource? {
+        guard let id = freeCastResourceID else { return nil }
+        return ResourceCalculator.availableResources(character: character, content: content)
+            .first { $0.definition.id == id }
+    }
+
     /// True when there are no roll buttons to wait on — Detect Magic, Detect
     /// Poison and Disease, Identify, etc. In that case a slot-button tap is
     /// itself the cast confirmation; the user doesn't need a second tap.
@@ -346,7 +426,7 @@ struct SpellCastSheet: View {
     private func buttonTitle(for entry: RollEntry) -> String {
         switch entry.recipe {
         case .spellAttack:                return "Roll Spell Attack"
-        case .rawDamage:                  return "Roll Damage"
+        case .rawDamage, .scaledDamage:   return "Roll Damage"
         case .heal:                       return "Roll Heal"
         case .weaponAttack:               return "Roll Attack"
         case .weaponDamage:               return "Roll Weapon Damage"
@@ -548,7 +628,9 @@ struct SpellCastSheet: View {
                 return block.ability
             }
         }
-        return nil
+        // No class caster: fall back to the species innate ability so a
+        // granted spell-attack (Fire Bolt) still resolves a to-hit roll.
+        return innateAbility
     }
 
     // MARK: - Roll entries

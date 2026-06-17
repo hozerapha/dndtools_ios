@@ -80,16 +80,12 @@ struct FeaturesView: View {
             }
         }
         if let species = content.speciesDefinition(id: character.speciesID) {
+            // A trait IS a FeatureDefinition, so its picker (lineage / ancestry)
+            // and resource pool render through the same card as class features.
             for trait in species.traits {
-                let synthesized = FeatureDefinition(
-                    id: trait.id,
-                    name: trait.name,
-                    description: trait.description,
-                    actionRecipes: trait.actionRecipes
-                )
                 rows.append(FeatureRowModel(
                     id: "species_\(trait.id)",
-                    feature: synthesized,
+                    feature: trait,
                     sourceLabel: species.name,
                     classLevel: character.level
                 ))

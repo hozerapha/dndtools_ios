@@ -20,6 +20,13 @@ enum ActionRecipe: Codable, Equatable {
     /// caster's spellcasting ability is resolved at interpret time, not stored
     /// here, so this same recipe works for any caster.
     case spellAttack(label: String)
+    /// Damage whose die COUNT scales with character level (Dragonborn Breath
+    /// Weapon: 1d10 → 2d10 → 3d10 → 4d10). `count` resolves against character
+    /// level at interpret time, so the roll grows automatically. `damageType`
+    /// is optional because some scaling damage (Breath Weapon) takes its type
+    /// from a separate choice (Draconic Ancestry) — left nil, the roll is
+    /// untyped and the type lives in the trait's description.
+    case scaledDamage(dieKind: Int, count: LevelScaledValue, damageType: DamageType?, label: String)
 
     /// Factory overloads preserving the pre-`addSpellcastingMod` call shape —
     /// existing Swift construction sites (tests, fixtures) keep compiling and
@@ -37,6 +44,7 @@ extension ActionRecipe {
     private enum CodingKeys: String, CodingKey {
         case type, abilityOverride, finesse, dieOverride, addAbility, versatile
         case ability, skill, dice, addLevel, label, damageType, addSpellcastingMod
+        case dieKind, count
     }
 
     init(from decoder: Decoder) throws {
@@ -88,6 +96,13 @@ extension ActionRecipe {
         case "spellAttack":
             let label = try container.decodeIfPresent(String.self, forKey: .label) ?? "Spell Attack"
             self = .spellAttack(label: label)
+
+        case "scaledDamage":
+            let dieKind = try container.decode(Int.self, forKey: .dieKind)
+            let count = try container.decode(LevelScaledValue.self, forKey: .count)
+            let damageType = try container.decodeIfPresent(DamageType.self, forKey: .damageType)
+            let label = try container.decodeIfPresent(String.self, forKey: .label) ?? "Damage"
+            self = .scaledDamage(dieKind: dieKind, count: count, damageType: damageType, label: label)
 
         default:
             throw DecodingError.dataCorruptedError(
@@ -147,6 +162,13 @@ extension ActionRecipe {
 
         case .spellAttack(let label):
             try container.encode("spellAttack", forKey: .type)
+            try container.encode(label, forKey: .label)
+
+        case .scaledDamage(let dieKind, let count, let damageType, let label):
+            try container.encode("scaledDamage", forKey: .type)
+            try container.encode(dieKind, forKey: .dieKind)
+            try container.encode(count, forKey: .count)
+            try container.encodeIfPresent(damageType, forKey: .damageType)
             try container.encode(label, forKey: .label)
         }
     }

@@ -206,4 +206,36 @@ struct ActionInterpreterTests {
         #expect(action.formula?.groups.first?.kind == .d10)
         #expect(action.formula?.modifier == 1)
     }
+
+    /// Dragonborn Breath Weapon: the die COUNT grows with character level
+    /// (1d10 → 2d10 → 3d10 → 4d10) via the scaledDamage recipe.
+    @Test func scaledDamageGrowsWithCharacterLevel() {
+        let count = LevelScaledValue.byCharacterLevel([1: 1, 5: 2, 11: 3, 17: 4])
+        func group(atLevel level: Int) -> DiceGroup? {
+            let character = Character(
+                name: "Drogon", level: level,
+                speciesID: "dragonborn", backgroundID: "soldier",
+                classEntries: [ClassEntry(classID: "fighter", level: level)],
+                abilityScores: [.constitution: 14], maxHP: 10
+            )
+            let recipe = ActionRecipe.scaledDamage(
+                dieKind: 10, count: count, damageType: nil, label: "Breath Weapon"
+            )
+            return ActionInterpreter.resolve(recipe: recipe, character: character, weapon: nil)
+                .formula?.groups.first
+        }
+        #expect(group(atLevel: 1)?.count == 1)
+        #expect(group(atLevel: 4)?.count == 1)
+        #expect(group(atLevel: 5)?.count == 2)
+        #expect(group(atLevel: 11)?.count == 3)
+        #expect(group(atLevel: 17)?.count == 4)
+        #expect(group(atLevel: 20)?.count == 4)
+        #expect(group(atLevel: 5)?.kind == .d10)
+
+        // Codable round-trip preserves the scaling table.
+        let recipe = ActionRecipe.scaledDamage(dieKind: 10, count: count, damageType: .fire, label: "X")
+        let data = try! JSONEncoder().encode(recipe)
+        let decoded = try! JSONDecoder().decode(ActionRecipe.self, from: data)
+        #expect(decoded == recipe)
+    }
 }

@@ -116,11 +116,11 @@ struct CharacterSheetView: View {
                 }
             }
         }
-        .onChange(of: hasSpellcasting) { _, casts in
-            // Defensive: a class swap that drops spellcasting while the user
-            // is on the Spells tab would otherwise leave them looking at an
-            // empty tab they can no longer navigate away from via the picker.
-            if !casts && section == .spells { section = .actions }
+        .onChange(of: showsSpellsTab) { _, shows in
+            // Defensive: if the Spells tab disappears (class swap drops casting,
+            // or a granted-spell source is removed) while the user is on it,
+            // bounce them to Actions so they're not stuck on a hidden tab.
+            if !shows && section == .spells { section = .actions }
         }
         .onChange(of: pendingRoll.pendingCostsToApply) { _, costs in
             guard !costs.isEmpty else { return }
@@ -176,7 +176,9 @@ struct CharacterSheetView: View {
             SpellCastSheet(
                 character: $character,
                 spell: pending.spell,
-                itemContext: pending.itemContext
+                itemContext: pending.itemContext,
+                innateAbility: pending.innateAbility,
+                freeCastResourceID: pending.freeCastResourceID
             ) { action, followUp in
                 handleSpellRoll(action, followUp: followUp)
             }
@@ -283,7 +285,7 @@ struct CharacterSheetView: View {
 
     private var availableSections: [SheetSection] {
         SheetSection.allCases.filter {
-            $0 != .spells || hasSpellcasting
+            $0 != .spells || showsSpellsTab
         }
     }
 
@@ -291,6 +293,13 @@ struct CharacterSheetView: View {
         character.classEntries.contains { entry in
             content.classDefinition(id: entry.classID)?.spellcasting != nil
         }
+    }
+
+    /// The Spells tab shows for any caster, OR any character with species-
+    /// granted spells (a Tiefling Fighter's Fiendish Legacy cantrip lives here).
+    private var showsSpellsTab: Bool {
+        hasSpellcasting
+            || !CharacterSpellGrants.resolve(character: character, content: content).isEmpty
     }
 
     // MARK: - Tab content
@@ -467,7 +476,14 @@ struct CharacterSheetView: View {
         VStack(spacing: 14) {
             ConcentrationPin(character: $character)
             SpellListView(character: $character) { spell, _ in
-                spellBeingCast = PendingSpellCast(spell: spell, itemContext: nil)
+                spellBeingCast = PendingSpellCast(
+                    spell: spell,
+                    itemContext: nil,
+                    innateAbility: CharacterSpellGrants.innateSpellcastingAbility(character: character),
+                    freeCastResourceID: CharacterSpellGrants.hasFreeCast(
+                        spellID: spell.id, character: character, content: content
+                    ) ? CharacterSpellGrants.freeCastResourceID(spellID: spell.id) : nil
+                )
             }
         }
     }
@@ -854,10 +870,23 @@ struct PendingSpellCast: Identifiable, Equatable {
     let id: String
     let spell: SpellDefinition
     let itemContext: ItemSpellCastContext?
+    /// Casting ability for species-granted spells (used by the sheet only when
+    /// the character has no class spellcasting ability). Nil for class casts.
+    let innateAbility: Ability?
+    /// Resource id of the spell's once-per-Long-Rest free cast, when it's a
+    /// leveled species grant. Nil for cantrips, class spells, and item casts.
+    let freeCastResourceID: String?
 
-    init(spell: SpellDefinition, itemContext: ItemSpellCastContext?) {
+    init(
+        spell: SpellDefinition,
+        itemContext: ItemSpellCastContext?,
+        innateAbility: Ability? = nil,
+        freeCastResourceID: String? = nil
+    ) {
         self.spell = spell
         self.itemContext = itemContext
+        self.innateAbility = innateAbility
+        self.freeCastResourceID = freeCastResourceID
         // Stable id per invocation source — re-tapping the same row reuses
         // the same id so SwiftUI doesn't double-present.
         if let ctx = itemContext {

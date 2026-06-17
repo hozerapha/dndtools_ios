@@ -51,11 +51,16 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
     /// may carry its own roll. Empty for features that grant no discrete
     /// action options.
     let grantedActions: [GrantedAction]
+    /// Spells this feature/trait always grants (Tiefling Otherworldly Presence
+    /// → Thaumaturgy). Always-prepared; see `SpellGrant`. For choice-gated
+    /// grants (a lineage's spells), put the grant on the `SelectionOption`
+    /// instead. Empty for features with no spell payload.
+    let grantsSpells: [SpellGrant]
 
     private enum CodingKeys: String, CodingKey {
         case id, name, description, actionRecipes
         case attunementSlots, resource, grantsProficiencies, kind, selection, actionCost, triggeredEffect
-        case skillCheckMinimum, surfacesAsAction, grantedActions
+        case skillCheckMinimum, surfacesAsAction, grantedActions, grantsSpells
     }
 
     init(
@@ -72,7 +77,8 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         triggeredEffect: TriggeredEffect? = nil,
         skillCheckMinimum: LevelScaledValue? = nil,
         surfacesAsAction: Bool = true,
-        grantedActions: [GrantedAction] = []
+        grantedActions: [GrantedAction] = [],
+        grantsSpells: [SpellGrant] = []
     ) {
         self.id = id
         self.name = name
@@ -88,6 +94,7 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         self.skillCheckMinimum = skillCheckMinimum
         self.surfacesAsAction = surfacesAsAction
         self.grantedActions = grantedActions
+        self.grantsSpells = grantsSpells
     }
 
     init(from decoder: Decoder) throws {
@@ -104,6 +111,7 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         skillCheckMinimum = try c.decodeIfPresent(LevelScaledValue.self, forKey: .skillCheckMinimum)
         surfacesAsAction = try c.decodeIfPresent(Bool.self, forKey: .surfacesAsAction) ?? true
         grantedActions = try c.decodeIfPresent([GrantedAction].self, forKey: .grantedActions) ?? []
+        grantsSpells = try c.decodeIfPresent([SpellGrant].self, forKey: .grantsSpells) ?? []
         // Explicit JSON wins; otherwise default to .action when the feature
         // surfaces a tappable recipe, and nil for pure passives.
         if let declared = try c.decodeIfPresent(ActionCost.self, forKey: .actionCost) {

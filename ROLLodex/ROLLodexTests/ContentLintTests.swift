@@ -145,6 +145,24 @@ struct ContentLintTests {
                 for dice in diceStrings(in: trait.actionRecipes) {
                     assertParses(dice, context: "species/\(species.id)/\(trait.id)")
                 }
+                // Scaled-damage recipes (Breath Weapon) carry a die size + a
+                // level→count table instead of a parseable dice string.
+                for recipe in trait.actionRecipes {
+                    if case .scaledDamage(let dieKind, _, _, _) = recipe {
+                        #expect(DieKind(rawValue: dieKind) != nil,
+                                "invalid dieKind \(dieKind) in species/\(species.id)/\(trait.id)")
+                    }
+                }
+                // Every granted spell (flat + per-lineage-option) must resolve
+                // to a bundled spell, or it silently never shows on the sheet.
+                var grants = trait.grantsSpells
+                if case .fixedOptions(let options)? = trait.selection?.optionsSource {
+                    grants += options.flatMap(\.grantsSpells)
+                }
+                for grant in grants {
+                    #expect(content.spellDefinition(id: grant.spellID) != nil,
+                            "species/\(species.id)/\(trait.id) grants missing spell \(grant.spellID)")
+                }
             }
         }
         for spell in content.spells.values {

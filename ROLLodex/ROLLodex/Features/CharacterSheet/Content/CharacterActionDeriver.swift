@@ -399,6 +399,35 @@ enum CharacterActionDeriver {
 
         if let species = content.speciesDefinition(id: character.speciesID) {
             for trait in species.traits {
+                guard trait.surfacesAsAction else { continue }
+                let cost = trait.resource.map { ResourceCost(resourceID: $0.id, amount: 1) }
+                let resolvedResource = trait.resource.flatMap { def in
+                    ResourceCalculator.availableResources(character: character, content: content)
+                        .first { $0.definition.id == def.id }
+                }
+                let badge = resolvedResource.map { "\($0.current) / \($0.max)" }
+                let isExhausted = resolvedResource?.isExhausted ?? false
+
+                // Usable trait with a pool but no roll (Stonecunning's Bonus
+                // Action tremorsense, Orc Adrenaline Rush, Goliath Large Form):
+                // a tap spends a charge.
+                if trait.actionRecipes.isEmpty {
+                    guard cost != nil else { continue }
+                    let action = ResolvedAction(
+                        id: "trait_\(trait.id)_consume",
+                        label: trait.name,
+                        formula: nil,
+                        description: nil,
+                        resourceCost: cost,
+                        actionCost: trait.actionCost
+                    )
+                    rows.append(ActionRow(
+                        action: action, badge: badge, isExhausted: isExhausted,
+                        title: trait.name, detail: trait.description
+                    ))
+                    continue
+                }
+
                 for recipe in trait.actionRecipes {
                     let resolved = ActionInterpreter.resolve(
                         recipe: recipe,
@@ -409,11 +438,14 @@ enum CharacterActionDeriver {
                         id: "trait_\(trait.id)_\(resolved.id)",
                         label: trait.name,
                         formula: resolved.formula,
-                        description: resolved.description
+                        description: resolved.description,
+                        resourceCost: cost,
+                        actionCost: trait.actionCost
                     )
+                    let summary = resolved.label == trait.name ? nil : resolved.label
                     rows.append(ActionRow(
-                        action: labeled, badge: nil,
-                        title: trait.name, detail: trait.description
+                        action: labeled, badge: badge, isExhausted: isExhausted,
+                        title: trait.name, subtitle: summary, detail: trait.description
                     ))
                 }
             }
@@ -554,6 +586,17 @@ enum CharacterActionDeriver {
                     rows.append(GrantedActionRow(
                         id: "\(resolved.feature.id)_\(granted.name)",
                         featureName: resolved.feature.name,
+                        action: granted
+                    ))
+                }
+            }
+        }
+        if let species = content.speciesDefinition(id: character.speciesID) {
+            for trait in species.traits {
+                for granted in trait.grantedActions {
+                    rows.append(GrantedActionRow(
+                        id: "trait_\(trait.id)_\(granted.name)",
+                        featureName: trait.name,
                         action: granted
                     ))
                 }

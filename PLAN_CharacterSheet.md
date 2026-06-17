@@ -1772,8 +1772,62 @@ Master, Eldritch Knight, Arcane Trickster, etc.) is PHB-only.
 ### Species (9 in the SRD)
 Dragonborn, Dwarf, Elf, Gnome, **Goliath**, Halfling, Human, Orc, Tiefling.
 > Correction: the SRD has **Goliath, not Goblin** (Goblin is not in SRD 5.2.1).
-> Bundled: Human, Elf, Dwarf. Remaining SRD: Dragonborn, Gnome, Goliath,
-> Halfling, Orc, Tiefling.
+> **Shipped 2026-06-17: all 9 SRD species bundled + mechanically wired.**
+> Added Dragonborn, Gnome, Goliath, Halfling, Orc, Tiefling with full SRD trait
+> text.
+>
+> **Architecture:** a species trait IS now a `FeatureDefinition`
+> (`typealias TraitDefinition = FeatureDefinition`), so the existing class-
+> feature machinery applies to species for free — pickers, resource pools,
+> action rows. `ResourceCalculator.availableResources` and
+> `CharacterActionDeriver` (both feature rows and granted actions) now walk
+> species traits; `FeaturesView` renders trait pickers / pools through the same
+> card.
+>
+> **Pickers (editable from the Features tab, `.fixedOptions` selections):**
+> Draconic Ancestry (10 dragons), Elven Lineage (Drow/High Elf/Wood Elf),
+> Gnomish Lineage (Forest/Rock), Giant Ancestry (6 giants), Fiendish Legacy
+> (Abyssal/Chthonic/Infernal).
+>
+> **Formulas / usable traits:**
+> - **Dragonborn Breath Weapon** — new `ActionRecipe.scaledDamage` (die size +
+>   level→count table) rolls 1d10→4d10 by character level; PB-many uses/Long
+>   Rest pool; DC wording in the description.
+> - **Orc Adrenaline Rush / Goliath Large Form / Dwarf Stonecunning** — usable
+>   Bonus Actions with their own use pools (PB or 1/Long Rest).
+>
+> **Gap fixes (the original 3):** Elf gained the missing **Elven Lineage**
+> trait; **Dwarf Stonecunning** rewritten to the 5.2.1 Bonus-Action Tremorsense.
+>
+> **Lineage/legacy spell grants — shipped 2026-06-17.** New `SpellGrant`
+> (spellID + minCharacterLevel) on `SelectionOption` (choice-gated) and
+> `FeatureDefinition` (flat). `CharacterSpellGrants.resolve` derives a
+> character's always-prepared spells live from the picked lineage/legacy +
+> flat trait grants; `SpellListView` shows a "Granted" section (sourced,
+> level-gated) and now appears even for non-casters. Authored the 19 missing
+> SRD spells the lineages reference (cantrips + L1/L2). A content-lint test
+> asserts every granted spell ID resolves.
+>
+> **Granted-spell casting completed 2026-06-17:**
+> - **Innate casting ability** — `CharacterSpellGrants.innateSpellcastingAbility`
+>   (highest of INT/WIS/CHA) feeds `SpellCastSheet` as a fallback when there's
+>   no class caster, so a Tiefling Fighter's Fire Bolt resolves its attack roll.
+>   (The SRD's *explicit* INT/WIS/CHA pick still has no UI — auto-highest stands
+>   in; an explicit picker is the remaining nicety.)
+> - **Free once-per-Long-Rest cast** — `ResourceCalculator` synthesizes a
+>   1/Long-Rest `grant_<spellID>` pool for each *leveled* granted spell;
+>   `SpellCastSheet` shows a "Cast free (Innate)" path that spends it instead of
+>   a slot. Cantrips stay at-will (no pool).
+>
+> **Deferred (flagged, not yet wired):**
+> - Per-option giant-ancestry mechanics (Fire's Burn 1d10 rider, Stone's
+>   Endurance 1d12 reaction, etc.) — needs per-`SelectionOption` granted
+>   actions/recipes conditioned on the pick. Currently picker + descriptive.
+> - Breath Weapon damage *type* from the chosen ancestry (roll is untyped; type
+>   lives in the description) — needs the deriver to read the ancestry pick.
+> - Explicit INT/WIS/CHA picker for innate spellcasting (auto-highest for now).
+> - Species pickers in the **creation wizard** (editable post-creation from the
+>   Features tab today, like class skills / expertise).
 
 ### Backgrounds (only 4 in the SRD)
 Acolyte, Criminal, Sage, Soldier.
@@ -1806,7 +1860,7 @@ is permitted. (Shipped 2026-06-13 in Settings → Legal & Attribution; item 16.)
 ### Audit verdict (2026-06-13)
 The entire current bundle is SRD-clean at the inventory level: 6 classes
 (all SRD), 3 subclasses (Champion / Thief / Life Domain — exactly the SRD
-ones), 3 species (Human/Elf/Dwarf), 3 backgrounds (Acolyte/Sage/Soldier of
+ones), 9 species (all SRD — completed 2026-06-17), 4 backgrounds (Acolyte/Criminal/Sage/Soldier of
 the 4 SRD), 14 spells (all SRD incl. Hex, Hunter's Mark, Shield), all
 weapons/armor/conditions/gear, and the 2 referenced feats. The attribution
 notice shipped 2026-06-13 (Settings → Legal & Attribution; item 16), so the

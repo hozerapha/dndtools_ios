@@ -75,7 +75,38 @@ enum ActionInterpreter {
                 ability: spellcastingAbility,
                 label: label
             )
+
+        case .scaledDamage(let dieKind, let count, let damageType, let label):
+            return resolveScaledDamage(
+                character: character,
+                dieKind: dieKind,
+                count: count,
+                damageType: damageType,
+                label: label
+            )
         }
+    }
+
+    private static func resolveScaledDamage(
+        character: Character,
+        dieKind: Int,
+        count: LevelScaledValue,
+        damageType: DamageType?,
+        label: String
+    ) -> ResolvedAction {
+        let n = count.value(classLevel: character.level, characterLevel: character.level)
+        var formula = DiceFormula()
+        if let kind = DieKind(rawValue: dieKind), n > 0 {
+            formula.groups.append(DiceGroup(kind: kind, count: n))
+            if let damageType { formula.applyDamageType(damageType) }
+        }
+        let dice = "\(n)d\(dieKind)"
+        return ResolvedAction(
+            id: "scaled_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))",
+            label: "\(label) (\(dice))",
+            formula: formula,
+            description: dice
+        )
     }
 
     private static func resolveSpellAttack(

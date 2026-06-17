@@ -77,6 +77,53 @@ enum ResourceCalculator {
             resolved.append(contentsOf: synthesizedSlotResources(for: entry, in: cls, character: character))
         }
 
+        // Species traits carry their own pools too (Dragonborn Breath Weapon,
+        // Orc Adrenaline Rush — both PB-many uses). Scaled against character
+        // level since species traits aren't owned by a class entry.
+        if let species = content.speciesDefinition(id: character.speciesID) {
+            for trait in species.traits {
+                guard let definition = trait.resource else { continue }
+                let maxValue = definition.max.value(
+                    classLevel: character.level,
+                    characterLevel: character.level
+                )
+                let current = currentClamped(
+                    character: character,
+                    resourceID: definition.id,
+                    max: maxValue
+                )
+                resolved.append(ResolvedResource(
+                    definition: definition,
+                    max: maxValue,
+                    current: current,
+                    sourceLabel: "\(species.name) \(trait.name)"
+                ))
+            }
+        }
+
+        // Innate-spell free casts: each *leveled* species-granted spell (an
+        // Elven Lineage / Fiendish Legacy 3rd- or 5th-level spell) can be cast
+        // once per Long Rest without a slot. Cantrips are at-will, so no pool.
+        for granted in CharacterSpellGrants.resolve(character: character, content: content)
+        where !granted.spell.isCantrip {
+            let id = CharacterSpellGrants.freeCastResourceID(spellID: granted.spell.id)
+            guard !resolved.contains(where: { $0.definition.id == id }) else { continue }
+            let definition = ResourceDefinition(
+                id: id,
+                name: "\(granted.spell.name) (Innate)",
+                max: .flat(1),
+                refreshOn: .longRest,
+                refreshAmount: .all
+            )
+            let current = currentClamped(character: character, resourceID: id, max: 1)
+            resolved.append(ResolvedResource(
+                definition: definition,
+                max: 1,
+                current: current,
+                sourceLabel: granted.sourceLabel
+            ))
+        }
+
         // Items the character is carrying. We include carried-but-unequipped
         // items so consumables (scrolls, potions w/ charges) still appear in
         // the resources card — the action grid filters separately to keep

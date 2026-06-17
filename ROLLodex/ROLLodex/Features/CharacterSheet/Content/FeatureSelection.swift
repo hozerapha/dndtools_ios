@@ -144,4 +144,27 @@ struct SelectionOption: Codable, Equatable, Identifiable {
     let id: String
     let name: String
     let description: String
+    /// Spells this option confers when chosen (Drow → Dancing Lights at L1,
+    /// Faerie Fire at L3, …). Always-prepared; see `SpellGrant`. Empty for
+    /// options with no spell payload (Fighting Styles, subraces, etc.).
+    let grantsSpells: [SpellGrant]
+
+    init(id: String, name: String, description: String, grantsSpells: [SpellGrant] = []) {
+        self.id = id
+        self.name = name
+        self.description = description
+        self.grantsSpells = grantsSpells
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, description, grantsSpells
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        description = try c.decode(String.self, forKey: .description)
+        grantsSpells = try c.decodeIfPresent([SpellGrant].self, forKey: .grantsSpells) ?? []
+    }
 }

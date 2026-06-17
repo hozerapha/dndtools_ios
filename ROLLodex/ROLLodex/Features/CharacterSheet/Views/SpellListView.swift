@@ -19,7 +19,9 @@ struct SpellListView: View {
     @State private var showAddSpell = false
 
     var body: some View {
-        if !hasAnySpellcasting {
+        // Show the card for any caster, OR any character with granted spells
+        // (a Tiefling Fighter still has a Fiendish Legacy cantrip).
+        if !hasAnySpellcasting && grantedSpells.isEmpty {
             EmptyView()
         } else {
             DisclosureGroup(isExpanded: $expanded) {
@@ -27,30 +29,39 @@ struct SpellListView: View {
                     if !slotResources.isEmpty {
                         SlotsRow(slots: slotResources)
                     }
-                    if castableSpells.isEmpty {
-                        Text("No spells prepared")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(spellsByLevel, id: \.level) { group in
-                            SpellLevelSection(
-                                level: group.level,
-                                spells: group.spells,
-                                slotResources: slotResources,
-                                onTap: { spell in onCast(spell, max(group.level, spell.level)) },
-                                onForget: { spell in forget(spell) }
-                            )
+                    if !grantedSpells.isEmpty {
+                        GrantedSpellsSection(
+                            granted: grantedSpells,
+                            slotResources: slotResources,
+                            onTap: { spell in onCast(spell, spell.level) }
+                        )
+                    }
+                    if hasAnySpellcasting {
+                        if castableSpells.isEmpty {
+                            Text("No spells prepared")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(spellsByLevel, id: \.level) { group in
+                                SpellLevelSection(
+                                    level: group.level,
+                                    spells: group.spells,
+                                    slotResources: slotResources,
+                                    onTap: { spell in onCast(spell, max(group.level, spell.level)) },
+                                    onForget: { spell in forget(spell) }
+                                )
+                            }
                         }
+                        Button {
+                            showAddSpell = true
+                        } label: {
+                            Label("Add Spell", systemImage: "plus.circle")
+                                .font(.caption.weight(.semibold))
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .padding(.top, 4)
                     }
-                    Button {
-                        showAddSpell = true
-                    } label: {
-                        Label("Add Spell", systemImage: "plus.circle")
-                            .font(.caption.weight(.semibold))
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .padding(.top, 4)
                 }
                 .padding(.top, 10)
             } label: {
@@ -79,6 +90,12 @@ struct SpellListView: View {
         character.classEntries.contains { entry in
             content.classDefinition(id: entry.classID)?.spellcasting != nil
         }
+    }
+
+    /// Species-granted, always-prepared spells (lineage / legacy picks). Live-
+    /// resolved; not stored on the character's own lists.
+    private var grantedSpells: [CharacterSpellGrants.GrantedSpell] {
+        CharacterSpellGrants.resolve(character: character, content: content)
     }
 
     private var slotResources: [ResolvedResource] {
@@ -158,6 +175,63 @@ private struct SlotsRow: View {
             }
         }
         return ""
+    }
+}
+
+/// Always-prepared spells conferred by a species trait (Fiendish Legacy,
+/// Elven Lineage, …). Each row shows the source trait; cantrips are always
+/// castable, leveled grants need a slot like any other spell.
+private struct GrantedSpellsSection: View {
+    let granted: [CharacterSpellGrants.GrantedSpell]
+    let slotResources: [ResolvedResource]
+    let onTap: (SpellDefinition) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Granted")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+            VStack(spacing: 4) {
+                ForEach(granted) { item in
+                    Button { onTap(item.spell) } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: item.spell.school.systemImage)
+                                .font(.caption)
+                                .frame(width: 18)
+                                .foregroundStyle(.purple)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(item.spell.name)
+                                    .font(.subheadline.weight(.semibold))
+                                Text("\(levelLabel(item.spell)) · \(item.sourceLabel)")
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            Spacer()
+                            Image(systemName: "wand.and.rays")
+                                .font(.subheadline)
+                                .foregroundStyle(canCast(item.spell) ? Color.accentColor : Color.secondary.opacity(0.4))
+                        }
+                        .padding(.vertical, 2)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!canCast(item.spell))
+                    .opacity(canCast(item.spell) ? 1 : 0.55)
+                }
+            }
+        }
+    }
+
+    private func levelLabel(_ spell: SpellDefinition) -> String {
+        spell.isCantrip ? "Cantrip" : "Level \(spell.level)"
+    }
+
+    private func canCast(_ spell: SpellDefinition) -> Bool {
+        if spell.isCantrip { return true }
+        return slotResources.contains { resolved in
+            guard case .spellSlot(let slotLevel) = resolved.definition.displayHint else { return false }
+            return slotLevel >= spell.level && resolved.current > 0
+        }
     }
 }
 

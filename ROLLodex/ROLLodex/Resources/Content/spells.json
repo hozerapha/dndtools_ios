@@ -4,15 +4,33 @@
     "name": "Fire Bolt",
     "level": 0,
     "school": "evocation",
-    "castingTime": { "type": "action" },
-    "range": { "type": "feet", "value": 120 },
-    "components": { "verbal": true, "somatic": true },
-    "duration": { "type": "instantaneous" },
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 120
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
     "description": "You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. A flammable object hit by this spell ignites if it isn't being worn or carried.",
     "higherLevel": "This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).",
     "actionRecipes": [
-      { "type": "spellAttack", "label": "Fire Bolt Attack" },
-      { "type": "rawDamage", "dice": "1d10", "damageType": "fire", "label": "Fire Bolt Damage" }
+      {
+        "type": "spellAttack",
+        "label": "Fire Bolt Attack"
+      },
+      {
+        "type": "rawDamage",
+        "dice": "1d10",
+        "damageType": "fire",
+        "label": "Fire Bolt Damage"
+      }
     ]
   },
   {
@@ -20,14 +38,29 @@
     "name": "Sacred Flame",
     "level": 0,
     "school": "evocation",
-    "castingTime": { "type": "action" },
-    "range": { "type": "feet", "value": 60 },
-    "components": { "verbal": true, "somatic": true },
-    "duration": { "type": "instantaneous" },
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
     "description": "Flame-like radiance descends on a creature you can see within range. The target must succeed on a Dexterity saving throw or take 1d8 radiant damage. The target gains no benefit from cover for this saving throw.",
     "higherLevel": "The spell's damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).",
     "actionRecipes": [
-      { "type": "rawDamage", "dice": "1d8", "damageType": "radiant", "label": "Sacred Flame" }
+      {
+        "type": "rawDamage",
+        "dice": "1d8",
+        "damageType": "radiant",
+        "label": "Sacred Flame"
+      }
     ]
   },
   {
@@ -35,10 +68,21 @@
     "name": "Mage Hand",
     "level": 0,
     "school": "conjuration",
-    "castingTime": { "type": "action" },
-    "range": { "type": "feet", "value": 30 },
-    "components": { "verbal": true, "somatic": true },
-    "duration": { "type": "minutes", "value": 1 },
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "minutes",
+      "value": 1
+    },
     "description": "A spectral, floating hand appears at a point you choose within range. The hand vanishes if it is ever more than 30 feet from you or if you cast this spell again.",
     "actionRecipes": []
   },
@@ -47,26 +91,56 @@
     "name": "Magic Missile",
     "level": 1,
     "school": "evocation",
-    "castingTime": { "type": "action" },
-    "range": { "type": "feet", "value": 120 },
-    "components": { "verbal": true, "somatic": true },
-    "duration": { "type": "instantaneous" },
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 120
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
     "description": "You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals 1d4+1 force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.",
     "higherLevel": "When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.",
     "actionRecipes": [
-      { "type": "rawDamage", "dice": "3d4+3", "damageType": "force", "label": "Magic Missile" }
+      {
+        "type": "rawDamage",
+        "dice": "3d4+3",
+        "damageType": "force",
+        "label": "Magic Missile"
+      }
     ],
-    "upcastEffect": { "type": "extraDicePerLevel", "recipeIndex": 0, "dice": "1d4+1" }
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "1d4+1"
+    }
   },
   {
     "id": "shield",
     "name": "Shield",
     "level": 1,
     "school": "abjuration",
-    "castingTime": { "type": "reaction", "trigger": "which you take when you are hit by an attack or targeted by the magic missile spell" },
-    "range": { "type": "targetSelf" },
-    "components": { "verbal": true, "somatic": true },
-    "duration": { "type": "rounds", "value": 1 },
+    "castingTime": {
+      "type": "reaction",
+      "trigger": "which you take when you are hit by an attack or targeted by the magic missile spell"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "rounds",
+      "value": 1
+    },
     "description": "An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from magic missile.",
     "actionRecipes": []
   },
@@ -75,26 +149,58 @@
     "name": "Cure Wounds",
     "level": 1,
     "school": "abjuration",
-    "castingTime": { "type": "action" },
-    "range": { "type": "touch" },
-    "components": { "verbal": true, "somatic": true },
-    "duration": { "type": "instantaneous" },
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
     "description": "A creature you touch regains a number of hit points equal to 2d8 + your spellcasting ability modifier. This spell has no effect on undead or constructs.",
     "higherLevel": "When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 2d8 for each slot level above 1st.",
     "actionRecipes": [
-      { "type": "heal", "dice": "2d8", "addLevel": false, "addSpellcastingMod": true, "label": "Cure Wounds" }
+      {
+        "type": "heal",
+        "dice": "2d8",
+        "addLevel": false,
+        "addSpellcastingMod": true,
+        "label": "Cure Wounds"
+      }
     ],
-    "upcastEffect": { "type": "extraDicePerLevel", "recipeIndex": 0, "dice": "2d8" }
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "2d8"
+    }
   },
   {
     "id": "detect_magic",
     "name": "Detect Magic",
     "level": 1,
     "school": "divination",
-    "castingTime": { "type": "ritual", "base": { "type": "action" } },
-    "range": { "type": "targetSelf" },
-    "components": { "verbal": true, "somatic": true },
-    "duration": { "type": "concentration", "value": 10 },
+    "castingTime": {
+      "type": "ritual",
+      "base": {
+        "type": "action"
+      }
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 10
+    },
     "description": "For the duration, you sense the presence of magic within 30 feet of you. If you sense magic in this way, you can use your action to see a faint aura around any visible creature or object in the area that bears magic, and you learn its school of magic, if any.",
     "actionRecipes": []
   },
@@ -103,19 +209,42 @@
     "name": "Hex",
     "level": 1,
     "school": "enchantment",
-    "castingTime": { "type": "bonusAction" },
-    "range": { "type": "feet", "value": 90 },
-    "components": { "verbal": true, "somatic": true, "material": "the petrified eye of a newt" },
-    "duration": { "type": "concentration", "value": 60 },
+    "castingTime": {
+      "type": "bonusAction"
+    },
+    "range": {
+      "type": "feet",
+      "value": 90
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "the petrified eye of a newt"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 60
+    },
     "description": "You place a curse on a creature you can see within range. Until the spell ends, the target takes an extra 1d6 necrotic damage whenever you hit it with an attack. You also choose one ability when you cast the spell; the target has disadvantage on ability checks made with that ability.",
     "higherLevel": "When you cast this spell using a spell slot of 3rd or 4th level, you can maintain your concentration on the spell for up to 8 hours. When you use a spell slot of 5th level or higher, you can maintain your concentration on the spell for up to 24 hours.",
     "actionRecipes": [],
     "grantsTriggeredEffect": {
       "id": "hex_damage_rider",
       "name": "Hex",
-      "trigger": { "type": "onDamageRoll" },
-      "effect": { "type": "addDamageDice", "dice": "1d6", "damageType": "necrotic" },
-      "lifecycle": { "type": "persistent", "until": { "type": "concentrationEnds" } }
+      "trigger": {
+        "type": "onDamageRoll"
+      },
+      "effect": {
+        "type": "addDamageDice",
+        "dice": "1d6",
+        "damageType": "necrotic"
+      },
+      "lifecycle": {
+        "type": "persistent",
+        "until": {
+          "type": "concentrationEnds"
+        }
+      }
     }
   },
   {
@@ -123,19 +252,40 @@
     "name": "Hunter's Mark",
     "level": 1,
     "school": "divination",
-    "castingTime": { "type": "bonusAction" },
-    "range": { "type": "feet", "value": 90 },
-    "components": { "verbal": true },
-    "duration": { "type": "concentration", "value": 60 },
+    "castingTime": {
+      "type": "bonusAction"
+    },
+    "range": {
+      "type": "feet",
+      "value": 90
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 60
+    },
     "description": "You choose a creature you can see within range and mystically mark it as your quarry. Until the spell ends, you deal an extra 1d6 damage to the target whenever you hit it with a weapon attack, and you have advantage on any Wisdom (Perception) or Wisdom (Survival) check you make to find it.",
     "higherLevel": "When you cast this spell using a spell slot of 3rd or 4th level, you can maintain concentration on the spell for up to 8 hours. When you use a spell slot of 5th level or higher, you can maintain concentration on the spell for up to 24 hours.",
     "actionRecipes": [],
     "grantsTriggeredEffect": {
       "id": "hunters_mark_damage_rider",
       "name": "Hunter's Mark",
-      "trigger": { "type": "onDamageRoll" },
-      "effect": { "type": "addDamageDice", "dice": "1d6", "damageType": "$weapon" },
-      "lifecycle": { "type": "persistent", "until": { "type": "concentrationEnds" } }
+      "trigger": {
+        "type": "onDamageRoll"
+      },
+      "effect": {
+        "type": "addDamageDice",
+        "dice": "1d6",
+        "damageType": "$weapon"
+      },
+      "lifecycle": {
+        "type": "persistent",
+        "until": {
+          "type": "concentrationEnds"
+        }
+      }
     }
   },
   {
@@ -143,10 +293,22 @@
     "name": "Feather Fall",
     "level": 1,
     "school": "transmutation",
-    "castingTime": { "type": "reaction", "trigger": "which you take when you or a creature within 60 feet of you falls" },
-    "range": { "type": "feet", "value": 60 },
-    "components": { "verbal": true, "material": "a small feather or piece of down" },
-    "duration": { "type": "minutes", "value": 1 },
+    "castingTime": {
+      "type": "reaction",
+      "trigger": "which you take when you or a creature within 60 feet of you falls"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "material": "a small feather or piece of down"
+    },
+    "duration": {
+      "type": "minutes",
+      "value": 1
+    },
     "description": "Choose up to five falling creatures within range. A falling creature's rate of descent slows to 60 feet per round until the spell ends. If the creature lands before the spell ends, it takes no falling damage and can land on its feet, and the spell ends for that creature.",
     "actionRecipes": []
   },
@@ -155,10 +317,20 @@
     "name": "Guidance",
     "level": 0,
     "school": "divination",
-    "castingTime": { "type": "action" },
-    "range": { "type": "touch" },
-    "components": { "verbal": true, "somatic": true },
-    "duration": { "type": "concentration", "value": 1 },
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
     "description": "You touch a willing creature. Once before the spell ends, the target can roll 1d4 and add the number rolled to one ability check of its choice. (Add the d4 to the check manually.)",
     "actionRecipes": []
   },
@@ -167,26 +339,57 @@
     "name": "Healing Word",
     "level": 1,
     "school": "abjuration",
-    "castingTime": { "type": "bonusAction" },
-    "range": { "type": "feet", "value": 60 },
-    "components": { "verbal": true },
-    "duration": { "type": "instantaneous" },
+    "castingTime": {
+      "type": "bonusAction"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
     "description": "A creature of your choice that you can see within range regains hit points equal to 2d4 + your spellcasting ability modifier. This spell has no effect on undead or constructs.",
     "higherLevel": "When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 2d4 for each slot level above 1st.",
     "actionRecipes": [
-      { "type": "heal", "dice": "2d4", "addLevel": false, "addSpellcastingMod": true, "label": "Healing Word" }
+      {
+        "type": "heal",
+        "dice": "2d4",
+        "addLevel": false,
+        "addSpellcastingMod": true,
+        "label": "Healing Word"
+      }
     ],
-    "upcastEffect": { "type": "extraDicePerLevel", "recipeIndex": 0, "dice": "2d4" }
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "2d4"
+    }
   },
   {
     "id": "bless",
     "name": "Bless",
     "level": 1,
     "school": "enchantment",
-    "castingTime": { "type": "action" },
-    "range": { "type": "feet", "value": 30 },
-    "components": { "verbal": true, "somatic": true, "material": "a herb, oil, or incense worth 1+ GP, which the spell consumes" },
-    "duration": { "type": "concentration", "value": 1 },
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a herb, oil, or incense worth 1+ GP, which the spell consumes"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
     "description": "You bless up to three creatures within range. Whenever a blessed target makes an attack roll or a saving throw before the spell ends, the target adds 1d4 to the roll. (Attack-roll riders aren't automated yet — add the d4 manually.)",
     "higherLevel": "When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.",
     "actionRecipes": []
@@ -196,11 +399,500 @@
     "name": "Shield of Faith",
     "level": 1,
     "school": "abjuration",
-    "castingTime": { "type": "bonusAction" },
-    "range": { "type": "feet", "value": 60 },
-    "components": { "verbal": true, "somatic": true, "material": "a small parchment with a bit of holy text written on it" },
-    "duration": { "type": "concentration", "value": 10 },
+    "castingTime": {
+      "type": "bonusAction"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a small parchment with a bit of holy text written on it"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 10
+    },
     "description": "A shimmering field surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration. (AC buffs aren't automated yet — adjust manually if it targets you.)",
+    "actionRecipes": []
+  },
+  {
+    "id": "dancing_lights",
+    "name": "Dancing Lights",
+    "level": 0,
+    "school": "illusion",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 120
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a bit of phosphorus"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "You create up to four torch-size lights within range, making them appear as torches, lanterns, or glowing orbs that hover for the duration. Alternatively, you combine the four lights into one glowing Medium form that is vaguely humanlike. Whichever form you choose, each light sheds Dim Light in a 10-foot radius. As a Bonus Action, you can move the lights up to 60 feet to a space within range.",
+    "actionRecipes": []
+  },
+  {
+    "id": "prestidigitation",
+    "name": "Prestidigitation",
+    "level": 0,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 10
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "hours",
+      "value": 1
+    },
+    "description": "You create a magical effect within range. Choose the effect from the options listed in the spell (a harmless sensory effect, lighting or snuffing a small flame, cleaning or soiling a small object, chilling/warming/flavoring material, a minor magic mark, or a Tiny nonmagical trinket). If you cast this spell multiple times, you can have up to three of its non-instantaneous effects active at a time.",
+    "actionRecipes": []
+  },
+  {
+    "id": "druidcraft",
+    "name": "Druidcraft",
+    "level": 0,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "Whispering to the spirits of nature, you create one of the following effects within range: a Tiny sensory effect that predicts the weather for the next 24 hours; you make a flower blossom or a leaf bud bloom; you create a harmless sensory effect (falling leaves, a faint odor, a gentle breeze) within a 5-foot Cube; or you light or snuff out a candle, torch, or campfire.",
+    "actionRecipes": []
+  },
+  {
+    "id": "minor_illusion",
+    "name": "Minor Illusion",
+    "level": 0,
+    "school": "illusion",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "somatic": true,
+      "material": "a bit of fleece"
+    },
+    "duration": {
+      "type": "minutes",
+      "value": 1
+    },
+    "description": "You create a sound or an image of an object within range that lasts for the duration. The illusion ends if you cast this spell again. If a creature uses a Study action to examine the sound or image, it can determine the illusion is false with an Intelligence (Investigation) check against your spell save DC. A sound can range from a whisper to a scream; an image can be no larger than a 5-foot Cube and can't create sound, light, smell, or other sensory effects.",
+    "actionRecipes": []
+  },
+  {
+    "id": "mending",
+    "name": "Mending",
+    "level": 0,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "minutes",
+      "minutes": 1
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "two lodestones"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "This spell repairs a single break or tear in an object you touch, such as a broken chain link, two halves of a broken key, a torn cloak, or a leaking wineskin. As long as the break or tear is no larger than 1 foot in any dimension, you mend it, leaving no trace of the former damage. This spell can physically repair a magic item, but it can't restore magic to such an object.",
+    "actionRecipes": []
+  },
+  {
+    "id": "thaumaturgy",
+    "name": "Thaumaturgy",
+    "level": 0,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "minutes",
+      "value": 1
+    },
+    "description": "You manifest a minor wonder within range. You create one of the following effects: your voice booms up to three times as loud for 1 minute (Advantage on Charisma (Intimidation) checks); you alter the appearance of your eyes; you cause flames to flicker, brighten, dim, or change color; you instantaneously open or slam an unlocked door or window; you create an instantaneous sound; or you cause harmless tremors in the ground. If you cast this spell multiple times, you can have up to three of its 1-minute effects active at a time.",
+    "actionRecipes": []
+  },
+  {
+    "id": "poison_spray",
+    "name": "Poison Spray",
+    "level": 0,
+    "school": "necromancy",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You spray toxic mist at a creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d12 Poison damage.",
+    "actionRecipes": [
+      {
+        "type": "spellAttack",
+        "label": "Poison Spray Attack"
+      },
+      {
+        "type": "rawDamage",
+        "dice": "1d12",
+        "damageType": "poison",
+        "label": "Poison Spray Damage"
+      }
+    ],
+    "higherLevel": "The damage increases by 1d12 when you reach levels 5 (2d12), 11 (3d12), and 17 (4d12)."
+  },
+  {
+    "id": "chill_touch",
+    "name": "Chill Touch",
+    "level": 0,
+    "school": "necromancy",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "Channeling the chill of the grave, make a melee spell attack against a target within reach. On a hit, the target takes 1d10 Necrotic damage, and it can't regain Hit Points until the end of your next turn.",
+    "actionRecipes": [
+      {
+        "type": "spellAttack",
+        "label": "Chill Touch Attack"
+      },
+      {
+        "type": "rawDamage",
+        "dice": "1d10",
+        "damageType": "necrotic",
+        "label": "Chill Touch Damage"
+      }
+    ],
+    "higherLevel": "The damage increases by 1d10 when you reach levels 5 (2d10), 11 (3d10), and 17 (4d10)."
+  },
+  {
+    "id": "speak_with_animals",
+    "name": "Speak with Animals",
+    "level": 1,
+    "school": "divination",
+    "castingTime": {
+      "type": "ritual",
+      "base": {
+        "type": "action"
+      }
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "minutes",
+      "value": 10
+    },
+    "description": "For the duration, you can comprehend and verbally communicate with Beasts, and you can use any of the Influence action's skill options with them. Most Beasts have little to say about topics that don't pertain to survival or companionship, but at minimum a Beast can give you information about nearby locations and monsters, including whatever it has perceived within the past day.",
+    "actionRecipes": []
+  },
+  {
+    "id": "faerie_fire",
+    "name": "Faerie Fire",
+    "level": 1,
+    "school": "evocation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "Objects in a 20-foot Cube within range are outlined in blue, green, or violet light (your choice). Each creature in the Cube is also outlined if it fails a Dexterity saving throw. For the duration, affected objects and creatures shed Dim Light in a 10-foot radius and can't benefit from the Invisible condition. Attack rolls against an affected creature or object have Advantage if the attacker can see it.",
+    "actionRecipes": []
+  },
+  {
+    "id": "ray_of_sickness",
+    "name": "Ray of Sickness",
+    "level": 1,
+    "school": "necromancy",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You shoot a greenish ray at a creature within range. Make a ranged spell attack against the target. On a hit, the target takes 2d8 Poison damage and has the Poisoned condition until the end of your next turn.",
+    "actionRecipes": [
+      {
+        "type": "spellAttack",
+        "label": "Ray of Sickness Attack"
+      },
+      {
+        "type": "rawDamage",
+        "dice": "2d8",
+        "damageType": "poison",
+        "label": "Ray of Sickness Damage"
+      }
+    ],
+    "higherLevel": "The damage increases by 1d8 for each spell slot level above 1."
+  },
+  {
+    "id": "false_life",
+    "name": "False Life",
+    "level": 1,
+    "school": "necromancy",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a drop of alcohol"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You gain 2d4 + 4 Temporary Hit Points.",
+    "actionRecipes": [],
+    "higherLevel": "You gain 5 additional Temporary Hit Points for each spell slot level above 1."
+  },
+  {
+    "id": "hellish_rebuke",
+    "name": "Hellish Rebuke",
+    "level": 1,
+    "school": "evocation",
+    "castingTime": {
+      "type": "reaction",
+      "trigger": "which you take in response to taking damage from a creature you can see within 60 feet"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "The creature that damaged you is momentarily surrounded by green flames. It makes a Dexterity saving throw, taking 2d10 Fire damage on a failed save or half as much damage on a successful one.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "2d10",
+        "damageType": "fire",
+        "label": "Hellish Rebuke Damage"
+      }
+    ],
+    "higherLevel": "The damage increases by 1d10 for each spell slot level above 1."
+  },
+  {
+    "id": "longstrider",
+    "name": "Longstrider",
+    "level": 1,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a pinch of dirt"
+    },
+    "duration": {
+      "type": "hours",
+      "value": 1
+    },
+    "description": "You touch a creature. The target's Speed increases by 10 feet until the spell ends.",
+    "actionRecipes": [],
+    "higherLevel": "You can target one additional creature for each spell slot level above 1."
+  },
+  {
+    "id": "misty_step",
+    "name": "Misty Step",
+    "level": 2,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "bonusAction"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space you can see.",
+    "actionRecipes": []
+  },
+  {
+    "id": "hold_person",
+    "name": "Hold Person",
+    "level": 2,
+    "school": "enchantment",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a straight piece of iron"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "Choose a Humanoid that you can see within range. The target must succeed on a Wisdom saving throw or have the Paralyzed condition for the duration. At the end of each of its turns, the target repeats the save, ending the spell on itself on a success.",
+    "actionRecipes": [],
+    "higherLevel": "You can target one additional Humanoid for each spell slot level above 2."
+  },
+  {
+    "id": "ray_of_enfeeblement",
+    "name": "Ray of Enfeeblement",
+    "level": 2,
+    "school": "necromancy",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "A beam of enervating energy shoots from you toward a creature within range. The target must make a Constitution saving throw. On a successful save, the target has Disadvantage on the next attack roll it makes until the start of your next turn. On a failed save, the target has Disadvantage on Strength-based D20 Tests for the duration and subtracts 1d8 from all its damage rolls. The target repeats the save at the end of each of its turns, ending the spell on a success.",
+    "actionRecipes": []
+  },
+  {
+    "id": "pass_without_trace",
+    "name": "Pass without Trace",
+    "level": 2,
+    "school": "abjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "ashes from burned mistletoe"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 60
+    },
+    "description": "You radiate a concealing aura in a 30-foot Emanation for the duration. While in the aura, you and each creature you choose have a +10 bonus to Dexterity (Stealth) checks and leave no tracks.",
+    "actionRecipes": []
+  },
+  {
+    "id": "darkness",
+    "name": "Darkness",
+    "level": 2,
+    "school": "evocation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "material": "bat fur and a piece of coal"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 10
+    },
+    "description": "For the duration, magical Darkness spreads from a point within range and fills a 15-foot-radius Sphere. Darkvision can't see through it, and nonmagical light can't illuminate it. Alternatively, you cast the spell on an object that isn't being worn or carried, causing the Darkness to fill a 15-foot Emanation from that object; covering the object with something opaque blocks the Darkness. If any of this spell's area overlaps with Bright or Dim Light created by a spell of level 2 or lower, that other spell is dispelled.",
     "actionRecipes": []
   }
 ]
