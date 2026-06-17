@@ -84,7 +84,28 @@ enum ActionInterpreter {
                 damageType: damageType,
                 label: label
             )
+
+        case .abilityRoll(let dice, let ability, let label):
+            return resolveAbilityRoll(character: character, dice: dice, ability: ability, label: label)
         }
+    }
+
+    private static func resolveAbilityRoll(
+        character: Character,
+        dice: String,
+        ability: Ability,
+        label: String
+    ) -> ResolvedAction {
+        let mod = CharacterCalculator.abilityModifier(score: character.abilityScores[ability] ?? 10)
+        var formula = (try? DiceFormulaParser().parse(dice)) ?? DiceFormula()
+        formula.modifier += mod
+        let sign = mod >= 0 ? "+" : ""
+        return ResolvedAction(
+            id: "abilityroll_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))",
+            label: "\(label) (\(dice) \(sign)\(mod))",
+            formula: formula,
+            description: "\(dice) + \(ability.abbreviation) (\(sign)\(mod))"
+        )
     }
 
     private static func resolveScaledDamage(

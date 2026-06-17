@@ -273,4 +273,60 @@ struct ContentStoreTests {
         #expect(store.itemName(forItemID: "backpack") == "Backpack")
         #expect(store.itemName(forItemID: "nonexistent") == nil)
     }
+
+    // MARK: - Giant Ancestry mechanics
+
+    @MainActor
+    private func goliath(_ giant: String?) -> Character {
+        var c = Character(
+            name: "Gol", level: 5, speciesID: "goliath", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 5)],
+            abilityScores: [.strength: 16, .constitution: 14], maxHP: 40,
+            proficiencies: [.weapon(.martial): .proficient]
+        )
+        if let giant { c.featureSelections["goliath_giant_ancestry"] = [giant] }
+        return c
+    }
+
+    @MainActor
+    @Test func giantAncestryGrantedActionsAreChoiceGated() {
+        let store = ContentStore()
+        func names(_ giant: String?) -> [String] {
+            CharacterActionDeriver.grantedActions(for: goliath(giant), content: store)
+                .map(\.action.name)
+        }
+        // Stone's Endurance surfaces as a Reaction, only when chosen.
+        let stone = CharacterActionDeriver.grantedActions(for: goliath("stones_endurance"), content: store)
+            .first { $0.action.name == "Stone's Endurance" }
+        #expect(stone?.cost == .reaction)
+        #expect(names("clouds_jaunt").contains("Cloud's Jaunt"))
+        #expect(names("storms_thunder").contains("Storm's Thunder"))
+        // A different giant doesn't leak the others' actions.
+        #expect(!names("clouds_jaunt").contains("Stone's Endurance"))
+        // No giant chosen → none of them.
+        #expect(!names(nil).contains("Cloud's Jaunt"))
+    }
+
+    @MainActor
+    @Test func giantAncestryOnHitRiderIsChoiceGated() {
+        let store = ContentStore()
+        guard let weapon = store.weaponDefinition(id: "longsword") else {
+            Issue.record("longsword weapon missing"); return
+        }
+        func riderPrompts(_ giant: String?) -> [String] {
+            let c = goliath(giant)
+            let baseDamage = ActionInterpreter.resolve(
+                recipe: .weaponDamage(dieOverride: nil, addAbility: true, versatile: false),
+                character: c, weapon: weapon
+            )
+            return TriggeredEffectResolver.optInRiders(
+                weapon: weapon, baseDamage: baseDamage, character: c, content: store
+            ).map(\.chipPrompt)
+        }
+        #expect(riderPrompts("fires_burn").contains("Fire's Burn"))
+        #expect(riderPrompts("frosts_chill").contains("Frost's Chill"))
+        // Non-rider giant → no giant rider chip.
+        #expect(!riderPrompts("stones_endurance").contains("Fire's Burn"))
+        #expect(!riderPrompts(nil).contains("Fire's Burn"))
+    }
 }

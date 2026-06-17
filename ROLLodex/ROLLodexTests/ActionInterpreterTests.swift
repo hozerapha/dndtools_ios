@@ -238,4 +238,25 @@ struct ActionInterpreterTests {
         let decoded = try! JSONDecoder().decode(ActionRecipe.self, from: data)
         #expect(decoded == recipe)
     }
+
+    /// Goliath Stone's Endurance: a flat die plus a named ability's modifier.
+    @Test func abilityRollAddsTheNamedAbilityModifier() {
+        // CON 14 → +2 modifier added to the 1d12 roll.
+        let character = Character(
+            name: "Gol", level: 5, speciesID: "goliath", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 5)],
+            abilityScores: [.constitution: 14], maxHP: 40
+        )
+        let action = ActionInterpreter.resolve(
+            recipe: .abilityRoll(dice: "1d12", ability: .constitution, label: "Stone's Endurance"),
+            character: character, weapon: nil
+        )
+        #expect(action.formula?.groups.first?.kind == .d12)
+        #expect(action.formula?.modifier == 2)
+
+        let data = try! JSONEncoder().encode(
+            ActionRecipe.abilityRoll(dice: "1d12", ability: .constitution, label: "Stone's Endurance")
+        )
+        #expect((try? JSONDecoder().decode(ActionRecipe.self, from: data)) != nil)
+    }
 }

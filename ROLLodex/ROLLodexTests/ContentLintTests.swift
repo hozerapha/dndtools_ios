@@ -158,6 +158,14 @@ struct ContentLintTests {
                 var grants = trait.grantsSpells
                 if case .fixedOptions(let options)? = trait.selection?.optionsSource {
                     grants += options.flatMap(\.grantsSpells)
+                    // Option-level granted-action recipes (Giant Ancestry's
+                    // Stone's Endurance / Storm's Thunder) must parse too.
+                    for option in options {
+                        let recipes = option.grantedActions.compactMap(\.recipe)
+                        for dice in diceStrings(in: recipes) {
+                            assertParses(dice, context: "species/\(species.id)/\(trait.id)/\(option.id)")
+                        }
+                    }
                 }
                 for grant in grants {
                     #expect(content.spellDefinition(id: grant.spellID) != nil,
@@ -343,6 +351,7 @@ struct ContentLintTests {
             switch recipe {
             case .heal(let dice, _, _, _):      return dice
             case .rawDamage(let dice, _, _, _): return dice
+            case .abilityRoll(let dice, _, _):  return dice
             default:                            return nil
             }
         }

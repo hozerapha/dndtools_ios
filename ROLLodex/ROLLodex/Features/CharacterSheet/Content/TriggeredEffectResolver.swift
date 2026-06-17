@@ -229,6 +229,36 @@ enum TriggeredEffectResolver {
                 out.append(chip)
             }
         }
+
+        // Species choice-gated riders (Goliath Fire's Burn / Frost's Chill):
+        // the picked Giant Ancestry option's on-hit, opt-in effect surfaces as
+        // a chip just like a class rider. Scaled against character level.
+        if let species = content.speciesDefinition(id: character.speciesID) {
+            for trait in species.traits {
+                guard let selection = trait.selection,
+                      case .fixedOptions(let options) = selection.optionsSource else { continue }
+                let picked = Set(character.featureSelections[selection.id] ?? [])
+                for option in options where picked.contains(option.id) {
+                    guard let effect = option.triggeredEffect,
+                          effect.activation == .optIn,
+                          case .onAttackHit(let filter) = effect.trigger else { continue }
+                    if let filter, !filter.matches(weapon: weapon) { continue }
+                    if case .oncePerTurn(let flag) = effect.cost, character.hasTurnFlag(flag) { continue }
+                    // Species riders don't spend spell slots; skip if one is asked for.
+                    if case .spellSlot = effect.cost { continue }
+                    guard let chip = buildChip(
+                        for: effect,
+                        weapon: weapon,
+                        baseDamage: baseDamage,
+                        character: character,
+                        classLevel: character.level,
+                        slotLevel: nil
+                    ) else { continue }
+                    out.append(chip)
+                }
+            }
+        }
+
         return out
     }
 

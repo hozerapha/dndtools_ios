@@ -152,23 +152,35 @@ struct SelectionOption: Codable, Equatable, Identifiable {
     /// Ancestry → Breath Weapon / Damage Resistance type). Nil when the option
     /// carries no damage-type payload.
     let damageType: DamageType?
+    /// Action options this choice confers (Goliath Cloud's Jaunt / Stone's
+    /// Endurance / Storm's Thunder). Surfaced on the Actions tab only when the
+    /// option is the one the player picked. Empty otherwise.
+    let grantedActions: [GrantedAction]
+    /// On-hit / on-damage rider this choice confers (Goliath Fire's Burn,
+    /// Frost's Chill). Surfaced as an opt-in chip on weapon attacks when the
+    /// option is picked. Nil when the option carries no rider.
+    let triggeredEffect: TriggeredEffect?
 
     init(
         id: String,
         name: String,
         description: String,
         grantsSpells: [SpellGrant] = [],
-        damageType: DamageType? = nil
+        damageType: DamageType? = nil,
+        grantedActions: [GrantedAction] = [],
+        triggeredEffect: TriggeredEffect? = nil
     ) {
         self.id = id
         self.name = name
         self.description = description
         self.grantsSpells = grantsSpells
         self.damageType = damageType
+        self.grantedActions = grantedActions
+        self.triggeredEffect = triggeredEffect
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, description, grantsSpells, damageType
+        case id, name, description, grantsSpells, damageType, grantedActions, triggeredEffect
     }
 
     init(from decoder: Decoder) throws {
@@ -178,5 +190,7 @@ struct SelectionOption: Codable, Equatable, Identifiable {
         description = try c.decode(String.self, forKey: .description)
         grantsSpells = try c.decodeIfPresent([SpellGrant].self, forKey: .grantsSpells) ?? []
         damageType = try c.decodeIfPresent(DamageType.self, forKey: .damageType)
+        grantedActions = try c.decodeIfPresent([GrantedAction].self, forKey: .grantedActions) ?? []
+        triggeredEffect = try c.decodeIfPresent(TriggeredEffect.self, forKey: .triggeredEffect)
     }
 }

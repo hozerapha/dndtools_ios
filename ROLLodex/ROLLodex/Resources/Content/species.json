@@ -426,17 +426,56 @@
               {
                 "id": "clouds_jaunt",
                 "name": "Cloud's Jaunt (Cloud Giant)",
-                "description": "As a Bonus Action, you magically teleport up to 30 feet to an unoccupied space you can see."
+                "description": "As a Bonus Action, you magically teleport up to 30 feet to an unoccupied space you can see.",
+                "grantedActions": [
+                  {
+                    "name": "Cloud's Jaunt",
+                    "cost": "bonusAction",
+                    "description": "Magically teleport up to 30 feet to an unoccupied space you can see."
+                  }
+                ]
               },
               {
                 "id": "fires_burn",
                 "name": "Fire's Burn (Fire Giant)",
-                "description": "When you hit a target with an attack roll and deal damage, you can also deal 1d10 Fire damage to it."
+                "description": "When you hit a target with an attack roll and deal damage, you can also deal 1d10 Fire damage to it.",
+                "triggeredEffect": {
+                  "id": "fires_burn_rider",
+                  "name": "Fire's Burn",
+                  "trigger": {
+                    "type": "onAttackHit"
+                  },
+                  "effect": {
+                    "type": "addDamageDice",
+                    "dice": "1d10",
+                    "damageType": "fire"
+                  },
+                  "lifecycle": {
+                    "type": "oneShot"
+                  },
+                  "activation": "optIn"
+                }
               },
               {
                 "id": "frosts_chill",
                 "name": "Frost's Chill (Frost Giant)",
-                "description": "When you hit a target with an attack roll and deal damage, you can also deal 1d6 Cold damage and reduce its Speed by 10 feet until the start of your next turn."
+                "description": "When you hit a target with an attack roll and deal damage, you can also deal 1d6 Cold damage and reduce its Speed by 10 feet until the start of your next turn.",
+                "triggeredEffect": {
+                  "id": "frosts_chill_rider",
+                  "name": "Frost's Chill",
+                  "trigger": {
+                    "type": "onAttackHit"
+                  },
+                  "effect": {
+                    "type": "addDamageDice",
+                    "dice": "1d6",
+                    "damageType": "cold"
+                  },
+                  "lifecycle": {
+                    "type": "oneShot"
+                  },
+                  "activation": "optIn"
+                }
               },
               {
                 "id": "hills_tumble",
@@ -446,12 +485,38 @@
               {
                 "id": "stones_endurance",
                 "name": "Stone's Endurance (Stone Giant)",
-                "description": "When you take damage, you can take a Reaction to roll 1d12, add your Constitution modifier, and reduce the damage by that total."
+                "description": "When you take damage, you can take a Reaction to roll 1d12, add your Constitution modifier, and reduce the damage by that total.",
+                "grantedActions": [
+                  {
+                    "name": "Stone's Endurance",
+                    "cost": "reaction",
+                    "description": "When you take damage, roll and reduce that damage by the total.",
+                    "recipe": {
+                      "type": "abilityRoll",
+                      "dice": "1d12",
+                      "ability": "constitution",
+                      "label": "Stone's Endurance"
+                    }
+                  }
+                ]
               },
               {
                 "id": "storms_thunder",
                 "name": "Storm's Thunder (Storm Giant)",
-                "description": "When you take damage from a creature within 60 feet of you, you can take a Reaction to deal 1d8 Thunder damage to that creature."
+                "description": "When you take damage from a creature within 60 feet of you, you can take a Reaction to deal 1d8 Thunder damage to that creature.",
+                "grantedActions": [
+                  {
+                    "name": "Storm's Thunder",
+                    "cost": "reaction",
+                    "description": "When you take damage from a creature within 60 feet, deal Thunder damage to it.",
+                    "recipe": {
+                      "type": "rawDamage",
+                      "dice": "1d8",
+                      "damageType": "thunder",
+                      "label": "Storm's Thunder"
+                    }
+                  }
+                ]
               }
             ]
           }

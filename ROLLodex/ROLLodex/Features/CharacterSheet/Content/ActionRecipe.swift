@@ -27,6 +27,12 @@ enum ActionRecipe: Codable, Equatable {
     /// from a separate choice (Draconic Ancestry) — left nil, the roll is
     /// untyped and the type lives in the trait's description.
     case scaledDamage(dieKind: Int, count: LevelScaledValue, damageType: DamageType?, label: String)
+    /// A flat dice roll plus a specific ability's modifier — Goliath Stone's
+    /// Endurance (1d12 + Constitution). Distinct from `abilityCheck` (which is
+    /// always a d20) and from `heal` (which adds level / spellcasting mod): the
+    /// modifier is a fixed ability the recipe names. Untyped (it's often a
+    /// reduction or utility roll, not damage).
+    case abilityRoll(dice: String, ability: Ability, label: String)
 
     /// Factory overloads preserving the pre-`addSpellcastingMod` call shape —
     /// existing Swift construction sites (tests, fixtures) keep compiling and
@@ -104,6 +110,12 @@ extension ActionRecipe {
             let label = try container.decodeIfPresent(String.self, forKey: .label) ?? "Damage"
             self = .scaledDamage(dieKind: dieKind, count: count, damageType: damageType, label: label)
 
+        case "abilityRoll":
+            let dice = try container.decode(String.self, forKey: .dice)
+            let ability = try container.decode(Ability.self, forKey: .ability)
+            let label = try container.decodeIfPresent(String.self, forKey: .label) ?? "Roll"
+            self = .abilityRoll(dice: dice, ability: ability, label: label)
+
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .type,
@@ -169,6 +181,12 @@ extension ActionRecipe {
             try container.encode(dieKind, forKey: .dieKind)
             try container.encode(count, forKey: .count)
             try container.encodeIfPresent(damageType, forKey: .damageType)
+            try container.encode(label, forKey: .label)
+
+        case .abilityRoll(let dice, let ability, let label):
+            try container.encode("abilityRoll", forKey: .type)
+            try container.encode(dice, forKey: .dice)
+            try container.encode(ability, forKey: .ability)
             try container.encode(label, forKey: .label)
         }
     }

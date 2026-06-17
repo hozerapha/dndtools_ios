@@ -1839,11 +1839,22 @@ Dragonborn, Dwarf, Elf, Gnome, **Goliath**, Halfling, Human, Orc, Tiefling.
 > the Ability Scores step (`CharacterDraft.debugAutofill`) to skip manual score
 > entry while testing.
 >
-> **Deferred (flagged, not yet wired):**
-> - Per-option giant-ancestry mechanics (Fire's Burn 1d10 rider, Stone's
->   Endurance 1d12 reaction, etc.) — needs per-`SelectionOption` granted
->   actions/recipes conditioned on the pick. Currently picker + descriptive.
->   **This is the last deferred species item.**
+> **Giant Ancestry combat mechanics shipped 2026-06-17.** `SelectionOption`
+> now carries per-option `grantedActions` and a `triggeredEffect`, surfaced only
+> for the picked option:
+> - **Cloud's Jaunt** (Bonus), **Stone's Endurance** (Reaction, new
+>   `ActionRecipe.abilityRoll` → 1d12 + CON), **Storm's Thunder** (Reaction,
+>   1d8 thunder) → granted-action rows via `CharacterActionDeriver.grantedActions`.
+> - **Fire's Burn** (+1d10 fire) / **Frost's Chill** (+1d6 cold) → opt-in on-hit
+>   rider chips via `TriggeredEffectResolver.optInRiders` (now walks species
+>   option `triggeredEffect`s too).
+> - **Hill's Tumble** stays descriptive (no roll).
+>
+> **All four deferred species items are now done.** Remaining nicety: the
+> giant benefit's "PB uses per Long Rest" limit isn't metered yet (the actions/
+> riders are always available; the player tracks uses) — a shared per-pick use
+> pool would close that, but it spans the granted-action and rider paths, so
+> it's left as a follow-up.
 
 ### Backgrounds (only 4 in the SRD)
 Acolyte, Criminal, Sage, Soldier.

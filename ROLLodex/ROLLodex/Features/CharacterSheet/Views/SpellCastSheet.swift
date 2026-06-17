@@ -433,6 +433,7 @@ struct SpellCastSheet: View {
         case .abilityCheck, .skillCheck:  return "Roll Check"
         case .savingThrow:                return "Roll Save"
         case .saveDC:                     return "Roll"
+        case .abilityRoll:                return "Roll"
         }
     }
 

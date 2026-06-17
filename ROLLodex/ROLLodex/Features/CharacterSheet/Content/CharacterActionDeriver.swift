@@ -623,12 +623,28 @@ enum CharacterActionDeriver {
         }
         if let species = content.speciesDefinition(id: character.speciesID) {
             for trait in species.traits {
+                // Flat trait-level grants.
                 for granted in trait.grantedActions {
                     rows.append(GrantedActionRow(
                         id: "trait_\(trait.id)_\(granted.name)",
                         featureName: trait.name,
                         action: granted
                     ))
+                }
+                // Choice-gated grants: only the picked option contributes
+                // (Goliath Cloud's Jaunt / Stone's Endurance / Storm's Thunder).
+                if let selection = trait.selection,
+                   case .fixedOptions(let options) = selection.optionsSource {
+                    let picked = Set(character.featureSelections[selection.id] ?? [])
+                    for option in options where picked.contains(option.id) {
+                        for granted in option.grantedActions {
+                            rows.append(GrantedActionRow(
+                                id: "trait_\(trait.id)_\(option.id)_\(granted.name)",
+                                featureName: option.name,
+                                action: granted
+                            ))
+                        }
+                    }
                 }
             }
         }
