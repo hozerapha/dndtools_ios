@@ -67,6 +67,10 @@ Don't create folders before there's something to put in them.
 
 The user builds and runs through Xcode (⌘R) on the iOS Simulator. There is no CLI build step assumed. If you need to verify a build, ask the user to run it and report errors back rather than invoking `xcodebuild` yourself.
 
+## Manual QA checklist
+
+[MANUAL_QA.md](MANUAL_QA.md) is a living checklist of in-app, manual test cases (the things `⌘U` can't catch — tab gating, navigation, picker wiring, sheet behavior, persistence). **Whenever you implement or change a user-facing feature, add or update its cases there**, written as concrete step-by-step actions with a `[ ]` checkbox and an expected result. Re-open (`[ ]`) any existing case whose behavior changed. Do **not** check boxes off yourself — verification is the user's; you only author the cases. Mention in your summary which MANUAL_QA.md cases are new/affected so the user knows what to test.
+
 ## New files & Xcode
 
 Xcode 26.4's `PBXFileSystemSynchronizedRootGroup` does **not** live-detect Swift files added from outside Xcode. After any new file is created, the user has to ⌘Q and relaunch Xcode for the navigator/build to see it. This is a known annoyance, not a blocker — don't avoid creating new files when they're the right call. Just:
