@@ -276,4 +276,17 @@ struct AbilityScoreMethodTests {
         draft.backgroundAbilityBonuses = [.strength: 3]
         #expect(!draft.isValidBackgroundBonus(options: soldierOptions))
     }
+
+    #if DEBUG
+    @Test func debugAutofillProducesValidAssignmentForEveryMethod() {
+        let options: [Ability] = [.dexterity, .constitution, .intelligence]
+        for method in AbilityScoreMethod.allCases {
+            var draft = CharacterDraft()
+            draft.setAbilityMethod(method)
+            draft.debugAutofill(backgroundOptions: options)
+            #expect(draft.isAbilityAssignmentValid, "\(method) invalid after autofill")
+            #expect(draft.isValidBackgroundBonus(options: options))
+        }
+    }
+    #endif
 }

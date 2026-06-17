@@ -17,6 +17,13 @@ struct CharacterCreationView: View {
                 switch step {
                 case .species:
                     SpeciesStep(draft: $draft, contentStore: contentStore) {
+                        // Only stop for species choices when there are any
+                        // (Dragonborn ancestry, Elf/Gnome lineage, Tiefling
+                        // legacy, innate ability); plain species skip straight on.
+                        path.append(speciesHasChoices(draft.speciesID) ? CreationStep.speciesChoices : CreationStep.background)
+                    }
+                case .speciesChoices:
+                    SpeciesChoicesStep(draft: $draft, contentStore: contentStore) {
                         path.append(CreationStep.background)
                     }
                 case .background:
@@ -43,10 +50,20 @@ struct CharacterCreationView: View {
             }
         }
     }
+
+    /// Does this species have any player choice to make at creation (a
+    /// fixed-options selection: ancestry / lineage / legacy / innate ability)?
+    private func speciesHasChoices(_ id: String) -> Bool {
+        guard let species = contentStore.speciesDefinition(id: id) else { return false }
+        return species.traits.contains {
+            if case .fixedOptions = $0.selection?.optionsSource { return true }
+            return false
+        }
+    }
 }
 
 private enum CreationStep: Hashable {
-    case species, background, classSelection, classSkills, abilities, review
+    case species, speciesChoices, background, classSelection, classSkills, abilities, review
 }
 
 // MARK: - Name Step
@@ -90,6 +107,10 @@ private struct SpeciesStep: View {
 
     private func speciesRow(_ species: SpeciesDefinition) -> some View {
         Button {
+            // Switching species drops any stale ancestry/lineage/legacy picks.
+            if draft.speciesID != species.id {
+                draft.featureSelections = [:]
+            }
             draft.speciesID = species.id
             onNext()
         } label: {
@@ -108,6 +129,75 @@ private struct SpeciesStep: View {
                 }
             }
         }
+        .foregroundStyle(.primary)
+    }
+}
+
+// MARK: - Species Choices Step
+
+/// Shown only for species with choices. Renders a radio picker per fixed-
+/// option selection (Draconic Ancestry, lineage, Fiendish Legacy, innate
+/// ability), writing to `draft.featureSelections`. Picks are optional here —
+/// the player can also set them later on the Features tab.
+private struct SpeciesChoicesStep: View {
+    @Binding var draft: CharacterDraft
+    let contentStore: ContentStore
+    let onNext: () -> Void
+
+    private var species: SpeciesDefinition? {
+        contentStore.speciesDefinition(id: draft.speciesID)
+    }
+
+    private var choiceTraits: [TraitDefinition] {
+        (species?.traits ?? []).filter {
+            if case .fixedOptions = $0.selection?.optionsSource { return true }
+            return false
+        }
+    }
+
+    var body: some View {
+        Form {
+            ForEach(choiceTraits) { trait in
+                if let selection = trait.selection,
+                   case .fixedOptions(let options) = selection.optionsSource {
+                    Section(selection.prompt) {
+                        ForEach(options) { option in
+                            optionRow(selectionID: selection.id, option: option)
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("\(species?.name ?? "Species") Traits")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                // Picks are optional — they're also editable on the Features tab.
+                Button("Next", action: onNext)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func optionRow(selectionID: String, option: SelectionOption) -> some View {
+        let picked = draft.featureSelections[selectionID]?.contains(option.id) ?? false
+        Button {
+            // Count-1 radio behavior: tap to set, tap again to clear.
+            draft.featureSelections[selectionID] = picked ? [] : [option.id]
+        } label: {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: picked ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(picked ? Color.accentColor : .secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(option.name).font(.subheadline.weight(.semibold))
+                    Text(option.description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .buttonStyle(.plain)
         .foregroundStyle(.primary)
     }
 }
@@ -331,6 +421,18 @@ private struct AbilitiesStep: View {
             }
 
             backgroundBonusSection
+
+            #if DEBUG
+            Section {
+                Button {
+                    draft.debugAutofill(backgroundOptions: backgroundOptions)
+                } label: {
+                    Label("Autofill (debug)", systemImage: "wand.and.stars")
+                }
+            } footer: {
+                Text("Fills ability scores and origin bonuses so you can blow through creation while testing.")
+            }
+            #endif
         }
         .navigationTitle("Ability Scores")
         .toolbar {

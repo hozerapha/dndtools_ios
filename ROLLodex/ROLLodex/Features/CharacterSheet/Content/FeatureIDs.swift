@@ -23,6 +23,12 @@ enum FeatureIDs {
     /// (same content-free trick as expertise) so it's re-editable anywhere.
     static let classSkillsMarker = "class_skills"
 
+    /// Substring marker on a species' innate-spellcasting ability selection id
+    /// (`tiefling_spell_ability`, …) — `CharacterSpellGrants` reads the picked
+    /// option (an `Ability.rawValue`) as the casting ability for that species'
+    /// granted spells.
+    static let spellAbilityMarker = "spell_ability"
+
     /// Option ids inside the `fighting_style` selection whose mechanical
     /// effects the calculator / interpreter apply directly.
     enum FightingStyle {

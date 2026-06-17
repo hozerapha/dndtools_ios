@@ -479,7 +479,7 @@ struct CharacterSheetView: View {
                 spellBeingCast = PendingSpellCast(
                     spell: spell,
                     itemContext: nil,
-                    innateAbility: CharacterSpellGrants.innateSpellcastingAbility(character: character),
+                    innateAbility: CharacterSpellGrants.innateSpellcastingAbility(character: character, content: content),
                     freeCastResourceID: CharacterSpellGrants.hasFreeCast(
                         spellID: spell.id, character: character, content: content
                     ) ? CharacterSpellGrants.freeCastResourceID(spellID: spell.id) : nil

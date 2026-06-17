@@ -148,16 +148,27 @@ struct SelectionOption: Codable, Equatable, Identifiable {
     /// Faerie Fire at L3, …). Always-prepared; see `SpellGrant`. Empty for
     /// options with no spell payload (Fighting Styles, subraces, etc.).
     let grantsSpells: [SpellGrant]
+    /// Damage type this option imparts to a sibling trait's roll (Draconic
+    /// Ancestry → Breath Weapon / Damage Resistance type). Nil when the option
+    /// carries no damage-type payload.
+    let damageType: DamageType?
 
-    init(id: String, name: String, description: String, grantsSpells: [SpellGrant] = []) {
+    init(
+        id: String,
+        name: String,
+        description: String,
+        grantsSpells: [SpellGrant] = [],
+        damageType: DamageType? = nil
+    ) {
         self.id = id
         self.name = name
         self.description = description
         self.grantsSpells = grantsSpells
+        self.damageType = damageType
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, description, grantsSpells
+        case id, name, description, grantsSpells, damageType
     }
 
     init(from decoder: Decoder) throws {
@@ -166,5 +177,6 @@ struct SelectionOption: Codable, Equatable, Identifiable {
         name = try c.decode(String.self, forKey: .name)
         description = try c.decode(String.self, forKey: .description)
         grantsSpells = try c.decodeIfPresent([SpellGrant].self, forKey: .grantsSpells) ?? []
+        damageType = try c.decodeIfPresent(DamageType.self, forKey: .damageType)
     }
 }

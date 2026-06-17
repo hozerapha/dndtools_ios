@@ -49,6 +49,10 @@ struct CharacterDraft {
     /// Skills the player chose from the class's `skillChoices` list, applied
     /// as proficiencies at finalize. Empty until chosen.
     var classSkillChoices: [Skill] = []
+    /// Species selection picks made during creation — Draconic Ancestry, Elven/
+    /// Gnomish lineage, Fiendish Legacy, innate-spellcasting ability — keyed by
+    /// selection id. Merged into the character's `featureSelections` at finalize.
+    var featureSelections: [String: [String]] = [:]
 
     static let standardArray = [15, 14, 13, 12, 10, 8]
 
@@ -223,4 +227,24 @@ struct CharacterDraft {
         // Actual value would come from ClassDefinition lookup
         10 + CharacterCalculator.abilityModifier(score: abilityScores[.constitution] ?? 10)
     }
+
+    #if DEBUG
+    /// Testing shortcut: fill ability scores with a (shuffled) standard array —
+    /// which is also a legal 27-point buy — and assign a valid origin bonus
+    /// spread (+2 / +1 to the background's first two options). Lets the new-
+    /// character flow be driven to completion without hand-assigning scores.
+    mutating func debugAutofill(backgroundOptions: [Ability]) {
+        let values = Self.standardArray.shuffled()
+        if abilityMethod == .rolled { rolledScores = Self.standardArray }
+        abilityScores = Dictionary(uniqueKeysWithValues: zip(Ability.allCases, values))
+
+        backgroundAbilityBonuses = [:]
+        if backgroundOptions.count >= 2 {
+            backgroundAbilityBonuses[backgroundOptions[0]] = 2
+            backgroundAbilityBonuses[backgroundOptions[1]] = 1
+        } else if let only = backgroundOptions.first {
+            backgroundAbilityBonuses[only] = 2
+        }
+    }
+    #endif
 }

@@ -1819,15 +1819,31 @@ Dragonborn, Dwarf, Elf, Gnome, **Goliath**, Halfling, Human, Orc, Tiefling.
 >   `SpellCastSheet` shows a "Cast free (Innate)" path that spends it instead of
 >   a slot. Cantrips stay at-will (no pool).
 >
+> **Quick wins shipped 2026-06-17:**
+> - **Breath Weapon damage type** — `SelectionOption.damageType` carries each
+>   Draconic Ancestry's type; `CharacterActionDeriver` stamps the untyped
+>   `scaledDamage` recipe with the chosen ancestry's type, so the roll reads
+>   fire/cold/acid/etc. (untyped only when no ancestry is chosen).
+> - **Explicit INT/WIS/CHA innate-spellcasting picker** — a per-species
+>   "Innate Spellcasting" trait (`<species>_spell_ability` selection, marker
+>   `spell_ability`); `CharacterSpellGrants.innateSpellcastingAbility` honors
+>   the pick, falling back to highest-mental when unset.
+>
+> **Creation-wizard species pickers shipped 2026-06-17.** A `speciesChoices`
+> step (`SpeciesChoicesStep`) appears after Species selection for any species
+> with fixed-option choices (Dragonborn ancestry, Elf/Gnome lineage, Tiefling
+> legacy, innate ability) and writes to `CharacterDraft.featureSelections`,
+> which `finalizeDraft` carries onto the new character. Plain species skip the
+> step. Switching species clears stale picks. Picks stay optional (also
+> editable on the Features tab). Also added a DEBUG-only "Autofill" button on
+> the Ability Scores step (`CharacterDraft.debugAutofill`) to skip manual score
+> entry while testing.
+>
 > **Deferred (flagged, not yet wired):**
 > - Per-option giant-ancestry mechanics (Fire's Burn 1d10 rider, Stone's
 >   Endurance 1d12 reaction, etc.) — needs per-`SelectionOption` granted
 >   actions/recipes conditioned on the pick. Currently picker + descriptive.
-> - Breath Weapon damage *type* from the chosen ancestry (roll is untyped; type
->   lives in the description) — needs the deriver to read the ancestry pick.
-> - Explicit INT/WIS/CHA picker for innate spellcasting (auto-highest for now).
-> - Species pickers in the **creation wizard** (editable post-creation from the
->   Features tab today, like class skills / expertise).
+>   **This is the last deferred species item.**
 
 ### Backgrounds (only 4 in the SRD)
 Acolyte, Criminal, Sage, Soldier.

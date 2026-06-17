@@ -49,9 +49,17 @@
                 "name": "Drow",
                 "description": "Your Darkvision range increases to 120 feet, and you know the Dancing Lights cantrip. Lvl 3: Faerie Fire. Lvl 5: Darkness.",
                 "grantsSpells": [
-                  { "spellID": "dancing_lights" },
-                  { "spellID": "faerie_fire", "minCharacterLevel": 3 },
-                  { "spellID": "darkness", "minCharacterLevel": 5 }
+                  {
+                    "spellID": "dancing_lights"
+                  },
+                  {
+                    "spellID": "faerie_fire",
+                    "minCharacterLevel": 3
+                  },
+                  {
+                    "spellID": "darkness",
+                    "minCharacterLevel": 5
+                  }
                 ]
               },
               {
@@ -59,9 +67,17 @@
                 "name": "High Elf",
                 "description": "You know the Prestidigitation cantrip (you can swap it for another Wizard cantrip after each Long Rest). Lvl 3: Detect Magic. Lvl 5: Misty Step.",
                 "grantsSpells": [
-                  { "spellID": "prestidigitation" },
-                  { "spellID": "detect_magic", "minCharacterLevel": 3 },
-                  { "spellID": "misty_step", "minCharacterLevel": 5 }
+                  {
+                    "spellID": "prestidigitation"
+                  },
+                  {
+                    "spellID": "detect_magic",
+                    "minCharacterLevel": 3
+                  },
+                  {
+                    "spellID": "misty_step",
+                    "minCharacterLevel": 5
+                  }
                 ]
               },
               {
@@ -69,10 +85,48 @@
                 "name": "Wood Elf",
                 "description": "Your Speed increases to 35 feet, and you know the Druidcraft cantrip. Lvl 3: Longstrider. Lvl 5: Pass without Trace.",
                 "grantsSpells": [
-                  { "spellID": "druidcraft" },
-                  { "spellID": "longstrider", "minCharacterLevel": 3 },
-                  { "spellID": "pass_without_trace", "minCharacterLevel": 5 }
+                  {
+                    "spellID": "druidcraft"
+                  },
+                  {
+                    "spellID": "longstrider",
+                    "minCharacterLevel": 3
+                  },
+                  {
+                    "spellID": "pass_without_trace",
+                    "minCharacterLevel": 5
+                  }
                 ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "innate_spellcasting",
+        "name": "Innate Spellcasting",
+        "description": "Choose the ability you use to cast the spells granted by your lineage. (Defaults to your highest of Intelligence, Wisdom, or Charisma until set.)",
+        "selection": {
+          "id": "elf_spell_ability",
+          "prompt": "Choose your innate spellcasting ability",
+          "count": 1,
+          "optionsSource": {
+            "type": "fixedOptions",
+            "options": [
+              {
+                "id": "intelligence",
+                "name": "Intelligence",
+                "description": "Cast your innate lineage spells using Intelligence."
+              },
+              {
+                "id": "wisdom",
+                "name": "Wisdom",
+                "description": "Cast your innate lineage spells using Wisdom."
+              },
+              {
+                "id": "charisma",
+                "name": "Charisma",
+                "description": "Cast your innate lineage spells using Charisma."
               }
             ]
           }
@@ -124,7 +178,15 @@
         "resource": {
           "id": "dwarf_stonecunning",
           "name": "Stonecunning Uses",
-          "max": { "byCharacterLevel": { "1": 2, "5": 3, "9": 4, "13": 5, "17": 6 } },
+          "max": {
+            "byCharacterLevel": {
+              "1": 2,
+              "5": 3,
+              "9": 4,
+              "13": 5,
+              "17": 6
+            }
+          },
           "refreshOn": "longRest",
           "refreshAmount": "all"
         }
@@ -148,16 +210,66 @@
           "optionsSource": {
             "type": "fixedOptions",
             "options": [
-              { "id": "black",  "name": "Black Dragon",  "description": "Acid damage." },
-              { "id": "blue",   "name": "Blue Dragon",   "description": "Lightning damage." },
-              { "id": "brass",  "name": "Brass Dragon",  "description": "Fire damage." },
-              { "id": "bronze", "name": "Bronze Dragon", "description": "Lightning damage." },
-              { "id": "copper", "name": "Copper Dragon", "description": "Acid damage." },
-              { "id": "gold",   "name": "Gold Dragon",   "description": "Fire damage." },
-              { "id": "green",  "name": "Green Dragon",  "description": "Poison damage." },
-              { "id": "red",    "name": "Red Dragon",    "description": "Fire damage." },
-              { "id": "silver", "name": "Silver Dragon", "description": "Cold damage." },
-              { "id": "white",  "name": "White Dragon",  "description": "Cold damage." }
+              {
+                "id": "black",
+                "name": "Black Dragon",
+                "description": "Acid damage.",
+                "damageType": "acid"
+              },
+              {
+                "id": "blue",
+                "name": "Blue Dragon",
+                "description": "Lightning damage.",
+                "damageType": "lightning"
+              },
+              {
+                "id": "brass",
+                "name": "Brass Dragon",
+                "description": "Fire damage.",
+                "damageType": "fire"
+              },
+              {
+                "id": "bronze",
+                "name": "Bronze Dragon",
+                "description": "Lightning damage.",
+                "damageType": "lightning"
+              },
+              {
+                "id": "copper",
+                "name": "Copper Dragon",
+                "description": "Acid damage.",
+                "damageType": "acid"
+              },
+              {
+                "id": "gold",
+                "name": "Gold Dragon",
+                "description": "Fire damage.",
+                "damageType": "fire"
+              },
+              {
+                "id": "green",
+                "name": "Green Dragon",
+                "description": "Poison damage.",
+                "damageType": "poison"
+              },
+              {
+                "id": "red",
+                "name": "Red Dragon",
+                "description": "Fire damage.",
+                "damageType": "fire"
+              },
+              {
+                "id": "silver",
+                "name": "Silver Dragon",
+                "description": "Cold damage.",
+                "damageType": "cold"
+              },
+              {
+                "id": "white",
+                "name": "White Dragon",
+                "description": "Cold damage.",
+                "damageType": "cold"
+              }
             ]
           }
         }
@@ -170,7 +282,15 @@
         "resource": {
           "id": "dragonborn_breath_weapon",
           "name": "Breath Weapon Uses",
-          "max": { "byCharacterLevel": { "1": 2, "5": 3, "9": 4, "13": 5, "17": 6 } },
+          "max": {
+            "byCharacterLevel": {
+              "1": 2,
+              "5": 3,
+              "9": 4,
+              "13": 5,
+              "17": 6
+            }
+          },
           "refreshOn": "longRest",
           "refreshAmount": "all"
         },
@@ -178,7 +298,14 @@
           {
             "type": "scaledDamage",
             "dieKind": 10,
-            "count": { "byCharacterLevel": { "1": 1, "5": 2, "11": 3, "17": 4 } },
+            "count": {
+              "byCharacterLevel": {
+                "1": 1,
+                "5": 2,
+                "11": 3,
+                "17": 4
+              }
+            },
             "label": "Breath Weapon"
           }
         ]
@@ -222,8 +349,12 @@
                 "name": "Forest Gnome",
                 "description": "You know the Minor Illusion cantrip and always have Speak with Animals prepared. You can cast it without a spell slot a number of times equal to your Proficiency Bonus per Long Rest, or with any spell slots you have.",
                 "grantsSpells": [
-                  { "spellID": "minor_illusion" },
-                  { "spellID": "speak_with_animals" }
+                  {
+                    "spellID": "minor_illusion"
+                  },
+                  {
+                    "spellID": "speak_with_animals"
+                  }
                 ]
               },
               {
@@ -231,9 +362,43 @@
                 "name": "Rock Gnome",
                 "description": "You know the Mending and Prestidigitation cantrips. You can spend 10 minutes casting Prestidigitation to create a Tiny clockwork device (AC 5, 1 HP). You can have three such devices at a time; each falls apart after 8 hours or when you dismantle it.",
                 "grantsSpells": [
-                  { "spellID": "mending" },
-                  { "spellID": "prestidigitation" }
+                  {
+                    "spellID": "mending"
+                  },
+                  {
+                    "spellID": "prestidigitation"
+                  }
                 ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "innate_spellcasting",
+        "name": "Innate Spellcasting",
+        "description": "Choose the ability you use to cast the spells granted by your lineage. (Defaults to your highest of Intelligence, Wisdom, or Charisma until set.)",
+        "selection": {
+          "id": "gnome_spell_ability",
+          "prompt": "Choose your innate spellcasting ability",
+          "count": 1,
+          "optionsSource": {
+            "type": "fixedOptions",
+            "options": [
+              {
+                "id": "intelligence",
+                "name": "Intelligence",
+                "description": "Cast your innate lineage spells using Intelligence."
+              },
+              {
+                "id": "wisdom",
+                "name": "Wisdom",
+                "description": "Cast your innate lineage spells using Wisdom."
+              },
+              {
+                "id": "charisma",
+                "name": "Charisma",
+                "description": "Cast your innate lineage spells using Charisma."
               }
             ]
           }
@@ -354,7 +519,15 @@
         "resource": {
           "id": "orc_adrenaline_rush",
           "name": "Adrenaline Rush",
-          "max": { "byCharacterLevel": { "1": 2, "5": 3, "9": 4, "13": 5, "17": 6 } },
+          "max": {
+            "byCharacterLevel": {
+              "1": 2,
+              "5": 3,
+              "9": 4,
+              "13": 5,
+              "17": 6
+            }
+          },
           "refreshOn": "shortRest",
           "refreshAmount": "all"
         }
@@ -398,9 +571,17 @@
                 "name": "Abyssal",
                 "description": "You have Resistance to Poison damage and know the Poison Spray cantrip. Lvl 3: Ray of Sickness. Lvl 5: Hold Person.",
                 "grantsSpells": [
-                  { "spellID": "poison_spray" },
-                  { "spellID": "ray_of_sickness", "minCharacterLevel": 3 },
-                  { "spellID": "hold_person", "minCharacterLevel": 5 }
+                  {
+                    "spellID": "poison_spray"
+                  },
+                  {
+                    "spellID": "ray_of_sickness",
+                    "minCharacterLevel": 3
+                  },
+                  {
+                    "spellID": "hold_person",
+                    "minCharacterLevel": 5
+                  }
                 ]
               },
               {
@@ -408,9 +589,17 @@
                 "name": "Chthonic",
                 "description": "You have Resistance to Necrotic damage and know the Chill Touch cantrip. Lvl 3: False Life. Lvl 5: Ray of Enfeeblement.",
                 "grantsSpells": [
-                  { "spellID": "chill_touch" },
-                  { "spellID": "false_life", "minCharacterLevel": 3 },
-                  { "spellID": "ray_of_enfeeblement", "minCharacterLevel": 5 }
+                  {
+                    "spellID": "chill_touch"
+                  },
+                  {
+                    "spellID": "false_life",
+                    "minCharacterLevel": 3
+                  },
+                  {
+                    "spellID": "ray_of_enfeeblement",
+                    "minCharacterLevel": 5
+                  }
                 ]
               },
               {
@@ -418,10 +607,48 @@
                 "name": "Infernal",
                 "description": "You have Resistance to Fire damage and know the Fire Bolt cantrip. Lvl 3: Hellish Rebuke. Lvl 5: Darkness.",
                 "grantsSpells": [
-                  { "spellID": "fire_bolt" },
-                  { "spellID": "hellish_rebuke", "minCharacterLevel": 3 },
-                  { "spellID": "darkness", "minCharacterLevel": 5 }
+                  {
+                    "spellID": "fire_bolt"
+                  },
+                  {
+                    "spellID": "hellish_rebuke",
+                    "minCharacterLevel": 3
+                  },
+                  {
+                    "spellID": "darkness",
+                    "minCharacterLevel": 5
+                  }
                 ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "innate_spellcasting",
+        "name": "Innate Spellcasting",
+        "description": "Choose the ability you use to cast the spells granted by your lineage. (Defaults to your highest of Intelligence, Wisdom, or Charisma until set.)",
+        "selection": {
+          "id": "tiefling_spell_ability",
+          "prompt": "Choose your innate spellcasting ability",
+          "count": 1,
+          "optionsSource": {
+            "type": "fixedOptions",
+            "options": [
+              {
+                "id": "intelligence",
+                "name": "Intelligence",
+                "description": "Cast your innate lineage spells using Intelligence."
+              },
+              {
+                "id": "wisdom",
+                "name": "Wisdom",
+                "description": "Cast your innate lineage spells using Wisdom."
+              },
+              {
+                "id": "charisma",
+                "name": "Charisma",
+                "description": "Cast your innate lineage spells using Charisma."
               }
             ]
           }
@@ -432,7 +659,9 @@
         "name": "Otherworldly Presence",
         "description": "You know the Thaumaturgy cantrip. When you cast it with this trait, the spell uses the same spellcasting ability you use for your Fiendish Legacy trait.",
         "grantsSpells": [
-          { "spellID": "thaumaturgy" }
+          {
+            "spellID": "thaumaturgy"
+          }
         ]
       }
     ]

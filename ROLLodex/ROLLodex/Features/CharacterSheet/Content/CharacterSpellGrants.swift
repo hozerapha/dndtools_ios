@@ -54,11 +54,21 @@ enum CharacterSpellGrants {
     }
 
     /// The ability used to cast species-granted spells. The SRD lets the player
-    /// choose Intelligence, Wisdom, or Charisma per lineage; until that pick has
-    /// its own UI we default to the character's highest of the three (ties
-    /// favor INT, then WIS). Only used as a fallback when the character has no
-    /// class spellcasting ability of its own.
-    static func innateSpellcastingAbility(character: Character) -> Ability {
+    /// choose Intelligence, Wisdom, or Charisma per lineage; if they've made
+    /// that pick (a species selection whose id carries the `spell_ability`
+    /// marker) we honor it, otherwise we default to the character's highest of
+    /// the three (ties favor INT, then WIS). Only consulted when the character
+    /// has no class spellcasting ability of its own.
+    static func innateSpellcastingAbility(character: Character, content: ContentStore) -> Ability {
+        if let species = content.speciesDefinition(id: character.speciesID) {
+            for trait in species.traits {
+                guard let selection = trait.selection,
+                      selection.id.contains(FeatureIDs.spellAbilityMarker),
+                      let pick = character.featureSelections[selection.id]?.first,
+                      let ability = Ability(rawValue: pick) else { continue }
+                return ability
+            }
+        }
         let order: [Ability] = [.intelligence, .wisdom, .charisma]
         var best = order[0]
         for ability in order.dropFirst()

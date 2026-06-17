@@ -167,16 +167,21 @@ struct ContentStoreTests {
 
         // Hole 1: innate casting ability = highest of INT/WIS/CHA.
         let chaPC = tiefling(level: 5, scores: [.intelligence: 10, .wisdom: 12, .charisma: 16])
-        #expect(CharacterSpellGrants.innateSpellcastingAbility(character: chaPC) == .charisma)
+        #expect(CharacterSpellGrants.innateSpellcastingAbility(character: chaPC, content: store) == .charisma)
         let intPC = tiefling(level: 5, scores: [.intelligence: 15, .wisdom: 12, .charisma: 8])
-        #expect(CharacterSpellGrants.innateSpellcastingAbility(character: intPC) == .intelligence)
+        #expect(CharacterSpellGrants.innateSpellcastingAbility(character: intPC, content: store) == .intelligence)
         // And it resolves a real spell-attack roll for a non-caster.
         let attack = ActionInterpreter.resolve(
             recipe: .spellAttack(label: "Fire Bolt Attack"),
             character: chaPC, weapon: nil,
-            spellcastingAbility: CharacterSpellGrants.innateSpellcastingAbility(character: chaPC)
+            spellcastingAbility: CharacterSpellGrants.innateSpellcastingAbility(character: chaPC, content: store)
         )
         #expect(attack.formula != nil)
+
+        // An explicit ability pick overrides the highest-stat default.
+        var explicit = intPC  // highest is INT...
+        explicit.featureSelections["tiefling_spell_ability"] = ["charisma"]
+        #expect(CharacterSpellGrants.innateSpellcastingAbility(character: explicit, content: store) == .charisma)
 
         // Hole 2: leveled grants get a 1/Long-Rest free-cast pool; cantrips don't.
         #expect(CharacterSpellGrants.hasFreeCast(spellID: "hellish_rebuke", character: chaPC, content: store))
@@ -191,6 +196,33 @@ struct ContentStoreTests {
         #expect(!CharacterSpellGrants.hasFreeCast(spellID: "hellish_rebuke", character: l1, content: store))
         #expect(!ResourceCalculator.availableResources(character: l1, content: store)
             .contains { $0.definition.id == "grant_hellish_rebuke" })
+    }
+
+    @MainActor
+    @Test func breathWeaponTakesChosenAncestryDamageType() {
+        let store = ContentStore()
+        func dragonborn(ancestry: String?) -> Character {
+            var c = Character(
+                name: "D", level: 5, speciesID: "dragonborn", backgroundID: "soldier",
+                classEntries: [ClassEntry(classID: "fighter", level: 5)],
+                abilityScores: [.constitution: 14], maxHP: 30
+            )
+            if let ancestry { c.featureSelections["dragonborn_ancestry"] = [ancestry] }
+            return c
+        }
+        func breathGroup(_ c: Character) -> DiceGroup? {
+            CharacterActionDeriver.sections(for: c, content: store)
+                .flatMap(\.rows)
+                .first { $0.title == "Breath Weapon" }?.action.formula?.groups.first
+        }
+        // Red → fire, and the die count scales to 2d10 at level 5.
+        #expect(breathGroup(dragonborn(ancestry: "red"))?.damageType == .fire)
+        #expect(breathGroup(dragonborn(ancestry: "red"))?.count == 2)
+        // Green → poison.
+        #expect(breathGroup(dragonborn(ancestry: "green"))?.damageType == .poison)
+        // Unchosen → untyped, but the roll still resolves.
+        #expect(breathGroup(dragonborn(ancestry: nil))?.damageType == nil)
+        #expect(breathGroup(dragonborn(ancestry: nil))?.count == 2)
     }
 
     @Test func loadsBackgrounds() {

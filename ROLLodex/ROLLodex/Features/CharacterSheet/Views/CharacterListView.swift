@@ -91,6 +91,13 @@ struct CharacterListView: View {
                 character.proficiencies[.skill(skill)] = .proficient
             }
         }
+        // Carry the species picks made during creation (Draconic Ancestry,
+        // lineage, Fiendish Legacy, innate-spellcasting ability). Distinct keys
+        // from the class-skill seeding below, so order doesn't matter.
+        for (selectionID, picks) in draft.featureSelections {
+            character.featureSelections[selectionID] = picks
+        }
+
         // Seed the class skill-choice selection from the player's creation
         // picks. Stored in featureSelections (not proficiencies) so the
         // Features tab can re-edit it; the calculator resolves these as

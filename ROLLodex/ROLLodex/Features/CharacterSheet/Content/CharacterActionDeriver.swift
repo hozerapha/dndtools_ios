@@ -398,6 +398,9 @@ enum CharacterActionDeriver {
         }
 
         if let species = content.speciesDefinition(id: character.speciesID) {
+            // A chosen ancestry option (Draconic Ancestry) sets the damage type
+            // of the species' otherwise-untyped scaling rolls (Breath Weapon).
+            let ancestryType = ancestryDamageType(species: species, character: character)
             for trait in species.traits {
                 guard trait.surfacesAsAction else { continue }
                 let cost = trait.resource.map { ResourceCost(resourceID: $0.id, amount: 1) }
@@ -430,7 +433,7 @@ enum CharacterActionDeriver {
 
                 for recipe in trait.actionRecipes {
                     let resolved = ActionInterpreter.resolve(
-                        recipe: recipe,
+                        recipe: typedForAncestry(recipe, ancestryType),
                         character: character,
                         weapon: nil
                     )
@@ -452,6 +455,33 @@ enum CharacterActionDeriver {
         }
 
         return rows
+    }
+
+    /// The damage type a chosen species selection-option imparts to a sibling
+    /// roll (Draconic Ancestry → Breath Weapon / Damage Resistance). First
+    /// match across the species' fixed-option selections, or nil if unchosen.
+    private static func ancestryDamageType(
+        species: SpeciesDefinition, character: Character
+    ) -> DamageType? {
+        for trait in species.traits {
+            guard let selection = trait.selection,
+                  case .fixedOptions(let options) = selection.optionsSource else { continue }
+            let picked = Set(character.featureSelections[selection.id] ?? [])
+            for option in options where picked.contains(option.id) {
+                if let type = option.damageType { return type }
+            }
+        }
+        return nil
+    }
+
+    /// Stamps an untyped scaling-damage recipe (Breath Weapon's 1d10→4d10) with
+    /// the chosen ancestry's damage type. Every other recipe passes through.
+    private static func typedForAncestry(
+        _ recipe: ActionRecipe, _ type: DamageType?
+    ) -> ActionRecipe {
+        guard let type,
+              case .scaledDamage(let dieKind, let count, nil, let label) = recipe else { return recipe }
+        return .scaledDamage(dieKind: dieKind, count: count, damageType: type, label: label)
     }
 
     private static func featureButtonLabel(

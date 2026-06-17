@@ -262,7 +262,7 @@ final class ContentStore {
                       let pack = try? JSONDecoder().decode(ContentPack.self, from: data)
                 else { return nil }
                 return LoadedPack(fileName: url.lastPathComponent, pack: pack)
-            }
+            } x
     }
 
     /// Collapse a display name to a filesystem-safe slug for the pack file.
