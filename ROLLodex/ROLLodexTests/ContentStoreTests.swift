@@ -329,4 +329,63 @@ struct ContentStoreTests {
         #expect(!riderPrompts("stones_endurance").contains("Fire's Burn"))
         #expect(!riderPrompts(nil).contains("Fire's Burn"))
     }
+
+    // MARK: - Bard
+
+    @MainActor
+    @Test func loadsBardWithAbilityModResourceAndFullCasterSlots() {
+        let store = ContentStore()
+        let bard = store.classDefinition(id: "bard")
+        #expect(bard?.name == "Bard")
+        #expect(bard?.spellcasting?.ability == .charisma)
+        #expect(bard?.subclassLevel == 3)
+        #expect(bard?.subclasses.contains { $0.id == "college_of_lore" } == true)
+        // Class skills = choose any 3 (skillsFrom over the full list).
+        #expect(bard?.skillProficiencySelection?.options.count == 18)
+
+        func bardicMax(cha: Int) -> Int? {
+            let c = Character(
+                name: "B", level: 3, speciesID: "human", backgroundID: "sage",
+                classEntries: [ClassEntry(classID: "bard", level: 3)],
+                abilityScores: [.charisma: cha], maxHP: 20
+            )
+            return ResourceCalculator.availableResources(character: c, content: store)
+                .first { $0.definition.id == "bardic_inspiration" }?.max
+        }
+        // Bardic Inspiration uses = CHA modifier, floored at 1.
+        #expect(bardicMax(cha: 16) == 3)
+        #expect(bardicMax(cha: 10) == 1)
+
+        // Full-caster progression: a level-20 Bard has a 9th-level slot.
+        let c20 = Character(
+            name: "B20", level: 20, speciesID: "human", backgroundID: "sage",
+            classEntries: [ClassEntry(classID: "bard", level: 20)],
+            abilityScores: [.charisma: 18], maxHP: 100
+        )
+        let hasNinth = ResourceCalculator.availableResources(character: c20, content: store)
+            .contains { if case .spellSlot(let l) = $0.definition.displayHint { return l == 9 }; return false }
+        #expect(hasNinth)
+    }
+
+    @MainActor
+    @Test func reactionFeaturesSurfaceAsActionRows() {
+        let store = ContentStore()
+        // Level-3 College of Lore Bard: Cutting Words is a Reaction with no
+        // roll and no pool of its own (it spends Bardic Inspiration) — it must
+        // still appear on the Actions tab as a reaction reminder.
+        let bard = Character(
+            name: "Lore", level: 3, speciesID: "human", backgroundID: "sage",
+            classEntries: [ClassEntry(classID: "bard", level: 3)],
+            abilityScores: [.charisma: 16], maxHP: 20,
+            featureSelections: ["bard_subclass": ["college_of_lore"]]
+        )
+        let rows = CharacterActionDeriver.sections(for: bard, content: store).flatMap(\.rows)
+        let cuttingWords = rows.first { $0.title == "Cutting Words" }
+        #expect(cuttingWords != nil)
+        #expect(cuttingWords?.action.actionCost == .reaction)
+        // Bardic Inspiration (a real pool) still shows as a Bonus Action.
+        #expect(rows.contains { $0.title == "Bardic Inspiration" && $0.action.actionCost == .bonusAction })
+        // A pure passive (Jack of All Trades) does NOT surface as an action row.
+        #expect(!rows.contains { $0.title == "Jack of All Trades" })
+    }
 }

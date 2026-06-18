@@ -18,7 +18,8 @@ enum ActionInterpreter {
         weapon: WeaponDefinition?,
         spellcastingAbility: Ability? = nil,
         fightingStyle: FightingStyleEffects? = nil,
-        skillCheckFloor: Int? = nil
+        skillCheckFloor: Int? = nil,
+        jackOfAllTrades: Bool = false
     ) -> ResolvedAction {
         switch recipe {
         case .weaponAttack(let abilityOverride, let finesse):
@@ -44,7 +45,7 @@ enum ActionInterpreter {
             return resolveAbilityCheck(character: character, ability: ability)
 
         case .skillCheck(let skill):
-            return resolveSkillCheck(character: character, skill: skill, skillCheckFloor: skillCheckFloor)
+            return resolveSkillCheck(character: character, skill: skill, skillCheckFloor: skillCheckFloor, jackOfAllTrades: jackOfAllTrades)
 
         case .savingThrow(let ability):
             return resolveSavingThrow(character: character, ability: ability)
@@ -348,9 +349,12 @@ enum ActionInterpreter {
     private static func resolveSkillCheck(
         character: Character,
         skill: Skill,
-        skillCheckFloor: Int?
+        skillCheckFloor: Int?,
+        jackOfAllTrades: Bool
     ) -> ResolvedAction {
-        let mod = CharacterCalculator.skillModifier(character: character, skill: skill)
+        let mod = CharacterCalculator.skillModifier(
+            character: character, skill: skill, jackOfAllTrades: jackOfAllTrades
+        )
 
         // The floor (Reliable Talent) only applies to skills you're
         // proficient in — feature-driven now, no class-name check here.
@@ -366,7 +370,13 @@ enum ActionInterpreter {
         ))
         formula.modifier = mod
 
+        // Jack of All Trades only contributes when not proficient (its half-PB
+        // never stacks on a proficient skill), so note it where it applies.
+        let joatApplies = jackOfAllTrades && !isProficient
         var description = "1d20 + \(skill.ability.abbreviation) (skill)"
+        if joatApplies {
+            description += " — incl. Jack of All Trades"
+        }
         if let floor {
             description += " — floor \(floor)"
         }

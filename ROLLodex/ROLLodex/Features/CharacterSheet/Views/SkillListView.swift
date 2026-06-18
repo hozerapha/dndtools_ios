@@ -6,13 +6,22 @@ import SwiftUI
 struct SkillListView: View {
     let character: Character
     let onRoll: (Skill, RollMode) -> Void
+    @Environment(ContentStore.self) private var content
     @State private var expanded: Bool = true
 
     var body: some View {
+        // Resolve Jack of All Trades once for the whole table; rows read it to
+        // add the half-PB to non-proficient skills and show a ½ indicator.
+        let jackOfAllTrades = CharacterCalculator.hasJackOfAllTrades(character: character, content: content)
         DisclosureGroup(isExpanded: $expanded) {
             VStack(spacing: 4) {
                 ForEach(sortedSkills, id: \.self) { skill in
-                    SkillRow(character: character, skill: skill, onRoll: onRoll)
+                    SkillRow(
+                        character: character,
+                        skill: skill,
+                        jackOfAllTrades: jackOfAllTrades,
+                        onRoll: onRoll
+                    )
                 }
             }
             .padding(.top, 10)
@@ -32,16 +41,21 @@ struct SkillListView: View {
 private struct SkillRow: View {
     let character: Character
     let skill: Skill
+    let jackOfAllTrades: Bool
     let onRoll: (Skill, RollMode) -> Void
 
     var body: some View {
-        let mod = CharacterCalculator.skillModifier(character: character, skill: skill)
+        let mod = CharacterCalculator.skillModifier(
+            character: character, skill: skill, jackOfAllTrades: jackOfAllTrades
+        )
         // Resolved level (background + class-skill grants + expertise), so the
         // dot reflects class skills picked at creation or in the Features tab.
         let level = CharacterCalculator.skillProficiencyLevel(character: character, skill: skill)
 
         HStack(spacing: 8) {
-            ProficiencyDot(level: level)
+            // The dot shows a diagonal half-fill on non-proficient skills that
+            // Jack of All Trades is boosting.
+            ProficiencyDot(level: level, jackOfAllTrades: jackOfAllTrades)
             Text(skill.displayName)
                 .font(.subheadline)
             Text("(\(skill.ability.abbreviation))")
@@ -61,12 +75,30 @@ private struct SkillRow: View {
 
 private struct ProficiencyDot: View {
     let level: ProficiencyLevel
+    /// Whether the character has Jack of All Trades. Only changes the dot for
+    /// non-proficient skills (where the half-PB actually applies).
+    var jackOfAllTrades: Bool = false
+
+    /// A non-proficient skill the half-PB is boosting gets the diagonal-split
+    /// treatment instead of the empty circle.
+    private var showsJoAT: Bool { level == .none && jackOfAllTrades }
 
     var body: some View {
-        Image(systemName: iconName)
-            .font(.caption)
-            .frame(width: 16)
-            .foregroundStyle(color)
+        Group {
+            if showsJoAT {
+                // Half-filled circle rotated 45° → a diagonal split filled on
+                // one side, marking Jack of All Trades' partial proficiency.
+                Image(systemName: "circle.lefthalf.filled")
+                    .rotationEffect(.degrees(45))
+                    .foregroundStyle(.blue)
+                    .accessibilityLabel("Jack of All Trades (half proficiency)")
+            } else {
+                Image(systemName: iconName)
+                    .foregroundStyle(color)
+            }
+        }
+        .font(.caption)
+        .frame(width: 16)
     }
 
     private var iconName: String {

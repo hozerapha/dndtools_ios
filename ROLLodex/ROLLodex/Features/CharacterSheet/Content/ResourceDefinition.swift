@@ -16,6 +16,11 @@ struct ResourceDefinition: Codable, Equatable {
     /// Display name on the sheet (independent of the owning feature's name).
     let name: String
     let max: LevelScaledValue
+    /// When set, the pool's max is this ability's modifier (minimum 1) rather
+    /// than the level-scaled `max` — the 2024 "uses equal to your Charisma
+    /// modifier" shape (Bardic Inspiration). `max` is still decoded and used as
+    /// the fallback (e.g. minimum) when resolving.
+    let maxAbilityModifier: Ability?
     let refreshOn: RefreshTrigger
     let refreshAmount: RefreshAmount
     let displayHint: ResourceDisplayHint?
@@ -24,6 +29,7 @@ struct ResourceDefinition: Codable, Equatable {
         id: String,
         name: String,
         max: LevelScaledValue,
+        maxAbilityModifier: Ability? = nil,
         refreshOn: RefreshTrigger,
         refreshAmount: RefreshAmount,
         displayHint: ResourceDisplayHint? = nil
@@ -31,6 +37,7 @@ struct ResourceDefinition: Codable, Equatable {
         self.id = id
         self.name = name
         self.max = max
+        self.maxAbilityModifier = maxAbilityModifier
         self.refreshOn = refreshOn
         self.refreshAmount = refreshAmount
         self.displayHint = displayHint

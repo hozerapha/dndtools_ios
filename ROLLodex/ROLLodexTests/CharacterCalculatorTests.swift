@@ -92,6 +92,43 @@ struct CharacterCalculatorTests {
         #expect(CharacterCalculator.skillProficiencyLevel(character: character, skill: .acrobatics) == .none)
     }
 
+    @Test func jackOfAllTradesAddsHalfPBToNonProficientSkillsOnly() {
+        // Level 5 → PB 4, half-PB = 2. DEX 14 → +2.
+        let character = Character(
+            name: "Bard", level: 5, speciesID: "human", backgroundID: "sage",
+            classEntries: [ClassEntry(classID: "bard", level: 5)],
+            abilityScores: [.dexterity: 14, .strength: 10], maxHP: 30,
+            proficiencies: [.skill(.acrobatics): .proficient]
+        )
+        // Not proficient in Stealth (DEX): +2 ability + 2 half-PB = +4.
+        #expect(CharacterCalculator.skillModifier(character: character, skill: .stealth, jackOfAllTrades: true) == 4)
+        // Without the flag, just the ability mod.
+        #expect(CharacterCalculator.skillModifier(character: character, skill: .stealth, jackOfAllTrades: false) == 2)
+        // Proficient skill does NOT get the half-PB stacked: +2 + 4 PB = +6.
+        #expect(CharacterCalculator.skillModifier(character: character, skill: .acrobatics, jackOfAllTrades: true) == 6)
+        // The ½ indicator shows only on non-proficient skills.
+        #expect(CharacterCalculator.appliesJackOfAllTrades(character: character, skill: .stealth, hasFeature: true))
+        #expect(!CharacterCalculator.appliesJackOfAllTrades(character: character, skill: .acrobatics, hasFeature: true))
+        #expect(!CharacterCalculator.appliesJackOfAllTrades(character: character, skill: .stealth, hasFeature: false))
+    }
+
+    @MainActor
+    @Test func bardHasJackOfAllTradesFromLevel2() {
+        let store = ContentStore()
+        func bard(_ level: Int) -> Character {
+            Character(name: "B", level: level, speciesID: "human", backgroundID: "sage",
+                      classEntries: [ClassEntry(classID: "bard", level: level)],
+                      abilityScores: [:], maxHP: 20)
+        }
+        #expect(!CharacterCalculator.hasJackOfAllTrades(character: bard(1), content: store))
+        #expect(CharacterCalculator.hasJackOfAllTrades(character: bard(2), content: store))
+        // A Fighter never has it.
+        let fighter = Character(name: "F", level: 5, speciesID: "human", backgroundID: "soldier",
+                                classEntries: [ClassEntry(classID: "fighter", level: 5)],
+                                abilityScores: [:], maxHP: 40)
+        #expect(!CharacterCalculator.hasJackOfAllTrades(character: fighter, content: store))
+    }
+
     @Test func expertiseUpgradesAClassSkillGrant() {
         // Class skill grants proficiency; an expertise selection upgrades it
         // even though it's never in the stored proficiencies dict.

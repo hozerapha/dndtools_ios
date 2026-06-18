@@ -23,6 +23,12 @@ enum FeatureIDs {
     /// (same content-free trick as expertise) so it's re-editable anywhere.
     static let classSkillsMarker = "class_skills"
 
+    /// Feature id marking the Jack of All Trades feature — the calculator adds
+    /// half Proficiency Bonus (round down) to ability checks for skills the
+    /// character is NOT proficient in. A marker (not a class-name check) so any
+    /// class/feature can grant the same behavior.
+    static let jackOfAllTradesMarker = "jack_of_all_trades"
+
     /// Substring marker on a species' innate-spellcasting ability selection id
     /// (`tiefling_spell_ability`, …) — `CharacterSpellGrants` reads the picked
     /// option (an `Ability.rawValue`) as the casting ability for that species'

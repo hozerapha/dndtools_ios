@@ -578,7 +578,7 @@
         {
           "id": "thieves_cant",
           "name": "Thieves' Cant",
-          "description": "You know Thieves' Cant \u2014 a secret mix of dialect, jargon, and code that allows you to hide messages in seemingly normal conversation. You also know one other language of your choice."
+          "description": "You know Thieves' Cant — a secret mix of dialect, jargon, and code that allows you to hide messages in seemingly normal conversation. You also know one other language of your choice."
         },
         {
           "id": "weapon_mastery",
@@ -676,7 +676,7 @@
         {
           "id": "cunning_strike",
           "name": "Cunning Strike",
-          "description": "When you deal Sneak Attack damage, you can add one Cunning Strike effect by forgoing the listed number of Sneak Attack dice (DC = 8 + DEX mod + Proficiency Bonus). Initial options: Poison (1d6) \u2014 Con save or Poisoned for 1 minute; Trip (1d6) \u2014 Dex save or Prone (Large or smaller); Withdraw (1d6) \u2014 move up to half Speed without provoking Opportunity Attacks.",
+          "description": "When you deal Sneak Attack damage, you can add one Cunning Strike effect by forgoing the listed number of Sneak Attack dice (DC = 8 + DEX mod + Proficiency Bonus). Initial options: Poison (1d6) — Con save or Poisoned for 1 minute; Trip (1d6) — Dex save or Prone (Large or smaller); Withdraw (1d6) — move up to half Speed without provoking Opportunity Attacks.",
           "kind": "passive"
         },
         {
@@ -794,7 +794,7 @@
         {
           "id": "devious_strikes",
           "name": "Devious Strikes",
-          "description": "You learn new Cunning Strike options: Daze (2d6) \u2014 Con save or on its next turn it can only do one of move, action, or bonus action; Knock Out (6d6) \u2014 Con save or Unconscious for 1 minute (repeats save each turn); Obscure (3d6) \u2014 Dex save or Blinded until the end of its next turn.",
+          "description": "You learn new Cunning Strike options: Daze (2d6) — Con save or on its next turn it can only do one of move, action, or bonus action; Knock Out (6d6) — Con save or Unconscious for 1 minute (repeats save each turn); Obscure (3d6) — Dex save or Blinded until the end of its next turn.",
           "kind": "passive"
         }
       ],
@@ -1137,7 +1137,7 @@
         {
           "id": "lay_on_hands",
           "name": "Lay on Hands",
-          "description": "You have a pool of healing power that replenishes when you finish a Long Rest. As a Bonus Action, you can touch a creature and draw from the pool to restore Hit Points equal to the amount you spend (maximum: 5 \u00d7 your Paladin level). You can also expend 5 points to remove the Poisoned condition. Spend from the pool below; v1 has no targeted-heal prompt.",
+          "description": "You have a pool of healing power that replenishes when you finish a Long Rest. As a Bonus Action, you can touch a creature and draw from the pool to restore Hit Points equal to the amount you spend (maximum: 5 × your Paladin level). You can also expend 5 points to remove the Poisoned condition. Spend from the pool below; v1 has no targeted-heal prompt.",
           "actionCost": "bonusAction",
           "kind": "active",
           "resource": {
@@ -1321,7 +1321,7 @@
         {
           "id": "aura_of_protection",
           "name": "Aura of Protection",
-          "description": "You and allies within 10 feet of you gain a bonus to saving throws equal to your Charisma modifier (minimum +1) while you are conscious. (Mechanical save bonus not yet applied automatically \u2014 add it to rolls manually.)",
+          "description": "You and allies within 10 feet of you gain a bonus to saving throws equal to your Charisma modifier (minimum +1) while you are conscious. (Mechanical save bonus not yet applied automatically — add it to rolls manually.)",
           "kind": "passive"
         }
       ],
@@ -1354,7 +1354,7 @@
         {
           "id": "radiant_strikes",
           "name": "Radiant Strikes",
-          "description": "Your strikes carry divine power: when you hit with a melee weapon or an Unarmed Strike, the target takes an extra 1d8 Radiant damage. (Not yet folded into damage rolls automatically \u2014 add 1d8 radiant manually.)",
+          "description": "Your strikes carry divine power: when you hit with a melee weapon or an Unarmed Strike, the target takes an extra 1d8 Radiant damage. (Not yet folded into damage rolls automatically — add 1d8 radiant manually.)",
           "kind": "passive"
         }
       ],
@@ -1412,7 +1412,7 @@
         {
           "id": "paladin_epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat or another feat of your choice. (Feat catalog not yet authored \u2014 record your pick in notes.)",
+          "description": "You gain an Epic Boon feat or another feat of your choice. (Feat catalog not yet authored — record your pick in notes.)",
           "kind": "passive"
         }
       ]
@@ -1638,7 +1638,7 @@
         {
           "id": "channel_divinity",
           "name": "Channel Divinity",
-          "description": "You can channel divine energy directly from the Outer Planes. Divine Spark (Magic action): point your Holy Symbol at a creature within 30 feet \u2014 roll 1d8 + your Wisdom modifier and either restore that many Hit Points or force a Constitution save against that much Radiant or Necrotic damage (half on success). The d8 becomes 2d8 at level 7, 3d8 at 13, and 4d8 at 18 \u2014 add the extra dice manually for now. Turn Undead (Magic action): each undead within 30 feet must make a Wisdom save or be Frightened and Incapacitated for 1 minute. You regain one expended use on a Short Rest, and all uses on a Long Rest.",
+          "description": "You can channel divine energy directly from the Outer Planes. Divine Spark (Magic action): point your Holy Symbol at a creature within 30 feet — roll 1d8 + your Wisdom modifier and either restore that many Hit Points or force a Constitution save against that much Radiant or Necrotic damage (half on success). The d8 becomes 2d8 at level 7, 3d8 at 13, and 4d8 at 18 — add the extra dice manually for now. Turn Undead (Magic action): each undead within 30 feet must make a Wisdom save or be Frightened and Incapacitated for 1 minute. You regain one expended use on a Short Rest, and all uses on a Long Rest.",
           "kind": "active",
           "resource": {
             "id": "cleric_channel_divinity",
@@ -1710,7 +1710,7 @@
         {
           "id": "sear_undead",
           "name": "Sear Undead",
-          "description": "Whenever you use Turn Undead, you can roll a number of d8s equal to your Wisdom modifier (minimum of one die) \u2014 each undead that fails its save takes Radiant damage equal to the roll's total. This damage doesn't end the turn effect.",
+          "description": "Whenever you use Turn Undead, you can roll a number of d8s equal to your Wisdom modifier (minimum of one die) — each undead that fails its save takes Radiant damage equal to the roll's total. This damage doesn't end the turn effect.",
           "kind": "passive"
         }
       ],
@@ -1795,7 +1795,7 @@
         {
           "id": "improved_blessed_strikes",
           "name": "Improved Blessed Strikes",
-          "description": "Your Blessed Strikes option improves. Divine Strike: the extra damage increases to 2d8. Potent Spellcasting: when you cast a Cleric cantrip and deal damage with it, you can give vitality to yourself or another creature within 60 feet \u2014 temporary Hit Points equal to twice your Wisdom modifier.",
+          "description": "Your Blessed Strikes option improves. Divine Strike: the extra damage increases to 2d8. Potent Spellcasting: when you cast a Cleric cantrip and deal damage with it, you can give vitality to yourself or another creature within 60 feet — temporary Hit Points equal to twice your Wisdom modifier.",
           "kind": "passive"
         }
       ],
@@ -1820,7 +1820,7 @@
         {
           "id": "cleric_epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat or another feat of your choice. (Feat catalog not yet authored \u2014 record your pick in notes.)",
+          "description": "You gain an Epic Boon feat or another feat of your choice. (Feat catalog not yet authored — record your pick in notes.)",
           "kind": "passive"
         }
       ],
@@ -1849,7 +1849,7 @@
             {
               "id": "life_domain_spells",
               "name": "Life Domain Spells",
-              "description": "You always have certain spells prepared: Aid, Bless, Cure Wounds, Lesser Restoration, Mass Healing Word, Revivify, and more as you gain levels. (Only some of these are in the bundled spell list so far \u2014 add the rest from the picker when authored.)",
+              "description": "You always have certain spells prepared: Aid, Bless, Cure Wounds, Lesser Restoration, Mass Healing Word, Revivify, and more as you gain levels. (Only some of these are in the bundled spell list so far — add the rest from the picker when authored.)",
               "kind": "passive"
             },
             {
@@ -1871,8 +1871,471 @@
             {
               "id": "supreme_healing",
               "name": "Supreme Healing",
-              "description": "When you would normally roll one or more dice to restore Hit Points to a creature with a spell or Channel Divinity, don't roll \u2014 use the highest number possible for each die.",
+              "description": "When you would normally roll one or more dice to restore Hit Points to a creature with a spell or Channel Divinity, don't roll — use the highest number possible for each die.",
               "kind": "passive"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "bard",
+    "name": "Bard",
+    "hitDie": 8,
+    "primaryAbility": "charisma",
+    "savingThrows": [
+      "dexterity",
+      "charisma"
+    ],
+    "armorProficiencies": [
+      "light"
+    ],
+    "weaponProficiencies": [
+      "simple"
+    ],
+    "subclassLevel": 3,
+    "spellcasting": {
+      "ability": "charisma",
+      "preparedRule": "preparedFromAll",
+      "cantripsKnown": {
+        "byClassLevel": {
+          "1": 2,
+          "4": 3,
+          "10": 4
+        }
+      },
+      "slotTable": {
+        "kind": "fullCaster",
+        "table": {
+          "1": {
+            "1": 2
+          },
+          "2": {
+            "1": 3
+          },
+          "3": {
+            "1": 4,
+            "2": 2
+          },
+          "4": {
+            "1": 4,
+            "2": 3
+          },
+          "5": {
+            "1": 4,
+            "2": 3,
+            "3": 2
+          },
+          "6": {
+            "1": 4,
+            "2": 3,
+            "3": 3
+          },
+          "7": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 1
+          },
+          "8": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 2
+          },
+          "9": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 1
+          },
+          "10": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2
+          },
+          "11": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1
+          },
+          "12": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1
+          },
+          "13": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1
+          },
+          "14": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1
+          },
+          "15": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1,
+            "8": 1
+          },
+          "16": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1,
+            "8": 1
+          },
+          "17": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "18": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "19": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 2,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "20": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 2,
+            "7": 2,
+            "8": 1,
+            "9": 1
+          }
+        }
+      },
+      "ritualCasting": true,
+      "spellcastingFocus": true
+    },
+    "levelFeatures": {
+      "1": [
+        {
+          "id": "bard_class_skills",
+          "name": "Skill Proficiencies",
+          "description": "You gain proficiency in any three skills of your choice.",
+          "selection": {
+            "id": "bard_class_skills",
+            "prompt": "Choose 3 skills",
+            "count": 3,
+            "optionsSource": {
+              "type": "skillsFrom",
+              "skills": [
+                "acrobatics",
+                "animal_handling",
+                "arcana",
+                "athletics",
+                "deception",
+                "history",
+                "insight",
+                "intimidation",
+                "investigation",
+                "medicine",
+                "nature",
+                "perception",
+                "performance",
+                "persuasion",
+                "religion",
+                "sleight_of_hand",
+                "stealth",
+                "survival"
+              ]
+            }
+          }
+        },
+        {
+          "id": "bard_spellcasting",
+          "name": "Spellcasting",
+          "description": "You cast Bard spells using Charisma. You know two cantrips from the Bard list and prepare Bard spells from the whole list (4 to start, growing with level). You can cast any prepared spell with the Ritual tag as a ritual, and use a Musical Instrument as your spellcasting focus."
+        },
+        {
+          "id": "bardic_inspiration",
+          "name": "Bardic Inspiration",
+          "description": "As a Bonus Action, inspire a creature within 60 feet that can see or hear you, giving it a Bardic Inspiration die (d6). Within the next hour, once, it can roll the die and add it to a failed D20 Test. Uses equal to your Charisma modifier; regain on a Long Rest. The die grows to d8 at level 5, d10 at level 10, and d12 at level 15.",
+          "actionCost": "bonusAction",
+          "resource": {
+            "id": "bardic_inspiration",
+            "name": "Bardic Inspiration",
+            "max": 1,
+            "maxAbilityModifier": "charisma",
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          }
+        }
+      ],
+      "2": [
+        {
+          "id": "bard_expertise",
+          "name": "Expertise",
+          "description": "You gain Expertise in two of your skill proficiencies of your choice (your Proficiency Bonus is doubled for checks with them).",
+          "selection": {
+            "id": "bard_expertise",
+            "prompt": "Choose 2 skill proficiencies for Expertise",
+            "count": 2,
+            "optionsSource": {
+              "type": "skills",
+              "proficientOnly": true
+            }
+          }
+        },
+        {
+          "id": "jack_of_all_trades",
+          "name": "Jack of All Trades",
+          "description": "You can add half your Proficiency Bonus (round down) to any ability check you make that uses a skill you lack proficiency in and that doesn't already use your Proficiency Bonus. (Apply manually.)"
+        }
+      ],
+      "3": [
+        {
+          "id": "bard_subclass",
+          "name": "Bard Subclass",
+          "description": "Choose a Bard college (subclass). You gain its features of your Bard level or lower.",
+          "selection": {
+            "id": "bard_subclass",
+            "prompt": "Choose a Bard College",
+            "count": 1,
+            "optionsSource": {
+              "type": "subclasses",
+              "parentClassID": "bard"
+            }
+          }
+        }
+      ],
+      "4": [
+        {
+          "id": "bard_asi_4",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "bard_asi_4",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
+          }
+        }
+      ],
+      "5": [
+        {
+          "id": "font_of_inspiration",
+          "name": "Font of Inspiration",
+          "description": "You regain all expended uses of Bardic Inspiration when you finish a Short or Long Rest. In addition, you can expend a spell slot (no action) to regain one expended use. (Short-rest recovery is tracked manually for now — the pool refreshes on a Long Rest.)"
+        }
+      ],
+      "7": [
+        {
+          "id": "countercharm",
+          "name": "Countercharm",
+          "description": "As a Reaction, when you or a creature within 30 feet fails a save against being Charmed or Frightened, you can cause that save to be rerolled with Advantage.",
+          "actionCost": "reaction"
+        }
+      ],
+      "8": [
+        {
+          "id": "bard_asi_8",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "bard_asi_8",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
+          }
+        }
+      ],
+      "9": [
+        {
+          "id": "bard_expertise_9",
+          "name": "Expertise",
+          "description": "You gain Expertise in two more of your skill proficiencies of your choice.",
+          "selection": {
+            "id": "bard_expertise_9",
+            "prompt": "Choose 2 more skill proficiencies for Expertise",
+            "count": 2,
+            "optionsSource": {
+              "type": "skills",
+              "proficientOnly": true
+            }
+          }
+        }
+      ],
+      "10": [
+        {
+          "id": "magical_secrets",
+          "name": "Magical Secrets",
+          "description": "Whenever your number of prepared spells increases, you may choose those new spells from the Bard, Cleric, Druid, and Wizard spell lists; they count as Bard spells for you. (Cross-list prepared spells are tracked manually.)"
+        }
+      ],
+      "12": [
+        {
+          "id": "bard_asi_12",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "bard_asi_12",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
+          }
+        }
+      ],
+      "16": [
+        {
+          "id": "bard_asi_16",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "bard_asi_16",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
+          }
+        }
+      ],
+      "18": [
+        {
+          "id": "superior_inspiration",
+          "name": "Superior Inspiration",
+          "description": "When you roll Initiative, you regain expended uses of Bardic Inspiration until you have two (if you had fewer)."
+        }
+      ],
+      "19": [
+        {
+          "id": "bard_epic_boon",
+          "name": "Epic Boon",
+          "description": "You gain an Epic Boon feat of your choice for which you qualify (Boon of Spell Recall recommended)."
+        }
+      ],
+      "20": [
+        {
+          "id": "words_of_creation",
+          "name": "Words of Creation",
+          "description": "You always have Power Word Heal and Power Word Kill prepared. When you cast either, you can target a second creature within 10 feet of the first."
+        }
+      ]
+    },
+    "subclasses": [
+      {
+        "id": "college_of_lore",
+        "name": "College of Lore",
+        "description": "Bards who collect spells and secrets from diverse sources, excelling at versatility and turning others' efforts against them.",
+        "levelFeatures": {
+          "3": [
+            {
+              "id": "lore_bonus_proficiencies",
+              "name": "Bonus Proficiencies",
+              "description": "You gain proficiency with three skills of your choice.",
+              "selection": {
+                "id": "lore_bonus_proficiencies",
+                "prompt": "Choose 3 skills",
+                "count": 3,
+                "optionsSource": {
+                  "type": "skillsFrom",
+                  "skills": [
+                    "acrobatics",
+                    "animal_handling",
+                    "arcana",
+                    "athletics",
+                    "deception",
+                    "history",
+                    "insight",
+                    "intimidation",
+                    "investigation",
+                    "medicine",
+                    "nature",
+                    "perception",
+                    "performance",
+                    "persuasion",
+                    "religion",
+                    "sleight_of_hand",
+                    "stealth",
+                    "survival"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "cutting_words",
+              "name": "Cutting Words",
+              "description": "As a Reaction, when a creature you can see within 60 feet makes a damage roll or succeeds on an ability check or attack roll, expend one use of Bardic Inspiration and subtract the rolled die from the creature's roll — reducing the damage or potentially turning the success into a failure.",
+              "actionCost": "reaction"
+            }
+          ],
+          "6": [
+            {
+              "id": "magical_discoveries",
+              "name": "Magical Discoveries",
+              "description": "You learn two spells of your choice from the Cleric, Druid, or Wizard spell lists (cantrip or a level you have slots for). You always have them prepared; they count as Bard spells."
+            }
+          ],
+          "14": [
+            {
+              "id": "peerless_skill",
+              "name": "Peerless Skill",
+              "description": "When you fail an ability check or attack roll, you can expend one use of Bardic Inspiration, roll the die, and add it — potentially turning the failure into a success. On a failure, the use isn't expended."
             }
           ]
         }

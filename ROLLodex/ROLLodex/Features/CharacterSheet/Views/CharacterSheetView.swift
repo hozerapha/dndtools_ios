@@ -571,7 +571,9 @@ struct CharacterSheetView: View {
             character: character,
             weapon: nil,
             // Reliable Talent et al. — feature-derived skill-check floor.
-            skillCheckFloor: CharacterCalculator.skillCheckFloor(character: character, content: content)
+            skillCheckFloor: CharacterCalculator.skillCheckFloor(character: character, content: content),
+            // Bard's Jack of All Trades — half PB on non-proficient checks.
+            jackOfAllTrades: CharacterCalculator.hasJackOfAllTrades(character: character, content: content)
         )
         let formula = applyAdvantage(to: resolved.formula, mode: mode)
         // The interpreter's label includes the modifier ("Athletics +5") for
@@ -815,7 +817,7 @@ struct CharacterSheetView: View {
     }
 
     private var passivePerception: Int {
-        CharacterCalculator.passivePerception(character: character)
+        CharacterCalculator.passivePerception(character: character, content: content)
     }
 
     private var equippedArmor: ArmorDefinition? {

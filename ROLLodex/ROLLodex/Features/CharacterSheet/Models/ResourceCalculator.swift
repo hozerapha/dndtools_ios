@@ -53,10 +53,7 @@ enum ResourceCalculator {
                 subclassID: subclassID
             ) {
                 guard let definition = resolvedFeature.feature.resource else { continue }
-                let maxValue = definition.max.value(
-                    classLevel: entry.level,
-                    characterLevel: character.level
-                )
+                let maxValue = resolvedMax(definition, character: character, classLevel: entry.level)
                 let current = currentClamped(
                     character: character,
                     resourceID: definition.id,
@@ -83,10 +80,7 @@ enum ResourceCalculator {
         if let species = content.speciesDefinition(id: character.speciesID) {
             for trait in species.traits {
                 guard let definition = trait.resource else { continue }
-                let maxValue = definition.max.value(
-                    classLevel: character.level,
-                    characterLevel: character.level
-                )
+                let maxValue = resolvedMax(definition, character: character, classLevel: character.level)
                 let current = currentClamped(
                     character: character,
                     resourceID: definition.id,
@@ -213,6 +207,21 @@ enum ResourceCalculator {
         guard let resolved = availableResources(character: character, content: content)
             .first(where: { $0.definition.id == resourceID }) else { return 0 }
         return resolved.current
+    }
+
+    /// A pool's max: the named ability's modifier (min 1) when the definition
+    /// opts into `maxAbilityModifier` (Bardic Inspiration = CHA mod), else the
+    /// level-scaled `max`.
+    static func resolvedMax(
+        _ definition: ResourceDefinition,
+        character: Character,
+        classLevel: Int
+    ) -> Int {
+        if let ability = definition.maxAbilityModifier {
+            let mod = CharacterCalculator.abilityModifier(score: character.abilityScores[ability] ?? 10)
+            return Swift.max(1, mod)
+        }
+        return definition.max.value(classLevel: classLevel, characterLevel: character.level)
     }
 
     private static func currentClamped(

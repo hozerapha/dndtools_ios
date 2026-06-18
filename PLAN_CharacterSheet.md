@@ -2201,8 +2201,21 @@ follow-ups: `.zip` pack archives, per-pack export from Settings, and
 **11. Content authoring catalog — SRD 5.2.1 ONLY (JSON-only work, no Swift)**
 Goal restated after the 2026-06-13 SRD audit: get the bundle to **100% of
 SRD 5.2.1, and nothing beyond it**. Verified SRD totals (not PHB):
-- **Classes 6/12 done** (Fighter, Wizard, Rogue, Barbarian, Paladin, Cleric).
-  Remaining: **Bard, Druid, Monk, Ranger, Sorcerer, Warlock.**
+- **Classes 7/12 done** (Fighter, Wizard, Rogue, Barbarian, Paladin, Cleric,
+  **Bard** — full L1–20 + College of Lore, shipped 2026-06-17). Remaining:
+  **Druid, Monk, Ranger, Sorcerer, Warlock** (one full class per turn).
+  - Bard introduced `ResourceDefinition.maxAbilityModifier` (pool size = an
+    ability modifier, min 1) for Bardic Inspiration = CHA mod — reusable for
+    other 2024 "uses equal to your X modifier" pools.
+  - **Jack of All Trades is mechanically wired** (2026-06-18): half PB (round
+    down) on non-proficient skill checks, via `CharacterCalculator
+    .skillModifier(..., jackOfAllTrades:)` + content-aware
+    `hasJackOfAllTrades`. The skills table shows a ½ chip on affected rows and
+    folds the bonus into the number; it flows into rolled checks and passive
+    Perception.
+  - Known simplifications: Font of Inspiration short-rest recovery and
+    Magical Secrets/Discoveries cross-list spells are descriptive (not
+    auto-applied).
 - **Subclasses 3/12 done** (Champion, Thief, Life Domain). Remaining must be
   the SRD one-per-class: Berserker, College of Lore, Circle of the Land,
   Warrior of the Open Hand, **Oath of Devotion** (Paladin — bundled class

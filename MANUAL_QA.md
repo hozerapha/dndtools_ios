@@ -18,9 +18,9 @@ not surfacing at creation), which is why this list exists.
   for cases whose behavior changed. Claude does not check boxes — verification
   is yours.
 
-> **Recently changed — needs verification (2026-06-17):** the whole Species
-> epoch below (creation pickers, breath weapon, granted spells, Giant Ancestry
-> mechanics) is freshly built and unverified in-app.
+> **Recently changed — needs verification (2026-06-17):** the **Bard** class
+> (see Classes below) is freshly authored. The Species epoch (creation pickers,
+> breath weapon, granted spells, Giant Ancestry) is also still unverified.
 
 ---
 
@@ -98,6 +98,43 @@ not surfacing at creation), which is why this list exists.
 - [ ] **Hill's Tumble** is descriptive only (no action row / chip).
 - [ ] _Known gap:_ the "PB uses per Long Rest" limit on giant benefits is **not
   metered** — actions/riders are always available; track uses yourself.
+
+---
+
+## Classes
+
+### Bard (new 2026-06-17)
+- [OK] **Create a Bard.** Class skills step lets you pick **any 3** skills.
+  Sheet opens with a Spells tab (Charisma caster) and slots.
+- [OK] **Bardic Inspiration pool = CHA modifier.** A CHA 16 Bard shows
+  **3 / 3** Bardic Inspiration uses; a CHA 10 Bard shows 1; it's a **Bonus
+  Action** row on the Actions tab and decrements when tapped. A Long Rest
+  refills it.
+- [OK] **Expertise (L2) is editable.** The Features tab shows an Expertise
+  picker offering only skills you're already proficient in; a 2nd Expertise
+  pick appears at L9.
+- [OK] **Subclass at L3.** Leveling to 3 prompts a "Choose a Bard College"
+  picker with **College of Lore**; its L3 features (Bonus Proficiencies +
+  Cutting Words) then appear on the Features tab.
+- [OK] **College of Lore Bonus Proficiencies (L3)** grants 3 more skills via a
+  picker; already-proficient skills are disabled in the list.
+- [ ] **Spell slots scale as a full caster** — a high-level Bard has the right
+  slots (e.g. a 9th-level slot at character level 17+).
+- [ ] **Reaction features show as reactions.** Countercharm (L7), Cutting Words
+  (L3) and Peerless Skill (L14) appear with a Reaction cost / on the Actions
+  tab where applicable.
+- [ ] **Jack of All Trades (L2) does the math.** On a level-2+ Bard, every
+  skill you're NOT proficient in shows a **diagonal half-filled dot** (blue) in
+  place of the empty circle, and that skill's modifier includes half your
+  Proficiency Bonus (round down) — e.g. a level-5 Bard (PB 4) with DEX 14 shows
+  Stealth at **+4** (+2 DEX +2 half-PB). Proficient (green check) / Expertise
+  (yellow star) dots are unchanged and get no extra bonus. Rolling such a skill
+  from the table carries the bonus into the dice tab, and passive Perception
+  reflects it when Perception isn't proficient.
+- [ ] _Known simplifications:_ Font of Inspiration's short-rest recovery is
+  **not** auto-applied (pool refreshes on Long Rest — track short-rest manually);
+  Magical Secrets / Magical Discoveries cross-list spell choices are
+  descriptive, not auto-applied.
 
 ---
 

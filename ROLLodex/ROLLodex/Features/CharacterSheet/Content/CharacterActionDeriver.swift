@@ -365,6 +365,28 @@ enum CharacterActionDeriver {
                     continue
                 }
 
+                if feature.actionRecipes.isEmpty {
+                    // No roll and no pool of its own, but it still occupies a
+                    // slot in the turn economy — a Reaction/Bonus reminder like
+                    // Countercharm or Cutting Words (which spends Bardic
+                    // Inspiration, a pool owned by a different feature). Surface
+                    // an informational row grouped by its action cost. Pure
+                    // passives (no declared actionCost) stay off the tab.
+                    guard let actionCost = feature.actionCost else { continue }
+                    let action = ResolvedAction(
+                        id: "feature_\(feature.id)_info",
+                        label: feature.name,
+                        formula: nil,
+                        description: nil,
+                        actionCost: actionCost
+                    )
+                    rows.append(ActionRow(
+                        action: action, badge: nil,
+                        title: feature.name, detail: feature.description
+                    ))
+                    continue
+                }
+
                 for recipe in feature.actionRecipes {
                     let resolved = ActionInterpreter.resolve(
                         recipe: recipe,

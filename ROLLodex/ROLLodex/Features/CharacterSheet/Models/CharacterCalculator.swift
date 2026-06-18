@@ -13,17 +13,50 @@ enum CharacterCalculator {
         (level - 1) / 4 + 2
     }
 
+    /// `jackOfAllTrades` adds half the Proficiency Bonus (round down) to checks
+    /// for skills the character is NOT proficient in (Bard's Jack of All
+    /// Trades). It never stacks on a proficient/expertise skill. The caller
+    /// resolves whether the character has the feature via
+    /// `hasJackOfAllTrades(character:content:)` and passes the flag in, keeping
+    /// this function content-free.
     static func skillModifier(
         character: Character,
-        skill: Skill
+        skill: Skill,
+        jackOfAllTrades: Bool = false
     ) -> Int {
         let abilityMod = abilityModifier(score: character.abilityScores[skill.ability] ?? 10)
         let profBonus = proficiencyBonus(level: character.level)
         switch skillProficiencyLevel(character: character, skill: skill) {
-        case .none:       return abilityMod
+        case .none:       return abilityMod + (jackOfAllTrades ? profBonus / 2 : 0)
         case .proficient: return abilityMod + profBonus
         case .expertise:  return abilityMod + (profBonus * 2)
         }
+    }
+
+    /// Whether `jackOfAllTrades` applies to this specific skill: the character
+    /// has the feature AND lacks proficiency in the skill (so the half-PB
+    /// actually contributes). Used by the skills table to show the ½ indicator
+    /// only where it matters.
+    static func appliesJackOfAllTrades(character: Character, skill: Skill, hasFeature: Bool) -> Bool {
+        hasFeature && skillProficiencyLevel(character: character, skill: skill) == .none
+    }
+
+    /// True when the character has a Jack of All Trades feature (id matching
+    /// the marker) at or below their level. Content-aware; walks resolved
+    /// features so a subclass grant would also count.
+    @MainActor
+    static func hasJackOfAllTrades(character: Character, content: ContentStore) -> Bool {
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID)
+            where resolved.feature.id.contains(FeatureIDs.jackOfAllTradesMarker) {
+                return true
+            }
+        }
+        return false
     }
 
     /// The character's effective proficiency in a skill, resolved from every
@@ -197,6 +230,14 @@ enum CharacterCalculator {
 
     static func passivePerception(character: Character) -> Int {
         10 + skillModifier(character: character, skill: .perception)
+    }
+
+    /// Content-aware passive Perception: includes Jack of All Trades' half-PB
+    /// when the character has the feature and lacks Perception proficiency.
+    @MainActor
+    static func passivePerception(character: Character, content: ContentStore) -> Int {
+        let joat = hasJackOfAllTrades(character: character, content: content)
+        return 10 + skillModifier(character: character, skill: .perception, jackOfAllTrades: joat)
     }
 
     static func spellSaveDC(
