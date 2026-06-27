@@ -113,6 +113,10 @@ struct CharacterListView: View {
             // assumes a d10 for every class, so both halves can be wrong here
             // (a Soldier's +1 CON never reached HP; a Wizard started at d10).
             character.rolledHP = classDef.hitDie.rawValue
+            // Fold in feature HP bonuses (Draconic Resilience, Dwarven
+            // Toughness) so they're part of the persisted rolledHP from the
+            // start; recalculateHP layers CON on top.
+            character.rolledHP += CharacterCalculator.featureHitPointBonus(character: character, content: contentStore)
             character.recalculateHP()
             character.currentHP = character.maxHP
 

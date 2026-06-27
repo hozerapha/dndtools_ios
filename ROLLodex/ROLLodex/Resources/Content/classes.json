@@ -1020,7 +1020,8 @@
           "id": "unarmored_defense_barbarian",
           "name": "Unarmored Defense",
           "description": "While you aren't wearing armor, your AC equals 10 + your Dexterity modifier + your Constitution modifier. You can use a Shield and still gain this benefit.",
-          "kind": "passive"
+          "kind": "passive",
+          "unarmoredDefenseAbility": "constitution"
         }
       ]
     },
@@ -2336,6 +2337,611 @@
               "id": "peerless_skill",
               "name": "Peerless Skill",
               "description": "When you fail an ability check or attack roll, you can expend one use of Bardic Inspiration, roll the die, and add it — potentially turning the failure into a success. On a failure, the use isn't expended."
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "sorcerer",
+    "name": "Sorcerer",
+    "hitDie": 6,
+    "primaryAbility": "charisma",
+    "savingThrows": [
+      "constitution",
+      "charisma"
+    ],
+    "armorProficiencies": [],
+    "weaponProficiencies": [
+      "simple"
+    ],
+    "subclassLevel": 3,
+    "spellcasting": {
+      "ability": "charisma",
+      "preparedRule": "preparedFromAll",
+      "cantripsKnown": {
+        "byClassLevel": {
+          "1": 4,
+          "4": 5,
+          "10": 6
+        }
+      },
+      "slotTable": {
+        "kind": "fullCaster",
+        "table": {
+          "1": {
+            "1": 2
+          },
+          "2": {
+            "1": 3
+          },
+          "3": {
+            "1": 4,
+            "2": 2
+          },
+          "4": {
+            "1": 4,
+            "2": 3
+          },
+          "5": {
+            "1": 4,
+            "2": 3,
+            "3": 2
+          },
+          "6": {
+            "1": 4,
+            "2": 3,
+            "3": 3
+          },
+          "7": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 1
+          },
+          "8": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 2
+          },
+          "9": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 1
+          },
+          "10": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2
+          },
+          "11": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1
+          },
+          "12": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1
+          },
+          "13": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1
+          },
+          "14": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1
+          },
+          "15": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1,
+            "8": 1
+          },
+          "16": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1,
+            "8": 1
+          },
+          "17": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "18": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "19": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 2,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "20": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 2,
+            "7": 2,
+            "8": 1,
+            "9": 1
+          }
+        }
+      },
+      "ritualCasting": false,
+      "spellcastingFocus": true
+    },
+    "levelFeatures": {
+      "1": [
+        {
+          "id": "sorcerer_class_skills",
+          "name": "Skill Proficiencies",
+          "description": "Choose 2 skills from Arcana, Deception, Insight, Intimidation, Persuasion, or Religion.",
+          "selection": {
+            "id": "sorcerer_class_skills",
+            "prompt": "Choose 2 skills",
+            "count": 2,
+            "optionsSource": {
+              "type": "skillsFrom",
+              "skills": [
+                "arcana",
+                "deception",
+                "insight",
+                "intimidation",
+                "persuasion",
+                "religion"
+              ]
+            }
+          }
+        },
+        {
+          "id": "sorcerer_spellcasting",
+          "name": "Spellcasting",
+          "description": "You cast Sorcerer spells using Charisma. You know four cantrips and prepare Sorcerer spells from the whole list (2 to start, growing with level). You can use an Arcane Focus as your spellcasting focus."
+        },
+        {
+          "id": "innate_sorcery",
+          "name": "Innate Sorcery",
+          "description": "As a Bonus Action, unleash your innate magic for 1 minute: your Sorcerer spell save DC increases by 1, and you have Advantage on the attack rolls of Sorcerer spells you cast. Two uses; regain on a Long Rest.",
+          "actionCost": "bonusAction",
+          "resource": {
+            "id": "innate_sorcery",
+            "name": "Innate Sorcery",
+            "max": 2,
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          },
+          "triggeredEffect": {
+            "id": "innate_sorcery_buff",
+            "name": "Innate Sorcery",
+            "trigger": {
+              "type": "whileActive"
+            },
+            "effect": {
+              "type": "spellcastingBuff",
+              "saveDCBonus": 1,
+              "attackAdvantage": true
+            },
+            "lifecycle": {
+              "type": "persistent",
+              "until": {
+                "type": "rounds",
+                "count": 10
+              }
+            },
+            "activation": "toggle"
+          }
+        }
+      ],
+      "2": [
+        {
+          "id": "font_of_magic",
+          "name": "Font of Magic",
+          "description": "You have Sorcery Points (equal to your Sorcerer level from level 2 on) that fuel Metamagic and other options. Convert a spell slot to Sorcery Points equal to its level (no action); or, as a Bonus Action, spend Sorcery Points to create a spell slot (1st=2, 2nd=3, 3rd=5, 4th=6, 5th=7 SP; max 5th). Regain all on a Long Rest.",
+          "surfacesAsAction": false,
+          "resource": {
+            "id": "sorcery_points",
+            "name": "Sorcery Points",
+            "max": {
+              "byClassLevel": {
+                "2": 2,
+                "3": 3,
+                "4": 4,
+                "5": 5,
+                "6": 6,
+                "7": 7,
+                "8": 8,
+                "9": 9,
+                "10": 10,
+                "11": 11,
+                "12": 12,
+                "13": 13,
+                "14": 14,
+                "15": 15,
+                "16": 16,
+                "17": 17,
+                "18": 18,
+                "19": 19,
+                "20": 20
+              }
+            },
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          }
+        },
+        {
+          "id": "metamagic",
+          "name": "Metamagic",
+          "description": "You can alter your spells. Choose Metamagic options (2 at level 2, 4 at level 10, 6 at level 17); spend Sorcery Points to apply them.",
+          "selection": {
+            "id": "metamagic",
+            "prompt": "Choose Metamagic options",
+            "count": {
+              "byClassLevel": {
+                "2": 2,
+                "10": 4,
+                "17": 6
+              }
+            },
+            "optionsSource": {
+              "type": "fixedOptions",
+              "options": [
+                {
+                  "id": "careful_spell",
+                  "name": "Careful Spell",
+                  "description": "1 SP: when you cast a spell forcing saves, choose up to your Charisma modifier of creatures to automatically succeed (and take no damage if they'd take half)."
+                },
+                {
+                  "id": "distant_spell",
+                  "name": "Distant Spell",
+                  "description": "1 SP: double a spell's range (or make a Touch spell 30 ft)."
+                },
+                {
+                  "id": "empowered_spell",
+                  "name": "Empowered Spell",
+                  "description": "1 SP: reroll up to your Charisma modifier of a spell's damage dice. Stacks with one other Metamagic option."
+                },
+                {
+                  "id": "extended_spell",
+                  "name": "Extended Spell",
+                  "description": "1 SP: double a spell's duration (max 24 hours); Advantage on Concentration saves for it."
+                },
+                {
+                  "id": "heightened_spell",
+                  "name": "Heightened Spell",
+                  "description": "2 SP: give one target Disadvantage on its first save against the spell."
+                },
+                {
+                  "id": "quickened_spell",
+                  "name": "Quickened Spell",
+                  "description": "2 SP: change an Action-cast spell to a Bonus Action for this casting."
+                },
+                {
+                  "id": "seeking_spell",
+                  "name": "Seeking Spell",
+                  "description": "1 SP: when you miss with a spell attack, reroll the d20. Stacks with one other Metamagic option."
+                },
+                {
+                  "id": "subtle_spell",
+                  "name": "Subtle Spell",
+                  "description": "1 SP: cast a spell without Verbal, Somatic, or (non-costly) Material components."
+                },
+                {
+                  "id": "transmuted_spell",
+                  "name": "Transmuted Spell",
+                  "description": "1 SP: change a spell's Acid/Cold/Fire/Lightning/Poison/Thunder damage to another of those types."
+                },
+                {
+                  "id": "twinned_spell",
+                  "name": "Twinned Spell",
+                  "description": "1 SP: when you cast a spell that can be upcast to add a target, increase its effective level by 1 to target one more creature."
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "3": [
+        {
+          "id": "sorcerer_subclass",
+          "name": "Sorcerer Subclass",
+          "description": "Choose a Sorcerer subclass; you gain its features of your Sorcerer level or lower.",
+          "selection": {
+            "id": "sorcerer_subclass",
+            "prompt": "Choose a Sorcerous origin",
+            "count": 1,
+            "optionsSource": {
+              "type": "subclasses",
+              "parentClassID": "sorcerer"
+            }
+          }
+        }
+      ],
+      "4": [
+        {
+          "id": "sorcerer_asi_4",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "sorcerer_asi_4",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
+          }
+        }
+      ],
+      "5": [
+        {
+          "id": "sorcerous_restoration",
+          "name": "Sorcerous Restoration",
+          "description": "When you finish a Short Rest, you can regain expended Sorcery Points up to half your Sorcerer level (round down), once per Long Rest. (Short-rest recovery is tracked manually.)"
+        }
+      ],
+      "7": [
+        {
+          "id": "sorcery_incarnate",
+          "name": "Sorcery Incarnate",
+          "description": "If you have no uses of Innate Sorcery left, you can activate it by spending 2 Sorcery Points. While Innate Sorcery is active, you can use up to two Metamagic options on each spell you cast."
+        }
+      ],
+      "8": [
+        {
+          "id": "sorcerer_asi_8",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "sorcerer_asi_8",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
+          }
+        }
+      ],
+      "10": [
+        {
+          "id": "metamagic_10",
+          "name": "Metamagic",
+          "description": "You learn two more Metamagic options (handled by the Metamagic picker, which now allows 4 picks)."
+        }
+      ],
+      "12": [
+        {
+          "id": "sorcerer_asi_12",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "sorcerer_asi_12",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
+          }
+        }
+      ],
+      "16": [
+        {
+          "id": "sorcerer_asi_16",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "sorcerer_asi_16",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
+          }
+        }
+      ],
+      "17": [
+        {
+          "id": "metamagic_17",
+          "name": "Metamagic",
+          "description": "You learn two more Metamagic options (the Metamagic picker now allows 6 picks)."
+        }
+      ],
+      "19": [
+        {
+          "id": "sorcerer_epic_boon",
+          "name": "Epic Boon",
+          "description": "You gain an Epic Boon feat of your choice for which you qualify (Boon of Dimensional Travel recommended)."
+        }
+      ],
+      "20": [
+        {
+          "id": "arcane_apotheosis",
+          "name": "Arcane Apotheosis",
+          "description": "While your Innate Sorcery is active, you can use one Metamagic option on each of your turns without spending Sorcery Points on it."
+        }
+      ]
+    },
+    "subclasses": [
+      {
+        "id": "draconic_sorcery",
+        "name": "Draconic Sorcery",
+        "description": "Your innate magic comes from the gift of a dragon, granting draconic resilience, elemental affinity, and eventually wings.",
+        "levelFeatures": {
+          "3": [
+            {
+              "id": "draconic_resilience",
+              "name": "Draconic Resilience",
+              "description": "Your Hit Point maximum increases by 3, and by 1 again each time you gain a Sorcerer level. While you aren't wearing armor, your base AC equals 10 + your Dexterity modifier + your Charisma modifier. (HP/AC are tracked manually for now.)",
+              "unarmoredDefenseAbility": "charisma",
+              "hitPointBonus": {
+                "perLevel": 1
+              }
+            },
+            {
+              "id": "draconic_spells",
+              "name": "Draconic Spells",
+              "description": "You always have certain spells prepared at given Sorcerer levels — L3: Alter Self, Chromatic Orb, Command, Dragon's Breath; L5: Fear, Fly; L7: Arcane Eye, Charm Monster; L9: Legend Lore, Summon Dragon. (Authored as text; these spells aren't all bundled yet.)",
+              "grantsSpells": [
+                {
+                  "spellID": "alter_self",
+                  "minCharacterLevel": 3
+                },
+                {
+                  "spellID": "chromatic_orb",
+                  "minCharacterLevel": 3
+                },
+                {
+                  "spellID": "command",
+                  "minCharacterLevel": 3
+                },
+                {
+                  "spellID": "dragons_breath",
+                  "minCharacterLevel": 3
+                },
+                {
+                  "spellID": "fear",
+                  "minCharacterLevel": 5
+                },
+                {
+                  "spellID": "fly",
+                  "minCharacterLevel": 5
+                },
+                {
+                  "spellID": "arcane_eye",
+                  "minCharacterLevel": 7
+                },
+                {
+                  "spellID": "charm_monster",
+                  "minCharacterLevel": 7
+                },
+                {
+                  "spellID": "legend_lore",
+                  "minCharacterLevel": 9
+                },
+                {
+                  "spellID": "summon_dragon",
+                  "minCharacterLevel": 9
+                }
+              ]
+            }
+          ],
+          "6": [
+            {
+              "id": "elemental_affinity",
+              "name": "Elemental Affinity",
+              "description": "Choose a damage type associated with dragons (Acid, Cold, Fire, Lightning, or Poison). You have Resistance to it, and when you cast a spell that deals that type, you can add your Charisma modifier to one damage roll of that spell.",
+              "selection": {
+                "id": "elemental_affinity",
+                "prompt": "Choose your draconic damage type",
+                "count": 1,
+                "optionsSource": {
+                  "type": "fixedOptions",
+                  "options": [
+                    {
+                      "id": "acid",
+                      "name": "Acid",
+                      "description": "Resistance to Acid; add CHA to one Acid damage roll."
+                    },
+                    {
+                      "id": "cold",
+                      "name": "Cold",
+                      "description": "Resistance to Cold; add CHA to one Cold damage roll."
+                    },
+                    {
+                      "id": "fire",
+                      "name": "Fire",
+                      "description": "Resistance to Fire; add CHA to one Fire damage roll."
+                    },
+                    {
+                      "id": "lightning",
+                      "name": "Lightning",
+                      "description": "Resistance to Lightning; add CHA to one Lightning damage roll."
+                    },
+                    {
+                      "id": "poison",
+                      "name": "Poison",
+                      "description": "Resistance to Poison; add CHA to one Poison damage roll."
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "14": [
+            {
+              "id": "dragon_wings",
+              "name": "Dragon Wings",
+              "description": "As a Bonus Action, sprout draconic wings for 1 hour (or until dismissed), gaining a Fly Speed of 60 feet. Once per Long Rest, or by spending 3 Sorcery Points to restore the use.",
+              "actionCost": "bonusAction",
+              "resource": {
+                "id": "dragon_wings",
+                "name": "Dragon Wings",
+                "max": 1,
+                "refreshOn": "longRest",
+                "refreshAmount": "all"
+              }
+            }
+          ],
+          "18": [
+            {
+              "id": "dragon_companion",
+              "name": "Dragon Companion",
+              "description": "You can cast Summon Dragon without a Material component, and once without a spell slot (regaining that use on a Long Rest)."
             }
           ]
         }

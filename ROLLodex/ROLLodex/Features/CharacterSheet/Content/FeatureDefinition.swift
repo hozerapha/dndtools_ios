@@ -56,11 +56,21 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
     /// grants (a lineage's spells), put the grant on the `SelectionOption`
     /// instead. Empty for features with no spell payload.
     let grantsSpells: [SpellGrant]
+    /// When set, this feature grants Unarmored Defense: while wearing no armor,
+    /// the character's base AC is 10 + Dex modifier + this ability's modifier
+    /// (Barbarian → CON, Draconic Sorcerer → CHA, Monk → WIS). Nil for features
+    /// that don't touch AC. A Shield still applies on top per the SRD.
+    let unarmoredDefenseAbility: Ability?
+    /// Flat + per-level Hit Point bonus this feature confers (Dwarven Toughness
+    /// → +1/level; Draconic Resilience → +3 flat and +1/level). Nil for the
+    /// vast majority of features.
+    let hitPointBonus: HitPointBonus?
 
     private enum CodingKeys: String, CodingKey {
         case id, name, description, actionRecipes
         case attunementSlots, resource, grantsProficiencies, kind, selection, actionCost, triggeredEffect
         case skillCheckMinimum, surfacesAsAction, grantedActions, grantsSpells
+        case unarmoredDefenseAbility, hitPointBonus
     }
 
     init(
@@ -78,7 +88,9 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         skillCheckMinimum: LevelScaledValue? = nil,
         surfacesAsAction: Bool = true,
         grantedActions: [GrantedAction] = [],
-        grantsSpells: [SpellGrant] = []
+        grantsSpells: [SpellGrant] = [],
+        unarmoredDefenseAbility: Ability? = nil,
+        hitPointBonus: HitPointBonus? = nil
     ) {
         self.id = id
         self.name = name
@@ -95,6 +107,8 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         self.surfacesAsAction = surfacesAsAction
         self.grantedActions = grantedActions
         self.grantsSpells = grantsSpells
+        self.unarmoredDefenseAbility = unarmoredDefenseAbility
+        self.hitPointBonus = hitPointBonus
     }
 
     init(from decoder: Decoder) throws {
@@ -112,6 +126,8 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         surfacesAsAction = try c.decodeIfPresent(Bool.self, forKey: .surfacesAsAction) ?? true
         grantedActions = try c.decodeIfPresent([GrantedAction].self, forKey: .grantedActions) ?? []
         grantsSpells = try c.decodeIfPresent([SpellGrant].self, forKey: .grantsSpells) ?? []
+        unarmoredDefenseAbility = try c.decodeIfPresent(Ability.self, forKey: .unarmoredDefenseAbility)
+        hitPointBonus = try c.decodeIfPresent(HitPointBonus.self, forKey: .hitPointBonus)
         // Explicit JSON wins; otherwise default to .action when the feature
         // surfaces a tappable recipe, and nil for pure passives.
         if let declared = try c.decodeIfPresent(ActionCost.self, forKey: .actionCost) {

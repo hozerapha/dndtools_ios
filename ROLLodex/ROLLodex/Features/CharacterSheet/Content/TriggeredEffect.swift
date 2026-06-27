@@ -85,6 +85,11 @@ enum TriggerCondition: Equatable {
     /// optionally restricts which weapons / circumstances qualify (Sneak
     /// Attack needs finesse or ranged; Smite needs melee).
     case onAttackHit(filter: AttackFilter?)
+    /// Applies continuously while the effect is active (a toggled buff that
+    /// other calculators query, e.g. Innate Sorcery's spell save DC / attack
+    /// advantage). The damage resolver ignores it; consumers read it from
+    /// `activeEffects` directly.
+    case whileActive
 }
 
 extension TriggerCondition: Codable {
@@ -102,6 +107,8 @@ extension TriggerCondition: Codable {
         case "onAttackHit":
             let filter = try c.decodeIfPresent(AttackFilter.self, forKey: .filter)
             self = .onAttackHit(filter: filter)
+        case "whileActive":
+            self = .whileActive
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .type, in: c,
@@ -119,6 +126,8 @@ extension TriggerCondition: Codable {
         case .onAttackHit(let filter):
             try c.encode("onAttackHit", forKey: .type)
             try c.encodeIfPresent(filter, forKey: .filter)
+        case .whileActive:
+            try c.encode("whileActive", forKey: .type)
         }
     }
 }
@@ -302,12 +311,19 @@ enum TriggerEffect: Equatable {
     /// Only meaningful with a `.spellSlot` cost — the resolver skips it
     /// otherwise.
     case addSlotScaledDamageDice(baseDice: String, extraDicePerSlotLevel: String, damageType: TypedOrMatch)
+    /// A non-damage spellcasting buff applied while the effect is active
+    /// (Innate Sorcery): raise the caster's spell save DC by `saveDCBonus`, and
+    /// grant Advantage on the caster's spell attack rolls when `attackAdvantage`
+    /// is true. Queried by `CharacterCalculator.spellcastingBuff`; the damage
+    /// resolver ignores it.
+    case spellcastingBuff(saveDCBonus: Int, attackAdvantage: Bool)
 }
 
 extension TriggerEffect: Codable {
     private enum CodingKeys: String, CodingKey {
         case type, dice, damageType, count, die, amount
         case baseDice, extraDicePerSlotLevel
+        case saveDCBonus, attackAdvantage
     }
 
     init(from decoder: Decoder) throws {
@@ -332,6 +348,10 @@ extension TriggerEffect: Codable {
             let extra = try c.decode(String.self, forKey: .extraDicePerSlotLevel)
             let dmg = try c.decode(TypedOrMatch.self, forKey: .damageType)
             self = .addSlotScaledDamageDice(baseDice: base, extraDicePerSlotLevel: extra, damageType: dmg)
+        case "spellcastingBuff":
+            let dc = try c.decodeIfPresent(Int.self, forKey: .saveDCBonus) ?? 0
+            let adv = try c.decodeIfPresent(Bool.self, forKey: .attackAdvantage) ?? false
+            self = .spellcastingBuff(saveDCBonus: dc, attackAdvantage: adv)
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .type, in: c,
@@ -361,6 +381,10 @@ extension TriggerEffect: Codable {
             try c.encode(base, forKey: .baseDice)
             try c.encode(extra, forKey: .extraDicePerSlotLevel)
             try c.encode(dmg, forKey: .damageType)
+        case .spellcastingBuff(let dc, let adv):
+            try c.encode("spellcastingBuff", forKey: .type)
+            try c.encode(dc, forKey: .saveDCBonus)
+            try c.encode(adv, forKey: .attackAdvantage)
         }
     }
 }

@@ -201,6 +201,9 @@ struct EffectsRow: View {
             parts.append(flatLine(typed: typed))
         case .addSlotScaledDamageDice(let base, let extra, let typed):
             parts.append(diceLine(dice: "\(base) + \(extra)/slot level", typed: typed))
+        case .spellcastingBuff(let dc, let adv):
+            if dc != 0 { parts.append("Spell save DC \(dc >= 0 ? "+" : "")\(dc)") }
+            if adv { parts.append("Advantage on spell attacks") }
         }
         switch effect.lifecycle {
         case .persistent(.concentrationEnds):

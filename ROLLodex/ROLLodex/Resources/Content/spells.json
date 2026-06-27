@@ -894,5 +894,258 @@
     },
     "description": "For the duration, magical Darkness spreads from a point within range and fills a 15-foot-radius Sphere. Darkvision can't see through it, and nonmagical light can't illuminate it. Alternatively, you cast the spell on an object that isn't being worn or carried, causing the Darkness to fill a 15-foot Emanation from that object; covering the object with something opaque blocks the Darkness. If any of this spell's area overlaps with Bright or Dim Light created by a spell of level 2 or lower, that other spell is dispelled.",
     "actionRecipes": []
+  },
+  {
+    "id": "chromatic_orb",
+    "name": "Chromatic Orb",
+    "level": 1,
+    "school": "evocation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 90
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a diamond worth 50+ GP"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You hurl an orb of energy at a target within range. Choose Acid, Cold, Fire, Lightning, Poison, or Thunder, then make a ranged spell attack. On a hit, the target takes 3d8 damage of the chosen type. If you roll the same number on two or more d8s, the orb leaps to a different target within 30 feet (only when cast with a level 2+ slot).",
+    "actionRecipes": [
+      {
+        "type": "spellAttack",
+        "label": "Chromatic Orb Attack"
+      },
+      {
+        "type": "rawDamage",
+        "dice": "3d8",
+        "damageType": "fire",
+        "label": "Chromatic Orb Damage (choose type)"
+      }
+    ],
+    "higherLevel": "The damage increases by 1d8 for each spell slot level above 1; the orb can leap a number of times equal to the slot level."
+  },
+  {
+    "id": "command",
+    "name": "Command",
+    "level": 1,
+    "school": "enchantment",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You speak a one-word command to a creature you can see within range. It must succeed on a Wisdom saving throw or follow the command on its next turn: Approach, Drop, Flee, Grovel (Prone), or Halt.",
+    "actionRecipes": [],
+    "higherLevel": "You can affect one additional creature for each spell slot level above 1."
+  },
+  {
+    "id": "alter_self",
+    "name": "Alter Self",
+    "level": 2,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 60
+    },
+    "description": "You alter your physical form, choosing one option that lasts for the duration (you can swap with a Magic action): Aquatic Adaptation (breathe underwater + Swim Speed), Change Appearance, or Natural Weapons (unarmed strikes deal 1d6 and use your spellcasting ability).",
+    "actionRecipes": []
+  },
+  {
+    "id": "dragons_breath",
+    "name": "Dragon's Breath",
+    "level": 2,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "bonusAction"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a hot pepper"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "You touch a willing creature and choose Acid, Cold, Fire, Lightning, or Poison. Until the spell ends, the target can take a Magic action to exhale a 15-foot Cone; each creature there makes a Dexterity saving throw, taking 3d6 damage of the chosen type on a failure or half on a success.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "3d6",
+        "damageType": "fire",
+        "label": "Dragon's Breath Damage (choose type)"
+      }
+    ],
+    "higherLevel": "The damage increases by 1d6 for each spell slot level above 2."
+  },
+  {
+    "id": "fear",
+    "name": "Fear",
+    "level": 3,
+    "school": "illusion",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a white feather"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "Each creature in a 30-foot Cone must succeed on a Wisdom saving throw or drop whatever it's holding and gain the Frightened condition for the duration. A Frightened creature must Dash away from you each turn if able; it repeats the save at the end of a turn it ends with no line of sight to you, ending the effect on a success.",
+    "actionRecipes": []
+  },
+  {
+    "id": "fly",
+    "name": "Fly",
+    "level": 3,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a feather"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 10
+    },
+    "description": "You touch a willing creature; for the duration it gains a Fly Speed of 60 feet and can hover. When the spell ends, it falls if still aloft.",
+    "actionRecipes": [],
+    "higherLevel": "You can target one additional creature for each spell slot level above 3."
+  },
+  {
+    "id": "arcane_eye",
+    "name": "Arcane Eye",
+    "level": 4,
+    "school": "divination",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a bit of bat fur"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 60
+    },
+    "description": "You create an Invisible, invulnerable eye within range that hovers for the duration and sends you visual information (Darkvision 30 ft). As a Bonus Action you can move the eye up to 30 feet in any direction; it can pass through openings as small as 1 inch.",
+    "actionRecipes": []
+  },
+  {
+    "id": "charm_monster",
+    "name": "Charm Monster",
+    "level": 4,
+    "school": "enchantment",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "hours",
+      "value": 1
+    },
+    "description": "One creature you can see makes a Wisdom saving throw (with Advantage if you or your allies are fighting it). On a failure, it has the Charmed condition (Friendly to you) until the spell ends or you or your allies damage it. It knows it was charmed afterward.",
+    "actionRecipes": [],
+    "higherLevel": "You can target one additional creature for each spell slot level above 4."
+  },
+  {
+    "id": "legend_lore",
+    "name": "Legend Lore",
+    "level": 5,
+    "school": "divination",
+    "castingTime": {
+      "type": "minutes",
+      "minutes": 10
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "incense worth 250+ GP, consumed, and four ivory strips worth 50+ GP each"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "Name or describe a famous person, place, or object. The spell brings to mind a brief summary of significant lore about it, as determined by the GM. The more you already know, the more precise the result. If the thing isn't actually famous, the spell fails.",
+    "actionRecipes": []
+  },
+  {
+    "id": "summon_dragon",
+    "name": "Summon Dragon",
+    "level": 5,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "an object with the image of a dragon, worth 500+ GP"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 60
+    },
+    "description": "You summon a Draconic Spirit that appears in an unoccupied space you can see. It is an ally, acts on your turn, and scales with the spell slot used (AC 14 + slot level, HP 50 + 10 per slot level above 5). It can make a Rend attack and a Breath Weapon. (Summon stat block is tracked manually.)",
+    "actionRecipes": [],
+    "higherLevel": "The spirit's AC, HP, and damage increase with the spell slot level used."
   }
 ]

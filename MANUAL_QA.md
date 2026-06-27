@@ -18,9 +18,11 @@ not surfacing at creation), which is why this list exists.
   for cases whose behavior changed. Claude does not check boxes — verification
   is yours.
 
-> **Recently changed — needs verification (2026-06-17):** the **Bard** class
-> (see Classes below) is freshly authored. The Species epoch (creation pickers,
-> breath weapon, granted spells, Giant Ancestry) is also still unverified.
+> **Recently changed — needs verification:** the **Sorcerer** class plus a
+> mechanics pass (2026-06-27) — Unarmored Defense AC, feature HP bonuses,
+> granted subclass spells, and the Innate Sorcery buff — which also fixed
+> **Barbarian Unarmored Defense** and **Dwarven Toughness**. The **Bard** class
+> (2026-06-17) and the Species epoch are also still unverified.
 
 ---
 
@@ -118,9 +120,9 @@ not surfacing at creation), which is why this list exists.
   Cutting Words) then appear on the Features tab.
 - [OK] **College of Lore Bonus Proficiencies (L3)** grants 3 more skills via a
   picker; already-proficient skills are disabled in the list.
-- [ ] **Spell slots scale as a full caster** — a high-level Bard has the right
+- [OK] **Spell slots scale as a full caster** — a high-level Bard has the right
   slots (e.g. a 9th-level slot at character level 17+).
-- [ ] **Reaction features show as reactions.** Countercharm (L7), Cutting Words
+- [OK] **Reaction features show as reactions.** Countercharm (L7), Cutting Words
   (L3) and Peerless Skill (L14) appear with a Reaction cost / on the Actions
   tab where applicable.
 - [ ] **Jack of All Trades (L2) does the math.** On a level-2+ Bard, every
@@ -135,6 +137,45 @@ not surfacing at creation), which is why this list exists.
   **not** auto-applied (pool refreshes on Long Rest — track short-rest manually);
   Magical Secrets / Magical Discoveries cross-list spell choices are
   descriptive, not auto-applied.
+
+### Sorcerer (new 2026-06-27)
+- [ ] **Create a Sorcerer.** Class skills step offers exactly 6 options
+  (Arcana, Deception, Insight, Intimidation, Persuasion, Religion), choose 2.
+  Sheet opens with a Spells tab (Charisma caster, no armor).
+- [ ] **Innate Sorcery (L1)** is a **toggle** Bonus Action (2 / Long Rest):
+  activating it shows an active effect; **while active**, the cast sheet shows
+  your **Spell Save DC +1** and **Advantage** on spell-attack rolls (the spell
+  attack rolls 2d20-keep-highest), and "End Innate Sorcery" appears. Ending it
+  (or a Long Rest) clears the buff.
+- [ ] **Sorcery Points (L2 Font of Magic)** appear as a **counter** (in the
+  resources card), value equal to your Sorcerer level (2 at L2, 5 at L5, …),
+  and are NOT a tappable action row. A Long Rest refills them. None at L1.
+- [ ] **Metamagic (L2)** shows on the Features tab as a picker with **2**
+  choices at L2, growing to **4** at L10 and **6** at L17, from the 10 options.
+- [ ] **Subclass at L3** prompts "Choose a Sorcerous origin" with **Draconic
+  Sorcery**; its features appear as you level (Draconic Resilience + Draconic
+  Spells at L3, Elemental Affinity at L6, Dragon Wings at L14).
+- [ ] **Elemental Affinity (L6)** offers a damage-type picker (Acid/Cold/Fire/
+  Lightning/Poison) on the Features tab.
+- [ ] **Dragon Wings (L14)** is a Bonus Action with a 1 / Long Rest counter.
+- [ ] **Draconic Resilience (L3)** — once Draconic Sorcery is chosen, the
+  character's **AC while unarmored is 10 + DEX + CHA**, and **max HP increases
+  by your sorcerer level** (e.g. +3 at L3, +5 at L5). Leveling up adds 1 more.
+- [ ] **Draconic Spells** become always-prepared on the Spells tab by tier:
+  L3 (Alter Self, Chromatic Orb, Command, Dragon's Breath), L5 (Fear, Fly),
+  L7 (Arcane Eye, Charm Monster), L9 (Legend Lore, Summon Dragon).
+- [ ] **Full-caster slots** — a high-level Sorcerer reaches a 9th-level slot.
+- [ ] _Known simplifications:_ Sorcery-point spending (Metamagic, creating/
+  converting slots) and Sorcerous Restoration's short-rest recovery remain
+  **manual** (the points counter is adjusted by hand). Summon Dragon's stat
+  block is text-only. "Sorcerer spells" advantage/DC applies to all the
+  character's spells (single-class assumption).
+
+### Cross-class fixes from the Sorcerer pass (verify these too)
+- [ ] **Barbarian Unarmored Defense** now actually computes: a no-armor
+  Barbarian's AC is **10 + DEX + CON** (previously the feature did nothing).
+- [ ] **Dwarven Toughness** now actually adds HP: a Dwarf's max HP is **+1 per
+  character level** (previously descriptive only).
 
 ---
 

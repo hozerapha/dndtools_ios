@@ -168,7 +168,10 @@
       {
         "id": "dwarven_toughness",
         "name": "Dwarven Toughness",
-        "description": "Your Hit Point maximum increases by 1, and it increases by 1 again whenever you gain a level."
+        "description": "Your Hit Point maximum increases by 1, and it increases by 1 again whenever you gain a level.",
+        "hitPointBonus": {
+          "perLevel": 1
+        }
       },
       {
         "id": "stonecunning",

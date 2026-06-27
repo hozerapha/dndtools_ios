@@ -214,9 +214,17 @@ struct LevelUpSheet: View {
     private func commit() {
         guard let dieGain = stagedDieGain, let entry = classEntry else { return }
         var copy = character
+        // Feature HP bonus before the level bump (subclass already chosen in
+        // this sheet, so a subclass gained now is counted in the "after").
+        let oldFeatureHP = CharacterCalculator.featureHitPointBonus(character: copy, content: content)
         // Die-only value — applyLevelUp banks it into rolledHP and
         // recalculateHP() layers the CON share on retroactively.
         CharacterCalculator.applyLevelUp(to: &copy, hpGain: dieGain, classID: entry.classID)
+        // Fold the change in feature HP (per-level growth + any newly-granted
+        // feature like Draconic Resilience at L3) into rolledHP, then recalc.
+        let newFeatureHP = CharacterCalculator.featureHitPointBonus(character: copy, content: content)
+        copy.rolledHP += (newFeatureHP - oldFeatureHP)
+        copy.recalculateHP()
         applyNewFeatureProficiencies(to: &copy)
         character = copy
         dismiss()

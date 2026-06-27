@@ -388,4 +388,117 @@ struct ContentStoreTests {
         // A pure passive (Jack of All Trades) does NOT surface as an action row.
         #expect(!rows.contains { $0.title == "Jack of All Trades" })
     }
+
+    // MARK: - Sorcerer
+
+    @MainActor
+    @Test func loadsSorcererWithScalingSorceryPointsAndMetamagic() {
+        let store = ContentStore()
+        let sorc = store.classDefinition(id: "sorcerer")
+        #expect(sorc?.name == "Sorcerer")
+        #expect(sorc?.hitDie == .d6)
+        #expect(sorc?.spellcasting?.ability == .charisma)
+        #expect(sorc?.armorProficiencies.isEmpty == true)
+        #expect(sorc?.subclasses.contains { $0.id == "draconic_sorcery" } == true)
+
+        func sorcerer(_ level: Int) -> Character {
+            Character(
+                name: "S", level: level, speciesID: "human", backgroundID: "sage",
+                classEntries: [ClassEntry(classID: "sorcerer", level: level)],
+                abilityScores: [.charisma: 16], maxHP: 6 * level
+            )
+        }
+
+        // Sorcery Points: none at L1 (Font of Magic is L2), then = level.
+        func sorceryPoints(_ level: Int) -> Int? {
+            ResourceCalculator.availableResources(character: sorcerer(level), content: store)
+                .first { $0.definition.id == "sorcery_points" }?.max
+        }
+        #expect(sorceryPoints(1) == nil)
+        #expect(sorceryPoints(2) == 2)
+        #expect(sorceryPoints(11) == 11)
+        #expect(sorceryPoints(20) == 20)
+
+        // Sorcery Points are a counter, NOT a tappable action row.
+        let l5rows = CharacterActionDeriver.sections(for: sorcerer(5), content: store).flatMap(\.rows)
+        #expect(!l5rows.contains { $0.title == "Font of Magic" })
+        // Innate Sorcery IS an activatable Bonus Action with a 2-use pool.
+        #expect(l5rows.contains { $0.title == "Innate Sorcery" && $0.action.actionCost == .bonusAction })
+
+        // Metamagic known count scales 2 → 4 → 6 via the selection's count.
+        func metamagicCount(_ level: Int) -> Int? {
+            guard let f = sorc?.levelFeatures[2]?.first(where: { $0.id == "metamagic" }),
+                  let sel = f.selection else { return nil }
+            return sel.count.value(classLevel: level, characterLevel: level)
+        }
+        #expect(metamagicCount(2) == 2)
+        #expect(metamagicCount(10) == 4)
+        #expect(metamagicCount(17) == 6)
+
+        // Full-caster slots reach 9th by L17+.
+        let hasNinth = ResourceCalculator.availableResources(character: sorcerer(20), content: store)
+            .contains { if case .spellSlot(let l) = $0.definition.displayHint { return l == 9 }; return false }
+        #expect(hasNinth)
+    }
+
+    @MainActor
+    @Test func draconicSpellsAreGrantedByLevelAndChoice() {
+        let store = ContentStore()
+        func draconic(_ level: Int, sub: Bool = true) -> Character {
+            Character(
+                name: "D", level: level, speciesID: "human", backgroundID: "sage",
+                classEntries: [ClassEntry(classID: "sorcerer", level: level)],
+                abilityScores: [.charisma: 16], maxHP: 6 * level,
+                featureSelections: sub ? ["sorcerer_subclass": ["draconic_sorcery"]] : [:]
+            )
+        }
+        func granted(_ c: Character) -> [String] {
+            CharacterSpellGrants.resolve(character: c, content: store).map(\.spell.id)
+        }
+        // L3: the four level-3 Draconic spells, none of the higher ones.
+        let l3 = granted(draconic(3))
+        #expect(l3.contains("chromatic_orb"))
+        #expect(l3.contains("dragons_breath"))
+        #expect(!l3.contains("fear"))    // L5 grant
+        #expect(!l3.contains("arcane_eye")) // L7 grant
+        // Higher tiers unlock at their levels.
+        #expect(granted(draconic(5)).contains("fear"))
+        #expect(granted(draconic(7)).contains("charm_monster"))
+        #expect(granted(draconic(9)).contains("summon_dragon"))
+        // No grants before the subclass is chosen, or for a non-Draconic sorc.
+        #expect(!granted(draconic(9, sub: false)).contains("summon_dragon"))
+    }
+
+    @MainActor
+    @Test func innateSorceryBuffRaisesDCAndGrantsAdvantageWhileActive() {
+        let store = ContentStore()
+        // Innate Sorcery is a toggle that surfaces on the Actions tab.
+        let off = Character(
+            name: "S", level: 5, speciesID: "human", backgroundID: "sage",
+            classEntries: [ClassEntry(classID: "sorcerer", level: 5)],
+            abilityScores: [.charisma: 16], maxHP: 30
+        )
+        // While inactive: no buff, base DC = 8 + 3 (CHA) + 3 (PB) = 14.
+        let inactiveBuff = CharacterCalculator.spellcastingBuff(character: off, content: store)
+        #expect(inactiveBuff.saveDCBonus == 0)
+        #expect(inactiveBuff.attackAdvantage == false)
+        #expect(CharacterCalculator.spellSaveDC(
+            character: off, spellcastingAbility: .charisma, bonus: inactiveBuff.saveDCBonus
+        ) == 14)
+
+        // Activate Innate Sorcery (toggle adds its effect to activeEffects).
+        var on = off
+        on.activeEffects = [ActiveEffect(
+            effectID: "innate_sorcery_buff",
+            source: .feature(featureID: "innate_sorcery"),
+            roundsRemaining: 10
+        )]
+        let buff = CharacterCalculator.spellcastingBuff(character: on, content: store)
+        #expect(buff.saveDCBonus == 1)
+        #expect(buff.attackAdvantage == true)
+        // DC rises to 15 with the buff.
+        #expect(CharacterCalculator.spellSaveDC(
+            character: on, spellcastingAbility: .charisma, bonus: buff.saveDCBonus
+        ) == 15)
+    }
 }

@@ -131,11 +131,18 @@ enum CharacterCalculator {
         }
     }
 
+    /// `unarmoredDefenseBonus` is the ability modifier an Unarmored Defense
+    /// feature adds to the no-armor AC (Barbarian → CON, Draconic Sorcerer →
+    /// CHA, Monk → WIS). It only applies when no armor is worn; with armor on,
+    /// the armor's own formula wins. The caller resolves it via
+    /// `unarmoredDefenseAbility(character:content:)` to keep this function
+    /// content-free.
     static func armorClass(
         dexMod: Int,
         armor: ArmorDefinition?,
         hasShield: Bool,
-        fightingStyleBonus: Int = 0
+        fightingStyleBonus: Int = 0,
+        unarmoredDefenseBonus: Int = 0
     ) -> Int {
         let base: Int
         if let armor = armor {
@@ -147,11 +154,30 @@ enum CharacterCalculator {
             }
             base = armor.acBase + dexContribution
         } else {
-            base = 10 + dexMod
+            // No armor: 10 + Dex, plus any Unarmored Defense ability mod.
+            base = 10 + dexMod + unarmoredDefenseBonus
         }
 
         let shieldBonus = hasShield ? 2 : 0
         return base + shieldBonus + fightingStyleBonus
+    }
+
+    /// The ability whose modifier feeds Unarmored Defense for this character,
+    /// or nil if no feature grants it. First match across resolved class /
+    /// subclass features. Content-aware (walks features); the AC formula stays
+    /// content-free and just takes the resolved modifier.
+    @MainActor
+    static func unarmoredDefenseAbility(character: Character, content: ContentStore) -> Ability? {
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
+                if let ability = resolved.feature.unarmoredDefenseAbility { return ability }
+            }
+        }
+        return nil
     }
 
     /// Resolves Fighting Style "Defense" to its AC delta. +1 when the chosen
@@ -223,6 +249,63 @@ enum CharacterCalculator {
         character.recalculateHP()
     }
 
+    /// Total feature-granted Hit-Point bonus the character currently qualifies
+    /// for. Class/subclass bonuses scale by the owning class level (Draconic
+    /// Resilience → sorcerer level, correct for multiclass); species-trait
+    /// bonuses scale by character level (Dwarven Toughness). The caller folds
+    /// this into `rolledHP` at creation and level-up (diffed), so the
+    /// content-free `recalculateHP()` stays correct through CON changes.
+    @MainActor
+    static func featureHitPointBonus(character: Character, content: ContentStore) -> Int {
+        var total = 0
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
+                if let hp = resolved.feature.hitPointBonus { total += hp.total(atLevel: entry.level) }
+            }
+        }
+        if let species = content.speciesDefinition(id: character.speciesID) {
+            for trait in species.traits {
+                if let hp = trait.hitPointBonus { total += hp.total(atLevel: character.level) }
+            }
+        }
+        return total
+    }
+
+    /// The spellcasting buff currently active on the character (Innate
+    /// Sorcery): the spell-save-DC bonus and whether spell attacks have
+    /// Advantage. Sums `.spellcastingBuff` effects sitting in `activeEffects`,
+    /// resolving each effect's payload from its source feature. Returns zero /
+    /// false when nothing applies.
+    @MainActor
+    static func spellcastingBuff(
+        character: Character, content: ContentStore
+    ) -> (saveDCBonus: Int, attackAdvantage: Bool) {
+        var dc = 0
+        var advantage = false
+        for active in character.activeEffects {
+            guard case .feature(let featureID) = active.source else { continue }
+            for entry in character.classEntries {
+                guard let cls = content.classDefinition(id: entry.classID) else { continue }
+                let subclassID = character.featureSelections[
+                    ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+                ]?.first
+                for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
+                    guard resolved.feature.id == featureID,
+                          let effect = resolved.feature.triggeredEffect,
+                          effect.id == active.effectID,
+                          case .spellcastingBuff(let dcBonus, let adv) = effect.effect else { continue }
+                    dc += dcBonus
+                    advantage = advantage || adv
+                }
+            }
+        }
+        return (dc, advantage)
+    }
+
     static func initiativeBonus(character: Character) -> Int {
         let dexScore = character.abilityScores[.dexterity] ?? 10
         return abilityModifier(score: dexScore)
@@ -242,12 +325,13 @@ enum CharacterCalculator {
 
     static func spellSaveDC(
         character: Character,
-        spellcastingAbility: Ability
+        spellcastingAbility: Ability,
+        bonus: Int = 0
     ) -> Int {
         let score = character.abilityScores[spellcastingAbility] ?? 10
         let abilityMod = abilityModifier(score: score)
         let profBonus = proficiencyBonus(level: character.level)
-        return 8 + abilityMod + profBonus
+        return 8 + abilityMod + profBonus + bonus
     }
 
     static func spellAttackBonus(

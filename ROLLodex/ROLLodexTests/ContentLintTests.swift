@@ -139,6 +139,16 @@ struct ContentLintTests {
                 lintLevelTable(selection.count, grantLevel: entry.grantLevel,
                                context: "\(entry.context) selection \(selection.id)")
             }
+            // Class/subclass feature spell grants (flat + per-option) must
+            // resolve to a bundled spell — otherwise they silently never show.
+            var spellGrants = entry.feature.grantsSpells
+            if case .fixedOptions(let options)? = entry.feature.selection?.optionsSource {
+                spellGrants += options.flatMap(\.grantsSpells)
+            }
+            for grant in spellGrants {
+                #expect(content.spellDefinition(id: grant.spellID) != nil,
+                        "\(entry.context) grants missing spell \(grant.spellID)")
+            }
         }
         for species in content.species.values {
             for trait in species.traits {
@@ -393,6 +403,10 @@ struct ContentLintTests {
             if case .spellSlot? = effect.cost {} else {
                 Issue.record("\(context) effect \(effect.id) uses addSlotScaledDamageDice without a spellSlot cost")
             }
+        case .spellcastingBuff(let dc, let adv):
+            // A buff that does nothing is a content error.
+            #expect(dc != 0 || adv,
+                    "\(context) effect \(effect.id) is a spellcastingBuff with no DC bonus or advantage")
         }
     }
 

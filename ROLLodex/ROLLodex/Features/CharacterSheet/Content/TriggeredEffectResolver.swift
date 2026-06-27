@@ -101,6 +101,11 @@ enum TriggeredEffectResolver {
                 // Scaled-dice effects are opt-in only today (Sneak Attack,
                 // Divine Smite); they don't fold automatically.
                 continue
+
+            case .spellcastingBuff:
+                // Not a damage rider — consumed by CharacterCalculator
+                // .spellcastingBuff, not here.
+                continue
             }
 
             firedNames.append(effect.name)
@@ -310,6 +315,10 @@ enum TriggeredEffectResolver {
             // Flat-damage effects fold automatically (Rage) — they don't
             // surface as opt-in chips. The auto path in
             // `applyAutomaticDamageRiders` handles them.
+            return nil
+
+        case .spellcastingBuff:
+            // Not a damage rider; never an opt-in chip.
             return nil
         }
 

@@ -20,8 +20,6 @@ enum CharacterSpellGrants {
     }
 
     static func resolve(character: Character, content: ContentStore) -> [GrantedSpell] {
-        guard let species = content.speciesDefinition(id: character.speciesID) else { return [] }
-
         var out: [GrantedSpell] = []
         var seen = Set<String>()
 
@@ -34,16 +32,34 @@ enum CharacterSpellGrants {
             }
         }
 
-        for trait in species.traits {
-            // Flat grants (no choice).
-            add(trait.grantsSpells, source: trait.name)
-            // Choice-gated grants: only the option the player picked contributes.
-            if let selection = trait.selection,
+        // A feature can grant spells flatly, or gate them behind a fixed-option
+        // pick (a lineage / Elemental Affinity); only the picked option counts.
+        func addFeatureGrants(_ feature: FeatureDefinition, source: String) {
+            add(feature.grantsSpells, source: source)
+            if let selection = feature.selection,
                case .fixedOptions(let options) = selection.optionsSource {
                 let picked = Set(character.featureSelections[selection.id] ?? [])
                 for option in options where picked.contains(option.id) {
-                    add(option.grantsSpells, source: trait.name)
+                    add(option.grantsSpells, source: source)
                 }
+            }
+        }
+
+        // Species traits (lineages, Otherworldly Presence, …).
+        if let species = content.speciesDefinition(id: character.speciesID) {
+            for trait in species.traits { addFeatureGrants(trait, source: trait.name) }
+        }
+
+        // Class + subclass features (Draconic Spells, future subclass spell
+        // lists). Walked through the same resolver as everything else, so a
+        // subclass grant only appears once its level is reached.
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
+                addFeatureGrants(resolved.feature, source: resolved.subclassName ?? cls.name)
             }
         }
 

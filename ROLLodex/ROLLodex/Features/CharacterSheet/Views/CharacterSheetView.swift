@@ -804,11 +804,19 @@ struct CharacterSheetView: View {
             character: character,
             wearingArmor: equippedArmor != nil
         )
+        // Unarmored Defense (Barbarian/Draconic Sorcerer/Monk): the granting
+        // feature's ability mod, applied only while no armor is worn.
+        var unarmoredBonus = 0
+        if equippedArmor == nil,
+           let ability = CharacterCalculator.unarmoredDefenseAbility(character: character, content: content) {
+            unarmoredBonus = CharacterCalculator.abilityModifier(score: character.abilityScores[ability] ?? 10)
+        }
         return CharacterCalculator.armorClass(
             dexMod: dexMod,
             armor: equippedArmor,
             hasShield: hasShield,
-            fightingStyleBonus: fsBonus
+            fightingStyleBonus: fsBonus,
+            unarmoredDefenseBonus: unarmoredBonus
         )
     }
 

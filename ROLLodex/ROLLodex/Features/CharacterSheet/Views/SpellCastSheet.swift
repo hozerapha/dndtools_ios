@@ -148,8 +148,35 @@ struct SpellCastSheet: View {
                 MetadataChip(label: "Comp", value: spell.components.shortLabel)
                 MetadataChip(label: "Dur", value: spell.duration.shortLabel)
             }
+            if let dc = saveDC {
+                // Caster's spell save DC, including any active buff (Innate
+                // Sorcery → +1). Shown so save-based spells have a target number.
+                HStack(spacing: 14) {
+                    MetadataChip(
+                        label: spellBuff.saveDCBonus > 0 ? "Save DC (buffed)" : "Save DC",
+                        value: "\(dc)"
+                    )
+                    if spellBuff.attackAdvantage {
+                        MetadataChip(label: "Spell Atk", value: "Advantage")
+                    }
+                }
+            }
         }
         .padding(.top, 4)
+    }
+
+    /// Active spellcasting buff (Innate Sorcery): DC bonus + attack advantage.
+    private var spellBuff: (saveDCBonus: Int, attackAdvantage: Bool) {
+        CharacterCalculator.spellcastingBuff(character: character, content: content)
+    }
+
+    /// Caster's spell save DC for the resolved spellcasting ability, including
+    /// the active buff. Nil when there's no spellcasting ability to base it on.
+    private var saveDC: Int? {
+        guard let ability = spellcastingAbility else { return nil }
+        return CharacterCalculator.spellSaveDC(
+            character: character, spellcastingAbility: ability, bonus: spellBuff.saveDCBonus
+        )
     }
 
     private var slotPicker: some View {
@@ -658,17 +685,21 @@ struct SpellCastSheet: View {
                 weapon: nil,
                 spellcastingAbility: ability
             )
-            guard resolved.formula != nil else { return nil }
-            let label: String
-            if let upcastSuffix {
-                label = "\(resolved.label) (\(upcastSuffix))"
-            } else {
-                label = resolved.label
+            guard var formula = resolved.formula else { return nil }
+            var label = resolved.label
+            if let upcastSuffix { label = "\(resolved.label) (\(upcastSuffix))" }
+            // Innate Sorcery grants Advantage on spell attack rolls — expand the
+            // plain d20 to 2d20-keep-highest when the buff is active.
+            if case .spellAttack = recipe, spellBuff.attackAdvantage,
+               let i = formula.groups.firstIndex(where: { $0.kind == .d20 && $0.count == 1 && $0.isPlain }) {
+                formula.groups[i].count = 2
+                formula.groups[i].modifier = .keepHighest(1)
+                label += " (Adv)"
             }
             let stamped = ResolvedAction(
                 id: "spell_\(spell.id)_l\(selectedLevel)_\(resolved.id)",
                 label: label,
-                formula: resolved.formula,
+                formula: formula,
                 description: resolved.description
             )
             return RollEntry(

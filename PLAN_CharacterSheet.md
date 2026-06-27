@@ -2201,9 +2201,34 @@ follow-ups: `.zip` pack archives, per-pack export from Settings, and
 **11. Content authoring catalog — SRD 5.2.1 ONLY (JSON-only work, no Swift)**
 Goal restated after the 2026-06-13 SRD audit: get the bundle to **100% of
 SRD 5.2.1, and nothing beyond it**. Verified SRD totals (not PHB):
-- **Classes 7/12 done** (Fighter, Wizard, Rogue, Barbarian, Paladin, Cleric,
-  **Bard** — full L1–20 + College of Lore, shipped 2026-06-17). Remaining:
-  **Druid, Monk, Ranger, Sorcerer, Warlock** (one full class per turn).
+- **Classes 8/12 done** (Fighter, Wizard, Rogue, Barbarian, Paladin, Cleric,
+  Bard, **Sorcerer** — full L1–20 + Draconic Sorcery, shipped 2026-06-27).
+  Remaining: **Druid, Monk, Ranger, Warlock** (one full class per turn).
+  - Sorcerer: Sorcery Points = a level-scaled counter on Font of Magic
+    (`surfacesAsAction:false` so it shows as a resource, not a tappable
+    action); Metamagic = a `.fixedOptions` selection with a level-scaled count
+    (2→4→6 over the 10 options); Dragon Wings is a Bonus-Action use-pool.
+  - **Sorcerer mechanics pass (2026-06-27)** closed most gaps and added reusable
+    infrastructure (each also fixed an existing descriptive feature):
+    - **Unarmored Defense**: `FeatureDefinition.unarmoredDefenseAbility` +
+      `CharacterCalculator.unarmoredDefenseAbility`; no-armor AC = 10 + DEX +
+      ability mod. Also fixed **Barbarian** Unarmored Defense (CON).
+    - **Feature HP bonuses**: `FeatureDefinition.hitPointBonus` (flat/perLevel)
+      folded into `rolledHP` at creation + level-up (diffed) via
+      `CharacterCalculator.featureHitPointBonus`; class bonuses scale by class
+      level, species by character level. Also fixed **Dwarven Toughness**.
+    - **Granted subclass spells**: `CharacterSpellGrants.resolve` now walks
+      class/subclass features; Draconic Spells (L3/5/7/9) always-prepared; 10
+      Draconic spells authored.
+    - **Innate Sorcery buff**: `TriggerCondition.whileActive` +
+      `TriggerEffect.spellcastingBuff`; toggle → `activeEffects` →
+      `CharacterCalculator.spellcastingBuff`; `SpellCastSheet` surfaces Spell
+      Save DC (+1) and rolls spell attacks with Advantage while active.
+    - Still manual: SP spending (Metamagic, slot conversion/creation),
+      Sorcerous Restoration short-rest recovery; Summon Dragon stat block is
+      text; buff scope = all the character's spells (single-class assumption).
+    - Edge: swapping subclass via the Features tab (not at level-up) doesn't
+      retro-adjust HP; re-level or rebuild to resync.
   - Bard introduced `ResourceDefinition.maxAbilityModifier` (pool size = an
     ability modifier, min 1) for Bardic Inspiration = CHA mod — reusable for
     other 2024 "uses equal to your X modifier" pools.

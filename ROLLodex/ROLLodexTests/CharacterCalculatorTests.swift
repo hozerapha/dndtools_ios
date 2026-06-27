@@ -528,4 +528,77 @@ struct CharacterCalculatorTests {
             weaponID: "backpack", character: character, content: store
         ) == nil)
     }
+
+    // MARK: - Unarmored Defense
+
+    @MainActor
+    @Test func unarmoredDefenseResolvesAbilityAndComputesAC() {
+        let store = ContentStore()
+        // Barbarian: Unarmored Defense (CON). DEX 14 (+2), CON 16 (+3) → AC 15.
+        let barb = Character(
+            name: "B", level: 1, speciesID: "human", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "barbarian", level: 1)],
+            abilityScores: [.dexterity: 14, .constitution: 16], maxHP: 14
+        )
+        #expect(CharacterCalculator.unarmoredDefenseAbility(character: barb, content: store) == .constitution)
+        #expect(CharacterCalculator.armorClass(
+            dexMod: 2, armor: nil, hasShield: false, unarmoredDefenseBonus: 3
+        ) == 15)
+
+        // Draconic Sorcerer: Unarmored Defense (CHA), once the subclass is set.
+        let sorc = Character(
+            name: "S", level: 3, speciesID: "human", backgroundID: "sage",
+            classEntries: [ClassEntry(classID: "sorcerer", level: 3)],
+            abilityScores: [.dexterity: 14, .charisma: 16], maxHP: 18,
+            featureSelections: ["sorcerer_subclass": ["draconic_sorcery"]]
+        )
+        #expect(CharacterCalculator.unarmoredDefenseAbility(character: sorc, content: store) == .charisma)
+        // Without the subclass chosen, no Unarmored Defense.
+        var sorcNoSub = sorc; sorcNoSub.featureSelections = [:]
+        #expect(CharacterCalculator.unarmoredDefenseAbility(character: sorcNoSub, content: store) == nil)
+
+        // A plain Fighter has no Unarmored Defense.
+        let fighter = Character(
+            name: "F", level: 1, speciesID: "human", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 1)],
+            abilityScores: [.dexterity: 14], maxHP: 10
+        )
+        #expect(CharacterCalculator.unarmoredDefenseAbility(character: fighter, content: store) == nil)
+    }
+
+    // MARK: - Feature HP bonuses
+
+    @MainActor
+    @Test func featureHitPointBonusScalesByLevelAndSource() {
+        let store = ContentStore()
+        // Dwarven Toughness: +1 per character level.
+        func dwarf(_ level: Int) -> Character {
+            Character(name: "D", level: level, speciesID: "dwarf", backgroundID: "soldier",
+                      classEntries: [ClassEntry(classID: "fighter", level: level)],
+                      abilityScores: [:], maxHP: 10)
+        }
+        #expect(CharacterCalculator.featureHitPointBonus(character: dwarf(1), content: store) == 1)
+        #expect(CharacterCalculator.featureHitPointBonus(character: dwarf(5), content: store) == 5)
+
+        // Draconic Resilience: +1 per sorcerer level, only once chosen (L3+).
+        func draconic(_ level: Int, sub: Bool) -> Character {
+            Character(name: "S", level: level, speciesID: "human", backgroundID: "sage",
+                      classEntries: [ClassEntry(classID: "sorcerer", level: level)],
+                      abilityScores: [:], maxHP: 6 * level,
+                      featureSelections: sub ? ["sorcerer_subclass": ["draconic_sorcery"]] : [:])
+        }
+        #expect(CharacterCalculator.featureHitPointBonus(character: draconic(2, sub: true), content: store) == 0) // not yet (L3 feature)
+        #expect(CharacterCalculator.featureHitPointBonus(character: draconic(3, sub: true), content: store) == 3) // +3 catch-up at L3
+        #expect(CharacterCalculator.featureHitPointBonus(character: draconic(5, sub: true), content: store) == 5)
+        #expect(CharacterCalculator.featureHitPointBonus(character: draconic(5, sub: false), content: store) == 0) // no subclass
+
+        // Dwarf Draconic Sorcerer at L5: both stack → +10.
+        let both = Character(
+            name: "DS", level: 5, speciesID: "dwarf", backgroundID: "sage",
+            classEntries: [ClassEntry(classID: "sorcerer", level: 5)],
+            abilityScores: [:], maxHP: 30,
+            featureSelections: ["sorcerer_subclass": ["draconic_sorcery"]]
+        )
+        #expect(CharacterCalculator.featureHitPointBonus(character: both, content: store) == 10)
+    }
 }
