@@ -427,12 +427,12 @@ struct CharacterSheetView: View {
     private func handleWeaponAttack(_ row: WeaponAttackRow) {
         pendingRoll.pendingCharacterID = character.id
         pendingRoll.pending = row.attack
-        // Queue the chained damage roll plus any opt-in rider chips (Sneak
-        // Attack, etc.) the character qualifies for. Riders that have
-        // already fired this turn are filtered out by the resolver.
-        var followUps: [PendingFollowUp] = [.chainedDamage(row.damage)]
-        followUps.append(contentsOf: row.optInRiders)
-        pendingRoll.followUps = followUps
+        // The base damage is the chained "Roll damage" follow-up; opt-in riders
+        // (Sneak Attack, Divine Smite, …) are independent toggles the dice tab
+        // stacks onto it. Riders already fired this turn are filtered out by the
+        // resolver.
+        pendingRoll.followUps = [.chainedDamage(row.damage)]
+        pendingRoll.pendingRiders = row.riders
         selectedTab = .dice
     }
 

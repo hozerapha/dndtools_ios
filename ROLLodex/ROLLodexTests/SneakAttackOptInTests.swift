@@ -95,19 +95,18 @@ struct SneakAttackOptInTests {
         let character = Self.makeRogue(level: 1)
         let chips = TriggeredEffectResolver.optInRiders(
             weapon: Self.rapier(),
-            baseDamage: Self.baseDamage(),
             character: character,
             content: store
         )
         #expect(chips.count == 1)
         #expect(chips.first?.id == "rider_sneak_attack_rider")
-        // Merged formula: base 1d8 piercing + 1d6 piercing rider, both groups
-        // present, both damage-typed.
-        let formula = chips.first?.action.formula
-        #expect(formula?.groups.count == 2)
-        #expect(formula?.groups.allSatisfy { $0.damageType == .piercing } == true)
+        // Rider-only formula now: just the 1d6 sneak die, typed to match the
+        // weapon (rapier → piercing). The base damage is combined at roll time.
+        let formula = chips.first?.formula
+        #expect(formula?.groups.count == 1)
         let riderGroup = formula?.groups.first { $0.kind == .d6 }
         #expect(riderGroup?.count == 1)
+        #expect(riderGroup?.damageType == .piercing)
     }
 
     @Test func optInRidersScalesSneakAttackByClassLevel() {
@@ -115,12 +114,11 @@ struct SneakAttackOptInTests {
         let l5Rogue = Self.makeRogue(level: 5)
         let chips = TriggeredEffectResolver.optInRiders(
             weapon: Self.rapier(),
-            baseDamage: Self.baseDamage(),
             character: l5Rogue,
             content: store
         )
         // Merged formula contains base 1d8 + 3d6 sneak attack at L5.
-        let riderGroup = chips.first?.action.formula?.groups.first { $0.kind == .d6 }
+        let riderGroup = chips.first?.formula?.groups.first { $0.kind == .d6 }
         #expect(riderGroup?.count == 3)
     }
 
@@ -129,7 +127,6 @@ struct SneakAttackOptInTests {
         let character = Self.makeRogue(level: 1)
         let chips = TriggeredEffectResolver.optInRiders(
             weapon: Self.greataxe(),
-            baseDamage: Self.baseDamage(),
             character: character,
             content: store
         )
@@ -143,7 +140,6 @@ struct SneakAttackOptInTests {
         character.setTurnFlag("sneak_attack")
         let chips = TriggeredEffectResolver.optInRiders(
             weapon: Self.rapier(),
-            baseDamage: Self.baseDamage(),
             character: character,
             content: store
         )
@@ -155,7 +151,6 @@ struct SneakAttackOptInTests {
         let fighter = Self.makeFighter()
         let chips = TriggeredEffectResolver.optInRiders(
             weapon: Self.rapier(),
-            baseDamage: Self.baseDamage(),
             character: fighter,
             content: store
         )
@@ -234,20 +229,6 @@ struct SneakAttackOptInTests {
                 .intelligence: 10, .wisdom: 13, .charisma: 8
             ],
             maxHP: 12
-        )
-    }
-
-    /// Shared stub for a freshly-resolved weapon damage roll — the canonical
-    /// 1d8 piercing rapier swing the merged chips will compose against.
-    private static func baseDamage() -> ResolvedAction {
-        var formula = DiceFormula()
-        formula.groups.append(DiceGroup(kind: .d8, count: 1, damageType: .piercing))
-        formula.modifier = 3
-        return ResolvedAction(
-            id: "weapon_rapier_damage",
-            label: "Rapier Damage",
-            formula: formula,
-            description: "1d8 + DEX"
         )
     }
 

@@ -165,6 +165,21 @@ struct DiceFormula: Codable, Hashable {
         }
     }
 
+    /// Returns a copy with `other`'s dice groups, flat modifier, and typed
+    /// modifiers folded in — used to stack opt-in damage riders onto a base
+    /// weapon-damage formula. The base's `diceResultMultiplier` is kept (riders
+    /// don't carry one); zeroed typed buckets are pruned.
+    func merging(_ other: DiceFormula) -> DiceFormula {
+        var copy = self
+        copy.groups.append(contentsOf: other.groups)
+        copy.modifier += other.modifier
+        for (type, value) in other.typedModifiers {
+            copy.typedModifiers[type, default: 0] += value
+            if copy.typedModifiers[type] == 0 { copy.typedModifiers.removeValue(forKey: type) }
+        }
+        return copy
+    }
+
     /// Returns a copy transformed for a critical hit per `rule`. Modifier
     /// multiplier is applied to the original flat modifiers first; the dice mode
     /// then either grows the dice, sets the result multiplier, or converts dice

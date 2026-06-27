@@ -157,7 +157,7 @@ struct DivineSmiteTests {
         let paladin = makePaladin(level: 2)
         let chips = smiteChips(for: paladin, weaponID: "longsword", content: content)
         #expect(chips.count == 1)
-        #expect(chips.first?.chipPrompt == "Divine Smite (L1 slot)")
+        #expect(chips.first?.label == "Divine Smite (L1 slot)")
         // Base 2d8 radiant at the lowest (1st-level) slot.
         let radiantDice = radiantDiceCount(in: chips.first)
         #expect(radiantDice == 2)
@@ -188,7 +188,7 @@ struct DivineSmiteTests {
         paladin.resources["paladin_slot_1"] = ResourceState(current: 0)
         let chips = smiteChips(for: paladin, weaponID: "longsword", content: content)
         #expect(chips.count == 1)
-        #expect(chips.first?.chipPrompt == "Divine Smite (L2 slot)")
+        #expect(chips.first?.label == "Divine Smite (L2 slot)")
         let radiantDice = radiantDiceCount(in: chips.first)
         #expect(radiantDice == 3)
         let costConcretized = chips.first?.cost == .spellSlot(minLevel: 2, maxLevel: 2)
@@ -221,27 +221,17 @@ struct DivineSmiteTests {
         for character: Character,
         weaponID: String,
         content: ContentStore
-    ) -> [PendingFollowUp] {
+    ) -> [DamageRider] {
         let weapon = content.weaponDefinition(id: weaponID)
-        var base = DiceFormula()
-        base.groups.append(DiceGroup(kind: .d8, count: 1, damageType: weapon?.damageType))
-        base.modifier = 3
-        let damage = ResolvedAction(
-            id: "weapon_\(weaponID)_damage",
-            label: "Damage",
-            formula: base,
-            description: nil
-        )
         return TriggeredEffectResolver.optInRiders(
             weapon: weapon,
-            baseDamage: damage,
             character: character,
             content: content
         )
     }
 
-    private func radiantDiceCount(in chip: PendingFollowUp?) -> Int {
-        chip?.action.formula?.groups
+    private func radiantDiceCount(in rider: DamageRider?) -> Int {
+        rider?.formula.groups
             .filter { $0.damageType == .radiant }
             .reduce(0) { $0 + $1.count } ?? 0
     }

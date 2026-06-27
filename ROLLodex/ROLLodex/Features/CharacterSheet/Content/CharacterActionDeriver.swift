@@ -118,12 +118,12 @@ struct WeaponAttackRow: Identifiable, Equatable {
     /// Two-handed damage roll for versatile weapons (longsword, etc.). Nil
     /// when the weapon isn't versatile.
     let versatileDamage: ResolvedAction?
-    /// Opt-in rider chips the character qualifies for on this attack —
+    /// Opt-in damage riders the character qualifies for on this attack —
     /// Sneak Attack (when the weapon has finesse/ranged), Divine Smite, etc.
-    /// Already filtered by `AttackFilter` and once-per-turn flags. The sheet
-    /// pushes these into `PendingRollStore.followUps` alongside the chained
-    /// damage roll.
-    let optInRiders: [PendingFollowUp]
+    /// Already filtered by `AttackFilter` and once-per-turn flags. Each carries
+    /// only its own dice; the dice tab stacks the active ones onto the damage
+    /// roll. The sheet pushes these into `PendingRollStore.pendingRiders`.
+    let riders: [DamageRider]
 }
 
 /// Pure derivation of the action button list for a character, given the
@@ -256,9 +256,8 @@ enum CharacterActionDeriver {
                 return property
             }()
 
-            let optInRiders = TriggeredEffectResolver.optInRiders(
+            let riders = TriggeredEffectResolver.optInRiders(
                 weapon: weapon,
-                baseDamage: damage,
                 character: character,
                 content: content
             )
@@ -270,7 +269,7 @@ enum CharacterActionDeriver {
                 attack: attack,
                 damage: damage,
                 versatileDamage: versatileEnriched,
-                optInRiders: optInRiders
+                riders: riders
             ))
         }
         return rows

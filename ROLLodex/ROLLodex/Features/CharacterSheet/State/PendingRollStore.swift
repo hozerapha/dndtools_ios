@@ -14,6 +14,12 @@ import Observation
 final class PendingRollStore {
     var pending: ResolvedAction?
     var followUps: [PendingFollowUp] = []
+    /// Opt-in damage riders (Sneak Attack, Divine Smite, Fire's Burn …) the
+    /// player can stack onto the damage roll after an attack lands. Unlike
+    /// `followUps`, these are independent toggles: each carries only its OWN
+    /// dice, and the dice tab combines the base damage with whichever are
+    /// active, then rolls once (crit-aware, costs paid at roll time).
+    var pendingRiders: [DamageRider] = []
     /// The character that dispatched `pending`. Used by the dice tab to
     /// apply reactive features (e.g. Stroke of Luck) that trigger after a
     /// roll settles. Cleared alongside `pending` when consumed.
@@ -56,4 +62,19 @@ struct PendingFollowUp: Identifiable, Equatable {
     static func chainedDamage(_ action: ResolvedAction) -> PendingFollowUp {
         PendingFollowUp(id: "chained_\(action.id)", action: action)
     }
+}
+
+/// An opt-in damage rider the player can toggle onto a damage roll (Sneak
+/// Attack, Divine Smite at a chosen slot, Fire's Burn …). Carries ONLY the
+/// rider's own dice — the dice tab merges it into the base damage when active,
+/// so multiple riders stack into one roll and crit doubling applies to the
+/// whole combined formula.
+struct DamageRider: Identifiable, Equatable {
+    let id: String
+    /// Player-facing label, e.g. "Sneak Attack" or "Divine Smite (L1 slot)".
+    let label: String
+    /// The rider's own dice (typed), without the base weapon damage.
+    let formula: DiceFormula
+    /// What firing the rider costs — a once-per-turn flag or a spell slot.
+    let cost: TriggerCost?
 }

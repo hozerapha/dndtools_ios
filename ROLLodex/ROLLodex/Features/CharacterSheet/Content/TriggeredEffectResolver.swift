@@ -178,19 +178,16 @@ enum TriggeredEffectResolver {
 
     /// Walk the character's class features and produce one chip per qualifying
     /// `TriggeredEffect` with `.optIn` activation + `.onAttackHit` trigger.
-    /// Each chip's formula is the BASE weapon damage merged with the rider's
-    /// extra dice, so tapping "Use Sneak Attack" rolls weapon + rider in one
-    /// pass — the player picks one chip from the rail instead of rolling
-    /// damage and Sneak Attack separately. Features already spent this turn
-    /// (`.oncePerTurn` flag already set) are filtered out so the chip doesn't
-    /// reappear.
+    /// Each rider carries only its OWN dice (not merged with the base weapon
+    /// damage), so the dice tab can stack any combination onto a single damage
+    /// roll. Features already spent this turn (`.oncePerTurn` flag set) are
+    /// filtered out so the rider doesn't reappear.
     static func optInRiders(
         weapon: WeaponDefinition?,
-        baseDamage: ResolvedAction,
         character: Character,
         content: ContentStore
-    ) -> [PendingFollowUp] {
-        var out: [PendingFollowUp] = []
+    ) -> [DamageRider] {
+        var out: [DamageRider] = []
         for entry in character.classEntries {
             guard let cls = content.classDefinition(id: entry.classID) else { continue }
             let subclassID = character.featureSelections[
@@ -223,15 +220,14 @@ enum TriggeredEffectResolver {
                     break
                 }
 
-                guard let chip = buildChip(
+                guard let rider = buildRider(
                     for: effect,
                     weapon: weapon,
-                    baseDamage: baseDamage,
                     character: character,
                     classLevel: entry.level,
                     slotLevel: slotLevelToUse
                 ) else { continue }
-                out.append(chip)
+                out.append(rider)
             }
         }
 
@@ -251,15 +247,14 @@ enum TriggeredEffectResolver {
                     if case .oncePerTurn(let flag) = effect.cost, character.hasTurnFlag(flag) { continue }
                     // Species riders don't spend spell slots; skip if one is asked for.
                     if case .spellSlot = effect.cost { continue }
-                    guard let chip = buildChip(
+                    guard let rider = buildRider(
                         for: effect,
                         weapon: weapon,
-                        baseDamage: baseDamage,
                         character: character,
                         classLevel: character.level,
                         slotLevel: nil
                     ) else { continue }
-                    out.append(chip)
+                    out.append(rider)
                 }
             }
         }
@@ -267,21 +262,18 @@ enum TriggeredEffectResolver {
         return out
     }
 
-    /// Merge the rider's dice into the base weapon-damage formula, then wrap
-    /// the result as a chip whose tap rolls the combined damage in one go.
-    /// Returns nil when the effect can't produce a usable rider (no formula
-    /// to merge, no weapon for `.matchWeapon`, scaling table at 0).
-    private static func buildChip(
+    /// Resolve a single opt-in rider's OWN dice (typed) into a `DamageRider`.
+    /// The dice tab merges it onto the base damage when toggled active, so this
+    /// no longer touches the base formula. Returns nil when the effect can't
+    /// produce a usable rider (no weapon for `.matchWeapon`, scaling at 0, etc.).
+    private static func buildRider(
         for effect: TriggeredEffect,
         weapon: WeaponDefinition?,
-        baseDamage: ResolvedAction,
         character: Character,
         classLevel: Int,
         slotLevel: Int? = nil
-    ) -> PendingFollowUp? {
-        guard let baseFormula = baseDamage.formula else { return nil }
-
-        // Resolve the rider's contribution into its own DiceFormula first.
+    ) -> DamageRider? {
+        // Resolve the rider's contribution into its own DiceFormula.
         let damageType: DamageType
         var rider: DiceFormula
 
@@ -325,41 +317,24 @@ enum TriggeredEffectResolver {
         rider.applyDamageType(damageType)
         guard !rider.groups.isEmpty else { return nil }
 
-        // Merge: base + rider groups, sum typed modifiers, sum untyped flat.
-        var merged = baseFormula
-        merged.groups.append(contentsOf: rider.groups)
-        for (type, value) in rider.typedModifiers {
-            merged.typedModifiers[type, default: 0] += value
-            if merged.typedModifiers[type] == 0 {
-                merged.typedModifiers.removeValue(forKey: type)
-            }
-        }
-        merged.modifier += rider.modifier
-
-        // Concretize a slot-range cost to the level this chip actually
-        // spends, so the sheet consumes exactly the slot whose dice the
-        // player saw. The prompt names the level for the same reason.
+        // Concretize a slot-range cost to the level this rider actually spends,
+        // so the sheet consumes exactly the slot whose dice the player saw. The
+        // label names the level for the same reason.
         let cost: TriggerCost?
-        let prompt: String
+        let label: String
         if let slotLevel {
             cost = .spellSlot(minLevel: slotLevel, maxLevel: slotLevel)
-            prompt = "\(effect.name) (L\(slotLevel) slot)"
+            label = "\(effect.name) (L\(slotLevel) slot)"
         } else {
             cost = effect.cost
-            prompt = effect.name
+            label = effect.name
         }
 
-        let mergedAction = ResolvedAction(
-            id: "merged_\(baseDamage.id)_\(effect.id)",
-            label: "\(baseDamage.label) + \(prompt)",
-            formula: merged,
-            description: merged.displayString
-        )
-        return PendingFollowUp(
+        return DamageRider(
             id: "rider_\(effect.id)",
-            action: mergedAction,
-            cost: cost,
-            chipPrompt: prompt
+            label: label,
+            formula: rider,
+            cost: cost
         )
     }
 

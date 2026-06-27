@@ -466,13 +466,14 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
 
 ### P0 — Correctness / data-integrity (do first)
 
-- ☐ **Resource consumed before the roll resolves** (audit #2). Tapping a
-  resource-cost action (Rage, a slot, Channel Divinity) debits immediately in
-  `handleActionTap`, so abandoning the handoff loses the charge.
-  **Fix:** thread the `resourceCost` through `PendingRollStore.pendingCostsToApply`
-  (the field already exists) and debit in `DiceRollerView.roll()` when the roll
-  actually commits; keep tap-to-consume only for no-formula actions (Action
-  Surge). Covers playtest "Action Surge is a button" framing too.
+- ◐ **Resource consumed before the roll resolves** (audit #2). *Partially fixed
+  2026-06-27 by the rider refactor:* opt-in **damage riders** (Sneak Attack,
+  Divine Smite, Fire's Burn) now pay their cost only when "Roll damage" is
+  tapped — toggling or abandoning the rail spends nothing. **Still open:** the
+  feature-tap consume path (Rage, Channel Divinity, etc.) in `handleActionTap`
+  still debits immediately. Fix: thread that `resourceCost` through
+  `pendingCostsToApply` and debit in `DiceRollerView.roll()` too (keep
+  tap-to-consume only for no-formula actions like Action Surge).
 - ☐ **Stroke of Luck corrupts history** (audit #1, #14, #19). `applyStrokeOfLuck`
   does `history.removeFirst()` (wrong entry) and only forces the first d20
   group; `rollCameFromCharacterSheet` is set before the nil-formula guard.
@@ -553,8 +554,10 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
 
 ### P2 — High-priority engine / UX (audit #8–19)
 
-- ☐ **`PendingRollStore.followUps` not cleared on every handoff** (audit #8) —
-  clear at the start of each handoff; assign new follow-ups explicitly.
+- ✅ **`PendingRollStore.followUps` not cleared on every handoff** (audit #8).
+  *Fixed 2026-06-27:* the dice tab clears both `followUps` and the new
+  `pendingRiders` when it consumes a handoff, and the rider refactor below resets
+  the local rail state on consume / manual edit / roll.
 - ☐ **Level-up doesn't apply all new grants** (audit #10, playtest) — generalize
   commit to sync spells, resources, and subclass grants, not just proficiencies;
   prompt for subclass at the level it unlocks.
@@ -632,6 +635,8 @@ All phases A–O shipped. Key per-phase notes:
 | O — triggered effects & active statuses | shipped (Slices A+B+C). See "Phase O Shipped reality" for open items (Divine Smite shipped 2026-06-09; Battle Master/superiority dice, GWM, attack-roll triggers still open) |
 
 **Shipped changelog (reverse-chronological highlights; reusable infra in `code`):**
+- **2026-06-27 — Settings page + configurable Natural 20 crit, then stackable damage riders.** `@AppStorage`-backed Settings → Combat "Natural 20 style"; composable `CritRule` (dice mode × modifier multiplier) with presets via `CritStyle`; `DiceFormula.applyingCrit(_:)` + `diceResultMultiplier`. **Rider refactor:** opt-in riders (Sneak Attack, Divine Smite, Fire's Burn) now carry their OWN dice (`DamageRider`, via `TriggeredEffectResolver.optInRiders` + `DiceFormula.merging`) and surface as independent **toggles** in the dice tab — stack any combination onto one crit-aware damage roll, costs paid only at roll time (fixes audit #8, rider half of #2). `PendingRollStore.pendingRiders` carries them.
+- **2026-06-27 — QA P0 quick batch.** Parser min+keep/drop, class-skill Reliable Talent floor, advantage+floor compose (`DiceFormula.applyingAdvantage`), weapon inline-modifier parsing, `fillDamageType`.
 - **2026-06-27 — Sorcerer (8th class) + Draconic Sorcery (5th subclass), full L1–20.** Sorcery Points = level-scaled counter on Font of Magic (`surfacesAsAction:false`); Metamagic = `.fixedOptions` count 2→4→6; Dragon Wings = Bonus-Action pool. Mechanics pass added reusable infra (each fixed an existing descriptive feature):
   - `FeatureDefinition.unarmoredDefenseAbility` + `CharacterCalculator.unarmoredDefenseAbility` (no-armor AC = 10 + DEX + ability; also fixed Barbarian CON).
   - `FeatureDefinition.hitPointBonus` (flat/perLevel) folded into `rolledHP` at creation + level-up (diffed) via `CharacterCalculator.featureHitPointBonus`; also fixed Dwarven Toughness.

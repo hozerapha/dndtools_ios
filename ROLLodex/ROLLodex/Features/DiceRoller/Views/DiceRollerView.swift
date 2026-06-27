@@ -32,6 +32,10 @@ struct DiceRollerView: View {
     /// manual formula edit clears the whole rail — the queued chips stop
     /// matching the dice once the player has touched the picker.
     @State private var pendingFollowUps: [PendingFollowUp] = []
+    /// Opt-in damage riders for the current attack, and which the player has
+    /// toggled on. The base damage chip rolls the base + active riders combined.
+    @State private var pendingRiders: [DamageRider] = []
+    @State private var activeRiderIDs: Set<String> = []
     @State private var showStrokeOfLuckPrompt = false
     @State private var strokeOfLuckContext: StrokeOfLuckContext?
     @State private var rollingCharacterID: UUID?
@@ -122,6 +126,8 @@ struct DiceRollerView: View {
                     // Once the user has touched the dice manually, queued
                     // chips no longer pair with what's in the tray.
                     pendingFollowUps = []
+                    pendingRiders = []
+                    activeRiderIDs = []
                 }
             }
         }
@@ -301,20 +307,19 @@ struct DiceRollerView: View {
         controller.setDimmed(formulaIndices: droppedFormulaIndices)
     }
 
-    /// Rail of chips that appears below the tray once the primary roll has
-    /// landed: a "Roll damage" chip from the weapon-attack pairing plus any
-    /// opt-in riders (Sneak Attack, Divine Smite). Each chip is an
-    /// alternative damage roll for the same attack — tapping any one fires
-    /// and clears the rest, so the player rolls damage once. Manual formula
-    /// edits clear the rail too.
+    /// Rail of chips below the tray once an attack has landed: a "Roll damage"
+    /// chip plus a toggle per opt-in rider (Sneak Attack, Divine Smite, …).
+    /// Riders are independent toggles — turn on any combination, and the
+    /// "Roll damage" chip rolls the base damage plus every active rider as a
+    /// single (crit-aware) roll, spending their costs only then. Manual formula
+    /// edits clear the rail.
     @ViewBuilder
     private var followUpRail: some View {
         if !pendingFollowUps.isEmpty, lastResult != nil {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(pendingFollowUps) { followUp in
-                        chip(for: followUp)
-                    }
+                    ForEach(pendingFollowUps) { rollDamageChip(for: $0.action) }
+                    ForEach(pendingRiders) { riderToggleChip(for: $0) }
                 }
                 .padding(.vertical, 2)
             }
@@ -322,42 +327,40 @@ struct DiceRollerView: View {
         }
     }
 
-    /// A crit damage transform applies when the just-settled roll was a crit,
-    /// a crit style is enabled, and this follow-up is a damage roll (not a heal).
-    private func critAppliesTo(_ followUp: PendingFollowUp) -> Bool {
+    /// Crit transform applies when a crit style is on, the settled roll was a
+    /// crit, and this is a damage roll (not a heal).
+    private func critApplies(to base: ResolvedAction) -> Bool {
         guard critStyle != .off, lastResult?.hasCriticalSuccess == true else { return false }
-        return !followUp.action.label.lowercased().contains("heal")
+        return !base.label.lowercased().contains("heal")
     }
 
-    /// The formula to actually roll for a follow-up — crit-transformed when the
-    /// preceding attack was a critical hit, otherwise the plain formula.
-    private func effectiveFormula(for followUp: PendingFollowUp) -> DiceFormula? {
-        guard let base = followUp.action.formula else { return nil }
-        return critAppliesTo(followUp) ? base.applyingCrit(critStyle.rule) : base
+    private var activeRiders: [DamageRider] {
+        pendingRiders.filter { activeRiderIDs.contains($0.id) }
     }
 
-    private func chip(for followUp: PendingFollowUp) -> some View {
-        let crit = critAppliesTo(followUp)
-        let prompt = crit ? "Roll critical damage" : (followUp.chipPrompt ?? followUpPrompt(for: followUp.action))
-        // Subtitle prefers the formula's display string ("1d8 + 1d6 + 3
-        // piercing") so both chips read as comparable damage-roll options
-        // rather than echoing their own internal action labels. On a crit it
-        // shows the transformed formula so the player sees what they'll roll.
-        let subtitle = (effectiveFormula(for: followUp))?.compactDisplayString ?? followUp.action.label
-        // Rider chips (any with a once-per-turn cost) get the bolt glyph to
-        // telegraph "fires a finite resource" vs. the plain arrow for the
-        // default chained roll.
-        let icon = followUp.cost == nil ? "arrow.right.circle.fill" : "bolt.fill"
+    /// Base damage + every active rider's dice, crit-transformed if applicable.
+    private func combinedDamageFormula(base: ResolvedAction) -> DiceFormula? {
+        guard var formula = base.formula else { return nil }
+        for rider in activeRiders { formula = formula.merging(rider.formula) }
+        if critApplies(to: base) { formula = formula.applyingCrit(critStyle.rule) }
+        return formula
+    }
+
+    /// The primary "Roll damage" chip. Its subtitle reflects whatever riders are
+    /// toggled on (and crit), so it updates live as the player picks.
+    private func rollDamageChip(for base: ResolvedAction) -> some View {
+        let crit = critApplies(to: base)
+        let prompt = crit ? "Roll critical damage" : followUpPrompt(for: base)
+        let subtitle = combinedDamageFormula(base: base)?.compactDisplayString ?? base.label
         return Button {
-            consumeFollowUp(followUp)
+            rollDamage(base: base)
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: icon)
+                Image(systemName: "arrow.right.circle.fill")
                     .font(.subheadline)
                     .foregroundStyle(Color.accentColor)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(prompt)
-                        .font(.subheadline.weight(.semibold))
+                    Text(prompt).font(.subheadline.weight(.semibold))
                     Text(subtitle)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -371,6 +374,38 @@ struct DiceRollerView: View {
         .buttonStyle(.plain)
     }
 
+    /// A toggleable rider chip — tap to include/exclude it in the damage roll.
+    private func riderToggleChip(for rider: DamageRider) -> some View {
+        let active = activeRiderIDs.contains(rider.id)
+        return Button {
+            if active { activeRiderIDs.remove(rider.id) } else { activeRiderIDs.insert(rider.id) }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: active ? "checkmark.circle.fill" : "circle")
+                    .font(.subheadline)
+                    .foregroundStyle(active ? Color.accentColor : .secondary)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(rider.label).font(.subheadline.weight(.semibold))
+                    Text(rider.formula.compactDisplayString)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                (active ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.12)),
+                in: RoundedRectangle(cornerRadius: 10)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(active ? Color.accentColor.opacity(0.5) : .clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
     private func followUpPrompt(for action: ResolvedAction) -> String {
         let label = action.label.lowercased()
         if label.contains("damage") { return "Roll damage" }
@@ -378,20 +413,25 @@ struct DiceRollerView: View {
         return "Roll next"
     }
 
-    private func consumeFollowUp(_ followUp: PendingFollowUp) {
-        // The whole rail is a single damage-roll choice for the current
-        // attack (Roll Damage vs. Use Sneak Attack vs. Use Divine Smite …).
-        // Whichever one fires, the rest go away — you only roll damage once.
-        pendingFollowUps = []
-        // Park the cost on the store so the character sheet — which owns the
-        // character binding — can apply it (set turn flag, etc.). Keeps the
-        // dice tab character-agnostic.
-        if let cost = followUp.cost {
-            pendingRoll.pendingCostsToApply.append(cost)
+    /// Fire the damage roll: base + active riders combined (crit-aware), paying
+    /// each active rider's cost now (only when the roll actually happens), then
+    /// clear the rail.
+    private func rollDamage(base: ResolvedAction) {
+        let crit = critApplies(to: base)
+        let riders = activeRiders
+        guard let nextFormula = combinedDamageFormula(base: base) else { return }
+        // Pay costs only at roll time — abandoning the rail spends nothing.
+        for rider in riders {
+            if let cost = rider.cost { pendingRoll.pendingCostsToApply.append(cost) }
         }
-        let crit = critAppliesTo(followUp)
-        guard let nextFormula = effectiveFormula(for: followUp) else { return }
-        let label = crit ? "\(followUp.action.label) (Critical)" : followUp.action.label
+        var parts = [base.label]
+        parts.append(contentsOf: riders.map(\.label))
+        var label = parts.joined(separator: " + ")
+        if crit { label += " (Critical)" }
+
+        pendingFollowUps = []
+        pendingRiders = []
+        activeRiderIDs = []
         applyLabeled(formula: nextFormula, label: label)
         if autoRollEnabled {
             Task { await roll() }
@@ -482,10 +522,12 @@ struct DiceRollerView: View {
         // Snapshot the follow-ups first; always clear both store slots so a
         // later handoff with no follow-ups doesn't inherit a stale rail.
         let nextFollowUps = pendingRoll.followUps
+        let nextRiders = pendingRoll.pendingRiders
         rollingCharacterID = pendingRoll.pendingCharacterID
         rollCameFromCharacterSheet = true
         pendingRoll.pending = nil
         pendingRoll.followUps = []
+        pendingRoll.pendingRiders = []
         pendingRoll.pendingCharacterID = nil
 
         // saveDC and other info-only actions have no formula — nothing to load.
@@ -495,6 +537,8 @@ struct DiceRollerView: View {
         // (which would have cleared a stale rail on manual edits) sees the
         // new labelBoundFormula match and leaves us alone.
         pendingFollowUps = nextFollowUps
+        pendingRiders = nextRiders
+        activeRiderIDs = []
         if autoRollEnabled {
             Task { await roll() }
         }

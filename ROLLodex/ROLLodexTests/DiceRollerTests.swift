@@ -371,4 +371,29 @@ struct DiceRollerTests {
         #expect(CritStyle.doubleTotal.rule == CritRule(dice: .doubleRolledValue, modifierMultiplier: 2))
         #expect(CritStyle.default == .doubleDice)
     }
+
+    // MARK: - Stackable damage riders (merging)
+
+    @Test func mergingStacksRiderDiceAndModifiers() {
+        // Base longsword 1d8+3 slashing.
+        var base = DiceFormula()
+        base.groups.append(DiceGroup(kind: .d8, count: 1, damageType: .slashing))
+        base.modifier = 3
+        // Sneak Attack 1d6 piercing + Divine Smite 2d8 radiant.
+        var sneak = DiceFormula()
+        sneak.groups.append(DiceGroup(kind: .d6, count: 1, damageType: .piercing))
+        var smite = DiceFormula()
+        smite.groups.append(DiceGroup(kind: .d8, count: 2, damageType: .radiant))
+
+        let combined = base.merging(sneak).merging(smite)
+        #expect(combined.groups.count == 3)           // 1d8 + 1d6 + 2d8
+        #expect(combined.modifier == 3)               // base mod preserved once
+        // Values: 5 (d8) + 4 (d6) + 6 + 6 (2d8) + 3 = 24.
+        #expect(roller.resultFrom(formula: combined, values: [5, 4, 6, 6]).total == 24)
+
+        // On a crit (RAW double-dice), every stacked die doubles, mod once.
+        let crit = combined.applyingCrit(CritStyle.doubleDice.rule)
+        #expect(crit.groups.map(\.count) == [2, 2, 4])  // 2d8, 2d6, 4d8
+        #expect(crit.modifier == 3)
+    }
 }

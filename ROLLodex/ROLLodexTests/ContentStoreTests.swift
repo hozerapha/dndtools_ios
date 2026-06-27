@@ -315,13 +315,9 @@ struct ContentStoreTests {
         }
         func riderPrompts(_ giant: String?) -> [String] {
             let c = goliath(giant)
-            let baseDamage = ActionInterpreter.resolve(
-                recipe: .weaponDamage(dieOverride: nil, addAbility: true, versatile: false),
-                character: c, weapon: weapon
-            )
             return TriggeredEffectResolver.optInRiders(
-                weapon: weapon, baseDamage: baseDamage, character: c, content: store
-            ).map(\.chipPrompt)
+                weapon: weapon, character: c, content: store
+            ).map(\.label)
         }
         #expect(riderPrompts("fires_burn").contains("Fire's Burn"))
         #expect(riderPrompts("frosts_chill").contains("Frost's Chill"))
