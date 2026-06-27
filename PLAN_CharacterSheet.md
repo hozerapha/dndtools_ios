@@ -466,28 +466,29 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
 
 ### P0 — Correctness / data-integrity (do first)
 
-- ◐ **Resource consumed before the roll resolves** (audit #2). *Partially fixed
-  2026-06-27 by the rider refactor:* opt-in **damage riders** (Sneak Attack,
-  Divine Smite, Fire's Burn) now pay their cost only when "Roll damage" is
-  tapped — toggling or abandoning the rail spends nothing. **Still open:** the
-  feature-tap consume path (Rage, Channel Divinity, etc.) in `handleActionTap`
-  still debits immediately. Fix: thread that `resourceCost` through
-  `pendingCostsToApply` and debit in `DiceRollerView.roll()` too (keep
-  tap-to-consume only for no-formula actions like Action Surge).
-- ☐ **Stroke of Luck corrupts history** (audit #1, #14, #19). `applyStrokeOfLuck`
-  does `history.removeFirst()` (wrong entry) and only forces the first d20
-  group; `rollCameFromCharacterSheet` is set before the nil-formula guard.
-  **Fix:** capture the triggering `RollResult.id` and replace in place
-  (`HistoryStore.remove(id:)`); force every d20 group (drop the `break`); set
-  `rollCameFromCharacterSheet` only when a formula is actually dispatched.
-- ☐ **Bundled-content decode `fatalError` bricks launch** (audit #3).
-  **Fix:** make `loadDictionary` throw / fall back to empty and show a launch
-  alert ("Required game data is missing — please reinstall"). Pairs with
-  surfacing skipped imported packs (audit #21) and quarantining corrupt
-  character files instead of deleting (audit #22).
-- ☐ **Imported packs silently overwrite on slug collision** (audit #4, #37).
-  **Fix:** append a short content/name hash to the sanitized slug, or detect an
-  existing file and prompt / append a counter.
+- ✅ **Resource consumed before the roll resolves** (audit #2). *Fixed
+  2026-06-27.* Riders pay at "Roll damage" time (rider refactor); rollable
+  feature actions (Second Wind, etc.) now defer too — the cost rides the
+  `ResolvedAction` to the dice tab and is parked on
+  `PendingRollStore.pendingResourceCostsToApply` only when the roll fires (the
+  sheet applies it). Tap-to-consume kept for no-formula actions (Action Surge)
+  and toggles (Rage). `handleActionTap` guards an exhausted pool up front.
+- ✅ **Stroke of Luck corrupts history** (audit #1, #14, #19). *Fixed
+  2026-06-27.* The triggering roll is recorded lazily (not yet in history), so
+  `applyStrokeOfLuck` just records the forced-20 result — dropped the bogus
+  `history.removeFirst()`. Forces *every* d20 group (removed the `break`), and
+  the rolling-character context is set only after the formula guard so info-only
+  actions can't leak Stroke of Luck onto the next manual roll.
+- ✅ **Bundled-content decode `fatalError` bricks launch** (audit #3). *Fixed
+  2026-06-27.* `loadDictionary` records to `ContentStore.loadErrors` and returns
+  empty instead of crashing; Settings shows a "Content Problems" warning when
+  non-empty. (Imported-pack skip surfacing #21 + corrupt-character quarantine
+  #22 still open.)
+- ✅ **Imported packs silently overwrite on slug collision** (audit #4, #37).
+  *Fixed 2026-06-27.* Filename = sanitized slug + a stable FNV-1a hash of the
+  display name, so distinct names that sanitize alike stay distinct while the
+  same name still overwrites (intended re-import). (Overwrite *confirmation*
+  #37 still a nicety.)
 - ✅ **`min` floor can't combine with keep/drop** (audit #5, #25). *Fixed
   2026-06-27:* `parseModifiers` now extracts the `minN` token wherever it sits
   (reads only the digit run after `min`) and parses the remainder as the
@@ -635,6 +636,8 @@ All phases A–O shipped. Key per-phase notes:
 | O — triggered effects & active statuses | shipped (Slices A+B+C). See "Phase O Shipped reality" for open items (Divine Smite shipped 2026-06-09; Battle Master/superiority dice, GWM, attack-roll triggers still open) |
 
 **Shipped changelog (reverse-chronological highlights; reusable infra in `code`):**
+- **2026-06-27 — Structural P0 fixes.** Stroke of Luck records the forced-20 result without deleting an unrelated history entry + forces every d20 + no longer leaks onto manual rolls (audit #1/#14/#19); `ContentStore` degrades on bad bundled JSON via `loadErrors` (surfaced in Settings) instead of `fatalError` (#3); imported-pack filenames get a stable name-hash so distinct names don't collide (#4); rollable feature resource costs deferred to roll time via `PendingRollStore.pendingResourceCostsToApply` (#2 fully closed).
+- **2026-06-27 — Expertise picker** locks skills already granted in another expertise selection (Rogue/Bard) via marker-driven `lockReason`.
 - **2026-06-27 — Settings page + configurable Natural 20 crit, then stackable damage riders.** `@AppStorage`-backed Settings → Combat "Natural 20 style"; composable `CritRule` (dice mode × modifier multiplier) with presets via `CritStyle`; `DiceFormula.applyingCrit(_:)` + `diceResultMultiplier`. **Rider refactor:** opt-in riders (Sneak Attack, Divine Smite, Fire's Burn) now carry their OWN dice (`DamageRider`, via `TriggeredEffectResolver.optInRiders` + `DiceFormula.merging`) and surface as independent **toggles** in the dice tab — stack any combination onto one crit-aware damage roll, costs paid only at roll time (fixes audit #8, rider half of #2). `PendingRollStore.pendingRiders` carries them.
 - **2026-06-27 — QA P0 quick batch.** Parser min+keep/drop, class-skill Reliable Talent floor, advantage+floor compose (`DiceFormula.applyingAdvantage`), weapon inline-modifier parsing, `fillDamageType`.
 - **2026-06-27 — Sorcerer (8th class) + Draconic Sorcery (5th subclass), full L1–20.** Sorcery Points = level-scaled counter on Font of Magic (`surfacesAsAction:false`); Metamagic = `.fixedOptions` count 2→4→6; Dragon Wings = Bonus-Action pool. Mechanics pass added reusable infra (each fixed an existing descriptive feature):

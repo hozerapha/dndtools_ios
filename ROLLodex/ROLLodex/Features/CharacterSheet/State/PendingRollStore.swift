@@ -30,6 +30,11 @@ final class PendingRollStore {
     /// the list. Lets the dice tab fire chip side-effects without holding a
     /// reference to the character.
     var pendingCostsToApply: [TriggerCost] = []
+    /// Feature resource costs (Second Wind's use, Channel Divinity, …) for a
+    /// *rollable* action, parked when the dice tab actually rolls — so bailing
+    /// before rolling doesn't burn the charge (audit #2). No-formula actions
+    /// (Action Surge) still spend on tap, in the sheet.
+    var pendingResourceCostsToApply: [ResourceCost] = []
 }
 
 /// One chip in the post-primary follow-up rail. Bundles the action with the

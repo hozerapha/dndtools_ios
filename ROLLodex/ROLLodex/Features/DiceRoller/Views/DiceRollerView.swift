@@ -36,6 +36,10 @@ struct DiceRollerView: View {
     /// toggled on. The base damage chip rolls the base + active riders combined.
     @State private var pendingRiders: [DamageRider] = []
     @State private var activeRiderIDs: Set<String> = []
+    /// Resource cost of a rollable feature action (Second Wind, …) to debit only
+    /// when its roll actually fires — see `rollDamage`/`roll`. Cleared if the
+    /// handoff is abandoned (manual edit) so the charge is never lost (audit #2).
+    @State private var pendingResourceCost: ResourceCost?
     @State private var showStrokeOfLuckPrompt = false
     @State private var strokeOfLuckContext: StrokeOfLuckContext?
     @State private var rollingCharacterID: UUID?
@@ -128,6 +132,7 @@ struct DiceRollerView: View {
                     pendingFollowUps = []
                     pendingRiders = []
                     activeRiderIDs = []
+                    pendingResourceCost = nil
                 }
             }
         }
@@ -277,13 +282,13 @@ struct DiceRollerView: View {
         var cursor = 0
         for group in ctx.result.formula.groups {
             let endIndex = min(cursor + group.count, overriddenValues.count)
+            // Force every d20 group to 20, not just the first (audit #14).
             if group.kind == .d20 {
                 for i in cursor..<endIndex {
                     overriddenValues[i] = 20
                 }
-                break
             }
-            cursor += group.count
+            cursor = endIndex
         }
 
         let dr = DiceRoller()
@@ -294,7 +299,10 @@ struct DiceRollerView: View {
             label: ctx.result.label
         )
 
-        history.removeFirst()
+        // The triggering roll was recorded lazily (deferred until the prompt
+        // resolves), so it is NOT yet in history — just record the forced-20
+        // result. The old `history.removeFirst()` deleted an unrelated newest
+        // entry (audit #1).
         history.record(newResult)
 
         lastResult = newResult
@@ -523,15 +531,20 @@ struct DiceRollerView: View {
         // later handoff with no follow-ups doesn't inherit a stale rail.
         let nextFollowUps = pendingRoll.followUps
         let nextRiders = pendingRoll.pendingRiders
-        rollingCharacterID = pendingRoll.pendingCharacterID
-        rollCameFromCharacterSheet = true
+        let characterID = pendingRoll.pendingCharacterID
         pendingRoll.pending = nil
         pendingRoll.followUps = []
         pendingRoll.pendingRiders = []
         pendingRoll.pendingCharacterID = nil
 
-        // saveDC and other info-only actions have no formula — nothing to load.
+        // saveDC and other info-only actions have no formula — nothing to load,
+        // and crucially nothing rolls, so we must NOT mark a rolling-character
+        // context (it would otherwise leak Stroke of Luck onto the next manual
+        // roll — audit #19).
         guard let resolvedFormula = resolved.formula else { return }
+        rollingCharacterID = characterID
+        rollCameFromCharacterSheet = true
+        pendingResourceCost = resolved.resourceCost
         applyLabeled(formula: resolvedFormula, label: resolved.label)
         // Set the follow-ups AFTER applyLabeled so the formula's onChange
         // (which would have cleared a stale rail on manual edits) sees the
@@ -568,6 +581,12 @@ struct DiceRollerView: View {
               formula.totalDiceCount > 0,
               formula.allKinds3DSupported else { return }
         isRolling = true
+        // The roll is now committed — debit any deferred feature resource cost
+        // (Second Wind, etc.). Parked on the store for the sheet to apply.
+        if let cost = pendingResourceCost {
+            pendingRoll.pendingResourceCostsToApply.append(cost)
+            pendingResourceCost = nil
+        }
         lastResult = nil
         magnifyingDieIndices = []
         // Strip any glow from the prior settled state — otherwise the colored

@@ -13,6 +13,11 @@ final class ContentStore {
     private(set) var spells: [String: SpellDefinition] = [:]
     private(set) var conditions: [String: ConditionDefinition] = [:]
 
+    /// Bundled-content load failures (missing or malformed `Content/*.json`).
+    /// Populated by `reload()`; surfaced in Settings instead of crashing the app
+    /// (a release-build asset regression should degrade, not brick — audit #3).
+    private(set) var loadErrors: [String] = []
+
     /// User-imported packs live here (one `.json` per pack), separate from the
     /// read-only bundled SRD. Overlaid on top of bundled content at load,
     /// shadowing by id.
@@ -102,6 +107,7 @@ final class ContentStore {
     /// by id. Packs are applied in filename order (last wins on a collision
     /// between two imported packs). Called on init and after any import/remove.
     func reload() {
+        loadErrors = []
         let packs = loadImportedPacks().map(\.pack)
         classes     = merged(loadDictionary(from: "classes", decode: [ClassDefinition].self), packs.compactMap(\.classes))
         species     = merged(loadDictionary(from: "species", decode: [SpeciesDefinition].self), packs.compactMap(\.species))
@@ -135,12 +141,10 @@ final class ContentStore {
         ]
 
         guard let url = possibleURLs.compactMap({ $0 }).first else {
-            let allURLs = Bundle.main.urls(forResourcesWithExtension: "json", subdirectory: nil) ?? []
-            print("Available JSON files in bundle:")
-            for u in allURLs {
-                print("  - \(u.lastPathComponent) at \(u.path)")
-            }
-            fatalError("Missing bundled content: \(filename).json")
+            // Degrade instead of crashing: record the failure and return empty
+            // so the app still launches (audit #3).
+            loadErrors.append("Missing bundled content: \(filename).json")
+            return [:]
         }
 
         do {
@@ -148,7 +152,8 @@ final class ContentStore {
             let items = try JSONDecoder().decode(type, from: data)
             return Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0) })
         } catch {
-            fatalError("Failed to decode \(filename).json: \(error)")
+            loadErrors.append("Couldn't read \(filename).json: \(error.localizedDescription)")
+            return [:]
         }
     }
 
@@ -221,7 +226,10 @@ final class ContentStore {
         // case). Persist the ORIGINAL bytes so what's stored is exactly what
         // validated.
         let displayName = pack.name ?? suggestedName ?? "Imported Pack"
-        let dest = importedContentDirectory.appendingPathComponent("\(sanitize(displayName)).json")
+        // Slug + stable name hash: same name overwrites; different names that
+        // sanitize alike stay distinct (audit #4).
+        let fileBase = "\(sanitize(displayName))-\(stableSuffix(for: displayName))"
+        let dest = importedContentDirectory.appendingPathComponent("\(fileBase).json")
         try data.write(to: dest, options: .atomic)
 
         reload()
@@ -276,5 +284,19 @@ final class ContentStore {
         }
         let trimmed = slug.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "-"))
         return trimmed.isEmpty ? "imported-pack" : trimmed
+    }
+
+    /// A short, deterministic suffix derived from the full display name, so two
+    /// names that sanitize to the same slug ("Pack 1" / "Pack!1" → "pack-1")
+    /// still get distinct files — while re-importing the SAME name maps to the
+    /// same file (the intended "fix a bug and re-import" overwrite). audit #4.
+    /// FNV-1a (not `Hasher`, whose seed is randomized per run).
+    private func stableSuffix(for name: String) -> String {
+        var hash: UInt64 = 0xcbf29ce484222325
+        for byte in name.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 0x100000001b3
+        }
+        return String(hash & 0xffffff, radix: 16)  // 6 hex chars is plenty
     }
 }

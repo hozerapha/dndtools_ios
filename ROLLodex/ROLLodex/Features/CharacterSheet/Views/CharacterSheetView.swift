@@ -148,6 +148,17 @@ struct CharacterSheetView: View {
             }
             pendingRoll.pendingCostsToApply = []
         }
+        .onChange(of: pendingRoll.pendingResourceCostsToApply) { _, costs in
+            // Feature resource costs the dice tab parked when a rollable action
+            // actually fired (Second Wind, etc.) — debit now, then clear.
+            guard !costs.isEmpty else { return }
+            for cost in costs {
+                _ = ResourceCalculator.consume(
+                    amount: cost.amount, from: cost.resourceID, in: &character, content: content
+                )
+            }
+            pendingRoll.pendingResourceCostsToApply = []
+        }
         .confirmationDialog("Rest", isPresented: $showRestConfirm, titleVisibility: .hidden) {
             Button("Short Rest") { takeRest(.short) }
             Button("Long Rest")  { takeRest(.long) }
@@ -532,20 +543,28 @@ struct CharacterSheetView: View {
         }
 
         let action = row.action
-        // Pay the resource cost first; abort if exhausted (deriver should
-        // already have greyed the tile out, but belt-and-suspenders).
-        if let cost = action.resourceCost {
-            let ok = ResourceCalculator.consume(
-                amount: cost.amount,
-                from: cost.resourceID,
-                in: &character,
-                content: content
-            )
-            guard ok else { return }
+
+        // No-formula action (Action Surge): nothing to roll, so the tap IS the
+        // commitment — spend the resource now.
+        guard action.formula != nil else {
+            if let cost = action.resourceCost {
+                _ = ResourceCalculator.consume(
+                    amount: cost.amount, from: cost.resourceID, in: &character, content: content
+                )
+            }
+            return
         }
-        // No formula → nothing to push to dice (Action Surge style). The
-        // resource was still spent above.
-        guard action.formula != nil else { return }
+
+        // Rollable action (Second Wind, etc.): don't spend the resource on tap.
+        // The cost rides along on the ResolvedAction; the dice tab parks it and
+        // we debit only when the roll actually fires (audit #2). Guard against
+        // an exhausted pool up front so a 0-charge action can't be queued.
+        if let cost = action.resourceCost {
+            let available = ResourceCalculator.current(
+                character: character, content: content, resourceID: cost.resourceID
+            )
+            guard available >= cost.amount else { return }
+        }
         pendingRoll.pendingCharacterID = character.id
         pendingRoll.pending = action
         selectedTab = .dice

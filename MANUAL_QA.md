@@ -152,6 +152,27 @@ exclusive chips — they're independent **toggles** stacked onto one damage roll
 - [ ] **Once-per-turn riders disappear after use.** After firing Sneak Attack,
   it's gone from the rail until Start New Turn clears the flag.
 
+## Structural P0 fixes (2026-06-27)
+
+- [ ] **Stroke of Luck replaces the right roll.** As a Rogue 20 with Stroke of
+  Luck available, roll an attack that offers the prompt; roll something else in
+  the dice tab without tapping it; then tap Stroke of Luck → history shows the
+  forced-20 result and the *unrelated* roll is untouched (previously it deleted
+  the wrong entry). With a multi-d20 formula, every d20 is forced to 20.
+- [ ] **Stroke of Luck doesn't leak.** Do a character info-only action (e.g. a
+  save DC), then a manual dice-tab roll → no Stroke of Luck prompt appears for
+  the manual roll.
+- [ ] **Bad content degrades, doesn't crash.** (Dev) Corrupt a bundled
+  `Content/*.json` and launch → app still opens; Settings shows a "Content
+  Problems" warning instead of a crash.
+- [ ] **Colliding pack names don't overwrite.** Import two packs named "Pack 1"
+  and "Pack!1" → both appear in Settings (distinct files). Re-importing "Pack 1"
+  replaces only itself.
+- [ ] **Rollable resource cost spent only on the roll.** Tap a feature that
+  rolls *and* costs a use (e.g. Second Wind), switch tabs **without** rolling →
+  the use is NOT spent. Actually roll it → the use is spent once. (Action Surge,
+  no roll, still spends on tap; Rage still spends when toggled on.)
+
 ## Selection pickers — no double-grants (fixed 2026-06-27)
 
 - [ ] **Second Expertise doesn't re-offer existing expertise.** A Rogue picks

@@ -44,6 +44,8 @@ struct ContentStoreEdgeCaseTests {
         #expect(!store.gear.isEmpty)
         #expect(!store.spells.isEmpty)
         #expect(!store.conditions.isEmpty)
+        // Bundled content loaded cleanly — no degraded-load errors (audit #3).
+        #expect(store.loadErrors.isEmpty)
     }
 
     // MARK: - Imported pack handling
@@ -66,8 +68,33 @@ struct ContentStoreEdgeCaseTests {
         _ = try store.importPack(data: data, suggestedName: nil)
 
         #expect(store.importedPacks.count == 1)
-        #expect(store.importedPacks.first?.fileName == "my-pack.json")
+        // Filename = sanitized slug + a stable name hash (audit #4).
+        #expect(store.importedPacks.first?.fileName.hasPrefix("my-pack-") == true)
+        #expect(store.importedPacks.first?.fileName.hasSuffix(".json") == true)
         #expect(store.spellDefinition(id: "sanity")?.name == "Sanity Bolt")
+    }
+
+    @Test func distinctNamesThatSanitizeAlikeDoNotCollide() throws {
+        let dir = makeTempDir()
+        let store = ContentStore(importedContentDirectory: dir)
+        // "Pack 1" and "Pack!1" both sanitize to "pack-1" — must stay distinct.
+        _ = try store.importPack(
+            data: spellPackJSON(id: "a", name: "A", packName: "Pack 1").data(using: .utf8)!,
+            suggestedName: nil)
+        _ = try store.importPack(
+            data: spellPackJSON(id: "b", name: "B", packName: "Pack!1").data(using: .utf8)!,
+            suggestedName: nil)
+        #expect(store.importedPacks.count == 2)
+        #expect(store.spellDefinition(id: "a") != nil)
+        #expect(store.spellDefinition(id: "b") != nil)
+
+        // Re-importing the SAME name overwrites its own file (no third pack).
+        _ = try store.importPack(
+            data: spellPackJSON(id: "a2", name: "A2", packName: "Pack 1").data(using: .utf8)!,
+            suggestedName: nil)
+        #expect(store.importedPacks.count == 2)
+        #expect(store.spellDefinition(id: "a2") != nil)
+        #expect(store.spellDefinition(id: "a") == nil)   // overwritten
     }
 
     @Test func importedEntriesShadowBundledByID() throws {

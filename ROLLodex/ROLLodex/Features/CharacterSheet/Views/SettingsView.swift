@@ -37,6 +37,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                if !content.loadErrors.isEmpty { contentErrorSection }
                 contentPacksSection
                 charactersSection
                 combatSection
@@ -182,6 +183,20 @@ struct SettingsView: View {
         }
     }
     #endif
+
+    private var contentErrorSection: some View {
+        Section {
+            ForEach(content.loadErrors, id: \.self) { message in
+                Label(message, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        } header: {
+            Text("Content Problems")
+        } footer: {
+            Text("Some bundled game data couldn't be loaded, so parts of the app may be missing. Reinstalling the app usually fixes this.")
+        }
+    }
 
     private var combatSection: some View {
         Section {
