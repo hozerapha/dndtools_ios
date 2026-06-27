@@ -1,6 +1,8 @@
 import Testing
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
+import CoreTransferable
 @testable import ROLLodex
 
 struct CharacterStoreTests {
@@ -219,5 +221,27 @@ struct CharacterStoreTests {
         let data = try Data(contentsOf: fileURL)
         let loaded = try JSONDecoder().decode(Character.self, from: data)
         #expect(loaded.name == "Test")
+    }
+
+    // MARK: - Export / import round-trip
+
+    @available(iOS 18.2, *)
+    @Test func exportedCharacterImportsWithFreshID() async throws {
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let store = CharacterStore(directory: tempDir)
+        let original = makeSampleCharacter(name: "Exportable")
+        let exported = ExportedCharacter(character: original)
+        let data = try await exported.exported(as: .json)
+
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("json")
+        try data.write(to: fileURL)
+
+        let imported = try store.importCharacter(from: fileURL)
+
+        #expect(imported.id != original.id)
+        #expect(imported.name == "Exportable")
+        #expect(store.character(id: imported.id)?.name == "Exportable")
     }
 }

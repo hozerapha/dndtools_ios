@@ -1,18 +1,17 @@
-//
-//  ROLLodexTests.swift
-//  ROLLodexTests
-//
-//  Created by José Colina on 2026-06-09.
-//
-
 import Testing
+import Foundation
+@testable import ROLLodex
 
+@MainActor
 struct ROLLodexTests {
 
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-        // Swift Testing Documentation
-        // https://developer.apple.com/documentation/testing
+    @Test func bundledContentLoads() {
+        let store = ContentStore()
+        #expect(!store.classes.isEmpty)
+        #expect(!store.species.isEmpty)
+        #expect(!store.backgrounds.isEmpty)
+        #expect(!store.weapons.isEmpty)
+        #expect(!store.spells.isEmpty)
+        #expect(store.classDefinition(id: "fighter")?.name == "Fighter")
     }
-
 }

@@ -471,6 +471,48 @@ struct DamageTypingTests {
         #expect(DamageBreakdownView.text(for: result) == "5 slashing + 4 radiant + 3")
     }
 
+    // MARK: - Untyped-modifier edge cases
+
+    @Test func subtotalsByTypeAttachesNegativeUntypedModifierWhenAllShareType() {
+        var formula = DiceFormula()
+        formula.groups.append(DiceGroup(kind: .d8, count: 1, damageType: .slashing))
+        formula.modifier = -2
+        let result = RollResult(
+            formula: formula,
+            dieRolls: [DieRoll(kind: .d8, value: 5)]
+        )
+        #expect(result.subtotalsByType == [.slashing: 3])
+    }
+
+    @Test func subtotalsByTypeOmitsZeroModifier() {
+        var formula = DiceFormula()
+        formula.groups.append(DiceGroup(kind: .d8, count: 1, damageType: .slashing))
+        formula.modifier = 0
+        let result = RollResult(
+            formula: formula,
+            dieRolls: [DieRoll(kind: .d8, value: 5)]
+        )
+        #expect(result.subtotalsByType == [.slashing: 5])
+    }
+
+    @Test func rollResultCodableRoundTrip() throws {
+        var formula = DiceFormula()
+        formula.groups.append(DiceGroup(kind: .d8, count: 1, damageType: .fire))
+        formula.typedModifiers[.fire] = 3
+        formula.modifier = 2
+        let original = RollResult(
+            formula: formula,
+            dieRolls: [DieRoll(kind: .d8, value: 6)],
+            mode: .advantage,
+            label: "Fire Bolt"
+        )
+
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(RollResult.self, from: data)
+        let equal = original == decoded
+        #expect(equal)
+    }
+
     // MARK: - Helpers
 
     private static func makeFighter() -> Character {

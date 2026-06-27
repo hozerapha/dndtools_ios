@@ -195,4 +195,64 @@ struct DiceRollerTests {
         #expect(!result.hasCriticalSuccess)
         #expect(result.total == 5)
     }
+
+    // MARK: - rerollOnceIfAtMost
+
+    @Test func rerollGroupKeepsAllDiceInResultFrom() {
+        let f = formula([DiceGroup(kind: .d6, count: 3, modifier: .rerollOnceIfAtMost(2))])
+        let result = roller.resultFrom(formula: f, values: [1, 3, 2])
+
+        #expect(result.dieRolls.allSatisfy(\.isKept))
+        #expect(result.total == 6)
+    }
+
+    @Test func rerollRollsRespectMinimumFloor() {
+        // A reroll modifier plus a floor should never surface a value below the floor.
+        let f = formula([DiceGroup(kind: .d6, count: 5, modifier: .rerollOnceIfAtMost(1), minimumValue: 3)])
+        for _ in 0..<200 {
+            let result = roller.roll(f)
+            #expect(result.dieRolls.allSatisfy { (3...6).contains($0.value) })
+            #expect(result.dieRolls.allSatisfy(\.isKept))
+        }
+    }
+
+    // MARK: - d100 compound behavior
+
+    @Test func d100RollsOneToHundredAsSingleDie() {
+        let f = formula([DiceGroup(kind: .d100, count: 1)])
+        for _ in 0..<200 {
+            let value = roller.roll(f).dieRolls.first?.value ?? 0
+            #expect((1...100).contains(value))
+        }
+    }
+
+    @Test func d100RespectsKeepDrop() {
+        let f = formula([DiceGroup(kind: .d100, count: 3, modifier: .keepHighest(1))])
+        let result = roller.resultFrom(formula: f, values: [15, 82, 41])
+
+        #expect(result.total == 82)
+        #expect(result.dieRolls.filter(\.isKept).map(\.value) == [82])
+    }
+
+    // MARK: - Multi-group keep/drop tie-breaking
+
+    @Test func keepDropAppliedPerGroup() {
+        let f = formula([
+            DiceGroup(kind: .d6, count: 3, modifier: .keepHighest(2)),
+            DiceGroup(kind: .d8, count: 2, modifier: .dropLowest(1))
+        ])
+        let result = roller.resultFrom(formula: f, values: [1, 6, 3, 4, 2])
+        let kept = result.dieRolls.filter(\.isKept).map(\.value)
+
+        #expect(kept == [6, 3, 4])
+        #expect(result.total == 13)
+    }
+
+    @Test func tiedValuesKeepStableLowestIndices() {
+        let f = formula([DiceGroup(kind: .d6, count: 4, modifier: .keepHighest(2))])
+        let result = roller.resultFrom(formula: f, values: [4, 4, 4, 4])
+
+        #expect(result.dieRolls.filter(\.isKept).count == 2)
+        #expect(result.total == 8)
+    }
 }
