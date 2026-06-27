@@ -255,4 +255,52 @@ struct DiceRollerTests {
         #expect(result.dieRolls.filter(\.isKept).count == 2)
         #expect(result.total == 8)
     }
+
+    // MARK: - QA P0: parser min + keep/drop combination (audit #5)
+
+    @Test func parserAcceptsMinWithKeepDropInEitherOrder() throws {
+        let parser = DiceFormulaParser()
+        // mod-then-min (canonical displayString order)
+        let a = try parser.parse("1d20kh1min10")
+        #expect(a.groups.first?.modifier == .keepHighest(1))
+        #expect(a.groups.first?.minimumValue == 10)
+        // min-then-mod (manual entry) — previously threw invalidMinimum
+        let b = try parser.parse("2d6min3kh2")
+        #expect(b.groups.first?.count == 2)
+        #expect(b.groups.first?.modifier == .keepHighest(2))
+        #expect(b.groups.first?.minimumValue == 3)
+        // disadvantage + floor
+        let c = try parser.parse("2d20kl1min10")
+        #expect(c.groups.first?.modifier == .keepLowest(1))
+        #expect(c.groups.first?.minimumValue == 10)
+        // bare floor still works; a floor with no digits still throws
+        #expect((try? parser.parse("1d20min10")) != nil)
+        #expect((try? parser.parse("1d20kh1min")) == nil)
+    }
+
+    // MARK: - QA P0: advantage preserves a Reliable Talent floor (audit #6)
+
+    @Test func applyingAdvantagePreservesMinimumValue() {
+        var f = DiceFormula()
+        f.groups.append(DiceGroup(kind: .d20, count: 1, minimumValue: 10))
+        f.modifier = 5
+        let adv = f.applyingAdvantage(.advantage)
+        #expect(adv.groups.first?.count == 2)
+        #expect(adv.groups.first?.modifier == .keepHighest(1))
+        #expect(adv.groups.first?.minimumValue == 10)   // floor survives
+        #expect(adv.modifier == 5)
+        #expect(f.applyingAdvantage(.disadvantage).groups.first?.modifier == .keepLowest(1))
+        #expect(f.applyingAdvantage(.normal).groups.first?.count == 1) // no-op
+    }
+
+    // MARK: - QA P0: fillDamageType doesn't clobber inline types (audit #16)
+
+    @Test func fillDamageTypeOnlyFillsUntypedGroups() {
+        var f = DiceFormula()
+        f.groups.append(DiceGroup(kind: .d6, count: 1, damageType: .fire)) // explicit
+        f.groups.append(DiceGroup(kind: .d6, count: 1))                     // untyped
+        f.fillDamageType(.cold)
+        #expect(f.groups[0].damageType == .fire)   // preserved
+        #expect(f.groups[1].damageType == .cold)   // filled
+    }
 }

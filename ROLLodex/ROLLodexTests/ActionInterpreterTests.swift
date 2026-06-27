@@ -259,4 +259,50 @@ struct ActionInterpreterTests {
         )
         #expect((try? JSONDecoder().decode(ActionRecipe.self, from: data)) != nil)
     }
+
+    // MARK: - QA P0 fixes
+
+    /// audit #7: a class-skill proficiency (stored in featureSelections, not the
+    /// proficiencies dict) must still trigger the Reliable Talent floor.
+    @Test func reliableTalentFloorAppliesToClassSkillProficiency() {
+        let rogue = Character(
+            name: "Sneak", level: 7, speciesID: "human", backgroundID: "criminal",
+            classEntries: [ClassEntry(classID: "rogue", level: 7)],
+            abilityScores: [.dexterity: 16], maxHP: 40,
+            featureSelections: ["rogue_class_skills": ["perception"]]  // no stored .skill(.perception)
+        )
+        let floored = ActionInterpreter.resolve(
+            recipe: .skillCheck(skill: .perception), character: rogue, weapon: nil,
+            skillCheckFloor: 10
+        )
+        #expect(floored.formula?.groups.first?.minimumValue == 10)
+        // A skill the rogue is NOT proficient in gets no floor.
+        let unfloored = ActionInterpreter.resolve(
+            recipe: .skillCheck(skill: .arcana), character: rogue, weapon: nil,
+            skillCheckFloor: 10
+        )
+        #expect(unfloored.formula?.groups.first?.minimumValue == nil)
+    }
+
+    /// audit #15: weapon damage with an inline modifier ("1d8+2") must parse to
+    /// a real die group plus the modifier, not an empty group.
+    @Test func weaponDamageParsesInlineModifier() {
+        var character = makeSampleCharacter()
+        character.abilityScores[.strength] = 10  // +0 so the +2 is isolated
+        let weapon = WeaponDefinition(
+            id: "homebrew_blade", name: "Homebrew Blade", description: "", cost: 0, weight: 1,
+            weaponCategory: .martial, damage: "1d8+2", damageType: .slashing,
+            damageAbility: .strength, properties: [], versatileDamage: nil, range: nil,
+            masteryProperty: nil, actionRecipes: []
+        )
+        let dmg = ActionInterpreter.resolve(
+            recipe: .weaponDamage(dieOverride: nil, addAbility: true, versatile: false),
+            character: character, weapon: weapon
+        )
+        #expect(dmg.formula?.groups.first?.kind == .d8)
+        #expect(dmg.formula?.groups.first?.count == 1)
+        // Inline +2 from the dice string, +0 STR.
+        #expect(dmg.formula?.modifier == 2)
+        #expect(dmg.formula?.groups.first?.damageType == .slashing)
+    }
 }

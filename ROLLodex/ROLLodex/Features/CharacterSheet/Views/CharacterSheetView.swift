@@ -617,13 +617,11 @@ struct CharacterSheetView: View {
     /// 2d20kh1 / 2d20kl1 group. Anything else is returned unchanged — the
     /// adv/dis menu only makes sense for plain d20 rolls.
     private func applyAdvantage(to base: DiceFormula?, mode: RollMode) -> DiceFormula? {
-        guard mode != .normal, var formula = base else { return base }
-        guard let i = formula.groups.firstIndex(where: {
-            $0.kind == .d20 && $0.count == 1 && $0.isPlain
-        }) else { return formula }
-        formula.groups[i].count = 2
-        formula.groups[i].modifier = (mode == .advantage) ? .keepHighest(1) : .keepLowest(1)
-        return formula
+        // Delegated to the pure, unit-tested `DiceFormula.applyingAdvantage`,
+        // which preserves a Reliable Talent `minimumValue` floor on the
+        // expanded 2d20kh1/kl1 group (a plain group's `isPlain` ignores the
+        // floor, so advantage + floor compose).
+        base?.applyingAdvantage(mode)
     }
 
     // MARK: - Header

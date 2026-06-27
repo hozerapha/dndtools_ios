@@ -249,6 +249,31 @@ struct DiceFormula: Codable, Hashable {
         }
     }
 
+    /// Apply `type` only to groups that don't already carry one, preserving any
+    /// inline `[type]` prefix a recipe/weapon dice string declared. Use this
+    /// when stamping a "default" damage type so an explicit per-group type wins.
+    mutating func fillDamageType(_ type: DamageType) {
+        for i in groups.indices where groups[i].damageType == nil {
+            groups[i].damageType = type
+        }
+    }
+
+    /// Returns a copy with the first plain single-d20 group expanded for
+    /// advantage (`2d20kh1`) or disadvantage (`2d20kl1`). Any `minimumValue`
+    /// floor on that group (Reliable Talent's "treat ≤9 as 10") is preserved on
+    /// the expanded group, so advantage composes with the floor. `.normal`, a
+    /// non-d20 lead group, or an already-modified group return self unchanged.
+    func applyingAdvantage(_ mode: RollMode) -> DiceFormula {
+        guard mode != .normal else { return self }
+        var copy = self
+        guard let i = copy.groups.firstIndex(where: {
+            $0.kind == .d20 && $0.count == 1 && $0.isPlain
+        }) else { return copy }
+        copy.groups[i].count = 2
+        copy.groups[i].modifier = (mode == .advantage) ? .keepHighest(1) : .keepLowest(1)
+        return copy
+    }
+
     /// Reader-friendly variant of `displayString` for compact contexts like
     /// the follow-up chip subtitle. When every dice group AND every typed
     /// modifier share a single damage type, the per-piece `[type]` prefixes

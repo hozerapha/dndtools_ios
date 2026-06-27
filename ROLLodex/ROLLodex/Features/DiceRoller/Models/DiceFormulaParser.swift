@@ -186,15 +186,21 @@ struct DiceFormulaParser {
         var remaining = raw
         var minimumValue: Int? = nil
 
-        // Extract minN suffix/prefix if present.
+        // Extract a `minN` token wherever it sits in the suffix, reading only
+        // the digit run that immediately follows `min`. The rest (anything
+        // before it plus any trailing keep/drop) is the group modifier, so
+        // `1d20kh2min10` AND `1d20min10kh2` both parse. (Damage-type prefixes
+        // are stripped earlier, so a "min" substring here is always the floor.)
         if let range = remaining.range(of: "min") {
-            let before = String(remaining[..<range.lowerBound])
-            let after = String(remaining[range.upperBound...])
-            guard let n = Int(after), n >= 1, n <= sides else {
+            let afterMin = remaining[range.upperBound...]
+            let digits = afterMin.prefix(while: \.isNumber)
+            guard !digits.isEmpty, let n = Int(digits), n >= 1, n <= sides else {
                 throw ParseError.invalidMinimum(term)
             }
             minimumValue = n
-            remaining = before
+            let before = remaining[..<range.lowerBound]
+            let afterDigits = afterMin[digits.endIndex...]
+            remaining = String(before) + String(afterDigits)
         }
 
         let modifier = try parseGroupModifier(remaining, count: count, sides: sides, term: term)

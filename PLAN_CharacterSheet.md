@@ -487,19 +487,21 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
 - ☐ **Imported packs silently overwrite on slug collision** (audit #4, #37).
   **Fix:** append a short content/name hash to the sanitized slug, or detect an
   existing file and prompt / append a counter.
-- ☐ **`min` floor can't combine with keep/drop** (audit #5, #25). `1d20kh1min10`
-  fails. **Fix:** parse the keep/drop modifier token first, then strip a
-  trailing `minN` suffix (ordered scan / anchored regex), not substring search.
-- ☐ **Advantage silently dropped when Reliable Talent applies** (audit #6).
-  `applyAdvantage` only expands "plain" d20 groups; the floor makes them
-  non-plain. **Fix:** treat d20 groups with `minimumValue` as expandable,
-  preserving the floor on the resulting `2d20kh1min10` — or move advantage
-  expansion into `ActionInterpreter` before the floor is stamped (also fixes
-  audit #5's combo at the source).
-- ☐ **Class-skill proficiency ignored for Reliable Talent** (audit #7).
-  `resolveSkillCheck` reads only `character.proficiencies`. **Fix:** use
-  `CharacterCalculator.skillProficiencyLevel(character:skill:)` (already the
-  source of truth elsewhere) to gate the floor.
+- ✅ **`min` floor can't combine with keep/drop** (audit #5, #25). *Fixed
+  2026-06-27:* `parseModifiers` now extracts the `minN` token wherever it sits
+  (reads only the digit run after `min`) and parses the remainder as the
+  group modifier, so `1d20kh1min10` and `1d20min10kh2` both parse.
+- ✅ **Advantage silently dropped when Reliable Talent applies** (audit #6).
+  *Fixed 2026-06-27:* this was really a symptom of #7 — `isPlain` ignores
+  `minimumValue`, so advantage already expanded floored groups once the floor
+  was actually set. Hardened anyway: advantage logic extracted into the pure,
+  unit-tested `DiceFormula.applyingAdvantage(_:)` which provably preserves the
+  floor on the expanded `2d20kh1min10` group.
+- ✅ **Class-skill proficiency ignored for Reliable Talent** (audit #7).
+  *Fixed 2026-06-27:* `resolveSkillCheck` now gates the floor via
+  `CharacterCalculator.skillProficiencyLevel(character:skill:)` (the same
+  content-free source of truth the skills table uses), so proficiency from a
+  class-skill selection counts. This was the actual root cause behind #6.
 
 ### P1 — Rules fidelity that shows at the table (playtest priorities)
 
@@ -515,11 +517,13 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
   `rawDamage` recipe per allowed type and let the player pick; **(richer):** a
   damage-type picker in `SpellCastSheet`. Same mechanism would let
   Elemental Affinity / Transmuted Spell choose a type.
-- ☐ **`resolveRawDamage` overwrites an inline `[type]` prefix** (audit #16).
-  **Fix:** only apply the recipe's damage type to groups lacking one.
-- ☐ **Weapon damage strings with inline modifiers mis-parse** (audit #15).
-  `parseDieString` only handles bare `NdM`. **Fix:** route weapon damage through
-  `DiceFormulaParser` (handles `1d8+2`, typed prefixes). Unblocks homebrew/import.
+- ✅ **`resolveRawDamage` overwrites an inline `[type]` prefix** (audit #16).
+  *Fixed 2026-06-27:* uses the new `DiceFormula.fillDamageType(_:)` (fills only
+  untyped groups) instead of `applyDamageType`, so an inline `[type]` wins.
+- ✅ **Weapon damage strings with inline modifiers mis-parse** (audit #15).
+  *Fixed 2026-06-27:* `resolveWeaponDamage` now routes the dice string through
+  `DiceFormulaParser` (handles `1d8+2` + typed prefixes), then fills the weapon
+  type onto untyped groups. Unblocks homebrew/import.
 - ☐ **Conditions tracked but not enforced** (playtest 3.5). `conditions.json`
   carries rich `effects` arrays nothing consumes. **Fix:** have
   `CharacterCalculator`/`ActionInterpreter` read `character.conditions` and apply

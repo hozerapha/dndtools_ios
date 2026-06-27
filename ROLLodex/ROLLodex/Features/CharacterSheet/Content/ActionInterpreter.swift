@@ -173,7 +173,9 @@ enum ActionInterpreter {
         // route through the existing dice-formula parser instead and fall
         // back to an empty formula if anything goes wrong.
         var formula = (try? DiceFormulaParser().parse(dice)) ?? DiceFormula()
-        formula.applyDamageType(damageType)
+        // Fill (don't overwrite): an inline `[type]` prefix in the recipe dice
+        // wins over the recipe's default damage type.
+        formula.fillDamageType(damageType)
         // Untyped flat is fine: when every group shares one damage type the
         // result breakdown attributes the modifier to that type anyway.
         if let mod = spellcastingMod {
@@ -306,9 +308,13 @@ enum ActionInterpreter {
 
         let totalMod = abilityContribution + duelingBonus
 
-        var formula = parseDieString(dieString, modifier: totalMod)
+        // Route through the full parser so weapon dice with inline modifiers or
+        // typed prefixes ("1d8+2", "[fire]1d6") work, not just bare "NdM".
+        // Fall back to an empty formula if a homebrew string is unparseable.
+        var formula = (try? DiceFormulaParser().parse(dieString)) ?? DiceFormula()
+        formula.modifier += totalMod
         if let dmgType = weapon?.damageType {
-            formula.applyDamageType(dmgType)
+            formula.fillDamageType(dmgType)
         }
         let label = weapon?.name ?? "Damage"
         var desc = dieString
@@ -356,10 +362,13 @@ enum ActionInterpreter {
             character: character, skill: skill, jackOfAllTrades: jackOfAllTrades
         )
 
-        // The floor (Reliable Talent) only applies to skills you're
-        // proficient in — feature-driven now, no class-name check here.
-        let isProficient = character.proficiencies[.skill(skill)] == .proficient
-            || character.proficiencies[.skill(skill)] == .expertise
+        // The floor (Reliable Talent) only applies to skills you're proficient
+        // in. Resolve via the calculator so proficiency from a class-skill
+        // selection (stored in featureSelections, not the proficiencies dict)
+        // counts too — same content-free source of truth the skills table uses.
+        let isProficient = CharacterCalculator.skillProficiencyLevel(
+            character: character, skill: skill
+        ) != .none
         let floor = isProficient ? skillCheckFloor : nil
 
         var formula = DiceFormula()

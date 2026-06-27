@@ -18,11 +18,12 @@ not surfacing at creation), which is why this list exists.
   for cases whose behavior changed. Claude does not check boxes — verification
   is yours.
 
-> **Recently changed — needs verification:** the **Sorcerer** class plus a
-> mechanics pass (2026-06-27) — Unarmored Defense AC, feature HP bonuses,
-> granted subclass spells, and the Innate Sorcery buff — which also fixed
-> **Barbarian Unarmored Defense** and **Dwarven Toughness**. The **Bard** class
-> (2026-06-17) and the Species epoch are also still unverified.
+> **Recently changed — needs verification:** the **QA P0 quick batch**
+> (2026-06-27, mostly covered by unit tests — see "QA fixes" below); the
+> **Sorcerer** class + mechanics pass (Unarmored Defense, feature HP, granted
+> subclass spells, Innate Sorcery), which also fixed **Barbarian Unarmored
+> Defense** and **Dwarven Toughness**; the **Bard** class (2026-06-17); and the
+> Species epoch.
 
 ---
 
@@ -102,6 +103,18 @@ not surfacing at creation), which is why this list exists.
   metered** — actions/riders are always available; track uses yourself.
 
 ---
+
+## QA fixes (P0 quick batch, 2026-06-27)
+
+Mostly unit-tested; two have an in-app surface worth a quick check:
+
+- [ ] **Formula bar accepts `min` + keep/drop.** Type `1d20kh1min10` (and
+  `1d20min10kh2`) into the dice formula bar — both parse and roll (previously
+  rejected). `1d20min` (no number) still errors.
+- [ ] **Reliable Talent floor applies to a class-skill proficiency.** A Rogue 7+
+  whose proficiency in a skill came from the class skill-choice (not a
+  background) rolls that skill **with the floor** — roll it with advantage and
+  the dice tab shows `2d20kh1min10`, not `1d20`.
 
 ## Classes
 
