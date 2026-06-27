@@ -437,7 +437,23 @@ struct CharacterSheetView: View {
     /// attack lands.
     private func handleWeaponAttack(_ row: WeaponAttackRow) {
         pendingRoll.pendingCharacterID = character.id
-        pendingRoll.pending = row.attack
+        // Conditions can force advantage/disadvantage on the attack (Poisoned,
+        // Blinded → disadvantage; Invisible → advantage). Weapon attacks have no
+        // adv/dis chips, so apply it here.
+        let (adv, dis) = CharacterCalculator.conditionRollMode(
+            character: character, content: content, context: .attack
+        )
+        let attackMode = CharacterCalculator.combineRollMode(.normal, advantage: adv, disadvantage: dis)
+        if attackMode != .normal, let formula = applyAdvantage(to: row.attack.formula, mode: attackMode) {
+            pendingRoll.pending = ResolvedAction(
+                id: row.attack.id,
+                label: row.attack.label + (attackMode == .disadvantage ? " (Disadvantage)" : " (Advantage)"),
+                formula: formula,
+                description: row.attack.description
+            )
+        } else {
+            pendingRoll.pending = row.attack
+        }
         // The base damage is the chained "Roll damage" follow-up; opt-in riders
         // (Sneak Attack, Divine Smite, …) are independent toggles the dice tab
         // stacks onto it. Riders already fired this turn are filtered out by the
@@ -594,11 +610,22 @@ struct CharacterSheetView: View {
             // Bard's Jack of All Trades — half PB on non-proficient checks.
             jackOfAllTrades: CharacterCalculator.hasJackOfAllTrades(character: character, content: content)
         )
-        let formula = applyAdvantage(to: resolved.formula, mode: mode)
+        // Fold the character's conditions into the roll mode (Poisoned →
+        // disadvantage on attacks/checks, Restrained → DEX-save disadvantage,
+        // Invisible → attack advantage; adv + dis cancels).
+        let effectiveMode = CharacterCalculator.conditionAdjustedMode(
+            for: recipe, userMode: mode, character: character, content: content
+        )
+        let formula = applyAdvantage(to: resolved.formula, mode: effectiveMode)
         // The interpreter's label includes the modifier ("Athletics +5") for
         // the on-sheet button, but in history that just duplicates the formula
-        // line, so we use a cleaner recipe-based name there.
-        let historyLabel = historyLabel(for: recipe) ?? resolved.label
+        // line, so we use a cleaner recipe-based name there. Note when a
+        // condition forced adv/dis the user didn't pick, so it isn't silent.
+        var historyLabel = historyLabel(for: recipe) ?? resolved.label
+        if effectiveMode != mode {
+            historyLabel += effectiveMode == .disadvantage ? " (Disadvantage)"
+                : effectiveMode == .advantage ? " (Advantage)" : ""
+        }
         pendingRoll.pendingCharacterID = character.id
         pendingRoll.pending = ResolvedAction(
             id: resolved.id,

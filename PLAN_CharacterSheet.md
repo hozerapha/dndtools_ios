@@ -532,12 +532,14 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
   *Fixed 2026-06-27:* `resolveWeaponDamage` now routes the dice string through
   `DiceFormulaParser` (handles `1d8+2` + typed prefixes), then fills the weapon
   type onto untyped groups. Unblocks homebrew/import.
-- ☐ **Conditions tracked but not enforced** (playtest 3.5). `conditions.json`
-  carries rich `effects` arrays nothing consumes. **Fix:** have
-  `CharacterCalculator`/`ActionInterpreter` read `character.conditions` and apply
-  advantage/disadvantage/auto-fail to attacks, saves, and skill checks
-  (Poisoned → attack disadvantage, Restrained → DEX-save disadvantage, etc.).
-  Also surface armor `stealthDisadvantage` on Stealth.
+- ◐ **Conditions tracked but not enforced** (playtest 3.5). *Mostly fixed
+  2026-06-27:* `CharacterCalculator.conditionRollMode` / `combineRollMode` /
+  `conditionAdjustedMode` read `character.conditions` and impose advantage/
+  disadvantage on attacks, ability/skill checks, and saves (Poisoned, Blinded,
+  Frightened, Prone, Restrained, Invisible). Wired into `dispatchRoll`,
+  `handleWeaponAttack`, and `SpellCastSheet` spell attacks; adv+dis cancel per
+  5e. **Still open:** `autoFailStrengthAndDexSaves` (Paralyzed/Stunned/etc.) not
+  auto-applied, and armor `stealthDisadvantage` not surfaced on Stealth.
 - ☐ **Fighting Styles: Great Weapon Fighting & Two-Weapon Fighting inert**
   (playtest 3.3). Archery/Dueling/Defense work. **Fix:** GWF rerolls 1s/2s on
   eligible two-handed damage dice; TWF adds the ability mod to off-hand damage —
@@ -550,8 +552,9 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
   **Fix incrementally on existing systems:** False Life → set `tempHP`;
   Ray of Sickness/Hold Person/Fear/Charm Monster → apply the matching condition
   on cast (honor-system save); Shield/Bless/Shield of Faith → short-lived
-  `activeEffects` modifying AC/attack once condition automation exists. Depends
-  on the conditions-enforcement item above.
+  `activeEffects` modifying AC/attack once condition automation exists.
+  **Now unblocked** — condition enforcement shipped, so applying a condition on
+  cast will actually affect rolls.
 
 ### P2 — High-priority engine / UX (audit #8–19)
 
@@ -636,6 +639,7 @@ All phases A–O shipped. Key per-phase notes:
 | O — triggered effects & active statuses | shipped (Slices A+B+C). See "Phase O Shipped reality" for open items (Divine Smite shipped 2026-06-09; Battle Master/superiority dice, GWM, attack-roll triggers still open) |
 
 **Shipped changelog (reverse-chronological highlights; reusable infra in `code`):**
+- **2026-06-27 — Condition enforcement.** `CharacterCalculator.conditionRollMode` / `combineRollMode` / `conditionAdjustedMode` impose advantage/disadvantage from active conditions (Poisoned, Blinded, Frightened, Prone, Restrained, Invisible) on attacks, ability/skill checks, and saves — wired into `dispatchRoll`, `handleWeaponAttack`, and `SpellCastSheet` spell attacks (adv+dis cancel per 5e). Unblocks debuff-spell wiring. *Deferred:* auto-fail STR/DEX saves, armor stealth-disadvantage.
 - **2026-06-27 — Structural P0 fixes.** Stroke of Luck records the forced-20 result without deleting an unrelated history entry + forces every d20 + no longer leaks onto manual rolls (audit #1/#14/#19); `ContentStore` degrades on bad bundled JSON via `loadErrors` (surfaced in Settings) instead of `fatalError` (#3); imported-pack filenames get a stable name-hash so distinct names don't collide (#4); rollable feature resource costs deferred to roll time via `PendingRollStore.pendingResourceCostsToApply` (#2 fully closed).
 - **2026-06-27 — Expertise picker** locks skills already granted in another expertise selection (Rogue/Bard) via marker-driven `lockReason`.
 - **2026-06-27 — Settings page + configurable Natural 20 crit, then stackable damage riders.** `@AppStorage`-backed Settings → Combat "Natural 20 style"; composable `CritRule` (dice mode × modifier multiplier) with presets via `CritStyle`; `DiceFormula.applyingCrit(_:)` + `diceResultMultiplier`. **Rider refactor:** opt-in riders (Sneak Attack, Divine Smite, Fire's Burn) now carry their OWN dice (`DamageRider`, via `TriggeredEffectResolver.optInRiders` + `DiceFormula.merging`) and surface as independent **toggles** in the dice tab — stack any combination onto one crit-aware damage roll, costs paid only at roll time (fixes audit #8, rider half of #2). `PendingRollStore.pendingRiders` carries them.

@@ -152,6 +152,33 @@ exclusive chips — they're independent **toggles** stacked onto one damage roll
 - [ ] **Once-per-turn riders disappear after use.** After firing Sneak Attack,
   it's gone from the rail until Start New Turn clears the flag.
 
+## Condition enforcement (new 2026-06-27)
+
+Tracked conditions now actually change d20 rolls (attacks, ability/skill checks,
+saves) — for the rolling character. (`attacksAgainst…` effects act on the
+attacker, so they're not applied to the afflicted character's own dice.)
+
+- [ ] **Poisoned → disadvantage.** Add Poisoned to a character; a weapon attack
+  rolls **2d20 keep-lowest**, and any skill/ability check does too (label notes
+  "Disadvantage"). Saves are unaffected by Poisoned.
+- [ ] **Invisible → attack advantage.** An Invisible character's attacks roll
+  2d20 keep-highest.
+- [ ] **Restrained → DEX saves only.** A Restrained character's **Dexterity**
+  save rolls disadvantage; a Wisdom save rolls normally. (Restrained also gives
+  attack disadvantage.)
+- [ ] **Advantage + disadvantage cancel.** Poisoned, then tap the skill's
+  **Advantage** chip → it rolls a normal single d20 (the two cancel per 5e).
+- [ ] **Weapon attacks honor conditions** even though they have no adv/dis
+  chips (applied automatically in the handoff).
+- [ ] **Spell attacks combine sources.** A Poisoned Sorcerer with Innate Sorcery
+  active (advantage) casting a spell attack → the advantage and disadvantage
+  cancel to a normal roll.
+- [ ] **Damage unaffected.** Conditions change only the d20 (attack/check/save),
+  never damage dice.
+- [ ] _Known gap (flagged):_ `autoFailStrengthAndDexSaves` (Paralyzed, Stunned,
+  Unconscious, Petrified) is **not** auto-applied — those STR/DEX saves still
+  roll normally; track the auto-fail yourself for now.
+
 ## Structural P0 fixes (2026-06-27)
 
 - [ ] **Stroke of Luck replaces the right roll.** As a Rogue 20 with Stroke of

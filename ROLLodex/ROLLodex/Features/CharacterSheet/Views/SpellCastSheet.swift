@@ -688,13 +688,23 @@ struct SpellCastSheet: View {
             guard var formula = resolved.formula else { return nil }
             var label = resolved.label
             if let upcastSuffix { label = "\(resolved.label) (\(upcastSuffix))" }
-            // Innate Sorcery grants Advantage on spell attack rolls — expand the
-            // plain d20 to 2d20-keep-highest when the buff is active.
-            if case .spellAttack = recipe, spellBuff.attackAdvantage,
-               let i = formula.groups.firstIndex(where: { $0.kind == .d20 && $0.count == 1 && $0.isPlain }) {
-                formula.groups[i].count = 2
-                formula.groups[i].modifier = .keepHighest(1)
-                label += " (Adv)"
+            // Spell attack roll mode: Innate Sorcery grants advantage; the
+            // character's conditions can add advantage (Invisible) or
+            // disadvantage (Poisoned, Blinded). Combine per 5e (adv+dis cancel)
+            // and expand the d20 accordingly.
+            if case .spellAttack = recipe {
+                let (cAdv, cDis) = CharacterCalculator.conditionRollMode(
+                    character: character, content: content, context: .attack
+                )
+                let mode = CharacterCalculator.combineRollMode(
+                    .normal, advantage: cAdv || spellBuff.attackAdvantage, disadvantage: cDis
+                )
+                if mode != .normal,
+                   let i = formula.groups.firstIndex(where: { $0.kind == .d20 && $0.count == 1 && $0.isPlain }) {
+                    formula.groups[i].count = 2
+                    formula.groups[i].modifier = (mode == .advantage) ? .keepHighest(1) : .keepLowest(1)
+                    label += mode == .advantage ? " (Adv)" : " (Dis)"
+                }
             }
             let stamped = ResolvedAction(
                 id: "spell_\(spell.id)_l\(selectedLevel)_\(resolved.id)",

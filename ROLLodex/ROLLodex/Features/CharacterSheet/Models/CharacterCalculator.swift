@@ -499,6 +499,83 @@ enum CharacterCalculator {
         if mod == 0 { return dice }
         return mod > 0 ? "\(dice)+\(mod)" : "\(dice)−\(abs(mod))"
     }
+
+    // MARK: - Condition effects on rolls
+
+    /// Which kind of d20 roll a condition gate is being asked about. Only these
+    /// three carry condition advantage/disadvantage for the *rolling* character;
+    /// `attacksAgainst*` effects act on whoever attacks them and aren't applied
+    /// to the character's own dice.
+    enum ConditionRollContext: Equatable {
+        case attack
+        case abilityCheck(Ability)   // skills map to their governing ability
+        case savingThrow(Ability)
+    }
+
+    /// Net advantage/disadvantage the character's active conditions impose on a
+    /// roll of `context` (Blinded/Poisoned/Frightened/Prone/Restrained →
+    /// attack disadvantage; Invisible → attack advantage; Poisoned → check
+    /// disadvantage; Restrained → DEX-save disadvantage; …).
+    @MainActor
+    static func conditionRollMode(
+        character: Character, content: ContentStore, context: ConditionRollContext
+    ) -> (advantage: Bool, disadvantage: Bool) {
+        var advantage = false
+        var disadvantage = false
+        for cond in character.conditions {
+            guard let def = content.conditionDefinition(id: cond.id) else { continue }
+            for effect in def.effects {
+                switch (context, effect) {
+                case (.attack, .attacksByHaveAdvantage):
+                    advantage = true
+                case (.attack, .attacksByHaveDisadvantage):
+                    disadvantage = true
+                case (.abilityCheck(let a), .abilityCheckDisadvantage(let abilities)) where abilities.contains(a):
+                    disadvantage = true
+                case (.savingThrow(let a), .savingThrowDisadvantage(let abilities)) where abilities.contains(a):
+                    disadvantage = true
+                default:
+                    break
+                }
+            }
+        }
+        return (advantage, disadvantage)
+    }
+
+    /// Combine a user-chosen roll mode with condition-imposed advantage/
+    /// disadvantage per 5e: any advantage + any disadvantage cancels to normal.
+    static func combineRollMode(_ user: RollMode, advantage: Bool, disadvantage: Bool) -> RollMode {
+        let adv = advantage || user == .advantage
+        let dis = disadvantage || user == .disadvantage
+        if adv && dis { return .normal }
+        if adv { return .advantage }
+        if dis { return .disadvantage }
+        return .normal
+    }
+
+    /// The condition roll context a recipe maps to, or nil for rolls conditions
+    /// don't touch (damage, save DCs, …).
+    static func conditionContext(for recipe: ActionRecipe) -> ConditionRollContext? {
+        switch recipe {
+        case .weaponAttack, .spellAttack:  return .attack
+        case .abilityCheck(let a):         return .abilityCheck(a)
+        case .skillCheck(let s):           return .abilityCheck(s.ability)
+        case .savingThrow(let a):          return .savingThrow(a)
+        default:                           return nil
+        }
+    }
+
+    /// One-call: a recipe's effective roll mode after folding in the character's
+    /// conditions on top of the user's choice. Returns `userMode` unchanged for
+    /// recipes conditions don't affect.
+    @MainActor
+    static func conditionAdjustedMode(
+        for recipe: ActionRecipe, userMode: RollMode, character: Character, content: ContentStore
+    ) -> RollMode {
+        guard let context = conditionContext(for: recipe) else { return userMode }
+        let (adv, dis) = conditionRollMode(character: character, content: content, context: context)
+        return combineRollMode(userMode, advantage: adv, disadvantage: dis)
+    }
 }
 
 struct WeaponRollLine: Equatable {

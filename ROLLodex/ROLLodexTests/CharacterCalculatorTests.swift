@@ -601,4 +601,65 @@ struct CharacterCalculatorTests {
         )
         #expect(CharacterCalculator.featureHitPointBonus(character: both, content: store) == 10)
     }
+
+    // MARK: - Condition enforcement on rolls
+
+    @MainActor
+    @Test func conditionsImposeAdvantageDisadvantageByContext() {
+        let store = ContentStore()
+        func pc(_ conditions: [String]) -> Character {
+            Character(name: "C", level: 5, speciesID: "human", backgroundID: "soldier",
+                      classEntries: [ClassEntry(classID: "fighter", level: 5)],
+                      abilityScores: [.dexterity: 14], maxHP: 40,
+                      conditions: conditions.map { CharacterCondition(id: $0) })
+        }
+        func mode(_ conds: [String], _ ctx: CharacterCalculator.ConditionRollContext) -> (Bool, Bool) {
+            CharacterCalculator.conditionRollMode(character: pc(conds), content: store, context: ctx)
+        }
+
+        // Poisoned → attack disadvantage + all ability checks disadvantage.
+        #expect(mode(["poisoned"], .attack) == (false, true))
+        #expect(mode(["poisoned"], .abilityCheck(.strength)) == (false, true))
+        // Invisible → attack advantage.
+        #expect(mode(["invisible"], .attack) == (true, false))
+        // Restrained → DEX saves disadvantage, but not other saves.
+        #expect(mode(["restrained"], .savingThrow(.dexterity)) == (false, true))
+        #expect(mode(["restrained"], .savingThrow(.wisdom)) == (false, false))
+        // Frightened → attack disadvantage; no condition gives check advantage.
+        #expect(mode(["frightened"], .attack) == (false, true))
+        // No conditions → nothing.
+        #expect(mode([], .attack) == (false, false))
+    }
+
+    @Test func combineRollModeCancelsAdvantageAndDisadvantage() {
+        // 5e: any advantage + any disadvantage → normal.
+        #expect(CharacterCalculator.combineRollMode(.normal, advantage: true, disadvantage: true) == .normal)
+        #expect(CharacterCalculator.combineRollMode(.advantage, advantage: false, disadvantage: true) == .normal)
+        #expect(CharacterCalculator.combineRollMode(.normal, advantage: true, disadvantage: false) == .advantage)
+        #expect(CharacterCalculator.combineRollMode(.normal, advantage: false, disadvantage: true) == .disadvantage)
+        // User advantage + condition advantage stays advantage (no double).
+        #expect(CharacterCalculator.combineRollMode(.advantage, advantage: true, disadvantage: false) == .advantage)
+        #expect(CharacterCalculator.combineRollMode(.normal, advantage: false, disadvantage: false) == .normal)
+    }
+
+    @MainActor
+    @Test func conditionAdjustedModeMapsRecipesAndCancels() {
+        let store = ContentStore()
+        let poisoned = Character(
+            name: "P", level: 5, speciesID: "human", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 5)],
+            abilityScores: [:], maxHP: 40, conditions: [CharacterCondition(id: "poisoned")]
+        )
+        // Skill check (maps to its ability) → disadvantage from Poisoned.
+        #expect(CharacterCalculator.conditionAdjustedMode(
+            for: .skillCheck(skill: .perception), userMode: .normal, character: poisoned, content: store) == .disadvantage)
+        // User picks advantage on a Poisoned attack → cancels to normal.
+        #expect(CharacterCalculator.conditionAdjustedMode(
+            for: .weaponAttack(abilityOverride: nil, finesse: false), userMode: .advantage,
+            character: poisoned, content: store) == .normal)
+        // Damage rolls are untouched by conditions.
+        #expect(CharacterCalculator.conditionAdjustedMode(
+            for: .weaponDamage(dieOverride: nil, addAbility: true, versatile: false), userMode: .advantage,
+            character: poisoned, content: store) == .advantage)
+    }
 }
