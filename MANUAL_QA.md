@@ -106,25 +106,11 @@ not surfacing at creation), which is why this list exists.
 ## Classes
 
 ### Bard (new 2026-06-17)
-- [OK] **Create a Bard.** Class skills step lets you pick **any 3** skills.
-  Sheet opens with a Spells tab (Charisma caster) and slots.
-- [OK] **Bardic Inspiration pool = CHA modifier.** A CHA 16 Bard shows
-  **3 / 3** Bardic Inspiration uses; a CHA 10 Bard shows 1; it's a **Bonus
-  Action** row on the Actions tab and decrements when tapped. A Long Rest
-  refills it.
-- [OK] **Expertise (L2) is editable.** The Features tab shows an Expertise
-  picker offering only skills you're already proficient in; a 2nd Expertise
-  pick appears at L9.
-- [OK] **Subclass at L3.** Leveling to 3 prompts a "Choose a Bard College"
-  picker with **College of Lore**; its L3 features (Bonus Proficiencies +
-  Cutting Words) then appear on the Features tab.
-- [OK] **College of Lore Bonus Proficiencies (L3)** grants 3 more skills via a
-  picker; already-proficient skills are disabled in the list.
-- [OK] **Spell slots scale as a full caster** — a high-level Bard has the right
-  slots (e.g. a 9th-level slot at character level 17+).
-- [OK] **Reaction features show as reactions.** Countercharm (L7), Cutting Words
-  (L3) and Peerless Skill (L14) appear with a Reaction cost / on the Actions
-  tab where applicable.
+- [OK] **Bard core verified** — creation (any-3 skills, Charisma caster),
+  Bardic Inspiration pool = CHA mod (Bonus Action, refills on Long Rest),
+  Expertise L2/L9 editable, College of Lore at L3 (Bonus Proficiencies +
+  Cutting Words), full-caster slots, and reaction features (Countercharm,
+  Cutting Words, Peerless Skill) all confirmed.
 - [ ] **Jack of All Trades (L2) does the math.** On a level-2+ Bard, every
   skill you're NOT proficient in shows a **diagonal half-filled dot** (blue) in
   place of the empty circle, and that skill's modifier includes half your

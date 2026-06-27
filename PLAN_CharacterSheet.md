@@ -34,50 +34,23 @@ ROLLodex/ROLLodex/
   Features/
     CharacterSheet/
       Models/                   # Pure Swift, no UI imports
-        Character.swift
-        Ability.swift
-        Skill.swift
-        ProficiencyLevel.swift
-        ProficiencyKey.swift
-        InventoryItem.swift
-        Currency.swift
-        CharacterCalculator.swift   # Pure derived-value functions
+        Character.swift, Ability.swift, Skill.swift, ProficiencyLevel.swift,
+        ProficiencyKey.swift, InventoryItem.swift, Currency.swift,
+        CharacterCalculator.swift
       Content/                  # Content definitions (pure Swift models)
-        ClassDefinition.swift
-        SpeciesDefinition.swift
-        BackgroundDefinition.swift
-        FeatureDefinition.swift
-        ItemDefinition.swift
-        WeaponDefinition.swift
-        ArmorDefinition.swift
-        WeaponProperty.swift
-        WeaponMastery.swift
-        ActionRecipe.swift
-        ResolvedAction.swift
+        ClassDefinition.swift, SpeciesDefinition.swift, BackgroundDefinition.swift,
+        FeatureDefinition.swift, ItemDefinition.swift, WeaponDefinition.swift,
+        ArmorDefinition.swift, WeaponProperty.swift, WeaponMastery.swift,
+        ActionRecipe.swift, ResolvedAction.swift
       State/                    # @Observable stores
-        ContentStore.swift      # Loads bundled + imported SRD content
-        CharacterStore.swift    # Reads/writes character JSON files
-        PendingRollStore.swift  # Cross-tab handoff queue
+        ContentStore.swift, CharacterStore.swift, PendingRollStore.swift
       Views/
-        CharacterListView.swift
-        CharacterCreationView.swift
-        CharacterSheetView.swift
-        ActionButtonGrid.swift  # Grouped action buttons on sheet
-        AbilityBlockView.swift
-        SkillListView.swift
-        InventoryView.swift
-        EquipmentDetailView.swift
-      Resources/
-        Content/                # Bundled SRD JSON files
-          classes.json
-          species.json
-          backgrounds.json
-          weapons.json
-          armor.json
-          gear.json
-    DiceRoller/
-      Views/
-        DiceRollerView.swift    # Observe PendingRollStore
+        CharacterListView.swift, CharacterCreationView.swift,
+        CharacterSheetView.swift, ActionButtonGrid.swift, AbilityBlockView.swift,
+        SkillListView.swift, InventoryView.swift, EquipmentDetailView.swift
+      Resources/Content/        # Bundled SRD JSON files
+        classes.json, species.json, backgrounds.json, weapons.json, armor.json, gear.json
+    DiceRoller/Views/DiceRollerView.swift   # Observe PendingRollStore
   ROLLodexApp.swift
 ```
 
@@ -100,24 +73,10 @@ Bundled and imported content packs use these schemas. Each file is an array of o
     "weaponProficiencies": ["simple", "martial"],
     "levelFeatures": {
       "1": [
+        { "id": "fighting_style", "name": "Fighting Style", "description": "...", "actionRecipes": [] },
         {
-          "id": "fighting_style",
-          "name": "Fighting Style",
-          "description": "...",
-          "actionRecipes": []
-        },
-        {
-          "id": "second_wind",
-          "name": "Second Wind",
-          "description": "...",
-          "actionRecipes": [
-            {
-              "type": "heal",
-              "dice": "1d10",
-              "addLevel": true,
-              "label": "Second Wind"
-            }
-          ]
+          "id": "second_wind", "name": "Second Wind", "description": "...",
+          "actionRecipes": [ { "type": "heal", "dice": "1d10", "addLevel": true, "label": "Second Wind" } ]
         }
       ]
     },
@@ -130,100 +89,47 @@ Bundled and imported content packs use these schemas. Each file is an array of o
 ### `species.json`
 ```json
 [
-  {
-    "id": "human",
-    "name": "Human",
-    "size": "medium",
-    "speed": 30,
-    "traits": [
-      {
-        "id": "resourceful",
-        "name": "Resourceful",
-        "description": "...",
-        "actionRecipes": []
-      }
-    ]
-  }
+  { "id": "human", "name": "Human", "size": "medium", "speed": 30,
+    "traits": [ { "id": "resourceful", "name": "Resourceful", "description": "...", "actionRecipes": [] } ] }
 ]
 ```
 
 ### `backgrounds.json`
 ```json
 [
-  {
-    "id": "soldier",
-    "name": "Soldier",
-    "abilityScoreIncreases": {
-      "strength": 2,
-      "constitution": 1
-    },
+  { "id": "soldier", "name": "Soldier",
+    "abilityScoreIncreases": { "strength": 2, "constitution": 1 },
     "skillProficiencies": ["athletics", "intimidation"],
-    "feat": "savage_attacker",
-    "toolProficiency": "gaming_set",
-    "equipment": ["common_clothes", "insignia_of_rank", "gaming_set"]
-  }
+    "feat": "savage_attacker", "toolProficiency": "gaming_set",
+    "equipment": ["common_clothes", "insignia_of_rank", "gaming_set"] }
 ]
 ```
 
 ### `weapons.json`
 ```json
 [
-  {
-    "id": "longsword",
-    "name": "Longsword",
-    "category": "weapon",
-    "cost": 1500,
-    "weight": 3.0,
-    "weaponCategory": "martial",
-    "damage": "1d8",
-    "damageType": "slashing",
-    "damageAbility": "strength",
-    "properties": ["versatile"],
-    "versatileDamage": "1d10",
-    "masteryProperty": "sap",
+  { "id": "longsword", "name": "Longsword", "category": "weapon", "cost": 1500, "weight": 3.0,
+    "weaponCategory": "martial", "damage": "1d8", "damageType": "slashing", "damageAbility": "strength",
+    "properties": ["versatile"], "versatileDamage": "1d10", "masteryProperty": "sap",
     "actionRecipes": [
-      {
-        "type": "weaponAttack",
-        "finesse": false,
-        "label": "Longsword Attack"
-      },
-      {
-        "type": "weaponDamage",
-        "label": "Longsword Damage"
-      }
-    ]
-  }
+      { "type": "weaponAttack", "finesse": false, "label": "Longsword Attack" },
+      { "type": "weaponDamage", "label": "Longsword Damage" }
+    ] }
 ]
 ```
 
 ### `armor.json`
 ```json
 [
-  {
-    "id": "chain_mail",
-    "name": "Chain Mail",
-    "category": "armor",
-    "cost": 7500,
-    "weight": 55.0,
-    "armorCategory": "heavy",
-    "acBase": 16,
-    "dexCap": null,
-    "stealthDisadvantage": true,
-    "strengthRequirement": 13
-  }
+  { "id": "chain_mail", "name": "Chain Mail", "category": "armor", "cost": 7500, "weight": 55.0,
+    "armorCategory": "heavy", "acBase": 16, "dexCap": null, "stealthDisadvantage": true, "strengthRequirement": 13 }
 ]
 ```
 
 ### `gear.json`
 ```json
 [
-  {
-    "id": "backpack",
-    "name": "Backpack",
-    "category": "adventuring_gear",
-    "cost": 200,
-    "weight": 5.0
-  }
+  { "id": "backpack", "name": "Backpack", "category": "adventuring_gear", "cost": 200, "weight": 5.0 }
 ]
 ```
 
@@ -241,53 +147,19 @@ Stored at `Documents/Characters/<uuid>.json`. Recomputed at runtime — no deriv
   "speciesID": "dwarf",
   "backgroundID": "soldier",
   "classID": "fighter",
-  "abilityScores": {
-    "strength": 16,
-    "dexterity": 12,
-    "constitution": 14,
-    "intelligence": 10,
-    "wisdom": 13,
-    "charisma": 8
-  },
-  "maxHP": 12,
-  "currentHP": 12,
-  "tempHP": 0,
+  "abilityScores": { "strength": 16, "dexterity": 12, "constitution": 14, "intelligence": 10, "wisdom": 13, "charisma": 8 },
+  "maxHP": 12, "currentHP": 12, "tempHP": 0,
   "proficiencies": {
-    "savingThrow_strength": "proficient",
-    "savingThrow_constitution": "proficient",
-    "skill_athletics": "proficient",
-    "skill_intimidation": "proficient",
-    "armor_heavy": "proficient",
-    "armor_shield": "proficient",
-    "weapon_martial": "proficient"
+    "savingThrow_strength": "proficient", "savingThrow_constitution": "proficient",
+    "skill_athletics": "proficient", "skill_intimidation": "proficient",
+    "armor_heavy": "proficient", "armor_shield": "proficient", "weapon_martial": "proficient"
   },
   "inventory": [
-    {
-      "itemID": "longsword",
-      "quantity": 1,
-      "equipped": true,
-      "attuned": false
-    },
-    {
-      "itemID": "chain_mail",
-      "quantity": 1,
-      "equipped": true,
-      "attuned": false
-    },
-    {
-      "itemID": "healing_potion",
-      "quantity": 3,
-      "equipped": false,
-      "attuned": false
-    }
+    { "itemID": "longsword", "quantity": 1, "equipped": true, "attuned": false },
+    { "itemID": "chain_mail", "quantity": 1, "equipped": true, "attuned": false },
+    { "itemID": "healing_potion", "quantity": 3, "equipped": false, "attuned": false }
   ],
-  "currency": {
-    "cp": 0,
-    "sp": 0,
-    "ep": 0,
-    "gp": 15,
-    "pp": 0
-  },
+  "currency": { "cp": 0, "sp": 0, "ep": 0, "gp": 15, "pp": 0 },
   "notes": "",
   "manifestVersion": 1
 }
@@ -308,7 +180,6 @@ enum ActionRecipe: Codable, Equatable {
     case savingThrow(ability: Ability)
     case saveDC(ability: Ability)
     case heal(dice: String, addLevel: Bool, label: String)
-    // v1: heal has no dice impact, just displays. Included for schema completeness.
 }
 ```
 
@@ -328,1224 +199,50 @@ struct ResolvedAction: Identifiable, Equatable {
 
 ### `CharacterCalculator` (pure functions, no UI)
 
-Key functions:
-- `abilityModifier(score: Int) -> Int`
-- `proficiencyBonus(level: Int) -> Int`
-- `skillModifier(character:content:skill:) -> Int`
-- `saveBonus(character:content:ability:) -> Int`
-- `armorClass(character:content:) -> Int`
-- `initiativeBonus(character:content:) -> Int`
-- `passivePerception(character:content:) -> Int`
-- `isProficient(character:key:) -> Bool`
-- `resolveAction(recipe:character:content:) -> ResolvedAction`
+Key functions: `abilityModifier(score:)`, `proficiencyBonus(level:)`, `skillModifier(character:content:skill:)`, `saveBonus(character:content:ability:)`, `armorClass(character:content:)`, `initiativeBonus(character:content:)`, `passivePerception(character:content:)`, `isProficient(character:key:)`, `resolveAction(recipe:character:content:)`.
 
 ---
 
 ## Phase Breakdown
 
-### Phase A — Domain Models & Content Schema
-
-**Goal:** All pure Swift types and JSON schemas. No UI, no I/O. Everything testable.
-
-**A.1 Core character state**
-- `Ability.swift` — enum `str, dex, con, int, wis, cha`. `modifier` computed property.
-- `Skill.swift` — enum of 18 skills, each with `ability: Ability`.
-- `ProficiencyLevel.swift` — `.none`, `.proficient`, `.expertise`.
-- `ProficiencyKey.swift` — tagged enum for saves, skills, armor categories, weapon categories, tools.
-- `Currency.swift` — cp, sp, ep, gp, pp.
-- `InventoryItem.swift` — `itemID`, `quantity`, `equipped`, `attuned`.
-- `Character.swift` — full schema matching JSON above. `Codable`, `Identifiable`, `Equatable`.
-
-**A.2 Content definitions**
-- `FeatureDefinition.swift` — `id`, `name`, `description`, `[ActionRecipe]`.
-- `ClassDefinition.swift` — full class schema. `levelFeatures: [Int: [FeatureDefinition]]`.
-- `SpeciesDefinition.swift` — `id`, `name`, `size`, `speed`, `[TraitDefinition]`.
-- `BackgroundDefinition.swift` — `id`, `name`, `abilityScoreIncreases`, `skillProficiencies`, `featID`, `toolProficiency`, `equipment`.
-- `ItemDefinition.swift` — base class for all items (or protocol if we want polymorphism). `id`, `name`, `description`, `cost`, `weight`, `category`.
-- `WeaponDefinition.swift` — extends base: `damage`, `damageType`, `damageAbility`, `properties`, `versatileDamage`, `masteryProperty`, `actionRecipes`.
-- `ArmorDefinition.swift` — extends base: `armorCategory`, `acBase`, `dexCap`, `stealthDisadvantage`, `strengthRequirement`.
-- `WeaponProperty.swift` — `.finesse`, `.versatile(DieKind)`, `.thrown(range)`, `.twoHanded`, `.light`, `.heavy`, `.loading`, `.ammunition(range)`, `.reach`.
-- `WeaponMastery.swift` — `.cleave`, `.graze`, `.nick`, `.push`, `.sap`, `.slow`, `.topple`, `.vex`.
-
-**A.3 Action recipe system**
-- `ActionRecipe.swift` — tagged enum with all v1 cases. Custom Codable for discriminator `"type"`.
-- `ResolvedAction.swift` — output of the interpreter.
-- `CharacterCalculator.swift` — pure functions for all derived values.
-- `ActionInterpreter.swift` — `resolve(recipe:character:content:) -> ResolvedAction`. Handles finesse logic, proficiency checks, versatile toggles.
-
-**A.4 Test fixtures**
-- `Resources/TestFixtures/`:
-  - `fighter.json` (class)
-  - `human.json` (species)
-  - `soldier.json` (background)
-  - `longsword.json` (weapon)
-  - `chain_mail.json` (armor)
-  - `sample_character.json` (full character)
-
-**A.5 Tests**
-- Codable round-trip for every model.
-- Decode every test fixture.
-- `CharacterCalculator` tests: ability mods, proficiency bonus at levels 1–20.
-- `ActionInterpreter` tests: fighter with longsword → attack formula `1d20+5`, damage `1d8+3`.
-- Finesse test: rogue with rapier → attack uses DEX if higher.
-
-**Deliverable:** All model files compile. All tests pass. No UI.
-
----
-
-### Phase B — Content Loader
-
-**Goal:** Load bundled SRD into memory at startup.
-
-**B.1 Bundle content**
-- `Resources/Content/`:
-  - `classes.json` — all 12 classes, level 1 features only.
-  - `species.json` — all 9 species.
-  - `backgrounds.json` — all 16 backgrounds.
-  - `weapons.json` — all SRD weapons with mastery properties.
-  - `armor.json` — all SRD armor.
-  - `gear.json` — basic adventuring gear.
-
-**B.2 ContentStore**
-- `@Observable ContentStore`:
-  - `classes: [String: ClassDefinition]`
-  - `species: [String: SpeciesDefinition]`
-  - `backgrounds: [String: BackgroundDefinition]`
-  - `weapons: [String: WeaponDefinition]`
-  - `armor: [String: ArmorDefinition]`
-  - `gear: [String: ItemDefinition]`
-  - `allItems: [String: ItemDefinition]` (merged lookup)
-- `init()` loads each JSON from `Bundle.main`. Build-time failure if decode fails.
-- `func definition(forItemID: String) -> ItemDefinition?`
-- `func weapon(forID: String) -> WeaponDefinition?`
-- `func armor(forID: String) -> ArmorDefinition?`
-
-**B.3 Environment injection**
-- `RootView` instantiates `ContentStore()` as `@State`.
-- Injected via `.environment(contentStore)`.
-
-**Deliverable:** App launches. ContentStore is populated. No UI.
-
----
-
-### Phase C — CharacterStore & File I/O
-
-**Goal:** Read/write character JSON files atomically.
-
-**C.1 File layout**
-```
-Documents/Characters/
-  manifest.json
-  <uuid-1>.json
-  <uuid-2>.json
-```
-
-**C.2 Manifest**
-- `CharacterManifest.swift` — `[String: CharacterMeta]`
-- `CharacterMeta` — `lastEdited: Date`, `displayOrder: Int`
-
-**C.3 CharacterStore**
-- `@Observable CharacterStore`:
-  - `private(set) var characters: [Character]` (ordered by manifest)
-- `init()` reads manifest → loads each referenced file. Missing files removed from manifest.
-- `create(_ draft: CharacterDraft) -> Character` — assigns UUID, atomic write, updates manifest.
-- `save(_ character: Character)` — re-encodes, atomic write, updates manifest `lastEdited`.
-- `delete(id:)` — removes file, updates manifest.
-- `character(id:)` → `Character?`
-
-**C.4 Atomic write helper**
-```swift
-func atomicWrite(_ data: Data, to url: URL) throws {
-    let temp = url.appendingPathExtension("tmp")
-    try data.write(to: temp)
-    try FileManager.default.moveItem(at: temp, to: url)
-}
-```
-
-**C.5 Tests**
-- Save → load round-trip.
-- Save mid-rename simulation → verify file integrity.
-- Manifest tolerates orphaned entries.
-
-**Deliverable:** Can programmatically create, save, load, delete characters. Tests pass.
-
----
-
-### Phase D — Characters Tab & Creation Flow
-
-**Goal:** New tab with list and step-by-step creator.
-
-**D.1 RootView changes**
-- Add `@State private var selectedTab: Tab = .dice` (enum `Tab`).
-- Bind `TabView(selection: $selectedTab)`.
-- Add `Characters` tab.
-- Instantiate and inject `CharacterStore`, `ContentStore`, `PendingRollStore`.
-
-**D.2 CharacterListView**
-- `NavigationStack`.
-- List rows: name, class/summary, level, species.
-- Swipe-to-delete (calls `characterStore.delete`).
-- "+" button opens `CharacterCreationView`.
-
-**D.3 CharacterDraft**
-- `CharacterDraft.swift` — mutable mirror of `Character` for creation.
-- `var isComplete: Bool` — all required fields set.
-- `var pointBuySpent: Int` — tracks ability score point cost.
-- `var isValidPointBuy: Bool` — exactly 27 points, no score < 8 or > 15 before racial ASIs.
-
-**D.4 CharacterCreationView** (multi-step `NavigationStack`)
-1. **Name** — `TextField`, non-empty validation.
-2. **Species** — list from `ContentStore.species`, detail row with traits summary.
-3. **Background** — list from `ContentStore.backgrounds`, detail row with ASIs + skills + feat.
-4. **Class** — list from `ContentStore.classes`, detail row with hit die + saves + proficiencies.
-5. **Ability Scores** — point-buy only. Six rows with steppers (8–15). Running total. Preview of modifiers after racial ASIs applied.
-6. **Equipment** — auto-assigned from background + class starting gear. Show summary, no choice in v1.
-7. **Review** — full summary. "Create" button commits.
-
-**D.5 Post-creation**
-- On submit: `characterStore.create(draft.toCharacter())`.
-- Dismiss creation flow, navigate to new character's sheet.
-
-**Deliverable:** Can create a level 1 character through UI. List shows created characters.
-
----
-
-### Phase E — Read-Only Character Sheet
-
-**Goal:** Tap character → see full sheet. No editing, no actions yet.
-
-**E.1 CharacterSheetView**
-- Header: name, class badge, level badge, species. HP bar (current / max + temp). AC, speed, initiative.
-- Ability block: 2×3 grid. Score, modifier, save bonus. Proficient saves highlighted.
-- Skills section: collapsible. Sorted by ability then alphabetically. Total bonus, proficiency/expertise indicator.
-- Senses: passive perception, darkvision range from species.
-- Proficiencies: armor, weapons, tools (grouped lists).
-- Inventory: equipped items at top, rest below. Weight total.
-- Features: level-1 class features + species traits + background feat. Text only.
-
-**E.2 Derived value engine**
-- `CharacterCalculator` computes everything at runtime.
-- AC calculation: base 10 + DEX mod, or armor base + min(DEX mod, dex cap), + shield if equipped.
-- Weapon attack bonus: ability mod + proficiency if proficient in weapon category.
-- Weapon damage: die + ability mod (if applicable).
-
-**Deliverable:** Accurate read-only sheet for any character.
-
----
-
-### Phase F — Action Engine, Buttons, and Dice Handoff
-
-**Goal:** Buttons on the sheet prefill the Dice Roller.
-
-**F.1 PendingRollStore**
-```swift
-@Observable class PendingRollStore {
-    var pending: ResolvedAction?
-}
-```
-
-**F.2 Action derivation**
-- `CharacterSheetView` computes `[ResolvedAction]` from:
-  - Equipped weapons: attack roll + damage roll per weapon.
-  - All skills: skill check buttons.
-  - All abilities: raw ability check + saving throw buttons.
-  - Class features: any with `actionRecipes`.
-- Grouped by category: Attacks, Checks, Saves, Features.
-
-**F.3 Action buttons**
-- `ActionButtonGrid.swift` — sectioned grid of buttons.
-- Each button shows label + resolved bonus (e.g., "Longsword Attack +5").
-- Weapon mastery shown as small badge (e.g., "Vex").
-- Save DCs shown as info labels, not buttons.
-
-**F.4 Dice handoff**
-- Tap action → `pendingRollStore.pending = resolvedAction` → `selectedTab = .dice`.
-- `DiceRollerView` observes `PendingRollStore`:
-  - On `onAppear` + `onChange`: if `pending != nil`, set `formula = pending.formula`, `mode = pending.mode ?? .normal`, clear `pending`.
-- Does **not** auto-roll (respects the setting; v1 default is off).
-
-**F.5 Auto-roll setting**
-- `SettingsStore` (or `@AppStorage`) key: `character.autoRoll.enabled`.
-- If enabled, DiceRollerView also triggers `roll()` immediately after consuming the pending action.
-
-**F.6 Tests**
-- `ActionInterpreter` against fighter + longsword → expected formulas.
-- Finesse weapon with DEX > STR → uses DEX mod.
-- Non-proficient weapon → no proficiency bonus.
-
-**Deliverable:** Tap "Longsword Attack" → Dice tab opens with `1d20+5` preloaded. Roll works.
-
----
-
-### Phase G — Editing Characters
-
-**Goal:** Round-trip edits, inventory management, HP tracking.
-
-**G.1 Inline editing**
-- Tap name → edit inline.
-- Tap HP → `Stepper` or number pad for current/temp HP.
-- Long-press ability score → manual override (rare, but needed for magic items).
-- Notes field: editable `TextEditor`.
-
-**G.2 Inventory management**
-- `InventoryView` — full inventory list.
-- Add items: search `ContentStore.allItems`, pick, set quantity.
-- Equip/unequip toggle per item.
-- Attune toggle (max 3 attuned).
-- Delete items.
-- Auto-update AC and actions when equipment changes.
-
-**G.3 Death saves / conditions (optional v1.1)**
-- Track death save successes/failures when currentHP ≤ 0.
-
-**Deliverable:** Character sheet is fully editable. Inventory changes reflect immediately in actions and AC.
-
----
-
-### Phase H — Custom Content Import / Export
-
-> **Implementation note:** Hold this phase until **after Phases I–M** land. The
-> import contract should ship against the stabilized content schema (resources,
-> spells, item charges, conditions, choices). Shipping it earlier locks in a
-> shape we'll have to migrate later — a recurring cost for every external pack.
-
-**Goal:** Homebrew JSON and character sharing.
-
-**H.1 Import content**
-- Settings screen → "Import Content Pack".
-- `UIDocumentPicker` for `.json` or `.zip`.
-- Unzip if needed → validate each JSON file decodes into known content arrays.
-- Copy valid files to `Documents/Content/`. Reject invalid with error sheet.
-- `ContentStore.reload()` merges bundled + imported content (imported shadows bundled on ID collision).
-
-**H.2 Character export**
-- Share button on character sheet → `ShareLink` with character JSON.
-
-**H.3 Character import**
-- "Import Character" via document picker.
-- Validate JSON → copy to `Documents/Characters/` → update manifest.
-
-**Deliverable:** Users can share characters and import homebrew content packs.
-
----
-
-### Phase I — Resources & Rest Cycle
-
-**Goal:** Introduce a generic `Resource` primitive that backs every charge-based
-mechanic in the system (Second Wind uses, Action Surge, Hit Dice, item charges,
-spell slots). Add a rest cycle that refreshes resources on the appropriate
-trigger. Add a single `RollPrompt` view that respects the user's resolution-mode
-preference, used by every refresh roll and any future random outcome.
-
-**I.1 Resource definition**
-
-`ResourceDefinition.swift`:
-- `id: String` — unique within content (`fighter_second_wind`, `wand_of_mm_charges`, …)
-- `name: String` — display name on the sheet
-- `max: LevelScaledValue`
-- `refreshOn: RefreshTrigger`
-- `refreshAmount: RefreshAmount`
-- `displayHint: ResourceDisplayHint?` — optional UI grouping (e.g., `.spellSlot(level: 3)` so the spells UI can collect slot resources together)
-
-`LevelScaledValue.swift` — the same sparse-table pattern used by `attunementSlotsByLevel`:
-- `.flat(Int)`
-- `.byClassLevel([Int: Int])` — applies to whichever class owns the resource; take highest key ≤ entry.level
-- `.byCharacterLevel([Int: Int])` — applies to overall character level (rare; useful for racial features)
-
-`RefreshTrigger.swift`: `.shortRest`, `.longRest`, `.dawn`, `.encounter`, `.never`. Anything refreshed by `.shortRest` *also* refreshes on long rest unless the rule explicitly opts out.
-
-`RefreshAmount.swift` — tagged enum:
-- `.all` — fill to max (e.g., spell slots on long rest, Second Wind on long rest)
-- `.fixed(Int)` — exact amount (Second Wind on short rest = +1)
-- `.byClassLevel([Int: Int])` — scaled (Hit Dice regen = half class level)
-- `.roll(formula: String)` — refresh via dice roll (Wand of MM = `1d6+1`)
-
-**I.2 Resource ownership**
-
-Resources are declared inline on the entity that grants them — no central
-registry, per the locked-in decision:
-
-```swift
-struct FeatureDefinition {
-    var resource: ResourceDefinition?
-}
-
-struct ItemDefinition { /* + Weapon, Armor */
-    var resource: ResourceDefinition?
-}
-
-struct ClassDefinition {
-    var spellcasting: SpellcastingBlock?  // synthesizes spell-slot resources, see Phase J
-}
-```
-
-The character JSON only stores `current` values:
-
-```json
-"resources": {
-  "fighter_second_wind": { "current": 1 },
-  "wand_of_mm_charges":  { "current": 5 }
-}
-```
-
-If a referenced resource ID disappears from content (item deleted, class
-removed), the entry is silently dropped on next save. If a new resource appears
-the character has access to, it defaults to `current = max` until the next
-rest. This keeps content edits non-destructive to character files.
-
-**I.3 ResourceCalculator (pure, MainActor for content access)**
-
-- `availableResources(character:content:) -> [ResolvedResource]` — every pool the character has access to right now, with computed `max`, `refreshOn`, etc.
-- `current(character:resourceID:) -> Int` — clamped to `[0, max]`
-- `consume(_ amount: Int, from resourceID:, in: inout Character) -> Bool` — returns whether consumption succeeded
-- `applyRest(_ kind:, to: inout Character) -> [PendingRefresh]` — refreshes anything matching the trigger; returns pending dice rolls for the UI to resolve
-
-`ResolvedResource`:
-- `id`, `name`, `current`, `max`
-- `refreshOn`, `refreshAmount`
-- `sourceLabel: String` — "Fighter (L1)", "Wand of Magic Missiles", etc.
-- `displayHint: ResourceDisplayHint?`
-
-**I.4 Rest cycle**
-
-`RestKind`: `.short`, `.long`.
-
-Flow:
-1. User taps "Rest" → action sheet picks short or long.
-2. `applyRest` walks resources, builds `[PendingRefresh]` for any with `.roll(...)` amount.
-3. If `pendingRefreshes` is empty: HUD confirmation, done.
-4. Otherwise: `RefreshResolutionSheet` opens with one row per pending refresh. Each row has the user's roll-resolution mode prefilled, with a per-row override. User confirms; rolled values are applied; sheet dismisses.
-
-Long rest also restores HP to max, clears temp HP, and resets death save state (when introduced in Phase L).
-
-**I.5 RollResolutionMode + RollPrompt**
-
-`RollResolutionMode.swift`:
-- `.manual` — number-pad input for the user to type a result rolled IRL
-- `.tray` — push the formula into the dice tab; wait for the result
-- `.behindTheScenes` — `Int.random(in:…)` and use it directly
-
-Stored in `@AppStorage("roll.resolution.default")`. Default `.tray` (matches the existing "prefill and wait" handoff for action buttons).
-
-`RollPrompt.swift` — a SwiftUI view with:
-- `formula: DiceFormula`
-- `label: String`
-- `onResolve: (Int) -> Void`
-
-Renders the active mode and shows a "switch mode" button next to the formula so the user can deviate per-roll. Used everywhere a random outcome surfaces:
-- Refresh rolls (Phase I)
-- Healing from features like Second Wind (Phase I)
-- Hit Dice spend on short rest (Phase I)
-- Spell damage / healing (Phase J onward)
-
-When the user has set `.tray`, the prompt holds open until a result arrives via `PendingRollStore` with a matching label. Manually closing the sheet cancels.
-
-**I.6 Action recipe extensions**
-
-Recipes become composable sequences of effects. Add to `ActionRecipe`:
-- `consumeResource(resourceID: String, amount: Int)` — subtracts from a pool; if `current < amount`, the rest of the recipe sequence aborts.
-- `prompt(steps: [PromptStep])` — multi-step UI for choices ("cast at level 1, 2, or 3"; each option carries its own consume + roll effects).
-
-A feature like Second Wind becomes:
-
-```json
-"actionRecipes": [
-  { "type": "consumeResource", "resourceID": "fighter_second_wind", "amount": 1 },
-  { "type": "heal", "dice": "1d10", "addLevel": true, "label": "Second Wind" }
-]
-```
-
-`ActionInterpreter.resolve` returns a `ResolvedAction` whose `effects: [ResolvedEffect]` describes the sequence. When tapped, a small `EffectRunner` executes them in order: applies `consumeResource` (mutates the character), hands roll-typed effects to `RollPrompt`, records the outcome to history with a composed label.
-
-**I.7 Sheet integration**
-
-- New `ResourcesView` card on the sheet, between `AbilityBlockView` and `ActionButtonGrid`. Shows all `ResolvedResource`s grouped by source, with `current / max` and `−` / `+` for ad-hoc adjustment (e.g., DM gives back a charge). Tapping the source name links to a detail showing the refresh rule.
-- "Rest" button in the sheet's toolbar (or as a floating action). Opens the rest action sheet.
-- `ActionButtonGrid` rows display the cost ("Second Wind · uses 1") and grey out when the resource is exhausted.
-
-**I.8 Migration of existing content**
-
-- Fighter `second_wind` feature gains a `resource` block: `max: { byClassLevel: { "1": 2, "4": 3, "10": 4 } }`, `refreshOn: shortRest`, `refreshAmount: fixed(1)`. Long rest implicitly refreshes to max. Recipe updated to consume the resource before healing.
-- Action Surge, Hit Dice, Channel Divinity, Bardic Inspiration: same treatment.
-- The existing `attunementSlots` field on `FeatureDefinition` stays — it's a different concept (informational, not consumable).
-
-**I.9 Tests**
-
-- `ResourceCalculator.availableResources` for a multi-class character.
-- `applyRest` correctly fills `.all`, applies `.fixed`, defers `.roll`.
-- `consume` clamps at zero, refuses overdraft.
-- `EffectRunner` aborts subsequent effects when a `consumeResource` fails.
-- `RollPrompt` round-trip for each mode (manual / tray / hidden) with a stub `PendingRollStore`.
-- Backwards-compat: characters without a `resources` block decode and get `current = max` for every available resource.
-
-**Deliverable:** A character can spend Second Wind, see the charge consumed, take a short rest, and see one charge restored. The "Rest" button surfaces refresh-roll prompts when relevant. The roll-resolution mode setting actually changes how rolls are resolved.
-
----
-
-### Phase J — Spells
-
-**Goal:** First-class spell support — definitions, slots (as resources),
-prepared / known lists, casting flow, upcasting.
-
-**J.1 Spell definition**
-
-`SpellDefinition.swift`:
-- `id`, `name`, `level: Int` (0 = cantrip)
-- `school: SpellSchool` — abjuration, conjuration, etc.
-- `castingTime: CastingTime` — `.action`, `.bonusAction`, `.reaction(trigger:)`, `.minutes(Int)`, `.ritual(Bool)`
-- `range: SpellRange` — `.targetSelf`, `.touch`, `.feet(Int)`, `.unlimited` (avoiding `.self` since it's a Swift keyword)
-- `components: SpellComponents` — `verbal`, `somatic`, `material(String?)`
-- `duration: SpellDuration` — `.instantaneous`, `.rounds(Int)`, `.minutes(Int)`, `.concentration(maxMinutes: Int?)`
-- `description: String`
-- `higherLevel: String?` — text describing upcast effect
-- `actionRecipes: [ActionRecipe]` — damage, healing, save DC, etc.
-- `upcastEffect: UpcastEffect?` — typed scaling
-
-`UpcastEffect`:
-- `.extraDicePerLevel(damageRecipeIndex: Int, dice: String)` — Magic Missile adds 1d4+1 per level
-- `.extraTargetsPerLevel(Int)` — informational
-- `.scaledDice(baseLevel: Int, dicePerExtraLevel: String)` — generic
-
-**J.2 Spell list JSON**
-
-`spells.json` in the bundle. Initial seed: PHB SRD spells (cantrips + L1–L3 minimum, expand from there).
-
-```json
-{
-  "id": "magic_missile",
-  "name": "Magic Missile",
-  "level": 1,
-  "school": "evocation",
-  "castingTime": { "type": "action" },
-  "range": { "type": "feet", "value": 120 },
-  "components": { "verbal": true, "somatic": true },
-  "duration": { "type": "instantaneous" },
-  "description": "...",
-  "higherLevel": "When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.",
-  "actionRecipes": [
-    { "type": "rawDamage", "dice": "3d4+3", "damageType": "force", "label": "Magic Missile darts" }
-  ],
-  "upcastEffect": { "type": "extraDicePerLevel", "damageRecipeIndex": 0, "dice": "1d4+1" }
-}
-```
-
-**J.3 SpellcastingBlock on ClassDefinition**
-
-```swift
-struct SpellcastingBlock: Codable, Equatable {
-    let ability: Ability                      // INT for wizard, WIS for cleric, …
-    let preparedRule: PreparedRule
-    let cantripsKnown: LevelScaledValue
-    let spellsKnown: LevelScaledValue?        // nil if uses preparation
-    let preparedCount: PreparedFormula?       // e.g., wizard = INT mod + class level
-    let slotTable: SlotTable
-    let ritualCasting: Bool
-    let spellcastingFocus: Bool
-}
-```
-
-`PreparedRule`:
-- `.knownList` — bards, sorcerers, rangers (fixed known list, no daily prep)
-- `.preparedFromBook` — wizards (prepare from spellbook each long rest)
-- `.preparedFromAll` — clerics, druids, paladins (prepare from full class list)
-- `.pactMagic` — warlocks (special slot rules)
-
-**J.4 Spell slots as resources**
-
-Each spell-slot level becomes its own `ResourceDefinition` synthesized from the
-`SlotTable`. ID convention: `<classID>_slot_<level>` → `wizard_slot_3`. Pact
-magic warlocks get a single `warlock_pact_slot` whose level scales by class level.
-
-`SlotTable.swift`:
-- `byClassLevel: [Int: [Int: Int]]` — class level → (spell level → slot count)
-- `pactMagic: PactMagicTable?` — alt for warlocks (single slot level + count, both scaling)
-
-The synthesizer:
-- Refresh trigger: `.longRest` for full casters, `.shortRest` for warlock pact slots
-- Refresh amount: `.all`
-- `displayHint: .spellSlot(level: N)` so the spells UI can group them
-
-**J.5 Character spell list**
-
-```json
-"spells": {
-  "preparedIDs": ["magic_missile", "shield", "detect_magic"],
-  "knownIDs": [],
-  "spellbookIDs": ["magic_missile", "shield", "detect_magic", "feather_fall"]
-}
-```
-
-Different classes use different lists (wizard reads `spellbookIDs` to populate
-`prepared`; sorcerer's `knownIDs` is fixed; etc.). The `SpellListView`
-understands the per-class rule.
-
-**J.6 Cast flow**
-
-Tap a spell:
-1. `SpellCastSheet` opens with the spell text.
-2. Slot-level picker (greyed-out levels with no remaining slots; user picks ≥ spell.level).
-3. "Cast" button → consume one slot of the chosen level via `consumeResource`, then run the spell's `actionRecipes` through the `EffectRunner`. Damage / save prompts route through `RollPrompt`.
-
-Cantrips skip the slot picker. Ritual casting offers an optional "Cast as ritual (no slot)" toggle when `ritualCasting && spell.castingTime.ritual`.
-
-Concentration spells (Phase L) flip `Character.concentratingSpellID` and break any prior concentration.
-
-**J.7 Spells UI**
-
-New `SpellListView` on the sheet, after the inventory. Two sections:
-- **Slots** (top): a row per spell level with `current / max` dots. Long-press a slot to manually toggle (DM correction).
-- **Spells** (collapsible, by level): prepared / known list, sorted by level then name. Each row shows name, school icon, casting time, and a cast button.
-
-Add a "+ Spells" button that opens a search picker over `ContentStore.spells`, filtered by the class spell list when the character has a spellcasting block.
-
-**J.8 Tests**
-
-- `SpellDefinition` Codable round-trip.
-- `SlotTable` synthesizes the right resources for wizard L1, L5, L11.
-- Warlock pact magic: short-rest refreshes pact slots; long-rest also refreshes them.
-- `SpellCastSheet` flow: cast at base level vs. upcast → resource consumption + upcast scaling on the recipe.
-- `PreparedRule` enforcement: wizard can't cast a spell that's not in `spellbookIDs`.
-
-**Deliverable:** A wizard can prepare spells, see slots, cast at base level, upcast to consume a higher slot. Cantrips work without slot consumption. Slots refresh on long rest. Warlock pact slots refresh on short rest.
-
----
-
-### Phase K — Items With Charges & Spell Access
-
-**Goal:** Item JSON declares charges and grants spell access. Wand of Magic
-Missiles works end-to-end.
-
-**K.1 Item resource block**
-
-Items already have an optional `attunement: AttunementRule?`. Add `resource: ResourceDefinition?`. Same shape as feature resources; ID is namespaced to the item (`<itemID>_charges` by convention) so a character carrying two of the same wand currently shares the pool. Per-stack charges deferred — track as a follow-up if a real case appears (rare in 5e RAW).
-
-**K.2 ItemUse schema**
-
-```swift
-struct ItemUse: Codable, Equatable {
-    let id: String
-    let name: String
-    let cost: ResourceCost
-    let effect: ItemUseEffect    // .castSpell or .actionRecipes
-    let upcastChoice: UpcastChoice?
-}
-
-enum ItemUseEffect: Codable {
-    case castSpell(spellID: String, atLevel: Int)
-    case actionRecipes([ActionRecipe])
-}
-
-struct UpcastChoice: Codable {
-    let maxLevel: Int
-    let extraCostPerLevel: Int   // additional charges per level above base
-}
-```
-
-```json
-"uses": [
-  {
-    "id": "cast_magic_missile",
-    "name": "Cast Magic Missile",
-    "cost": { "resourceID": "wand_of_mm_charges", "amount": 1 },
-    "effect": { "type": "castSpell", "spellID": "magic_missile", "atLevel": 1 },
-    "upcastChoice": { "maxLevel": 3, "extraCostPerLevel": 1 }
-  }
-]
-```
-
-**K.3 Inventory + action grid integration**
-
-- Equipped items with `uses` contribute new rows to the action grid under an "Item Uses" section.
-- The cost is shown next to the action ("Cast Magic Missile · 1 charge").
-- Tap → if `upcastChoice`, prompt for level (uses the same `prompt` recipe step from I.6); otherwise execute directly.
-- `ItemUseEffect.castSpell` chains into the spell-casting flow but consumes the item's resource instead of a spell slot.
-
-**K.4 Resource enumeration**
-
-`ResourceCalculator.availableResources` already walks features. Extend it to walk equipped items' `resource`. Carried-but-unequipped items are excluded from the action grid but still appear in the resources card so the user can spend them (e.g., consumable scrolls).
-
-**K.5 `dawn` refresh handling**
-
-`RestKind` doesn't include "dawn" (rest is user-action). For MVP, any `.dawn` refresh also fires on long rest — covers the common case. A separate "advance time" button can land later if needed.
-
-**K.6 Tests**
-
-- Wand of Magic Missiles JSON round-trips.
-- Eligibility chain: attunement gates the item; once attuned, the use becomes available; once charges are spent, the use greys out.
-- Upcast choice consumes the right number of charges and applies upcast scaling to the spell's recipe.
-- `.dawn` refresh fires on long rest.
-
-**Deliverable:** Equip and attune a Wand of Magic Missiles. Cast Magic Missile from the action grid; charges decrement; upcast to consume 2 or 3. Long-rest restores 1d6+1 charges through the roll-resolution prompt.
-
-> **Shipped 2026-05-10.** Implemented as specified, with two deviations:
-> - **Wand of Magic Missiles requires no attunement.** Per the 2024 SRD it's
->   freely usable; `attunement: {}` was dropped from `gear.json`. The
->   attunement-gating code in `ResourceCalculator.availableResources` stays
->   in place for the next attunement-required magic item.
-> - **Item description shown in inventory.** Beyond the action grid wiring,
->   the inventory row's expanded edit panel now displays the item's
->   description text and (for weapons) a per-character formula breakdown so
->   the player can audit attack/damage numbers against the rules.
->
-> Behavior delivered:
-> - `ItemDefinition` / `WeaponDefinition` / `ArmorDefinition` accept optional
->   `resource: ResourceDefinition` and `uses: [ItemUse]`.
-> - `ItemUseEffect` supports `.castSpell(spellID:atLevel:)` and
->   `.actionRecipes([ActionRecipe])`; only the former is exercised by
->   bundled content so far.
-> - `ResourceCalculator.availableResources` walks inventory and de-dupes
->   pools by id (two stacks of the same wand share one charge pool).
-> - `CharacterActionDeriver` emits an "Item Uses" section in the action
->   grid; rows with `.castSpell` carry an `ItemSpellCastContext` that the
->   character sheet routes into `SpellCastSheet` with the item's pool
->   replacing the slot picker.
+All phases A–O are shipped. Terse trace below; see "Out-of-Scope Additions", the Phase O "Shipped reality" callout, and the Status table for details. The full original phase specs (deliverables, test lists, sub-step breakdowns) lived here historically and have been condensed — the schemas/models above plus the changelog capture the surviving contract.
+
+- **Phase A — Domain Models & Content Schema** — shipped. Pure Swift types (Ability, Skill, ProficiencyLevel/Key, Currency, InventoryItem, Character), content definitions, `ActionRecipe`/`ResolvedAction`/`CharacterCalculator`/`ActionInterpreter`, test fixtures + Codable/calculator/interpreter tests.
+- **Phase B — Content Loader** — shipped. `@Observable ContentStore` loads bundled SRD JSON (classes/species/backgrounds/weapons/armor/gear) into id-keyed dicts; injected at root.
+- **Phase C — CharacterStore & File I/O** — shipped (atomic write via `Data.write(.atomic)`). Manifest + one JSON per character, create/save/delete/load round-trip, manifest tolerates orphans.
+- **Phase D — Characters Tab & Creation Flow** — shipped. Characters tab, list with swipe-delete, multi-step creator (Name → Species → Background → Class → Ability Scores → Equipment → Review). `CharacterDraft` with point-buy validation.
+- **Phase E — Read-Only Character Sheet** — shipped. Header (HP/AC/speed/init), ability block, skills, senses, proficiencies, inventory, features, all derived at runtime.
+- **Phase F — Action Engine, Buttons, Dice Handoff** — shipped. `PendingRollStore`; sheet derives `[ResolvedAction]` grouped by category; tap → prefill dice tab (no auto-roll by default; `character.autoRoll.enabled` setting).
+- **Phase G — Editing Characters** — shipped (death saves shipped 2026-06-09). Inline name/HP/notes edit, full inventory management (equip/attune/quantity), AC/actions update live.
+- **Phase H — Custom Content Import / Export** — shipped 2026-06-13. `ContentPack` JSON envelope, `ContentValidator`, imported layer in `Documents/Content/` (imported shadows bundled by id), `ExportedCharacter` Transferable, Settings-tab import flows. `.zip` deferred (needs a zip dependency).
+- **Phase I — Resources & Rest Cycle** — shipped. Generic `ResourceDefinition` (`LevelScaledValue` max, `RefreshTrigger`, `RefreshAmount`, `displayHint`) declared inline on features/items; character JSON stores only `current`. `ResourceCalculator`, rest cycle (short/long) with `RefreshResolutionSheet`, `RollResolutionMode` (manual/tray/behindTheScenes), `RollPrompt`, composable recipe effects (`consumeResource`, `prompt`) + `EffectRunner`. ResourcesView card + Rest button on sheet.
+- **Phase J — Spells** — shipped (incl. `spellAttack` recipe + attack→damage follow-up chip). `SpellDefinition`, `spells.json`, `SpellcastingBlock` + `PreparedRule` on `ClassDefinition`, spell slots synthesized as resources (`<classID>_slot_<level>`; warlock pact slots short-rest), character spell lists (prepared/known/spellbook), `SpellCastSheet` cast/upcast flow, `SpellListView` (slots + spell list).
+- **Phase K — Items With Charges & Spell Access** — shipped 2026-05-10 (Wand of Magic Missiles end-to-end). `ItemDefinition`/`Weapon`/`Armor` accept optional `resource` + `uses: [ItemUse]`; `ItemUseEffect.castSpell`/`.actionRecipes`; `ResourceCalculator` walks inventory and de-dupes pools by id; `CharacterActionDeriver` emits an "Item Uses" section routing `.castSpell` into `SpellCastSheet` with the item pool replacing the slot picker. Deviation: Wand needs no attunement (2024 SRD); attunement-gating code retained for the next attunement-required item.
+- **Phase L — Conditions, Concentration, Action Economy** — shipped. 14 SRD conditions (`ConditionDefinition` + typed `effects`), concentration tracking (`Character.concentratingSpellID`), damage-triggered Con save (DC = `max(10, dmg/2)`), action-cost tags + grid grouping by economy. (Conditions are tracked but **not yet mechanically enforced** — see QA P1.)
+- **Phase M — Choices & Multi-step Prompts** — shipped (architecture complete; Slices A+B+C). `FeatureSelection` + 4 `SelectionSource` cases (weapons/fixedOptions/subclasses/abilityScoreIncrease), `SubclassDefinition`, `ClassDefinition.resolvedFeatures` aggregator, `LevelUpSheet` (HP roll/average), ASI mutators with caps. **Still to author (not blocking):** more subclasses, sorcerer metamagic via `.fixedOptions`, ASI prompts on every class at L4/8/12/16/19, feat catalog + Origin/General feat picker. **Deferred architecture:** the recursive `ChoicePromptDefinition`/`ChoiceOutcome` model — pushed until a real nested-choice use case (e.g. Feat → "+1 ability" sub-prompt) needs it.
+- **Phase N — Damage Typing in the Dice Tray** — shipped. `DiceGroup.damageType: DamageType?` (backwards-compat), `DiceFormula.applyDamageType`/`displayStringWithTypes`, `RollResult.subtotalsByType`, interpreter stamps weapon/raw damage types, upcast preserves type, `DamageBreakdownView`. **Known wart:** opening the formula-bar editor on a typed roll re-parses untyped text, losing the type (acceptable — typed rolls come from recipe dispatch, not bar edits).
+- **Phase O — Triggered Effects & Active Statuses** — shipped (Slices A+B+C, 2026-05-17). Hex/Hunter's Mark (automatic riders), Sneak Attack (canonical `.optIn` chip), Rage (canonical `.toggle` rider, 10-round timer + per-LR resource). See "Phase O Shipped reality" below for the actual schema and **what's still open** (Divine Smite shipped 2026-06-09; Battle Master/superiority dice, GWM, attack-roll triggers, etc. remain).
+
+> The deferred `ChoicePromptDefinition` / `ChoiceOutcome` recursive model from the original Phase M sketch (kinds `.pickOne`/`.pickN`/`.distribute`; recursive outcomes `.grantFeature`/`.grantProficiency`/`.grantSpell`/`.modifyAbilityScore`/`.spawnChoice`/`.composite`; `resolvedChoices` keyed character state) is **not yet built** — it lands only when a real nested-choice case needs it.
 
 ---
 
 ## Out-of-Scope Additions (shipped between phases)
 
-A handful of changes landed that weren't called out in any single phase. They
-were small, contained, and unblocked future work, so they shipped opportunistically.
-Notes here so the plan stays an accurate map of the codebase.
+Small changes that landed outside any single phase. One-line trace each.
 
-### Tabbed character sheet
-
-The original sheet was one long vertical scroll. It was already cramped after
-Phase J's spell card and intolerable after Phase K's item-uses + resources
-additions. Reshaped into a fixed header (name, badges, HP bar, AC/Speed/Init
-pills) over a segmented picker with five tabs:
-
-- **Actions** — Resources card, Attacks card, action grid (Features + Item Uses).
-- **Abilities** — ability block (with adv/dis chips), skills, senses, proficiencies, notes.
-- **Features** — every feature with description, kind, charges, and selection picker. See "Data-driven Features tab" below.
-- **Inventory** — full inventory editor with weapon breakdowns and item descriptions.
-- **Spells** — slot dots + spell list. Hidden entirely for non-casters; an `onChange` guard kicks the user to Actions if they somehow lose spellcasting while sitting on this tab.
-
-`navigationBarTitleDisplayMode` is now `.inline` (was `.large`) to reclaim
-vertical space. The picker uses text-only labels — adding icons collided with
-smaller iPhone widths.
-
-### Bespoke `AttacksView` for weapons
-
-Weapon attacks used to flow through the generic `ActionButtonGrid` as one tile
-per recipe — Attack / Damage / Damage (2H) for a longsword was three tiles in a
-2-column grid. Replaced with a `AttacksView` that emits one row per equipped
-weapon, with name + mastery chip + inline pill buttons (`🎯 +5`,
-`💧 1d8+3`, optional `2H 1d10+3`). The mastery chip taps to a sheet with the
-SRD rule summary. `CharacterActionDeriver.weaponAttacks(for:content:)` builds
-the typed model; weapons no longer appear in `sections(...)`.
-
-### Attack → damage follow-up chip
-
-Tapping a weapon Attack chip (and tapping Spell Attack in the cast sheet)
-queues the damage roll on `PendingRollStore.followUp`. The dice tab shows a
-small accent-tinted "Roll damage?" pill below the tray once the attack roll
-lands. Tap → load the damage formula; X → dismiss; touching the picker manually
-also clears it (so the chip stops appearing once the player has reshaped the
-dice). One UX pattern serves spell attacks, weapon attacks, and any future
-"primary + follow-up" pair.
-
-### Weapon roll breakdowns + item descriptions in inventory
-
-The inventory row's expanded edit panel now shows:
-
-- The item's `description` text (from JSON, looked up via `ContentStore.itemDescription`).
-- For weapons, a `WeaponRollBreakdown` block with attack/damage/(2H) lines.
-  Each line shows the resolved formula ("+5", "1d8+3"), the damage type
-  ("slashing"), and the derivation ("1d8 + STR (+3)"). Built by
-  `CharacterCalculator.weaponRollBreakdown(...)`, which routes through the
-  same `ActionInterpreter` the dice handoff uses, so the displayed math always
-  matches what gets rolled.
-
-### `WeaponMastery` got display data
-
-The enum used to be bare cases. Added `displayName` and a `summary` (one short
-SRD-style paragraph per property — Cleave, Graze, Nick, Push, Sap, Slow,
-Topple, Vex). Surfaced in the `AttacksView` mastery sheet and in the weapon
-selection picker.
-
-### Data-driven Features tab (partial Phase M)
-
-A `Features` tab was added that lists every class feature and species trait
-sourced entirely from JSON. Each card shows the feature's name, source label,
-kind chip, description, optional resource pool, and a selection picker when
-applicable. The schema additions to support this:
-
-- `FeatureKind` enum — `.passive` / `.active` / `.selection` / `.toggle`. Pure
-  presentation tag; mechanical behavior still comes from the surface (`resource`,
-  `actionRecipes`, `selection`). When JSON omits `kind`, the decoder auto-infers
-  from shape so existing data needs no updates.
-- `FeatureSelection { id, prompt, count: LevelScaledValue, optionsSource: SelectionSource }`
-  attached optionally to a `FeatureDefinition`. The first `SelectionSource`
-  case is `.weapons(proficientOnly: Bool)`. Future cases (spells, skills, free-form
-  option lists) plug in here without code changes to consumers.
-- `Character.featureSelections: [String: [String]]` — generic selection storage
-  keyed by `FeatureSelection.id`. Replaces the short-lived `chosenWeaponMasteries`
-  field; legacy saves are migrated on decode.
-
-Fighter L1's `weapon_mastery` is now a JSON-declared feature with a selection
-block. `CharacterCalculator.weaponMasterySlotCount` reads from the feature
-rather than from `ClassDefinition.masteryCount` (the legacy field is still
-parsed but no longer consulted). Mastery picking moved entirely from the
-inventory row (deleted) to the Features tab's picker.
-
-**Impact on Phase M:** the FeatureSelection schema is a starting substrate for
-Phase M's choice system. Phase M still needs to: (a) generalize
-`SelectionSource` to spells, skills, feats, ASI distribution; (b) add nested
-choice prompts (`.composite`, `.spawnChoice`); (c) drive the choices from a
-level-up flow rather than ad-hoc per-feature edits; (d) record version history
-for re-entry. But the persistence layer + the picker plumbing already exist.
+- **Tabbed character sheet** — reshaped the single scroll into a fixed header + segmented 5-tab picker (Actions / Abilities / Features / Inventory / Spells). Spells tab hidden for non-casters (with an `onChange` guard). `navigationBarTitleDisplayMode = .inline`.
+- **Bespoke `AttacksView`** — one row per equipped weapon (name + mastery chip + inline pill buttons 🎯/💧/2H), replacing per-recipe grid tiles. `CharacterActionDeriver.weaponAttacks(for:content:)` builds it; weapons no longer in `sections(...)`.
+- **Attack → damage follow-up chip** — tapping a weapon/spell Attack queues the damage roll on `PendingRollStore.followUp`; dice tab shows a "Roll damage?" pill. One pattern for any primary+follow-up pair.
+- **Weapon roll breakdowns + item descriptions in inventory** — expanded inventory row shows JSON `description` and (weapons) a `WeaponRollBreakdown` (attack/damage/2H lines via `CharacterCalculator.weaponRollBreakdown`, routed through the same `ActionInterpreter` as the dice handoff).
+- **`WeaponMastery` display data** — added `displayName` + `summary` (SRD-style paragraph per property), surfaced in the mastery sheet + weapon picker.
+- **Data-driven Features tab (partial Phase M)** — JSON-sourced feature/trait cards (name, source, kind chip, description, optional resource pool, selection picker). Schema: `FeatureKind` (passive/active/selection/toggle, auto-inferred when omitted), `FeatureSelection {id, prompt, count, optionsSource: SelectionSource}` (first case `.weapons(proficientOnly:)`), `Character.featureSelections: [String:[String]]` (migrates legacy `chosenWeaponMasteries`). Fighter L1 `weapon_mastery` is now a JSON feature with a selection block; `CharacterCalculator.weaponMasterySlotCount` reads the feature (legacy `masteryCount` parsed but unused). **Phase M still needs:** generalize `SelectionSource` (spells/skills/feats/ASI), nested choice prompts, a level-up-driven flow, versioned re-entry. Persistence + picker plumbing already exist.
 
 ---
 
-### Phase L — Conditions, Concentration, Action Economy
+## Phase O — Shipped reality (Slices A + B + C, 2026-05-17)
 
-**Goal:** Track conditions (poisoned, stunned, etc.). Track concentration. Tag
-actions with their action-economy cost.
-
-**L.1 Condition catalog**
-
-`ConditionDefinition.swift` in content:
-- `id`, `name`, `description`
-- `effects: [ConditionEffect]` — typed list:
-  - `.attacksAgainstHaveAdvantage`
-  - `.attacksByHaveDisadvantage`
-  - `.savingThrowDisadvantage(abilities: [Ability])`
-  - `.cantTakeActions`, `.cantTakeReactions`, `.cantMove`
-  - `.speedZero`, `.speedHalved`
-  - `.autoFailStrengthAndDexSaves`
-  - …
-
-Initial set: SRD's 14 conditions (Blinded, Charmed, Deafened, Frightened, Grappled, Incapacitated, Invisible, Paralyzed, Petrified, Poisoned, Prone, Restrained, Stunned, Unconscious).
-
-**L.2 Character condition state**
-
-```json
-"conditions": [
-  { "id": "poisoned", "source": "Wyvern bite" },
-  { "id": "concentrating_on", "spellID": "bless" }
-]
-```
-
-The `concentrating_on` pseudo-condition is special: only one at a time, dropping the previous when set.
-
-**L.3 Concentration**
-
-`Character.concentratingSpellID: String?`. Casting a concentration spell sets this (and pins the spell card to the sheet). Taking damage prompts a Constitution save (DC = `max(10, damageDealt / 2)`). Failure clears concentration. Casting a new concentration spell drops the old one with a confirmation prompt.
-
-**L.4 Action economy tags**
-
-Add `actionCost: ActionCost?` to `ActionRecipe` (or to `ResolvedAction`):
-- `.action`, `.bonusAction`, `.reaction`, `.free`, `.movement`
-
-`ResolvedAction.actionCost` derived from the recipe set's max. The action grid groups by cost (Actions / Bonus Actions / Reactions / Free) so the player sees their economy at a glance.
-
-Per-turn tracking is out of scope for v1 (no initiative tracker yet). The cost is informational.
-
-**L.5 UI surfaces**
-
-- New `ConditionsRow` on the sheet, between the HP bar and the ability block. Pills for active conditions (tap to dismiss, long-press for description).
-- "Add Condition" button opens a picker.
-- Concentration pin (if active) appears at the top of the spells section.
-- When taking damage via the HP editor sheet, automatically prompt a Con save when concentrating.
-
-**L.6 Tests**
-
-- Condition decode round-trip.
-- Adding a `concentrating_on` condition drops a prior one.
-- Damage flow triggers a concentration save.
-- `actionCost` decode (defaults to `.action` if absent).
-
-**Deliverable:** Conditions can be applied and removed manually. Casting a concentration spell pins it. Taking damage prompts a Con save when concentrating. The action grid groups by economy cost.
-
----
-
-### Phase M — Choices & Multi-step Prompts
-
-**Goal:** Anything where the player makes a permanent decision that mutates
-the character: level-up, fighting style, metamagic selection, feat picks,
-ASI vs. feat at L4 / L8 / etc.
-
-> **Already in place (see "Out-of-Scope Additions" → "Data-driven Features tab"):**
-> a `FeatureSelection` schema attached to features, a `SelectionSource.weapons`
-> case, generic per-feature picker UI, and `Character.featureSelections` as the
-> persistence layer for picks. Phase M extends this — it does not replace it.
->
-> What Phase M still needs to add: more `SelectionSource` cases (spells, skills,
-> feats, ASI distribution), nested / cascading choice outcomes, a guided
-> level-up flow, and re-entry support with versioned outcomes.
-
-**M.1 Choice prompt model**
-
-`ChoicePromptDefinition.swift` (lives in content; attached to features or class level entries):
-- `id`, `name`, `description`
-- `kind: ChoiceKind` — `.pickOne(options:)`, `.pickN(count:, options:)`, `.distribute(points:, slots:)`
-- `outcome: ChoiceOutcome` — applied when the user picks
-
-`ChoiceOption`:
-- `id`, `name`, `description`
-- `outcome: ChoiceOutcome`
-
-`ChoiceOutcome` (recursive — outcomes can spawn nested choices):
-- `.grantFeature(FeatureDefinition)`
-- `.grantProficiency(ProficiencyKey)`
-- `.grantSpell(spellID:)`
-- `.modifyAbilityScore(ability:, delta:)`
-- `.spawnChoice(ChoicePromptDefinition)`
-- `.composite([ChoiceOutcome])`
-
-**M.2 Character choice state**
-
-```json
-"resolvedChoices": {
-  "fighter_l1_fighting_style": "defense",
-  "asi_4": { "kind": "asi", "increases": { "strength": 2 } },
-  "asi_8": { "kind": "feat", "featID": "great_weapon_master" }
-}
-```
-
-The character carries a record of every choice made, keyed by prompt ID. Re-entering the level-up flow with existing data pre-fills prior choices but allows changes. A "this will reset downstream choices" warning appears if the change cascades.
-
-**M.3 Level-up flow**
-
-When the user bumps level on the sheet:
-1. `LevelUpSheet` walks every prompt the new level grants.
-2. For each prompt: present the picker, save into `resolvedChoices`.
-3. On finish: apply outcomes (grant features, etc.). Update `level`, `classEntries[i].level`, `maxHP`.
-
-Hit-point gain at level-up is itself a `RollPrompt` for the class hit die, with "average" available as the per-prompt resolution-mode override.
-
-**M.4 SRD content seeded with prompts**
-
-- Fighter L1: Fighting Style (Archery, Defense, Dueling, Great Weapon Fighting, Two-Weapon Fighting)
-- Champion / Battle Master / Eldritch Knight: subclass at L3
-- Wizard: Arcane Tradition at L2
-- All classes L4 / L8 / L12 / L16 / L19: ASI vs. Feat
-- Sorcerer: Metamagic options
-- Cleric: Divine Domain
-- Etc.
-
-Each is JSON in `levelFeatures[N]` extended with a `prompts: [ChoicePromptDefinition]?` field.
-
-**M.5 Tests**
-
-- `ChoicePromptDefinition` round-trip.
-- Applying a Fighting Style choice grants the matching feature.
-- ASI distribution validates total spend (+2 to one or +1 to two distinct).
-- Re-entering level-up shows existing picks pre-filled.
-- Cascading reset: changing a foundational choice clears downstream ones.
-
-**Deliverable:** Level-up is a guided flow. Every meaningful character choice is persisted and re-editable. New SRD class content can declare its own prompts without code changes.
-
----
-
-### Phase N — Damage Typing in the Dice Tray
-
-**Goal:** Rolls can carry per-group damage type metadata so a mixed-damage
-attack (Meteor Swarm bludgeoning + fire; Eldritch Blast force + Hex necrotic;
-a longsword Divine Smite slashing + radiant) displays a breakdown instead of a
-single anonymous total. Untyped rolls (manual rolls, history rerolls, ability
-checks, saves) keep working unchanged.
-
-This is a substrate change. It's small on its own, but Phase O leans on it —
-"+1d6 necrotic" only reads correctly when the tray knows what "necrotic" is.
-
-> **Note:** the follow-up chip pattern is already in place (Phase J / Phase K
-> wired it for attack→damage chaining on both spells and weapons). Phase N's
-> result HUD breakdown will sit alongside that chip, not replace it.
-
-**N.1 DiceGroup gains an optional damage type**
-
-```swift
-struct DiceGroup: Codable, Equatable {
-    var kind: DieKind
-    var count: Int
-    var modifier: GroupModifier?   // kh1, kl1, etc. — existing
-    var damageType: DamageType?    // new; nil = untyped
-}
-```
-
-Backwards-compat: existing JSON without `damageType` decodes as nil; existing
-formulas (presets, history, ad-hoc picker rolls) stay untyped. The dice tab's
-modifier stepper is a single integer and stays untyped — it's added to the
-"untyped" bucket.
-
-**N.2 RollResult subtotals**
-
-`RollResult` adds:
-
-```swift
-/// Total per damage type. Untyped dice + the flat modifier land under nil.
-var subtotalsByType: [DamageType?: Int] { ... }
-```
-
-The grand total stays as-is (sum across types). When `subtotalsByType` has
-more than one non-nil key, the UI surfaces the breakdown; otherwise it just
-shows the total like today.
-
-**N.3 Recipe → group plumbing**
-
-The damage-type info already exists upstream — it just gets dropped when we
-collapse to a plain `DiceFormula`. The fix is mechanical:
-
-- `weaponDamage` interpreter writes `weapon.damageType` onto the group(s) it
-  produces.
-- `rawDamage` interpreter writes the recipe's `damageType` onto its group.
-- `heal` writes nothing (healing is its own visual treatment, not a damage type).
-- Spell upcast scaling (`SpellDefinition.recipes(castAtLevel:)`) preserves the
-  damage type when it appends extra dice to a typed recipe.
-
-**N.4 Tray rendering**
-
-The 3D physics stays a single bag of dice — all groups bounce in the same
-tray. The HUD changes:
-
-- Big total stays centered.
-- Below it (or as a chip below the tray), a small breakdown: "12 force · 4 necrotic"
-  when there's >1 type.
-- The result chip in history shows the same breakdown.
-- Per-die coloring on the 3D models is a stretch goal — start with HUD only;
-  reach for SCNMaterial tinting later if mixed-damage rolls feel ambiguous.
-
-**N.5 Formula bar pretty-printing**
-
-Currently the bar reads `1d10+1d6+3`. With damage typing it reads
-`1d10 fire + 1d6 necrotic + 3`. Parser stays tolerant of both shapes; the
-pretty-printer emits the type only when present.
-
-**N.6 History line**
-
-`RollResult.subtotalsByType` flows into the history rendering. A typed Fire
-Bolt result reads "Fire Bolt Damage: 7 fire". Untyped rolls render exactly as
-today.
-
-**N.7 Tests**
-
-- `DiceGroup` round-trip with and without `damageType`.
-- `RollResult.subtotalsByType` for a typed-only formula, mixed-typed, and
-  fully untyped formula.
-- Weapon damage interpreter stamps the weapon's damage type onto its group.
-- Spell upcast preserves the damage type across the appended dice.
-- Backwards-compat: an existing untyped formula decodes and rolls correctly.
-
-**Deliverable:** Casting Fire Bolt shows "7 fire" in the tray and history.
-Magic Missile shows "9 force". A weapon attack with `1d8+3` damage shows
-"11 slashing". Manual rolls and ability checks are unchanged. The infra is in
-place for Phase O to attach typed extra dice ("+1d6 necrotic from Hex").
-
----
-
-### Phase O — Triggered Effects & Active Statuses
-
-**Goal:** One mechanism that covers every "modify a roll based on a trigger"
-mechanic in 5e — persistent riders (Hex, Hunter's Mark, Rage, Bless),
-attack-time opt-ins (Sneak Attack, Divine Smite), pre-roll toggles
-(Great Weapon Master, Sharpshooter), and resource-gated reactions (Battle
-Master maneuvers, Lucky). Concentration (Phase L) gates the persistent ones;
-damage typing (Phase N) makes their extra dice render correctly.
-
-This phase is design-heavy. The shape below is a sketch; pieces will move as
-we encode real content.
-
-> **Already in place:** `FeatureKind.toggle` is declared on `FeatureDefinition`
-> as a UI tag, the Features tab knows how to render a toggleable card, and
-> the follow-up-chip plumbing in the dice tab is the right substrate for
-> Phase O's `.optIn` activation. Phase O fills in the actual `TriggeredEffect`
-> data and the resolver pass that consumes it.
-
-**O.1 TriggeredEffect schema**
-
-```swift
-struct TriggeredEffect: Codable, Equatable {
-    let id: String
-    let name: String
-    let trigger: TriggerCondition
-    let activation: TriggerActivation
-    let cost: TriggerCost?
-    let effect: TriggerEffect
-    let lifecycle: TriggerLifecycle
-}
-```
-
-`TriggerCondition` — *when* it can fire:
-- `.onAttackRoll(filter:)` — fires after the d20 lands, before damage. GWM penalty case.
-- `.onAttackHit(filter:)` — fires after a confirmed hit. Sneak Attack, Divine Smite.
-- `.onDamageRoll(filter:)` — auto-attaches to a damage roll. Hex, Hunter's Mark.
-- `.onSpellAttackHit(filter:)` — variant for spell attacks.
-- `.onTurnStart` — Rage end-of-turn maintenance, etc.
-
-`AttackFilter` (composable):
-- `.weaponHasProperty([WeaponProperty])` — Sneak Attack: finesse OR ranged.
-- `.weaponCategory([WeaponCategory])`
-- `.weaponDamageType([DamageType])`
-- `.hadAdvantage`, `.didNotHaveDisadvantage`
-- `.allyWithin5ft` — manual checkbox in the prompt; gated by trust ("you say there's an ally").
-- `.allOf([AttackFilter])`, `.anyOf([AttackFilter])`
-
-`TriggerActivation` — *how* the player engages with it:
-- `.automatic` — always applies when the trigger matches. Hex's damage rider, Rage's bonus.
-- `.optIn` — surfaces an opt-in chip after the trigger fires (same UI as the Phase J
-  "Roll damage?" chip). Divine Smite, Sneak Attack.
-- `.toggleBeforeRoll` — a chip on the action button. GWM's `-5 to hit / +10 damage`.
-
-`TriggerCost`:
-- `.spellSlot(minLevel: Int, maxLevel: Int)` — Divine Smite (1–5).
-- `.resource(id: String, amount: Int)` — superiority die.
-- `.oncePerTurn(flagID: String)` — Sneak Attack.
-- `.none` — Hex (cost was paid when the spell was originally cast).
-
-`TriggerEffect` — *what* it does to the in-flight roll:
-- `.addDamageDice(formula: LevelScaledValue, damageType: TypedOrMatch)` — Hex `1d6 necrotic`; Sneak Attack scales by class level, type matches the weapon.
-- `.addFlat(Int)` — Rage damage bonus.
-- `.advantage(target: TriggerTarget)` / `.disadvantage(target:)` — Reckless Attack.
-- `.rerollOne` — Halfling Lucky / Lucky feat.
-- `.attackPenalty(Int)` — GWM `-5` paired with `+10` damage.
-
-`TypedOrMatch`:
-- `.fixed(DamageType)` — Hex deals necrotic.
-- `.matchWeapon` — Sneak Attack matches the weapon's damage type.
-- `.matchSpell` — Divine Smite's `+1d8 vs undead` rider matches radiant.
-
-`TriggerLifecycle`:
-- `.oneShot` — Divine Smite, Sneak Attack (cleared after a single application).
-- `.persistent(until: PersistenceEnd)` — Hex until concentration drops, Rage until 10 rounds or unconscious.
-
-`PersistenceEnd`:
-- `.concentrationEnds` (Phase L tracks concentration)
-- `.endOfTurn` / `.rounds(Int)`
-- `.shortRest` / `.longRest`
-- `.manual` — player ends it explicitly
-
-**O.2 Where TriggeredEffects come from**
-
-- **Features** declare them inline: Rogue L1 ships a Sneak Attack
-  `TriggeredEffect` whose effect formula scales by class level via the existing
-  `LevelScaledValue` type. Paladin L1 ships Divine Smite.
-- **Spells** can grant a persistent `TriggeredEffect` when cast: Hex declares a
-  `grantsTriggeredEffect: TriggeredEffect` field; casting the spell activates
-  the effect on the character, casting another concentration spell drops it.
-- **Items** can do the same (e.g., a ring of accuracy gives a one-shot reroll
-  per long rest as a `.optIn` effect with a resource cost).
-
-**O.3 Character state**
-
-```json
-"activeEffects": [
-  { "effectID": "hex", "source": { "kind": "spell", "spellID": "hex" } },
-  { "effectID": "rage", "source": { "kind": "feature", "featureID": "barbarian_rage" }, "metadata": { "roundsRemaining": 8 } }
-],
-"turnFlags": ["sneak_attack_used"]
-```
-
-- `activeEffects` is the persistent rider list, populated by spell casts and
-  feature toggles.
-- `turnFlags` tracks once-per-turn opt-ins. Cleared by a "Start new turn"
-  button on the sheet (MVP; replaced by initiative-aware reset when the combat
-  tracker lands).
-
-**O.4 UI surfaces**
-
-- **Effect badges** in the sheet header (below HP, above abilities): one pill
-  per active persistent effect. Tap to dismiss (drops the effect; for spell
-  sources also drops concentration). Long-press for description.
-- **Opt-in chips in the dice tab.** Reuses the Phase J follow-up chip
-  pattern. After an attack roll lands, the resolver inspects matching
-  `TriggeredEffect`s with `.optIn` activation and renders one chip per option
-  ("Sneak Attack +2d6 piercing?", "Divine Smite (L1) +2d8 radiant?").
-- **Pre-roll toggles on action buttons.** A GWM-eligible weapon attack gets a
-  small inline "Heavy" chip the player can toggle before tapping the attack
-  button.
-
-**O.5 Resolver wiring**
-
-`ActionInterpreter` already produces a `ResolvedAction`. Add a sibling pass:
-
-```swift
-struct ResolvedActionWithRiders {
-    let primary: ResolvedAction
-    let autoRiders: [ResolvedAction]      // appended automatically
-    let optInRiders: [OptInRider]         // surfaced as chips after primary
-}
-```
-
-- `autoRiders` get folded into the primary's `DiceFormula` *with their
-  damageType set* (Phase N's payoff) so the result HUD shows the breakdown
-  naturally.
-- `optInRiders` are parked on `PendingRollStore.followUp` (or its successor —
-  this phase generalizes it to `followUps: [ResolvedAction]`) so the dice tab
-  can render multiple chips after the primary lands.
-
-**O.6 Concentration handoff**
-
-When the player casts Hex:
-1. The spell-cast flow consumes the slot.
-2. The spell's `grantsTriggeredEffect` is appended to `activeEffects`.
-3. `Character.concentratingSpellID = "hex"` (Phase L).
-
-When the player casts a second concentration spell, Phase L's concentration
-break drops the existing concentration spell, which in turn removes its
-`TriggeredEffect`. When concentration breaks from damage, same path.
-
-**O.7 Once-per-turn tracking**
-
-`TriggerCost.oncePerTurn(flagID:)` checks `character.turnFlags`. After
-applying the effect, the flag is added to the set. A "Start new turn" button
-clears all turn flags. (Long rest also clears them defensively.)
-
-This is an honor-system MVP — the app doesn't know whose turn it is. Replaced
-when an initiative/combat tracker lands.
-
-**O.8 Initial content**
-
-- **Rogue Sneak Attack** — `TriggeredEffect` on Rogue L1 feature. Filter:
-  weapon with finesse or ranged; had advantage OR (no disadvantage AND ally
-  within 5 ft). Effect: `Nd6` matching weapon damage type, where N scales by
-  class level. Activation: `.optIn`. Cost: `.oncePerTurn("sneak_attack")`.
-- **Paladin Divine Smite** — `TriggeredEffect` on Paladin L1 feature. Filter:
-  melee weapon hit. Effect: `2d8 radiant` + `1d8` per slot level above 1
-  (max 5d8) + `1d8` vs undead/fiend (max 6d8). Activation: `.optIn`. Cost:
-  `.spellSlot(minLevel: 1, maxLevel: 5)`.
-- **Hex** — spell that grants a `TriggeredEffect` on the caster. Filter:
-  weapon damage roll from caster. Effect: `1d6 necrotic`. Activation:
-  `.automatic`. Cost: none. Lifecycle: `.persistent(until: .concentrationEnds)`.
-- **Hunter's Mark** — same shape as Hex, but damage type is the weapon's own
-  (no extra type — just an extra d6 of the weapon's damage type).
-- **Battle Master Riposte / Disarm / etc.** — features with `.optIn`
-  activation and `.resource("battle_master_superiority")` cost.
-- **Great Weapon Master** — feat with `.toggleBeforeRoll` activation. Effect
-  combines `.attackPenalty(-5)` with a paired `.addFlat(10)` on damage.
-- **Rage** — feature toggle. `.automatic` rider for melee STR damage; expires
-  on a `.persistent(until: .rounds(10))` timer with a "maintain rage" prompt.
-
-**O.9 Tests**
-
-- Hex damage rider is auto-applied to a weapon damage roll, tagged necrotic,
-  surfaced in the HUD breakdown.
-- Sneak Attack opt-in chip appears only when the filter matches; the
-  `once_per_turn` flag suppresses it until "Start new turn" is tapped.
-- Divine Smite consumes the picked slot level and applies the right number of
-  dice (including the +1d8 vs undead/fiend variant).
-- Casting Hex then Hunter's Mark drops Hex (concentration handoff).
-- Persistent effect survives a short rest, drops on long rest or when
-  manually dismissed.
-- Backwards-compat: a character without `activeEffects` / `turnFlags` decodes
-  cleanly (defaults to empty).
-
-**Deliverable:** A Rogue/Paladin/Warlock multiclass actually plays right. Hex
-adds 1d6 necrotic to every attack roll's damage breakdown. Sneak Attack pops
-up after a qualifying hit (max once per turn). Divine Smite asks for a slot
-level after a melee hit. Each of these reuses the same `TriggeredEffect`
-schema — adding a new feature is a JSON edit, not a code edit.
-
----
-
-#### Shipped reality (Slices A + B + C, 2026-05-17)
-
-The sketch above was the design target. What actually shipped diverges in
-naming and scope in a few places — capture that here so the next session can
-pick up cold without re-deriving everything from the code.
-
-**Actual schema in `Features/CharacterSheet/Content/TriggeredEffect.swift`:**
+Actual schema in `Features/CharacterSheet/Content/TriggeredEffect.swift`:
 
 ```swift
 struct TriggeredEffect: Codable, Equatable {
@@ -1581,126 +278,53 @@ enum TriggerCost: Equatable {
 }
 
 enum TriggerEffect: Equatable {
-    case addDamageDice(dice: String, damageType: TypedOrMatch)                          // Hex 1d6 necrotic; Hunter's Mark 1d6 $weapon
-    case addScaledDamageDice(count: LevelScaledValue, die: String, damageType: TypedOrMatch)  // Sneak Attack Nd6
-    case addFlatDamage(amount: LevelScaledValue, damageType: TypedOrMatch?)             // Rage +2/+3/+4 (untyped → bare modifier; typed → typedModifiers bucket)
+    case addDamageDice(dice: String, damageType: TypedOrMatch)
+    case addScaledDamageDice(count: LevelScaledValue, die: String, damageType: TypedOrMatch)
+    case addFlatDamage(amount: LevelScaledValue, damageType: TypedOrMatch?)
 }
 
 enum TypedOrMatch: Equatable { case fixed(DamageType); case matchWeapon }  // JSON: "necrotic" or "$weapon"
 
 enum TriggerLifecycle: Equatable {
     case persistent(until: PersistenceEnd)
-    case oneShot                       // per-attack (Sneak Attack chips)
+    case oneShot
 }
 
 enum PersistenceEnd: Equatable {
-    case concentrationEnds             // Hex / Hunter's Mark
-    case rounds(_ count: Int)          // Rage 10
-    case manual                        // until the player dismisses from EffectsRow
+    case concentrationEnds
+    case rounds(_ count: Int)
+    case manual
 }
 ```
 
-**Character state additions** (all backwards-compat — `decodeIfPresent` for
-each new field, encode-when-non-default for each new field):
+**Character state additions** (all backwards-compat — `decodeIfPresent` / encode-when-non-default):
+- `Character.activeEffects: [ActiveEffect]`, `Character.turnFlags: Set<String>` + `setTurnFlag`/`hasTurnFlag`.
+- `startNewTurn()` clears turn flags AND decrements `roundsRemaining`, dropping expired effects.
+- `toggleFeatureEffect(effectID:featureID:roundsRemaining:)` (idempotent), `startConcentrating(on:grantsEffect:)` / `stopConcentrating()` / `dismissActiveEffect(_:)` (drops spell-sourced effects).
+- `ActiveEffect { effectID, source: EffectSource, roundsRemaining: Int?, metadata: [String:Int] }`; `EffectSource` = `.spell`/`.feature`/`.item` (item stubbed).
 
-- `Character.activeEffects: [ActiveEffect]` — persistent rider list.
-- `Character.turnFlags: Set<String>` + `setTurnFlag(_:)` / `hasTurnFlag(_:)`.
-- `Character.startNewTurn()` clears all turn flags AND decrements
-  `roundsRemaining` on every active effect, dropping any whose counter hits 0.
-- `Character.toggleFeatureEffect(effectID:featureID:roundsRemaining:)` —
-  idempotent add/remove for `.toggle` effects.
-- `Character.startConcentrating(on:grantsEffect:)` /
-  `stopConcentrating()` / `dismissActiveEffect(_:)` — Phase L concentration
-  wiring, drops spell-sourced effects automatically.
-- `ActiveEffect { effectID, source: EffectSource, roundsRemaining: Int?, metadata: [String:Int] }`.
-  `EffectSource` is `.spell(spellID:)` / `.feature(featureID:)` /
-  `.item(itemID:)` (item branch is stubbed for later).
+**Resolver — `TriggeredEffectResolver` (MainActor):** `applyAutomaticDamageRiders(...)` folds `.automatic`+`.toggle` riders into in-flight damage; `optInRiders(...)` produces one merged-formula `PendingFollowUp` per qualifying `.optIn` rider (mutually exclusive with the default "Roll damage" chip); `turnFlagDisplayName(...)`; private `effectContext(...)` returns effect + owning class level so `byClassLevel` resolves per-class for multiclass.
 
-**Resolver — `TriggeredEffectResolver` (MainActor):**
+**UI shipped:** `EffectsRow` (orange available-toggles stripe + purple active pills with `Nr` round badge, menu Description/Dismiss); deriver toggle row (`ToggleEffectContext`, label flips Rage/End Rage, tappable at 0 uses to end); `handleActionTap` diverts to toggle path; `ActionTile.isInteractive` includes `toggleEffect != nil`; `turnFlagsRow` is a turn tracker with Start New Turn; dice tab `followUpRail` (chip per `PendingFollowUp`, `compactDisplayString`, bolt vs arrow icons).
 
-- `applyAutomaticDamageRiders(to:weapon:character:content:) -> ResolvedAction`
-  — folds every `.automatic` AND `.toggle` rider whose trigger matches into
-  the in-flight damage formula. Used by `CharacterActionDeriver` to enrich
-  weapon damage rows before they ever hit the dice tab.
-- `optInRiders(weapon:baseDamage:character:content:) -> [PendingFollowUp]`
-  — produces one `PendingFollowUp` per qualifying `.optIn` rider; each
-  chip's formula is the **merged** weapon-damage + rider formula so the
-  player rolls a single combined damage roll (mutually exclusive with the
-  default "Roll damage" chip — that was a Slice B UX refinement).
-- `turnFlagDisplayName(_:character:content:)` — resolves `"sneak_attack"` →
-  `"Sneak Attack"` by scanning class features + spell-sourced effects;
-  falls back to title-cased flag id when no match.
-- Private `effectContext(for:character:in:)` returns the effect AND the
-  owning class level so `LevelScaledValue.byClassLevel` resolves correctly
-  for multiclass characters (a future L5 Rogue / L3 Barbarian gets Rage at
-  Barbarian-3 = +2, not Rogue-5).
+**Content authored:** `spells.json` Hex + Hunter's Mark; `classes.json` Rogue L1 Sneak Attack + Barbarian L1 Rage (+ descriptive Unarmored Defense).
 
-**UI surfaces shipped:**
+**Tests:** `TriggeredEffectTests`, `SneakAttackOptInTests` (14), `RageToggleTests` (13), `DamageTypingTests`.
 
-- `EffectsRow` (sheet header, below conditions). Two stripes: orange
-  "available toggles" (pill with uses-left badge; tap activates and spends
-  one resource; disabled at 0 uses) and purple "active" pills with an `Nr`
-  rounds-remaining mini-badge. Pills carry a menu with description + Dismiss.
-- `CharacterActionDeriver.featureRows` emits a bespoke **toggle row** for any
-  feature with a `.toggle` triggered effect. The row carries a
-  `ToggleEffectContext` divert (mirror of `castFromItem`). Label flips
-  between `Rage` / `End Rage` based on active state. Stays tappable when
-  active even with 0 uses left (so you can end Rage early).
-- `CharacterSheetView.handleActionTap` diverts to the toggle path before the
-  default resource-cost block, so activating spends a use, deactivating is
-  free (Rage doesn't refund).
-- `ActionTile.isInteractive` includes `toggleEffect != nil` (Slice C bug
-  fix — without this, the toggle row rendered as a non-tappable info-chip).
-- `turnFlagsRow` is now a **turn tracker**: shows whenever turn flags AND/OR
-  round-timed effects are present, listing both sorted ("Sneak Attack ·
-  Rage 9r"). Start New Turn button clears flags and decrements rounds in
-  one tap.
-- Dice tab's `followUpRail` renders one chip per `PendingFollowUp`. Tapping
-  any chip clears the whole rail (one damage roll per attack). Chip
-  subtitle uses `DiceFormula.compactDisplayString` so a merged formula reads
-  `1d8 + 1d6 + 3 piercing` instead of `[piercing]1d8 + [piercing]1d6 + 3`.
-  Rider chips use `bolt.fill` icon vs `arrow.right.circle.fill` for chained.
-
-**Content authored:**
-
-- `spells.json` — Hex (necrotic rider, `.concentrationEnds`), Hunter's Mark
-  (`$weapon` matching rider, `.concentrationEnds`).
-- `classes.json` — Rogue L1 with Sneak Attack (`.optIn`, `.onAttackHit`
-  with `[.finesse, .ammunition]` filter, `addScaledDamageDice` scaling
-  1→10 d6 by class level, `.oneShot` lifecycle, `oncePerTurn("sneak_attack")` cost).
-- `classes.json` — Barbarian L1 with Rage (`.toggle`, `.onDamageRoll` with
-  `weaponLacksProperty([.ammunition])` filter, `addFlatDamage` 2/3/4 by
-  class level, `.persistent(.rounds(10))` lifecycle, `barbarian_rage_uses`
-  resource: 2 at L1 scaling up, refreshes on long rest). Also bundled
-  Unarmored Defense as a descriptive (mechanically-inert) feature.
-
-**Tests (in `ROLLodexTests/`):**
-
-- `TriggeredEffectTests.swift` — schema round-trips, bundled Hex /
-  Hunter's Mark loads, concentration helpers, automatic damage rider folds
-  Hex into a longsword damage roll.
-- `SneakAttackOptInTests.swift` — Slice B end-to-end (14 tests).
-- `RageToggleTests.swift` — Slice C (13 tests): schema additions, filter
-  matches, `ActiveEffect` round-trips with/without `roundsRemaining`,
-  bundled Barbarian, toggle activation + deactivation, round decay,
-  resolver folds on melee + skips on ranged + skips when not toggled.
-- `DamageTypingTests.swift` — Phase N (now includes the Slice C polish-pass
-  tests for `DiceFormula.compactDisplayString`).
-
-**Divergences from the original sketch (still potential work):**
+**Divergences from the original sketch — still potential work:**
 
 | Sketch | Shipped | Notes |
 |---|---|---|
-| `TriggerActivation.toggleBeforeRoll` | `.toggle` (sticky on/off) | We did sticky-toggle, not per-attack pre-roll. GWM's `-5/+10` pre-roll trade-off would need a separate `.toggleBeforeRoll` activation that resets each turn. |
-| `TriggerCondition.onAttackRoll(filter:)` | not shipped | Needed for GWM-style penalties to the attack roll itself. |
-| `TriggerCondition.onSpellAttackHit(filter:)` | folded into `.onDamageRoll` for now | Real spell-attack-hit triggers would need a distinct condition. |
-| `TriggerCondition.onTurnStart` | not shipped | Reserved for Rage's "do nothing for a turn → end" semantics; we use the honor-system Start New Turn button instead. |
-| `AttackFilter.weaponCategory` / `.weaponDamageType` / `.hadAdvantage` / `.allyWithin5ft` | not shipped | Sneak Attack's "advantage OR ally within 5 ft" is approximated as the property filter alone — the trust/checkbox prompt isn't surfaced. |
-| `TriggerEffect.advantage` / `.disadvantage` / `.rerollOne` / `.attackPenalty` | not shipped | Reckless Attack, Halfling Lucky, GWM penalty all need these. The resolver currently only folds into damage formulas, not attack-mode or reroll mechanics. |
-| `TriggerCost.spellSlot(minLevel:maxLevel:)` | **shipped 2026-06-09** | Divine Smite live. Lowest-available-slot policy; the resolver concretizes the cost to the chosen level so the chip's dice and the slot paid always agree. Paired with the new `TriggerEffect.addSlotScaledDamageDice`. |
-| `TriggerCost.resource(id:amount:)` | not shipped | Blocks Battle Master maneuvers and any other once-per-something-else costs. |
-| `TypedOrMatch.matchSpell` | not shipped | Only matters for spell-sourced opt-in damage riders (Divine Smite's "+1d8 radiant vs undead/fiend"). |
-| `PersistenceEnd.endOfTurn` / `.shortRest` / `.longRest` | not shipped | All current persistent effects use `.concentrationEnds`, `.rounds(_)`, or `.manual`. |
+| `TriggerActivation.toggleBeforeRoll` | `.toggle` (sticky on/off) | GWM's `-5/+10` pre-roll trade-off needs a separate per-turn-reset `.toggleBeforeRoll`. |
+| `TriggerCondition.onAttackRoll(filter:)` | not shipped | Needed for GWM-style attack-roll penalties. |
+| `TriggerCondition.onSpellAttackHit(filter:)` | folded into `.onDamageRoll` | Real spell-attack-hit triggers need a distinct condition. |
+| `TriggerCondition.onTurnStart` | not shipped | Reserved for Rage's "do nothing → end"; honor-system Start New Turn used instead. |
+| `AttackFilter.weaponCategory` / `.weaponDamageType` / `.hadAdvantage` / `.allyWithin5ft` | not shipped | Sneak Attack's "advantage OR ally within 5 ft" approximated by property filter alone; no trust/checkbox prompt. |
+| `TriggerEffect.advantage` / `.disadvantage` / `.rerollOne` / `.attackPenalty` | not shipped | Reckless Attack, Halfling Lucky, GWM penalty need these. Resolver only folds into damage, not attack-mode/reroll. |
+| `TriggerCost.spellSlot(minLevel:maxLevel:)` | **shipped 2026-06-09** | Divine Smite live. Lowest-available-slot policy; resolver concretizes cost to chosen level. Paired with `TriggerEffect.addSlotScaledDamageDice`. |
+| `TriggerCost.resource(id:amount:)` | not shipped | Blocks Battle Master maneuvers / once-per-something-else costs. |
+| `TypedOrMatch.matchSpell` | not shipped | Only matters for spell-sourced opt-in riders (Divine Smite +1d8 vs undead/fiend). |
+| `PersistenceEnd.endOfTurn` / `.shortRest` / `.longRest` | not shipped | Current effects only use `.concentrationEnds`, `.rounds(_)`, `.manual`. |
 
 ---
 
@@ -1741,7 +365,7 @@ Master, Eldritch Knight, Arcane Trickster, etc.) is PHB-only.
 | Class | SRD subclass | Bundled? |
 |---|---|---|
 | Barbarian | Path of the Berserker | class ✓ / subclass ✗ |
-| Bard | College of Lore | ✗ |
+| Bard | College of Lore | ✓ ✓ |
 | Cleric | Life Domain | ✓ ✓ |
 | Druid | Circle of the Land | ✗ |
 | Fighter | Champion | ✓ ✓ |
@@ -1749,7 +373,7 @@ Master, Eldritch Knight, Arcane Trickster, etc.) is PHB-only.
 | Paladin | Oath of Devotion | class ✓ / subclass ✗ |
 | Ranger | Hunter | ✗ |
 | Rogue | Thief | ✓ ✓ |
-| Sorcerer | Draconic Sorcery | ✗ |
+| Sorcerer | Draconic Sorcery | ✓ ✓ |
 | Warlock | Fiend Patron | ✗ |
 | Wizard | Evoker | class ✓ / subclass ✗ |
 
@@ -1771,98 +395,21 @@ Master, Eldritch Knight, Arcane Trickster, etc.) is PHB-only.
 
 ### Species (9 in the SRD)
 Dragonborn, Dwarf, Elf, Gnome, **Goliath**, Halfling, Human, Orc, Tiefling.
-> Correction: the SRD has **Goliath, not Goblin** (Goblin is not in SRD 5.2.1).
-> **Shipped 2026-06-17: all 9 SRD species bundled + mechanically wired.**
-> Added Dragonborn, Gnome, Goliath, Halfling, Orc, Tiefling with full SRD trait
-> text.
+> The SRD has **Goliath, not Goblin**. **Shipped 2026-06-17: all 9 SRD species bundled + mechanically wired.**
 >
-> **Architecture:** a species trait IS now a `FeatureDefinition`
-> (`typealias TraitDefinition = FeatureDefinition`), so the existing class-
-> feature machinery applies to species for free — pickers, resource pools,
-> action rows. `ResourceCalculator.availableResources` and
-> `CharacterActionDeriver` (both feature rows and granted actions) now walk
-> species traits; `FeaturesView` renders trait pickers / pools through the same
-> card.
+> **Architecture:** a species trait IS a `FeatureDefinition` (`typealias TraitDefinition = FeatureDefinition`), so all class-feature machinery (pickers, resource pools, action rows) applies to species. `ResourceCalculator.availableResources`, `CharacterActionDeriver` (feature rows + granted actions), and `FeaturesView` all walk species traits.
+> **Pickers (`.fixedOptions`, editable from Features tab):** Draconic Ancestry (10 dragons), Elven Lineage (Drow/High/Wood), Gnomish Lineage (Forest/Rock), Giant Ancestry (6 giants), Fiendish Legacy (Abyssal/Chthonic/Infernal).
+> **Formulas / usable traits:** Dragonborn Breath Weapon (`ActionRecipe.scaledDamage`, 1d10→4d10 by level, PB-many uses/LR, typed via chosen ancestry); Orc Adrenaline Rush / Goliath Large Form / Dwarf Stonecunning (Bonus Actions w/ use pools). Elf gained the missing Elven Lineage; Dwarf Stonecunning rewritten to 5.2.1 Bonus-Action Tremorsense.
+> **Lineage/legacy spell grants (shipped 2026-06-17):** `SpellGrant` (spellID + minCharacterLevel) on `SelectionOption` (choice-gated) and `FeatureDefinition` (flat); `CharacterSpellGrants.resolve` derives always-prepared spells live; `SpellListView` shows a level-gated "Granted" section (also for non-casters). Authored the 19 missing SRD lineage spells; content-lint asserts every granted id resolves.
+> **Granted-spell casting (2026-06-17):** `CharacterSpellGrants.innateSpellcastingAbility` (explicit per-species INT/WIS/CHA picker via `<species>_spell_ability` selection, falling back to highest-mental) feeds `SpellCastSheet`; `ResourceCalculator` synthesizes a 1/LR `grant_<spellID>` pool for each leveled granted spell ("Cast free (Innate)"); cantrips stay at-will. Breath Weapon damage type stamped from `SelectionOption.damageType`.
+> **Creation-wizard species pickers (2026-06-17):** `SpeciesChoicesStep` after Species selection for species with fixed-option choices; writes to `CharacterDraft.featureSelections`. Plain species skip it; switching species clears stale picks; picks stay optional/editable on Features tab. Added DEBUG-only "Autofill" on the Ability Scores step.
+> **Giant Ancestry combat (2026-06-17):** `SelectionOption` carries per-option `grantedActions` + `triggeredEffect` (picked option only): Cloud's Jaunt (Bonus), Stone's Endurance (Reaction, new `ActionRecipe.abilityRoll` → 1d12+CON), Storm's Thunder (Reaction, 1d8 thunder) as granted-action rows; Fire's Burn (+1d10 fire) / Frost's Chill (+1d6 cold) as opt-in on-hit riders; Hill's Tumble descriptive.
 >
-> **Pickers (editable from the Features tab, `.fixedOptions` selections):**
-> Draconic Ancestry (10 dragons), Elven Lineage (Drow/High Elf/Wood Elf),
-> Gnomish Lineage (Forest/Rock), Giant Ancestry (6 giants), Fiendish Legacy
-> (Abyssal/Chthonic/Infernal).
->
-> **Formulas / usable traits:**
-> - **Dragonborn Breath Weapon** — new `ActionRecipe.scaledDamage` (die size +
->   level→count table) rolls 1d10→4d10 by character level; PB-many uses/Long
->   Rest pool; DC wording in the description.
-> - **Orc Adrenaline Rush / Goliath Large Form / Dwarf Stonecunning** — usable
->   Bonus Actions with their own use pools (PB or 1/Long Rest).
->
-> **Gap fixes (the original 3):** Elf gained the missing **Elven Lineage**
-> trait; **Dwarf Stonecunning** rewritten to the 5.2.1 Bonus-Action Tremorsense.
->
-> **Lineage/legacy spell grants — shipped 2026-06-17.** New `SpellGrant`
-> (spellID + minCharacterLevel) on `SelectionOption` (choice-gated) and
-> `FeatureDefinition` (flat). `CharacterSpellGrants.resolve` derives a
-> character's always-prepared spells live from the picked lineage/legacy +
-> flat trait grants; `SpellListView` shows a "Granted" section (sourced,
-> level-gated) and now appears even for non-casters. Authored the 19 missing
-> SRD spells the lineages reference (cantrips + L1/L2). A content-lint test
-> asserts every granted spell ID resolves.
->
-> **Granted-spell casting completed 2026-06-17:**
-> - **Innate casting ability** — `CharacterSpellGrants.innateSpellcastingAbility`
->   (highest of INT/WIS/CHA) feeds `SpellCastSheet` as a fallback when there's
->   no class caster, so a Tiefling Fighter's Fire Bolt resolves its attack roll.
->   (The SRD's *explicit* INT/WIS/CHA pick still has no UI — auto-highest stands
->   in; an explicit picker is the remaining nicety.)
-> - **Free once-per-Long-Rest cast** — `ResourceCalculator` synthesizes a
->   1/Long-Rest `grant_<spellID>` pool for each *leveled* granted spell;
->   `SpellCastSheet` shows a "Cast free (Innate)" path that spends it instead of
->   a slot. Cantrips stay at-will (no pool).
->
-> **Quick wins shipped 2026-06-17:**
-> - **Breath Weapon damage type** — `SelectionOption.damageType` carries each
->   Draconic Ancestry's type; `CharacterActionDeriver` stamps the untyped
->   `scaledDamage` recipe with the chosen ancestry's type, so the roll reads
->   fire/cold/acid/etc. (untyped only when no ancestry is chosen).
-> - **Explicit INT/WIS/CHA innate-spellcasting picker** — a per-species
->   "Innate Spellcasting" trait (`<species>_spell_ability` selection, marker
->   `spell_ability`); `CharacterSpellGrants.innateSpellcastingAbility` honors
->   the pick, falling back to highest-mental when unset.
->
-> **Creation-wizard species pickers shipped 2026-06-17.** A `speciesChoices`
-> step (`SpeciesChoicesStep`) appears after Species selection for any species
-> with fixed-option choices (Dragonborn ancestry, Elf/Gnome lineage, Tiefling
-> legacy, innate ability) and writes to `CharacterDraft.featureSelections`,
-> which `finalizeDraft` carries onto the new character. Plain species skip the
-> step. Switching species clears stale picks. Picks stay optional (also
-> editable on the Features tab). Also added a DEBUG-only "Autofill" button on
-> the Ability Scores step (`CharacterDraft.debugAutofill`) to skip manual score
-> entry while testing.
->
-> **Giant Ancestry combat mechanics shipped 2026-06-17.** `SelectionOption`
-> now carries per-option `grantedActions` and a `triggeredEffect`, surfaced only
-> for the picked option:
-> - **Cloud's Jaunt** (Bonus), **Stone's Endurance** (Reaction, new
->   `ActionRecipe.abilityRoll` → 1d12 + CON), **Storm's Thunder** (Reaction,
->   1d8 thunder) → granted-action rows via `CharacterActionDeriver.grantedActions`.
-> - **Fire's Burn** (+1d10 fire) / **Frost's Chill** (+1d6 cold) → opt-in on-hit
->   rider chips via `TriggeredEffectResolver.optInRiders` (now walks species
->   option `triggeredEffect`s too).
-> - **Hill's Tumble** stays descriptive (no roll).
->
-> **All four deferred species items are now done.** Remaining nicety: the
-> giant benefit's "PB uses per Long Rest" limit isn't metered yet (the actions/
-> riders are always available; the player tracks uses) — a shared per-pick use
-> pool would close that, but it spans the granted-action and rider paths, so
-> it's left as a follow-up.
+> **Remaining nicety:** the giant benefits' "PB uses per Long Rest" limit isn't metered (actions/riders always available; player tracks uses) — a shared per-pick use pool spanning the granted-action + rider paths is a follow-up.
 
 ### Backgrounds (only 4 in the SRD)
-Acolyte, Criminal, Sage, Soldier.
-> Correction: the SRD has **only these 4** backgrounds — the earlier
-> "16 backgrounds" list (Artisan, Charlatan, Entertainer, Noble, …) was the
-> PHB roster, NOT the SRD. Bundled: Acolyte, Sage, Soldier. Remaining SRD:
-> **Criminal** (that's the whole gap).
-> The bundled background feats (Savage Attacker, Magic Initiate) are SRD feats ✓.
+Acolyte, Criminal, Sage, Soldier — all 4 bundled (Criminal added 2026-06-13; backgrounds SRD-complete).
+> The earlier "16 backgrounds" list was the PHB roster, NOT the SRD. The bundled background feats (Savage Attacker, Magic Initiate) are SRD feats. (QA note: background feats/equipment not yet applied at creation — QA P3.)
 
 ### Weapon Mastery (8 properties)
 Cleave, Graze, Nick, Push, Sap, Slow, Topple, Vex.
@@ -1871,8 +418,7 @@ Cleave, Graze, Nick, Push, Sap, Slow, Topple, Vex.
 Acrobatics(DEX), Animal Handling(WIS), Arcana(INT), Athletics(STR), Deception(CHA), History(INT), Insight(WIS), Intimidation(CHA), Investigation(INT), Medicine(WIS), Nature(INT), Perception(WIS), Performance(CHA), Persuasion(CHA), Religion(INT), Sleight of Hand(DEX), Stealth(DEX), Survival(WIS).
 
 ### Attribution (MANDATORY — CC-BY-4.0)
-Using SRD content **requires** displaying this exact statement in-app (it's the
-license condition, not optional). Suggested home: Settings → About / Credits.
+Using SRD content **requires** displaying this exact statement in-app (it's the license condition). Home: Settings → About / Credits.
 
 > This work includes material from the System Reference Document 5.2.1
 > ("SRD 5.2.1") by Wizards of the Coast LLC, available at
@@ -1880,19 +426,10 @@ license condition, not optional). Suggested home: Settings → About / Credits.
 > Commons Attribution 4.0 International License, available at
 > https://creativecommons.org/licenses/by/4.0/legalcode.
 
-Per the license: do **not** add any other WotC attribution beyond the above,
-and don't imply endorsement. "Compatible with fifth edition" / "5E compatible"
-is permitted. (Shipped 2026-06-13 in Settings → Legal & Attribution; item 16.)
+Per the license: do **not** add any other WotC attribution beyond the above, and don't imply endorsement. "Compatible with fifth edition" / "5E compatible" is permitted. (Shipped 2026-06-13 in Settings → Legal & Attribution; item 16.)
 
-### Audit verdict (2026-06-13)
-The entire current bundle is SRD-clean at the inventory level: 6 classes
-(all SRD), 3 subclasses (Champion / Thief / Life Domain — exactly the SRD
-ones), 9 species (all SRD — completed 2026-06-17), 4 backgrounds (Acolyte/Criminal/Sage/Soldier of
-the 4 SRD), 14 spells (all SRD incl. Hex, Hunter's Mark, Shield), all
-weapons/armor/conditions/gear, and the 2 referenced feats. The attribution
-notice shipped 2026-06-13 (Settings → Legal & Attribution; item 16), so the
-bundle is fully compliant. Description-text wording should track SRD phrasing
-(which is CC-licensed) as content is authored — never PHB-exclusive wording.
+### Audit verdict (2026-06-13, updated 2026-06-27)
+Bundle is SRD-clean at the inventory level: 8 classes (all SRD), 5 subclasses (Champion/Thief/Life Domain/College of Lore/Draconic Sorcery — exactly the SRD ones), 9 species (all SRD), 4 backgrounds (all 4 SRD), 43 spells (all SRD), all weapons/armor/conditions/gear, the 2 referenced feats. Attribution notice shipped. Description-text wording should track SRD phrasing (CC-licensed) — never PHB-exclusive wording.
 
 ---
 
@@ -2068,629 +605,123 @@ proficiency, raw-damage type, weapon-damage parsing) are small and localized to
 
 ---
 
-## Status (as of 2026-06-09)
+## Status (as of 2026-06-27)
+
+All phases A–O shipped. Key per-phase notes:
 
 | Phase | Status |
 |---|---|
-| A — Domain models & content schema | shipped |
-| B — Content loader | shipped |
-| C — CharacterStore & file I/O | shipped (atomic write fixed via `Data.write(.atomic)`) |
-| D — Characters tab & creation flow | shipped |
-| E — Read-only character sheet | shipped |
-| F — Action engine, buttons, dice handoff | shipped |
-| G — Editing characters | shipped (death saves shipped 2026-06-09 — see roadmap item 4) |
-| H — Custom content import / export | **shipped 2026-06-13** — `ContentPack` JSON envelope (optional typed array per category), `ContentValidator` (the lint's id-hygiene + dice-parse invariants as production code), `ContentStore` imported layer in `Documents/Content/` (bundled base, imported shadows by id, `reload()` after import/remove), `importPack`/`removeImportedPack`/`importedPacks`. Character export via `ExportedCharacter` Transferable (`ShareLink` in the sheet's ⋯ menu); character import + content-pack import in a new **Settings tab** (`fileImporter`, fresh-id on character import so it never clobbers). `.zip` archives deferred (would need a zip dependency — single-JSON envelope ships instead). |
-| I — Resources & rest cycle | shipped |
-| J — Spells | shipped (incl. `spellAttack` recipe + attack→damage follow-up chip) |
-| K — Items with charges & spell access | shipped (Wand of Magic Missiles end-to-end) |
-| Post-J UX polish | shipped — see "Out-of-Scope Additions" below |
-| L — Conditions, concentration, action economy | shipped (14 SRD conditions + concentration tracking + damage-triggered Con save + action-cost chips) |
-| M — Choices & multi-step prompts | **shipped (architecture complete)** — Slices A + B + C all landed. Substrate: `FeatureSelection` + 4 `SelectionSource` cases (weapons / fixedOptions / subclasses / abilityScoreIncrease), `SubclassDefinition` schema, `ClassDefinition.resolvedFeatures` aggregator threaded through every feature-walking site, `LevelUpSheet` with HP roll/average, and ASI mutators with score-cap + per-ability-cap enforcement. **Incremental content still to author** (not blocking): more subclasses (Battle Master / Eldritch Knight / wizard arcane traditions / cleric domains), sorcerer metamagic via existing `.fixedOptions`, ASI prompts on every class at L4/L8/L12/L16/L19, and a feat catalog + Origin/General feat picker. **Deferred architecture**: the heavier `ChoicePromptDefinition` / `ChoiceOutcome` recursive model the plan describes — pushed until a real use case needs nested choices (Feat → "+1 ability" sub-prompt, etc.). |
-| N — Damage typing in the dice tray | **shipped** — `DiceGroup` gained `damageType: DamageType?` (Codable optional, backwards-compat for legacy JSON), `DiceFormula.applyDamageType(_:)` + `displayStringWithTypes`, `RollResult.subtotalsByType` bucketing kept dice + flat modifier (modifier attaches to a sole damage type when groups share one; falls under `nil` for mixed/untyped). `ActionInterpreter.resolveWeaponDamage` stamps `weapon.damageType` onto produced groups; `resolveRawDamage` stamps the recipe's `damageType`. Spell upcast preserves the type implicitly because `SpellDefinition.scaledRecipe` keeps the recipe's `damageType` field. New `DamageBreakdownView` renders "5 slashing + 4 radiant" lines under the tray total and in history rows. Formula bar stays untyped for parser round-trip. **Known wart**: opening the formula bar editor on a typed roll and tapping Done re-parses the untyped text, losing the type — acceptable since typed rolls come from recipe dispatch, not bar edits. |
-| O — Triggered effects & active statuses | **Slices A + B + C all shipped.** *Slice A:* Hex + Hunter's Mark end-to-end via automatic damage riders folded into weapon damage formulas. *Slice B:* Rogue class + Sneak Attack as the canonical `.optIn` chip. *Slice C:* Barbarian L1 + Rage as the canonical `.toggle` rider with 10-round timer + per-LR resource. See the **Shipped reality** callout at the end of the Phase O section for the actual schema, divergences from the original sketch, and what's still open in this phase (Divine Smite / spell-slot cost, Battle Master / superiority dice, GWM 2024-shape on-hit, attack-roll triggers, etc.). |
-| Post-O — Rogue & Barbarian full progression | **shipped 2026-05-17** (`65213dd`). Rogue L1–20: Expertise (selection UI + skill picks), Sneak Attack scaling, Cunning Action, Uncanny Dodge, Evasion, Reliable Talent (d20 floor via new `DiceGroup.minimumValue` + `1d20min10` parser support), Slippery Mind (save-proficiency grants via `grantsProficiencies`), Stroke of Luck (reactive post-roll d20→20 prompt in the dice tab, consumes the L20 resource). Thief subclass (L3/9/13/17 features, incl. Use Magic Device's 4 attunement slots). Barbarian progression entries through L20. Tool proficiencies + auto-granted feature proficiencies; level-up applies pending proficiency picks. ~40 new tests. |
-| HP retroactive recalc + character-deletion UI | **HP half re-landed 2026-06-09** (v2 of the reverted `131da6d`). Why the original was reverted, found by inspection: (a) the init fallback derived `rolledHP = maxHP − conMod` **without the level multiplier**, inflating HP for any level > 1 character on the next recalc — the commit's own `HPRecalculationTests` couldn't pass; (b) it changed `averageLevelUpHPGain`'s signature without updating `LevelUpTests`, so the test target didn't compile; (c) the HP editor's manual max-HP stepper wrote `maxHP` directly, which the next recalc would have stomped. v2 fixes all three: level-aware derivation + decode migration, `averageLevelUpHPGain(hitDie:conMod:)` kept as the display helper, and `setMaxHP(_:)` writes manual edits through `rolledHP`. Bonus fix: creation finalization now seeds HP from the real class hit die + post-background-ASI CON (previously every class started on a d10 and a background CON bump never reached HP). The **deletion-UI half** of the old commit is still pending — roadmap item 8. |
+| A–G (models, content loader, store, creation, sheet, action engine, editing) | shipped (death saves shipped 2026-06-09) |
+| H — import / export | shipped 2026-06-13 (`ContentPack` envelope, `ContentValidator`, imported layer shadows bundled by id, `ExportedCharacter` Transferable, Settings tab; `.zip` deferred) |
+| I — resources & rest cycle | shipped |
+| J — spells | shipped (incl. `spellAttack` + attack→damage follow-up chip) |
+| K — items with charges & spell access | shipped (Wand of Magic Missiles end-to-end) |
+| L — conditions, concentration, action economy | shipped (14 SRD conditions tracked, **not yet enforced** — QA P1; concentration + damage Con save + action-cost chips) |
+| M — choices & multi-step prompts | shipped (architecture complete, Slices A+B+C). Open: more subclasses, sorcerer metamagic, per-class ASI prompts, feat catalog; deferred `ChoicePromptDefinition` recursive model |
+| N — damage typing in the dice tray | shipped. Known wart: formula-bar editor re-parses typed rolls as untyped (accepted) |
+| O — triggered effects & active statuses | shipped (Slices A+B+C). See "Phase O Shipped reality" for open items (Divine Smite shipped 2026-06-09; Battle Master/superiority dice, GWM, attack-roll triggers still open) |
 
-## Open Decisions (to resolve during implementation)
+**Shipped changelog (reverse-chronological highlights; reusable infra in `code`):**
+- **2026-06-27 — Sorcerer (8th class) + Draconic Sorcery (5th subclass), full L1–20.** Sorcery Points = level-scaled counter on Font of Magic (`surfacesAsAction:false`); Metamagic = `.fixedOptions` count 2→4→6; Dragon Wings = Bonus-Action pool. Mechanics pass added reusable infra (each fixed an existing descriptive feature):
+  - `FeatureDefinition.unarmoredDefenseAbility` + `CharacterCalculator.unarmoredDefenseAbility` (no-armor AC = 10 + DEX + ability; also fixed Barbarian CON).
+  - `FeatureDefinition.hitPointBonus` (flat/perLevel) folded into `rolledHP` at creation + level-up (diffed) via `CharacterCalculator.featureHitPointBonus`; also fixed Dwarven Toughness.
+  - `CharacterSpellGrants.resolve` now walks class/subclass features (Draconic Spells always-prepared L3/5/7/9; 10 Draconic spells authored).
+  - `TriggerCondition.whileActive` + `TriggerEffect.spellcastingBuff` (Innate Sorcery): toggle → `activeEffects` → `CharacterCalculator.spellcastingBuff`; `SpellCastSheet` shows Spell Save DC +1 and rolls spell attacks with Advantage while active.
+  - *Still manual:* SP spending (Metamagic, slot conversion/creation), Sorcerous Restoration short-rest recovery; Summon Dragon stat block text; buff scope = all character spells (single-class assumption). *Edge:* swapping subclass via Features tab (not at level-up) doesn't retro-adjust HP — re-level/rebuild to resync.
+- **Bard + College of Lore (4th subclass).** Introduced `ResourceDefinition.maxAbilityModifier` (pool size = ability modifier, min 1; for 2024 "uses = your X modifier" pools). **Jack of All Trades wired (2026-06-18):** half PB (round down) on non-proficient checks via `CharacterCalculator.skillModifier(..., jackOfAllTrades:)` + `hasJackOfAllTrades`; ½ chip on skills table, flows into checks + passive Perception. *Known simplifications:* Font of Inspiration short-rest recovery + Magical Secrets/Discoveries cross-list spells are descriptive.
+- **2026-06-17 — Species 9/9 complete + mechanically wired** (see SRD Content Reference → Species).
+- **2026-06-13 — Backgrounds 4/4 complete** (Criminal added). Player-chosen background ability bonuses (2024 distribute rule): `BackgroundDefinition.abilityScoreOptions`, `CharacterDraft.backgroundAbilityBonuses` + `isValidBackgroundBonus`, creation focused/balanced picker, `finalizeDraft` clamps to 20. **Class skill-proficiency choice:** new `SelectionSource.skillsFrom([Skill])`, per-class L1 "Skill Proficiencies" feature (`<class>_class_skills`; Rogue 4/10, others 2), resolved content-free by `CharacterCalculator.skillProficiencyLevel` via a `class_skills` marker; editable on Features tab + at creation. Tool-name display fix (`ToolNames`).
+- **2026-06-13 — engine de-hardcoding (9a–9d):** `FeatureDefinition.skillCheckMinimum` + `CharacterCalculator.skillCheckFloor` (Reliable Talent); `FeatureDefinition.surfacesAsAction` (Stroke of Luck skip); `FeatureIDs` namespace (fighting style / mastery / expertise strings); `CharacterStore.lastSaveError` + sheet banner.
+- **2026-06-13 — Actions tab unified** into one economy-grouped list (`ActionEconomyView`, was `GrantedActionsView`): interactive feature/item rows + granted options grouped by Action/Bonus/Reaction/Free/Movement. Weapon attacks keep bespoke `AttacksView`. `ActionButtonGrid.swift` now dead code (deletion candidate, kept per no-delete rule). New `GrantedAction {name, description?, cost, recipe?}` + `FeatureDefinition.grantedActions`; Cunning Action now declares Dash/Disengage (info) + Hide (rolls Stealth).
+- **2026-06-13 — SRD attribution notice** in Settings → Legal & Attribution.
+- **2026-06-13 — Phase H (import/export)** shipped (see Status row).
+- **2026-06-13 — DiceRoller core unit tests** (`DiceRollerTests.swift`).
+- **2026-06-10 — Cleric (6th class) + Life Domain.** First `preparedFromAll` caster. Channel Divinity short-rest resource; Divine Spark = heal + radiant recipes. Engine: `ActionRecipe.heal`/`.rawDamage` gained `addSpellcastingMod`; deriver passes owning class's casting stat. `ClericTests` (11).
+- **2026-06-09 — Paladin (item 1+11b) + Divine Smite.** `TriggerCost.spellSlot(minLevel:maxLevel:)` + `TriggerEffect.addSlotScaledDamageDice`; `ResourceCalculator.lowestAvailableSlotLevel`/`consumeSpellSlot`; lowest-slot policy. *Deferred:* `TypedOrMatch.matchSpell` (+1d8 vs undead/fiend), pick-your-slot upcast UI, Aura of Protection / Radiant Strikes auto-riders. `DivineSmiteTests` (11).
+- **2026-06-09 — HP retroactive recalc re-landed (v2 of reverted `131da6d`).** `Character.rolledHP` (die-only); `recalculateHP()` derives `maxHP = max(level, rolledHP + level × CON mod)`, shifts `currentHP` by delta; decode migration back-derives `rolledHP`; ASI mutators recalc on CON change; `setMaxHP(_:)` writes through `rolledHP`; creation seeds from real class hit die + post-ASI CON. *Accepted edge:* severe CON penalties enforce ≥1-HP/level as a total floor, not per-level. `HPRecalculationTests` + updated `LevelUpTests`. **Deletion UI** also shipped (context-menu + staged-confirmation swipe + toolbar overflow delete).
+- **2026-06-09 — Death saves (Phase G).** `DeathSaveState` on `Character.deathSaves`; auto-reset on heal to positive; `applyDamage` at 0 HP records a failure. `DeathSavesRow` (header, 0 HP only), honor-system. `DeathSaveTests` (10).
+- **2026-06-09 — Quick Roll mini tray.** `DiceSceneController` extracted to its own file (14a; `TrayFraming.standard`/`.compact`, tuned compact camera/physics/throw + fixed standard throw). `QuickRollView`/`QuickRollOverlay` (compact-framed 3D card, records to `HistoryStore`, `onResult` once). Adopted at death saves, level-up HP, concentration saves, refresh rolls. Weapon/check/save rolls keep the full-tray handoff. *Later (14d):* per-prompt roll-resolution preference (realizes Phase I.5 `RollPrompt`, absorbs open decision #8). *Still wanted:* Reduce Motion numbers-only fallback.
+- **2026-06-09 — Ability score generation methods** (`AbilityScoreMethod`): Point Buy (default), Standard Array, Rolled (editable house formula via mini tray). `AbilityScoreMethodTests` (12).
+- **2026-06-09 — code health fixes:** `CharacterStore.save` no longer re-reads disk; `load()` manifest-cleanup no longer rewrites on every launch (now atomic); `DiceSceneController` force-unwrap removed; `CharacterCalculator.abilityModifier` corrected to `score/2 - 5` (was truncating, off-by-one for odd scores < 10).
+- **2026-06-09 — content lint (9e)** `ContentLintTests.swift` walks all bundled JSON (id uniqueness, dice parse, upcast bounds, byClassLevel reachability, item-use/spell resolution, subclass wiring). Phase H reuses these as the import validator.
+- **2026-05-17 — Rogue & Barbarian full progression** (`65213dd`). Rogue L1–20 (Expertise, Sneak Attack scaling, Cunning Action, Uncanny Dodge, Evasion, Reliable Talent via `DiceGroup.minimumValue` + `1d20min10` parser, Slippery Mind via `grantsProficiencies`, Stroke of Luck reactive d20→20). Thief subclass (L3/9/13/17, Use Magic Device 4 attunement slots). Barbarian through L20. ~40 tests.
 
-1. **Tab layout:** Does the 3D playground tab stay, or move to a Settings/dev panel? (3D playground tab has been removed; legacy file kept for reference.)
-2. **Character portrait:** Placeholder in v1, or camera/photo picker? (Placeholder shipped; picker deferred.)
-3. **Death saves:** Track in Phase L alongside conditions. (Shipped 2026-06-09 as a header tracker row — see roadmap item 4.)
-4. **Multi-classing:** Out of scope for v1, but character JSON already stores `classEntries: [ClassEntry]` — multi-class UI and proficiency reconciliation land alongside Phase M's level-up flow.
-5. **Resource ID collisions across content packs:** Since resource IDs are flat strings and homebrew packs can override bundled IDs, define a namespacing convention (`<pack>.<resourceID>`) before Phase H ships.
-6. **Per-stack item charges:** Two of the same wand currently share one pool. Revisit if a real case appears in play.
-7. **`dawn` refresh trigger:** Folded into long rest for now (see K.5). Add a separate "advance time" button only if a use case demands it.
-8. **Roll-prompt label matching:** When `RollResolutionMode == .tray`, the prompt waits for a result with a matching label. Need a clear contract for what counts as "matching" — exact string vs. ID-based — before Phase J's spell-cast flow lands.
+**Code-health debt still open** (each maps to "What's left" items):
+- Backgrounds reference feats (`savage_attacker`, `magic_initiate_*`) that exist nowhere as content definitions (`backgrounds.json`; item 11g).
+- `ContentStore` `fatalError`s on bad JSON — right for bundled, fatal for imports (also QA P0; `ContentStore.swift`).
+- `ForEach(… id: \.offset)` on the level-up new-features list — fragile identity (`FeaturesView.swift`; item 13).
+- Spell long-press "forget" still unconfirmed; no spell search/description preview in the add-spell picker (`SpellListView`; item 13).
+
+**Verified-correct during the 2026-06-09 review (false alarms):** Stroke of Luck override loop is bounds-checked; `RefreshResolutionSheet` `rolls` cache resets per presentation; 5e math audit clean (prof bonus, save DC, spell attack, AC, concentration DC, level-up HP avg ≥1 clamp, Archery/Dueling gating, dice keep/drop/reroll/advantage, crit-on-kept-dice, multiclass `LevelScaledValue`).
+
+**Deletion candidates** (zero references; flag only — deletions happen in Xcode by hand): `DiceTrayView.swift` (2D fallback) + `DieTokenView.swift` (only used by it); the `Dice3DPlaygroundView` *view struct* (controller already split out); `ClassDefinition.masteryCount`/`masteryRestrictions` (parsed, unused); `ActionButtonGrid.swift` (superseded by `ActionEconomyView`). **Keep:** `Character`'s legacy `chosenWeaponMasteries` CodingKey (migration path until a save-format bump).
+
+## Open Decisions
+
+1. **Tab layout:** 3D playground tab removed; legacy file kept for reference. (Resolved.)
+2. **Character portrait:** placeholder shipped; camera/photo picker deferred.
+3. **Death saves:** shipped 2026-06-09 as a header tracker row. (Resolved.)
+4. **Multi-classing:** character JSON already stores `classEntries: [ClassEntry]`; multi-class UI + proficiency/slot reconciliation still open (lands with Phase M level-up flow; see QA P2 audit #11/#28).
+5. **Resource ID collisions across packs:** imported ids shadow bundled by id (deliberate override). `<pack>.<id>` namespace still deferred; revisit only if different third-party packs collide. The importer/validator is the seam.
+6. **Per-stack item charges:** two of the same wand share one pool. Revisit if a real case appears.
+7. **`dawn` refresh trigger:** folded into long rest for now (K.5). Add a separate "advance time" button only if a use case demands it.
+8. **Roll-prompt label matching:** when `RollResolutionMode == .tray`, the prompt waits for a matching label — exact-string vs ID-based contract still to nail down (absorbed by item 14d / Phase I.5 `RollPrompt`).
 
 ---
 
-*Last updated: 2026-06-09 — full codebase review + doc sync. See "Code health review" below.*
+## What's left — cold-start hand-off
 
-### Code health review (2026-06-09)
+Live threads, ordered roughly by self-containment. The QA Findings section above is the current top priority; the items below are the longer-running feature threads.
 
-A full review pass (four parallel read-throughs: dice feature, rules engine,
-view layer, tests + bundled content) produced the findings below. Fixes
-already applied are marked ✅; everything else is tracked as roadmap items
-in "What's left".
-
-**Fixes applied in this pass (need one ⌘R + test run to confirm — no new files, no Xcode restart needed):**
-
-- ✅ `CharacterStore.save(_:)` no longer re-reads + re-decodes the character
-  file after every write. The sheet writes through `binding(for:)` on every
-  keystroke / HP tap, so the disk round-trip was pure overhead; the in-memory
-  array is now updated directly with the value that was just encoded.
-- ✅ `CharacterStore.load()`'s manifest-cleanup check compared against
-  `characters.count`, which is always 0 during init — so the manifest was
-  rewritten on **every launch**. It now compares the entry count before/after
-  cleanup, and the rewrite goes through the atomic `writeManifest` path
-  (the old inline write wasn't atomic).
-- ✅ `DiceSceneController.tickRestDetection()`'s force-unwrap
-  (`allStillSince!`) replaced with an unwrap-free equivalent.
-- ✅ (2026-06-09, HP pass) `CharacterCalculator.abilityModifier` used Swift's
-  truncating division, so every odd score below 10 was one modifier too high
-  (9 → 0 instead of −1; 1 → −4 instead of −5 — the existing test for score 1
-  expected −5 and was **failing**). Now `score / 2 - 5`, the exact 5e floor.
-  Affects mods/saves/AC/attack math for low odd scores everywhere.
-
-**Verified-correct during review (false alarms — no action needed):**
-
-- Stroke of Luck's value-override loop already bounds-checks
-  (`min(cursor + group.count, overriddenValues.count)`).
-- `RefreshResolutionSheet`'s `rolls` cache is `@State` inside sheet content —
-  it resets per presentation; no stale-roll bug.
-- 5e math audit came back clean: proficiency bonus `⌊(L−1)/4⌋+2`, spell save
-  DC `8+mod+prof`, spell attack bonus, AC (armor base / dex cap / shield),
-  concentration DC `max(10, dmg/2)` after temp-HP absorption, level-up HP
-  average with ≥1 clamp, Archery (+2 ranged) / Dueling (+2 single-wield melee)
-  gating, keep/drop/reroll/advantage dice logic, crit detection on kept dice
-  only, multiclass-aware `LevelScaledValue` resolution.
-
-**Known debt (each row maps to a roadmap item below):**
-
-| Finding | Where | Item |
-|---|---|---|
-| ~~Reliable Talent hardcodes `classID == "rogue" && level >= 7`~~ ✅ 2026-06-13 — `FeatureDefinition.skillCheckMinimum` + `CharacterCalculator.skillCheckFloor` | — | 9a |
-| ~~`stroke_of_luck` excluded by raw string id~~ ✅ 2026-06-13 — `FeatureDefinition.surfacesAsAction` | — | 9b |
-| ~~Fighting-style mechanics keyed on raw option strings~~ ✅ 2026-06-13 — `FeatureIDs` namespace | — | 9c |
-| ~~`CharacterStore.save` failures only `print`~~ ✅ 2026-06-13 — `lastSaveError` + sheet banner | — | 9d |
-| ~~No content lint~~ — ✅ closed 2026-06-09 (`ContentLintTests.swift`) | tests | 9e |
-| Backgrounds reference feats (`savage_attacker`, `magic_initiate_*`) that exist nowhere as content definitions | `backgrounds.json` | 11 |
-| `ContentStore` `fatalError`s on bad JSON — right for bundled content, fatal for Phase H user imports | `ContentStore.swift` | 12 |
-| `ForEach(… id: \.offset)` on the level-up new-features list (fragile identity) | `FeaturesView.swift` | 13 |
-| ~~Character swipe-to-delete~~ ✅ confirmed-delete shipped 2026-06-09; spell long-press "forget" still unconfirmed | `SpellListView` | 13 |
-| No spell search in the add-spell picker; no spell-description preview short of opening the cast sheet | `SpellListView` | 13 |
-| DiceRoller core (adv/dis, keep/drop, reroll, d100 pairing, physics-values path) has no direct unit tests | tests | 10 |
-
-**Deletion candidates (zero references, confirmed by project-wide grep — flag only; deletions happen in Xcode, by hand):**
-
-- `Features/DiceRoller/Views/DiceTrayView.swift` — 2D fallback tray,
-  superseded by the 3D SceneKit tray. Self-contained (all helpers `private`).
-- `Features/DiceRoller/Views/DieTokenView.swift` — only ever used by
-  `DiceTrayView`.
-- The `Dice3DPlaygroundView` *view struct* (the sandbox screen) is
-  unreachable from the app — but its file hosts the **production**
-  `DiceSceneController`. Split the controller into its own file first
-  (item 13), then the view struct can go.
-- `ClassDefinition.masteryCount` / `masteryRestrictions` — still parsed,
-  no longer consulted (superseded by the `weapon_mastery` feature selection).
-- `Character`'s legacy `chosenWeaponMasteries` CodingKey — **keep** until a
-  save-format version bump; it's the migration path for old saves.
-
-### What's left — cold-start hand-off
-
-Picking up in a fresh session? These are the live threads, ordered by how
-self-contained each one is. Pick whichever matches the appetite for the
-session.
-
-**1. ~~Paladin + Divine Smite~~ — DONE 2026-06-09 (finishes Phase O's opt-in story)**
-- Shipped: `TriggerCost.spellSlot(minLevel:maxLevel:)` (JSON
-  `{"type":"spellSlot","minLevel":1,"maxLevel":5}`) and a new
-  `TriggerEffect.addSlotScaledDamageDice(baseDice:extraDicePerSlotLevel:damageType:)`
-  — dice that scale by the SLOT paid, not class level (Divine Smite:
-  `2d8` + `1d8`/level, radiant).
-- Resolver policy (v1, as planned): the chip is gated by "any slot
-  available in range" and uses the **lowest** one. `buildChip`
-  concretizes the cost to that exact level and names it on the chip
-  ("Divine Smite (L1 slot)"), so the slot consumed always matches the
-  dice the player saw. `ResourceCalculator` gained
-  `lowestAvailableSlotLevel(min:max:)` + `consumeSpellSlot(level:)`
-  (class-agnostic via the `.spellSlot` display hint, so multiclass
-  casters spend their cheapest eligible slot). The sheet's
-  `pendingCostsToApply` switch handles the new case.
-- Content: Paladin in `classes.json` — d10, WIS/CHA saves, all armor +
-  shields, half-caster CHA slot table (the `fullCaster` SlotTable shape
-  with the 2024 half-caster progression, no schema change), Lay on
-  Hands as a 5×level pool (spend via the resources card in v1),
-  Weapon Mastery (2), Fighting Style at L2 (shares the `fighting_style`
-  selection id so the existing Defense/Dueling calculators apply),
-  Paladin's Smite at L2, Channel Divinity at L3 (2 uses, +1 on short
-  rest), ASIs at 4/8/12/16, descriptive majors through L19.
-- Deferred, by design: `TypedOrMatch.matchSpell` and the +1d8 vs
-  undead/fiend variant; a pick-your-slot UI (upcast smite) — the
-  lowest-slot policy stands until that polish lands; Aura of
-  Protection's save bonus and Radiant Strikes' auto +1d8 (both need an
-  always-on feature-rider pass; their descriptions say "apply manually").
-- Tests: `DivineSmiteTests.swift` (11 tests) — schema round-trips,
-  bundled Paladin wiring, half-caster slot synthesis at L1/L5,
-  lowest-slot selection + drained-pool fallback to L2 (3d8), ranged
-  weapons filtered, no-slots gating, slot consumption + overdraft.
-
-**2. ~~Bundle a real Rogue subclass at L3~~ — DONE (`65213dd`)**
-- Thief shipped with L3/9/13/17 features (incl. Use Magic Device granting
-  4 attunement slots), covered by `RogueFeatureTests`. Champion (Fighter)
-  was already bundled. Remaining subclass authoring is folded into item 11.
-- Still worth one manual end-to-end pass on the simulator: create a Rogue,
-  level to 3, pick Thief, confirm L3+ features appear in the grid.
-
-**3. Phase O polish — visuals + content authoring (small, parallelizable)**
-- `EffectsRow` two-stripe layout: separate the orange "available
-  toggles" from the purple "active" pills with a visual gap or
-  divider — they currently jam together when both are present.
-- Chip rail wording sweep: "Roll damage" vs "Sneak Attack" vs "End Rage"
-  are inconsistent — chip prompts and tile labels could converge on one
-  verb pattern.
+**Phase O polish — visuals + content (small, parallelizable)**
+- `EffectsRow` two-stripe layout: separate the orange "available toggles" from the purple "active" pills with a visual gap/divider (they jam together when both present).
+- Chip-rail wording sweep: "Roll damage" / "Sneak Attack" / "End Rage" are inconsistent — converge on one verb pattern.
 - Author two more `.toggle` features to prove the substrate generalises:
-  - **Bless** (already a Phase J spell, currently lacks a triggered
-    effect) — concentration buff that adds `+1d4` to attack rolls. Needs
-    `TriggerCondition.onAttackRoll(filter:)` (NOT shipped) and
-    `TriggerEffect.addAttackBonus(dice:)` (NOT shipped). Bigger lift.
-  - **Reckless Attack** (Barbarian L2) — `.toggle`, grants advantage on
-    STR melee attacks and to attacks against you. Needs
-    `TriggerEffect.advantage(target:)` (NOT shipped).
+  - **Bless** (already a Phase J spell, lacks a triggered effect) — concentration buff +1d4 to attack rolls. Needs `TriggerCondition.onAttackRoll(filter:)` (NOT shipped) + `TriggerEffect.addAttackBonus(dice:)` (NOT shipped). Bigger lift.
+  - **Reckless Attack** (Barbarian L2) — `.toggle`, advantage on STR melee + to attacks against you. Needs `TriggerEffect.advantage(target:)` (NOT shipped).
 
-**4. ~~Phase G follow-ups: death saves~~ — DONE 2026-06-09**
-- `DeathSaveState` (successes/failures, clamped 0–3, `isStable`/`isDead`)
-  lives on `Character.deathSaves`; decode-safe default, encoded only when
-  non-empty. Counters reset automatically when `currentHP` goes 0 → positive
-  (a `didSet` on `currentHP`, so every heal path — header +1, HP editor,
-  long rest — gets it for free). `applyDamage` while already at 0 HP
-  auto-records one failure (the crit's second failure is a manual tap —
-  the app can't see the attacker's die).
-- UI: `DeathSavesRow` appears in the sheet's sticky header only at 0 HP —
-  Dying/Stable/Dead badge, two rows of three tappable circles (re-tap to
-  undo), a Roll chip that hands a labeled d20 to the dice tab, and the
-  rules reminder line ("10+ succeeds · nat 1 = 2 fails · nat 20 = regain
-  1 HP"). Honor-system: the player reads the die and taps the circle.
-- Tests: `DeathSaveTests.swift` (10 tests) — legacy decode, round-trip,
-  encode-omission, damage-while-dying, drop-to-zero non-failure, temp-HP
-  absorption, cap-at-three, heal reset, thresholds.
-
-**5. ~~Phase H — Custom content import / export~~ — DONE 2026-06-13.**
-See the Status-table row and roadmap item 12 for what shipped. (Future
-follow-ups: `.zip` pack archives, per-pack export from Settings, and
-`<pack>.<id>` namespacing if third-party collisions ever bite.)
-
-**6. Phase M open content debt (the architecture is done, the catalog isn't)**
+**Phase M open content debt (architecture done, catalog isn't)**
 - Subclasses at the right level for every bundled class.
-- ASI prompts at L4/L8/L12/L16/L19 for every class (currently only the
-  shape exists; per-class wiring lands when each class is authored).
-- Sorcerer metamagic (uses existing `.fixedOptions`).
-- Feat catalog (Origin feats from backgrounds, General feats from ASI
-  trade-ins). May force the deferred `ChoicePromptDefinition` /
-  `ChoiceOutcome` recursive model if any feat sub-prompts.
+- ASI prompts at L4/L8/L12/L16/L19 for every class (only the shape exists; per-class wiring lands when each class is authored).
+- Sorcerer metamagic *spending* (the picker uses `.fixedOptions`; SP spend is still manual).
+- Feat catalog (Origin feats from backgrounds, General feats from ASI trade-ins). May force the deferred `ChoicePromptDefinition` / `ChoiceOutcome` recursive model if any feat carries sub-prompts.
 
-**7. Bigger architectural threads that haven't started**
-- **Initiative / combat tracker** (separate top-level feature; currently
-  out of scope per PLAN.md).
-- **Replace the "Start New Turn" honor-system button** with
-  initiative-aware turn advancement once a tracker exists.
-- **In-app content editor** (Phase I) — substantial UI surface; only
-  worth picking up if hand-editing JSON has started to hurt.
+**Bigger architectural threads that haven't started**
+- **Initiative / combat tracker** (separate top-level feature; out of scope per PLAN.md).
+- **Replace the "Start New Turn" honor-system button** with initiative-aware turn advancement once a tracker exists.
+- **In-app content editor** — substantial UI; only worth it if hand-editing JSON starts to hurt.
 
-**8. ~~Re-land the reverted HP/CON work~~ — DONE 2026-06-09 (both halves)**
-- Shipped (see the Status-table entry for the revert post-mortem):
-  `Character.rolledHP` stores die-only HP; `recalculateHP()` derives
-  `maxHP = max(level, rolledHP + level × CON mod)` and shifts `currentHP`
-  by the delta (floors at 1 for the living, leaves the dying at 0); decode
-  migration back-derives `rolledHP` for old saves; the ASI mutators recalc
-  automatically when CON changes (so every picker path is covered);
-  `setMaxHP(_:)` writes manual max-HP edits through `rolledHP` so recalcs
-  preserve them; `applyLevelUp` banks the die-only gain; creation
-  finalization seeds HP from the real class hit die + post-ASI CON.
-  Tests: new `HPRecalculationTests.swift` (⚠️ new file — Xcode ⌘Q +
-  relaunch before building) + `LevelUpTests` updated to die-only semantics.
-- Known model edge (accepted): with severe CON penalties, 5e's
-  ≥1-HP-per-level rule is enforced as a total floor (`max(level, …)`)
-  rather than per-level clamping, since per-level die values aren't stored.
-- **Deletion UI also shipped 2026-06-09:** context-menu delete on
-  `CharacterListView` rows, swipe-to-delete now stages a confirmation
-  dialog instead of firing immediately, and the sheet's toolbar gained an
-  overflow menu with a confirmed delete that pops back to the list before
-  removing the file (the store mutation waits out the pop animation so the
-  screen doesn't flash "Character not found"). Note: the reverted version's
-  delete button only switched tabs — it never actually called
-  `characterStore.delete`; this one does.
+**Test gaps (beyond content lint + DiceRoller core, both done)**
+- `CharacterStore.load()` manifest-cleanup regression test (the every-launch rewrite bug).
+- Spell-preparation rule enforcement (`PreparedRule`) once more casters land.
 
-**9. Engine hardening (from the 2026-06-09 code health review) — 9a–9e DONE**
-- **9a. ~~De-hardcode Reliable Talent~~ — DONE 2026-06-13.**
-  `FeatureDefinition.skillCheckMinimum: LevelScaledValue?` (Rogue L7
-  `reliable_talent` carries `{ "byClassLevel": { "7": 10 } }`).
-  `CharacterCalculator.skillCheckFloor(character:content:)` walks resolved
-  features for the max floor; `dispatchRoll` passes it into
-  `ActionInterpreter.resolve(skillCheckFloor:)`, which applies it only on
-  proficient skills. No `classID == "rogue"` left. Tests in
-  `MinimumValueTests` + `RogueFeatureTests` rewritten to the data-driven
-  chain (the interpreter is content-free, so the floor is computed by the
-  content-aware caller and passed in — my earlier "must pass unchanged"
-  note was wrong; the cleaner architecture required updating them).
-- **9b. ~~De-hardcode the `stroke_of_luck` skip~~ — DONE 2026-06-13.**
-  `FeatureDefinition.surfacesAsAction: Bool` (default true);
-  `stroke_of_luck` sets it false. The deriver skips non-surfacing features
-  generically; the resource still appears in the resources card and is
-  consumed by the dice tab as before.
-- **9c. ~~Centralize magic strings~~ — DONE 2026-06-13.** `FeatureIDs`
-  namespace (`fightingStyle`, `weaponMastery`, `expertiseMarker`,
-  `FightingStyle.archery/.defense/.dueling`) replaces the scattered
-  literals in `CharacterCalculator`, `ActionInterpreter`, and `Character`'s
-  legacy migration. Full data-driven fighting-style *mechanics* still
-  deferred — this was just the string-centralization step.
-- **9d. ~~Surface save failures~~ — DONE 2026-06-13.**
-  `CharacterStore.lastSaveError: String?` (set on a failed `save`, cleared
-  on the next success or `clearSaveError()`); `CharacterSheetView` shows a
-  dismissible red banner in the sticky header when non-nil. Tested by
-  yanking the store's directory mid-save.
-- **9e. ~~Content lint test~~ — DONE 2026-06-09.** `ContentLintTests.swift`
-  walks ALL bundled JSON: id uniqueness per file, across the
-  gear/weapons/armor item namespace, and globally for resource/effect ids;
-  background feat/equipment references (with an explicit
-  `knownUnauthoredIDs` allow-list covering the 3 feats + 8 flavor items
-  awaiting items 11d/11g, plus a staleness check that fails when an
-  allow-listed id becomes real content); every dice string parses (recipes,
-  weapon damage/versatile, refresh rolls, rider dice, composed max-upcast
-  formulas); upcast `recipeIndex` bounds + scalability; `byClassLevel`
-  tables reach their grant level; item-use costs and cast spells resolve;
-  subclass picker wiring matches the aggregator's convention key. Phase H
-  should reuse these invariants as its import validator.
+**Content authoring catalog — SRD 5.2.1 ONLY (JSON-only, no Swift). Goal: 100% of SRD 5.2.1 and nothing beyond it.**
+- **Classes 8/12 done** (Fighter, Wizard, Rogue, Barbarian, Paladin, Cleric, Bard, Sorcerer). **Remaining: Druid, Monk, Ranger, Warlock** (one full class per turn).
+- **Subclasses 5/12 done** (Champion, Thief, Life Domain, College of Lore, Draconic Sorcery). **Remaining SRD one-per-class:** Berserker, Circle of the Land, Warrior of the Open Hand, **Oath of Devotion** (Paladin), Hunter, Fiend Patron, **Evoker** (Wizard). NO Battle Master / EK / Arcane Trickster (PHB-only → importable pack only). New subclasses ship with their parent class.
+- **Species 9/9 done ✅**, **Backgrounds 4/4 done ✅**, **Armor 8/8 ✅**, **conditions 14/14 ✅** (tracked, not yet enforced — QA P1), weapons + gear nearly complete, **43 spells** of the (large) SRD list.
 
-**10. Test gaps (beyond the content lint)**
-- **~~`DiceRoller` core~~ — DONE 2026-06-13** (`DiceRollerTests.swift`):
-  range/count invariants per die kind, advantage keeps the higher die /
-  disadvantage the lower / mode ignored when the formula isn't a lone d20,
-  all four keep/drop permutations, `rerollIndices` (with group offsets),
-  the `minimumValue` floor (incl. floor-after-keep/drop and a statistical
-  "never below floor"), `resultFrom` multi-group mapping + mode + crit
-  detection respecting kept-dice-only. (d100 is a plain 1–100 die at the
-  `DiceRoller` layer — the tens/ones split is purely the SceneKit
-  controller's concern, covered separately by the 3D path.)
-- Still open: `CharacterStore.load()` manifest-cleanup regression test
-  (the every-launch rewrite bug). Spell-preparation rule enforcement
-  (`PreparedRule`) once more casters land.
+Authoring order, each batch shippable alone:
+- **11d. Weapons + gear sweep** — remaining ~22 SRD weapons (all have existing property/mastery vocabulary), standard adventuring gear.
+- **11e. Spell batches** — all SRD cantrips, then L1, then L2–L3, gated per bundled caster class. **Prereq:** decide how class spell lists are encoded (per-spell `classes: [...]` vs per-class list) — the add-spell picker needs it to filter once the catalog grows. (Overlaps QA P3 "starting spell seeding".)
+- **11f. ASI prompts audit** — Fighter currently has ASI at 4/13/19; SRD 5.2.1 Fighter gets 4/6/8/12/14/16/19. Audit every bundled class's ASI levels against the SRD while authoring.
+- **11g. Feat catalog** — Origin feats first (backgrounds already reference `savage_attacker`, `magic_initiate_*` as dangling ids — flagged by the content lint). General feats need the ASI-vs-feat fork in `LevelUpSheet`; may force the deferred `ChoicePromptDefinition` recursive model (a feat granting a +1 ability sub-choice).
+- **11h. More subclasses — SRD one-per-class ONLY** (Berserker, Circle of the Land, Warrior of the Open Hand, Oath of Devotion, Hunter, Fiend Patron, Evoker). Battle Master / Eldritch Knight / Arcane Trickster are PHB-only — importable pack only. (Battle Master's superiority dice still motivate `TriggerCost.resource(id:amount:)` as engine groundwork for the pack, not bundled content.)
 
-**11. Content authoring catalog — SRD 5.2.1 ONLY (JSON-only work, no Swift)**
-Goal restated after the 2026-06-13 SRD audit: get the bundle to **100% of
-SRD 5.2.1, and nothing beyond it**. Verified SRD totals (not PHB):
-- **Classes 8/12 done** (Fighter, Wizard, Rogue, Barbarian, Paladin, Cleric,
-  Bard, **Sorcerer** — full L1–20 + Draconic Sorcery, shipped 2026-06-27).
-  Remaining: **Druid, Monk, Ranger, Warlock** (one full class per turn).
-  - Sorcerer: Sorcery Points = a level-scaled counter on Font of Magic
-    (`surfacesAsAction:false` so it shows as a resource, not a tappable
-    action); Metamagic = a `.fixedOptions` selection with a level-scaled count
-    (2→4→6 over the 10 options); Dragon Wings is a Bonus-Action use-pool.
-  - **Sorcerer mechanics pass (2026-06-27)** closed most gaps and added reusable
-    infrastructure (each also fixed an existing descriptive feature):
-    - **Unarmored Defense**: `FeatureDefinition.unarmoredDefenseAbility` +
-      `CharacterCalculator.unarmoredDefenseAbility`; no-armor AC = 10 + DEX +
-      ability mod. Also fixed **Barbarian** Unarmored Defense (CON).
-    - **Feature HP bonuses**: `FeatureDefinition.hitPointBonus` (flat/perLevel)
-      folded into `rolledHP` at creation + level-up (diffed) via
-      `CharacterCalculator.featureHitPointBonus`; class bonuses scale by class
-      level, species by character level. Also fixed **Dwarven Toughness**.
-    - **Granted subclass spells**: `CharacterSpellGrants.resolve` now walks
-      class/subclass features; Draconic Spells (L3/5/7/9) always-prepared; 10
-      Draconic spells authored.
-    - **Innate Sorcery buff**: `TriggerCondition.whileActive` +
-      `TriggerEffect.spellcastingBuff`; toggle → `activeEffects` →
-      `CharacterCalculator.spellcastingBuff`; `SpellCastSheet` surfaces Spell
-      Save DC (+1) and rolls spell attacks with Advantage while active.
-    - Still manual: SP spending (Metamagic, slot conversion/creation),
-      Sorcerous Restoration short-rest recovery; Summon Dragon stat block is
-      text; buff scope = all the character's spells (single-class assumption).
-    - Edge: swapping subclass via the Features tab (not at level-up) doesn't
-      retro-adjust HP; re-level or rebuild to resync.
-  - Bard introduced `ResourceDefinition.maxAbilityModifier` (pool size = an
-    ability modifier, min 1) for Bardic Inspiration = CHA mod — reusable for
-    other 2024 "uses equal to your X modifier" pools.
-  - **Jack of All Trades is mechanically wired** (2026-06-18): half PB (round
-    down) on non-proficient skill checks, via `CharacterCalculator
-    .skillModifier(..., jackOfAllTrades:)` + content-aware
-    `hasJackOfAllTrades`. The skills table shows a ½ chip on affected rows and
-    folds the bonus into the number; it flows into rolled checks and passive
-    Perception.
-  - Known simplifications: Font of Inspiration short-rest recovery and
-    Magical Secrets/Discoveries cross-list spells are descriptive (not
-    auto-applied).
-- **Subclasses 5/12 done** (Champion, Thief, Life Domain, **College of Lore**,
-  **Draconic Sorcery**). Remaining SRD one-per-class: Berserker, Circle of the
-  Land, Warrior of the Open Hand, **Oath of Devotion** (Paladin — bundled class
-  lacks its subclass), Hunter, Fiend Patron, **Evoker** (Wizard — same). NO
-  Battle Master / EK / Arcane Trickster (PHB-only). New subclasses ship with
-  their parent class.
-- **Species 9/9 done ✅** (Human, Elf, Dwarf, Dragonborn, Gnome, Goliath,
-  Halfling, Orc, Tiefling — completed 2026-06-17). SRD-complete, with lineage/
-  ancestry/legacy pickers, Breath Weapon, granted spells, Giant Ancestry
-  mechanics, Unarmored Defense + feature HP for Draconic/Dwarven traits.
-- **Backgrounds 4/4 done ✅** (Acolyte, Sage, Soldier, Criminal — 2026-06-13).
-  The SRD has only these 4; backgrounds are SRD-complete. (QA note: background
-  feats/equipment are not yet applied at creation — see P3 in the QA plan.)
-- Armor 8/8 ✅, conditions 14/14 ✅ (tracked but not yet mechanically enforced —
-  QA P1), weapons + gear nearly complete, **43 spells** of the (large) SRD list.
+**14d. Quick Roll polish (later)** — per-prompt "roll resolution" preference (mini tray / full tray / type manually); realizes Phase I.5's `RollPrompt` and absorbs open decision #8.
 
-Suggested authoring order, each batch shippable alone:
-- **11a. ~~Cleric~~ — DONE 2026-06-10.** Sixth class, first
-  `preparedFromAll` caster: d8, WIS/CHA saves, full-caster WIS slot
-  table, cantrips 3→4→5. Features L1–L20: Divine Order + Blessed Strikes
-  as `.fixedOptions` selections (picks recorded; granted profs/cantrip
-  not auto-applied — noted in text), Channel Divinity as a short-rest
-  resource (2/3/4 uses) whose **Divine Spark** ships as two real recipes
-  (heal + radiant damage, both `1d8 + WIS`), Divine Intervention as a
-  1/LR resource, ASIs at 4/8/12/16. **Life Domain** subclass at L3
-  (Disciple of Life, Domain Spells, Preserve Life; L6 Blessed Healer;
-  L17 Supreme Healing — descriptive). Spells: Guidance, Healing Word
-  (2d4+mod, upcast +2d4), Bless + Shield of Faith (descriptive until
-  attack-roll riders land), and Cure Wounds updated to 2024 numbers
-  (2d8+mod, upcast +2d8).
-  **Engine addition:** `ActionRecipe.heal`/`.rawDamage` gained
-  `addSpellcastingMod` (decode-default false; legacy JSON and Swift
-  call sites unaffected via factory overloads); the interpreter resolves
-  it from `spellcastingAbility`, and `CharacterActionDeriver.featureRows`
-  now passes the owning class's casting stat so feature recipes like
-  Divine Spark resolve correctly. Tests: `ClericTests.swift` (11 tests).
-- **11b. ~~Paladin~~ — DONE 2026-06-09** with item 1. Class authored
-  L1–L19 (mechanical: Lay on Hands pool, smite, Channel Divinity,
-  fighting style, weapon mastery, ASIs; descriptive: auras, Radiant
-  Strikes, Extra Attack). Still wanted later: paladin spell-list
-  entries (bless, divine favor — lands with 11e), a subclass at L3,
-  and mechanical auras.
-- **11c. Species + backgrounds sweep** — ~~Criminal background~~ DONE
-  2026-06-13 (backgrounds now 4/4 SRD-complete). Also shipped: **player-chosen
-  background ability bonuses** (the 2024 distribute rule). `BackgroundDefinition`
-  now declares `abilityScoreOptions: [Ability]` (the three eligible) instead of
-  a baked spread; `CharacterDraft.backgroundAbilityBonuses` holds the player's
-  pick (+2/+1 or +1 to all three) with `isValidBackgroundBonus(options:)`
-  validation; the creation flow's Abilities step has a focused/balanced picker
-  showing base→final, gating Next; `finalizeDraft` applies it clamped to 20.
-  Also shipped 2026-06-13: **class skill-proficiency choice** — the missing
-  "choose N skills from the class list." Modeled as a real **feature
-  selection** (new `SelectionSource.skillsFrom([Skill])`), authored as an L1
-  "Skill Proficiencies" feature per class (id `<class>_class_skills`,
-  SRD-verified: Rogue 4 of 10, others 2). Resolved **content-free** by
-  `CharacterCalculator.skillProficiencyLevel` via a `class_skills` marker —
-  the same live-read trick as Expertise — so the skills list, skill modifier,
-  and skill checks all pick it up with no signature changes, AND it's
-  **editable in the Features tab on any character**, not gated behind
-  creation. Picked at creation too (the `ClassSkills` step seeds
-  `featureSelections` at finalize; background skills shown locked so picks
-  aren't wasted; Expertise can now upgrade a class-skill grant). And a
-  tool-name display fix (`ToolNames` — "thieves_tools" → "Thieves' Tools").
-  ~~Remaining: the 6 missing SRD species~~ — **DONE 2026-06-17** (all 9 species
-  shipped; Dwarven Toughness-style HP traits now wired via
-  `FeatureDefinition.hitPointBonus`, see the classes/mechanics entries above).
-- **11d. Weapons + gear sweep** — remaining ~22 SRD weapons (all have
-  existing property/mastery vocabulary), standard adventuring gear.
-- **11e. Spell batches** — all SRD cantrips, then L1, then L2–L3, gated per
-  bundled caster class. **Prereq:** decide how class spell lists are
-  encoded (per-spell `classes: [...]` array vs. per-class list) — the
-  add-spell picker needs it to filter once the catalog grows.
-- **11f. ASI prompts audit** — Fighter currently has ASI at 4/13/19; SRD
-  5.2.1 Fighter gets 4/6/8/12/14/16/19. Audit every bundled class's ASI
-  levels against the SRD while authoring.
-- **11g. Feat catalog** — Origin feats first (backgrounds already
-  reference `savage_attacker`, `magic_initiate_*` as dangling ids — item
-  9e will flag them). General feats need the ASI-vs-feat fork in
-  `LevelUpSheet`; that may finally force the deferred
-  `ChoicePromptDefinition` recursive model (a feat granting a +1 ability
-  sub-choice).
-- **11h. More subclasses — SRD one-per-class ONLY.** Author the remaining
-  SRD subclasses (Berserker, College of Lore, Circle of the Land, Warrior
-  of the Open Hand, Oath of Devotion, Hunter, Draconic Sorcery, Fiend
-  Patron, Evoker). **Battle Master / Eldritch Knight / Arcane Trickster
-  are PHB-only — they belong in an importable pack, never the bundle.**
-  (Battle Master's superiority dice still motivate
-  `TriggerCost.resource(id:amount:)`, but as engine groundwork for the
-  pack, not bundled content.)
-
-**16. ~~SRD attribution notice~~ — DONE 2026-06-13.** Settings tab gained a
-"Legal & Attribution" section: the verbatim CC-BY statement (text-selectable),
-tappable links to the SRD and the CC-BY-4.0 license, and a footer noting "5E
-compatible / not affiliated with or endorsed by Wizards of the Coast." The
-license condition for shipping SRD content is now satisfied.
-
-**17b. Actions tab unified into one economy-grouped list (2026-06-13).**
-Per follow-up feedback, the separate big-button "Features" grid felt
-incohesive next to the new economy list. `ActionEconomyView` (renamed from
-`GrantedActionsView`) now renders BOTH the interactive feature/item rows
-(Second Wind, Rage toggle, Fast Hands, Cast …, routed through the existing
-`handleActionTap`) AND the granted options, grouped by turn economy
-(Action / Bonus / Reaction / Free / Movement). `ActionButtonGrid.swift` is
-now **dead code** (nothing references it; `SheetCard` lives in
-`CharacterSheetView`) — deletion candidate, left in place per the no-delete
-rule. Weapon attacks keep their bespoke `AttacksView` above the list.
-Future: verbose interactive labels ("Fast Hands: Sleight of Hand +7") could
-be broken into granted-action options like Cunning Action.
-
-**17. ~~Feature-granted action options on the Actions tab~~ — DONE 2026-06-13.**
-New `GrantedAction {name, description?, cost, recipe?}` content type +
-`FeatureDefinition.grantedActions: [GrantedAction]`.
-`CharacterActionDeriver.grantedActions(for:content:)` flattens them across
-the character's features (tagged with the source feature);
-`GrantedActionsView` on the Actions tab renders them grouped by economy
-(Action / Bonus / Reaction / Free / Movement) — rollable options
-(`recipe != nil`) are tappable and dispatch to the dice tab, informational
-ones expand to show the SRD rule on tap. NOT a universal SRD action dump —
-only what the character's features grant. Fixed the root annoyance: Cunning
-Action was hacked as a single `skillCheck: stealth` recipe (hence "I only
-see Stealth"); it now declares Dash / Disengage (info) + Hide (rolls
-Stealth) as bonus-action grants, `surfacesAsAction: false` so it no longer
-mis-renders as a grid button. Uncanny Dodge surfaced as a Reaction. Tests in
-`RogueFeatureTests`; content lint walks granted-action recipe dice.
-**Future:** author granted actions for more classes/features; species traits
-could gain `grantedActions` too (only class features carry them today).
-
-**12. ~~Phase H — homebrew import/export~~ — DONE 2026-06-13**
-- Bundled content keeps `fatalError` (build bug); imported packs go through
-  a recoverable path — `ContentStore.importPack` throws `ImportError`
-  (unreadable / malformed / invalid-with-issue-list) into a Settings alert.
-- `ContentValidator.validate(_:)` lifts item 9e's invariants (non-empty
-  unique ids per category, parseable dice) into production code; the lint
-  test and the importer now share the same checks.
-- `ContentStore` reads `Documents/Content/*.json` as `ContentPack`
-  envelopes, overlaid on bundled by id (imported shadows; filename order =
-  last-wins between packs). `fileImporter` (not `UIDocumentPicker`) drives
-  both import flows; `.json` only (`.zip` deferred — needs a dependency).
-- Character export: `ExportedCharacter` Transferable + `ShareLink` in the
-  sheet ⋯ menu. Import: Settings `fileImporter`, fresh UUID via
-  `reassignID` so importing your own export copies rather than clobbers.
-- **Open decision #5 resolved (for now):** imported ids are raw and
-  shadow bundled on collision — the deliberate override mechanism, not a
-  conflict. A `<pack>.<id>` namespace is still deferred; revisit only if
-  accidental collisions between *different third-party* packs become a
-  real problem. The importer/validator are the seam to add it at.
-
-**13. UX + structure polish backlog (small, parallelizable)**
-- ~~Confirmation dialog: character delete~~ (done with item 8). Spell
-  "forget" confirmation still open.
-- Empty-name guard on character rename.
-- `.searchable` on the add-spell picker; spell-description preview without
-  opening the cast sheet (long-press or info button).
-- Attunement-cap feedback: tapping attune at 3/3 currently no-ops silently —
-  show a brief explanation instead.
-- Stable identity for the level-up new-features `ForEach` (use feature id,
-  not `\.offset`).
-- ~~Split `DiceSceneController` out of `Dice3DPlaygroundView.swift`~~ —
-  done 2026-06-09 as item 14a. The playground file is now purely the dead
-  sandbox view: deletion candidate. (`FaceGeometryBuilder` / rest-detection
-  extraction remains optional future tidying.)
-- EffectsRow two-stripe divider + chip-rail wording sweep (carried over from
-  item 3).
-
-**14. Quick Roll mini tray (added 2026-06-09 — slotted as the next major item)**
-
-Small in-sheet rolls (death saves, level-up HP, concentration saves, refresh
-rolls) currently either tab-hop to the full dice tray or resolve via hidden
-`Int.random`. Replace both with a small floating 3D tray that appears over
-the character sheet, rolls 1–2 physical dice immediately, shows the result,
-and hands the number back to the caller — unintrusive, but carries the
-app's dice-roller DNA into the sheet. (Same spirit as the existing
-press-to-magnify overlay: a second SCNView onto purpose-built content.)
-
-Why it lands ahead of content work: it upgrades four already-shipped
-surfaces at once, and its step 0 is the `DiceSceneController` file split
-that item 13 already wanted.
-
-- **14a. ~~Extract the controller~~ — DONE 2026-06-09** (closes item 13's
-  split too). `DiceSceneController.swift` now holds the production engine
-  (controller, `Dice3DKind`/`DieRole`, `SceneKitView`, `MagnifierView`,
-  async wrappers); `Dice3DPlaygroundView.swift` is down to the 115-line
-  legacy sandbox view and is now a clean **deletion candidate** (remove
-  via Xcode whenever). The controller gained `TrayFraming`
-  (`.standard` / `.compact`), tuned with live feedback:
-  - Compact camera: pure top-down at (0, 17, 0), 52° FOV (explicit
-    up/front vectors — `look(at:)` is degenerate straight down). Whole
-    floor in frame; after settle, `focusCameraOnSettledDice()` glides
-    the camera (position-only, stays top-down) to ~5 units above the
-    dice centroid so the face fills the small viewport.
-  - Compact physics: world speed 2.4 + gravity −7.5 (legible parabolic
-    apex), containment ceiling lowered to ~13 so a die can never pass
-    the y=17 lens.
-  - Compact throw: mostly-vertical pop (5–8) with gentle random drift
-    (2–4.5) and a strong tumble (3–5) around a uniformly random axis —
-    settles near center, randomization comes from spin.
-  - Standard throw also fixed: guaranteed horizontal magnitude (6–12)
-    replaces per-axis ±10, which could lob a die straight up to land
-    on the same face. Camera/physics on the main tab unchanged.
-- **14b. ~~`QuickRollView`~~ — DONE 2026-06-09.** `QuickRollRequest`
-  (formula + label, fresh identity per request) +
-  `QuickRollOverlay`: dimmed backdrop, floating material card with its
-  own compact-framed controller/scene, dice thrown on appear, total
-  (gold on nat 20, red on nat 1) once settled, result recorded to
-  `HistoryStore` (the dice tab's history stays the single ledger) and
-  handed back via `onResult` exactly once. Dismissal (tap-away / Done)
-  is blocked mid-roll so the scene can't be torn down under the physics.
-  Reroll modifiers honored via the same `rerollIndices` → rethrow flow
-  the main tray uses. Still wanted: Reduce Motion numbers-only fallback.
-- **14c. ~~Adopt at the call sites~~ — ALL FOUR DONE 2026-06-09:**
-  - ✅ Death saves: the tracker row's Roll chip opens the mini tray; the
-    result auto-tallies via `Character.applyDeathSaveRoll(_:)` (10+
-    success, <10 failure, nat 1 = two failures, nat 20 = regain 1 HP
-    through the existing heal path). Manual circles stay for table rolls.
-    Covered in `DeathSaveTests`.
-  - ✅ Level-up HP: the Roll button tumbles the hit die in the mini tray
-    (was hidden `Int.random`); the settled die-only value stages into
-    `rolledHP`. LevelUpSheet hosts its own overlay.
-  - ✅ Concentration saves: the Con save rolls in place with the
-    character's bonus; failing the DC drops concentration automatically
-    (the sheet's manual pass/fail buttons stay for table dice). The
-    old roll-to-dice-tab handoff and its `onRollSave` callback were
-    removed.
-  - ✅ Refresh rolls: `RefreshResolutionSheet` rows start EMPTY — nothing
-    is pre-rolled, the dice are the point. The dice button rolls each
-    refresh in the mini tray (or the player types a table-rolled value);
-    Apply stays disabled until every row holds a number, since a blank
-    row would silently refresh by 0.
-  - Weapon/check/save rolls keep the full-tray handoff (they want
-    adv/dis, riders, and the big-tray theater) — the mini tray is for
-    "one die, answer now" moments.
-- **14d. Polish (later):** per-prompt "roll resolution" preference
-  (mini tray / full tray / type it manually) — this finally realizes
-  Phase I.5's `RollPrompt` concept and absorbs open decision #8.
-
-**15. ~~Ability score generation methods~~ — DONE 2026-06-09**
-
-The creation flow's Abilities step gained a segmented method picker:
-
-- **Point Buy** — unchanged (27 points, 8–15 steppers). Still the default.
-- **Standard Array** — assign 15 / 14 / 13 / 12 / 10 / 8 via a per-ability
-  menu that only offers values still unassigned; Clear takes a pick back.
-- **Rolled** — editable house formula (default `4d6kh3`; validated by the
-  parser, must contain dice, ≤ 12 of them, all with 3D models since it's
-  headed for the mini tray). Six "Roll N of 6" taps each tumble the
-  formula in the Quick Roll overlay (creation is its 5th consumer);
-  totals fill a visible pool (clamped ≥ 1 against vicious house
-  formulas), then assign like the array — multiset-aware, so two rolled
-  12s are two assignable 12s. "Reroll All" clears pool + assignments and
-  unlocks the formula field (locked mid-pool so provenance stays honest).
-  Every roll lands in the shared history ("Ability roll 3 of 6 (4d6kh3)").
-
-Mechanics: `AbilityScoreMethod` + `setAbilityMethod` (point buy reseeds
-8s; assignment modes clear to "unassigned" = missing key),
-`setRolledScores`, multiset `availableValues(excluding:)`, and
-`isAbilityAssignmentValid` replacing the hard-coded point-buy gate in
-`isComplete`. Next-button gating switched to the method-aware check.
-Tests: `AbilityScoreMethodTests.swift` (12 tests — ⚠️ new file).
-- **Risks/notes:** a second SCNView is cheap when only one is on screen
-  at a time (the magnifier proved the pattern); physics results are
-  already canonicalized via `DiceRoller.resultFrom(formula:values:)`;
-  keep the mini tray one-formula-at-a-time (no chip rail).
-
-### Suggested order
-
-1. **Verify this pass:** ⌘R + run the test suite (CharacterStore changed —
-   `CharacterStoreTests` must stay green).
-2. ~~Item 9e (content lint)~~ — done 2026-06-09.
-3. ~~Item 8~~ — done 2026-06-09 (HP re-land + deletion UI, both surfaces
-   confirmed).
-4. ~~Item 4 (death saves)~~ — done 2026-06-09.
-5. ~~Items 1 + 11b (Paladin + Divine Smite)~~ — done 2026-06-09.
-6. ~~Item 14 (Quick Roll mini tray)~~ — done 2026-06-09 (14a–14c; 14d
-   remains as later polish).
-7. ~~Item 15 (ability score generation)~~ — done 2026-06-09.
-8. ~~Item 11a (Cleric)~~ — done 2026-06-10.
-9. ~~Item 12 (Phase H)~~ — done 2026-06-13 (9e's lint became the validator).
-10. Items 9a–9d, 10, 13 interleave as palate cleansers; content authoring
-    (item 11) continues alongside.
+**UX + structure polish backlog (small, parallelizable)**
+- Spell "forget" confirmation still open; empty-name guard on character rename.
+- `.searchable` on the add-spell picker; spell-description preview without opening the cast sheet (long-press / info button).
+- Attunement-cap feedback: tapping attune at 3/3 currently no-ops silently — show a brief explanation.
+- Stable identity for the level-up new-features `ForEach` (use feature id, not `\.offset`).
+- EffectsRow two-stripe divider + chip-rail wording sweep (also under Phase O polish).
 
 ### How to resume
+In a new session, opening with "let's continue from PLAN_CharacterSheet's QA Findings (or 'What's left'), pick #N" is enough — every entry lists the files / schema cases / tests that would change. `git log --oneline -10` shows the recent shipping cadence; note `131da6d` (HP recalc) was reverted and re-landed 2026-06-09.
 
-In a new session, opening with "let's continue from PLAN_CharacterSheet's
-'What's left' section, pick #N" is enough — every entry above lists the
-files / schema cases / tests that would change, so the next session can
-start without re-reading the codebase first. `git log --oneline -10` shows
-the recent shipping cadence; note that `131da6d` (HP recalc) was reverted
-and is item 8's subject, not shipped work.
-
-> This document is mutable. As phases L–O evolve and new SRD / expansion
-> content surfaces edge cases the schema doesn't cover, update the relevant
-> phase section in place rather than spawning a parallel document.
+> This document is mutable. As new SRD / expansion content surfaces edge cases
+> the schema doesn't cover, update the relevant section in place rather than
+> spawning a parallel document.
 
 ---
 
@@ -2698,12 +729,8 @@ and is item 8's subject, not shipped work.
 
 ### A.1 RootView changes
 
-Current `RootView` has no `selection:` binding on `TabView`. We add one:
-
 ```swift
-enum Tab: String, Hashable {
-    case dice, characters
-}
+enum Tab: String, Hashable { case dice, characters }
 
 struct RootView: View {
     @State private var history = HistoryStore()
@@ -2715,26 +742,18 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            DiceRollerView()
-                .tabItem { Label("Dice", systemImage: "dice") }
-                .tag(Tab.dice)
-
-            CharacterListView()
-                .tabItem { Label("Characters", systemImage: "person.2") }
-                .tag(Tab.characters)
+            DiceRollerView().tabItem { Label("Dice", systemImage: "dice") }.tag(Tab.dice)
+            CharacterListView().tabItem { Label("Characters", systemImage: "person.2") }.tag(Tab.characters)
         }
-        .environment(history)
-        .environment(presets)
-        .environment(contentStore)
-        .environment(characterStore)
-        .environment(pendingRollStore)
+        .environment(history).environment(presets).environment(contentStore)
+        .environment(characterStore).environment(pendingRollStore)
     }
 }
 ```
 
 ### A.2 DiceRollerView integration
 
-`DiceRollerView` currently owns `@State var formula = DiceFormula()` and `@State var mode: RollMode = .normal`. It already observes `formula` changes and reseeds the tray:
+`DiceRollerView` owns `@State var formula` + `@State var mode`. It already reseeds the tray on `formula` change:
 
 ```swift
 .onChange(of: formula) { _, new in
@@ -2745,12 +764,11 @@ struct RootView: View {
 }
 ```
 
-We add one observer for `PendingRollStore`:
+Add one observer for `PendingRollStore` (existing `.onChange(of: formula)` seeds the tray; no changes to `DiceSceneController`, `DiceRoller`, or `HistoryStore`):
 
 ```swift
 @Environment(PendingRollStore.self) private var pendingRoll
 
-// inside body, after existing .onChange modifiers:
 .onChange(of: pendingRoll.pending) { _, new in
     guard let resolved = new else { return }
     formula = resolved.formula ?? DiceFormula()
@@ -2759,53 +777,40 @@ We add one observer for `PendingRollStore`:
 }
 ```
 
-The existing `.onChange(of: formula)` will automatically seed the tray. No changes to `DiceSceneController`, `DiceRoller`, or `HistoryStore`.
-
 ### A.3 Auto-roll setting
-
-Add to `DiceRollerView`:
 
 ```swift
 @AppStorage("character.autoRoll.enabled") private var autoRollEnabled = false
 
 // inside the .onChange(of: pendingRoll.pending) block:
-if autoRollEnabled, resolved.formula != nil {
-    Task { await roll() }
-}
+if autoRollEnabled, resolved.formula != nil { Task { await roll() } }
 ```
 
 ### A.4 Tab layout note
-
-The 3D playground tab has been removed from `RootView` but the `Dice3DPlaygroundView.swift` file is preserved for legacy reference.
+The 3D playground tab has been removed from `RootView`; `Dice3DPlaygroundView.swift` is preserved for legacy reference.
 
 ### A.5 Test target
-
-No test target currently exists in the project. Since `.xcodeproj` should not be modified by hand, the user will need to add a **Unit Testing Bundle** target via Xcode (`File > New > Target > Unit Testing Bundle`) once before Phase A tests can run. After the target is created, new test files in the synchronized group may need a quit-and-relaunch of Xcode to be detected.
-
-Alternatively, if the user prefers, we can write all test code into files and the user adds them to the test target in Xcode.
+Add a **Unit Testing Bundle** target via Xcode (`File > New > Target > Unit Testing Bundle`) once before Phase A tests can run (the `.xcodeproj` isn't hand-edited). New test files in the synchronized group may need a quit-and-relaunch of Xcode to be detected.
 
 ---
 
 ## Appendix B — ActionRecipe → DiceFormula Examples
 
-These examples show what `ActionInterpreter.resolve()` produces for common cases.
+What `ActionInterpreter.resolve()` produces for common cases.
 
 ### Fighter with longsword (STR 16, +3 mod, proficient)
-- **weaponAttack**: `DiceFormula(groups: [DiceGroup(kind: .d20, count: 1)], modifier: 5)` → display "1d20 + 5"
-- **weaponDamage**: `DiceFormula(groups: [DiceGroup(kind: .d8, count: 1)], modifier: 3)` → display "1d8 + 3"
-- **versatile damage**: `DiceFormula(groups: [DiceGroup(kind: .d10, count: 1)], modifier: 3)` → display "1d10 + 3"
+- **weaponAttack**: `DiceFormula(groups: [DiceGroup(kind: .d20, count: 1)], modifier: 5)` → "1d20 + 5"
+- **weaponDamage**: `DiceFormula(groups: [DiceGroup(kind: .d8, count: 1)], modifier: 3)` → "1d8 + 3"
+- **versatile damage**: `DiceFormula(groups: [DiceGroup(kind: .d10, count: 1)], modifier: 3)` → "1d10 + 3"
 
 ### Rogue with rapier (DEX 16, STR 10, proficient)
-- **weaponAttack** (finesse): Uses DEX mod (+3) because DEX > STR. Same formula structure, modifier = 5 (3 + 2 prof).
-
-### Wizard casting fire bolt (spell attack, not in v1)
-- Out of scope until spells phase.
+- **weaponAttack** (finesse): uses DEX mod (+3) because DEX > STR; modifier = 5 (3 + 2 prof).
 
 ### Skill check (Athletics, STR 16, proficient)
-- **skillCheck**: `DiceFormula(groups: [DiceGroup(kind: .d20, count: 1)], modifier: 5)` → display "1d20 + 5"
+- **skillCheck**: modifier 5 → "1d20 + 5"
 
 ### Saving throw (Constitution, CON 14, proficient)
-- **savingThrow**: `DiceFormula(groups: [DiceGroup(kind: .d20, count: 1)], modifier: 4)` → display "1d20 + 4" (2 mod + 2 prof)
+- **savingThrow**: modifier 4 → "1d20 + 4" (2 mod + 2 prof)
 
 ### Save DC display (Wizard, INT 16)
 - **saveDC**: `formula = nil`, label = "Spell Save DC 13" (8 + 3 mod + 2 prof)
@@ -2817,19 +822,11 @@ These examples show what `ActionInterpreter.resolve()` produces for common cases
 To avoid a breaking migration when multi-classing arrives, store class as an array even in v1:
 
 ```json
-{
-  "classEntries": [
-    { "classID": "fighter", "level": 1 }
-  ]
-}
+{ "classEntries": [ { "classID": "fighter", "level": 1 } ] }
 ```
 
-`Character` Swift model:
 ```swift
-struct ClassEntry: Codable, Equatable {
-    let classID: String
-    let level: Int
-}
+struct ClassEntry: Codable, Equatable { let classID: String; let level: Int }
 
 struct Character: Codable, Identifiable, Equatable {
     // ... other fields ...
@@ -2837,7 +834,7 @@ struct Character: Codable, Identifiable, Equatable {
 }
 ```
 
-This means `classID` is never a top-level string in the JSON. Same approach for species traits that grant choices — use arrays with single elements in v1.
+`classID` is never a top-level string in the JSON. Same approach for species traits that grant choices — arrays with single elements in v1.
 
 ---
 
