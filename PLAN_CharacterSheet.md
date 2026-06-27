@@ -1908,6 +1908,164 @@ bundle is fully compliant. Description-text wording should track SRD phrasing
 
 No UI tests in v1. Pure model + store tests only.
 
+> **Test-coverage expansion (QA team, 2026-06-27 — committed):** 11 new test
+> files landed in `ROLLodexTests/` (HistoryStore, PresetStore, PendingRollStore,
+> DiceFormulaParserError, CharacterCreationFinalization, InventoryState,
+> CharacterSpells, ContentStoreEdgeCase, RollResolutionMode, Currency,
+> DamageTypeColor) plus updates to DiceRollerTests, CharacterStoreTests,
+> DamageTypingTests, and the placeholder smoke test. No production code was
+> changed by that pass — see `rollodex_tdd_summary.md`.
+
+---
+
+## QA Findings & Remediation Plan (2026-06-27)
+
+Source reports in repo root: `rollodex_qa_audit.md` (static correctness audit,
+40 items), `rollodex_ttrpg_playtest.md` (rules-fidelity playtest), and
+`rollodex_tdd_summary.md` (test additions). The items below are **deduped and
+merged** across the audit + playtest, prioritized, each with a concrete fix
+approach that fits the existing architecture. Status legend: ☐ open · ◐ partial
+· ✅ done. None are started yet unless marked.
+
+### P0 — Correctness / data-integrity (do first)
+
+- ☐ **Resource consumed before the roll resolves** (audit #2). Tapping a
+  resource-cost action (Rage, a slot, Channel Divinity) debits immediately in
+  `handleActionTap`, so abandoning the handoff loses the charge.
+  **Fix:** thread the `resourceCost` through `PendingRollStore.pendingCostsToApply`
+  (the field already exists) and debit in `DiceRollerView.roll()` when the roll
+  actually commits; keep tap-to-consume only for no-formula actions (Action
+  Surge). Covers playtest "Action Surge is a button" framing too.
+- ☐ **Stroke of Luck corrupts history** (audit #1, #14, #19). `applyStrokeOfLuck`
+  does `history.removeFirst()` (wrong entry) and only forces the first d20
+  group; `rollCameFromCharacterSheet` is set before the nil-formula guard.
+  **Fix:** capture the triggering `RollResult.id` and replace in place
+  (`HistoryStore.remove(id:)`); force every d20 group (drop the `break`); set
+  `rollCameFromCharacterSheet` only when a formula is actually dispatched.
+- ☐ **Bundled-content decode `fatalError` bricks launch** (audit #3).
+  **Fix:** make `loadDictionary` throw / fall back to empty and show a launch
+  alert ("Required game data is missing — please reinstall"). Pairs with
+  surfacing skipped imported packs (audit #21) and quarantining corrupt
+  character files instead of deleting (audit #22).
+- ☐ **Imported packs silently overwrite on slug collision** (audit #4, #37).
+  **Fix:** append a short content/name hash to the sanitized slug, or detect an
+  existing file and prompt / append a counter.
+- ☐ **`min` floor can't combine with keep/drop** (audit #5, #25). `1d20kh1min10`
+  fails. **Fix:** parse the keep/drop modifier token first, then strip a
+  trailing `minN` suffix (ordered scan / anchored regex), not substring search.
+- ☐ **Advantage silently dropped when Reliable Talent applies** (audit #6).
+  `applyAdvantage` only expands "plain" d20 groups; the floor makes them
+  non-plain. **Fix:** treat d20 groups with `minimumValue` as expandable,
+  preserving the floor on the resulting `2d20kh1min10` — or move advantage
+  expansion into `ActionInterpreter` before the floor is stamped (also fixes
+  audit #5's combo at the source).
+- ☐ **Class-skill proficiency ignored for Reliable Talent** (audit #7).
+  `resolveSkillCheck` reads only `character.proficiencies`. **Fix:** use
+  `CharacterCalculator.skillProficiencyLevel(character:skill:)` (already the
+  source of truth elsewhere) to gate the floor.
+
+### P1 — Rules fidelity that shows at the table (playtest priorities)
+
+- ☐ **Critical hits don't double damage dice** (playtest #1). A nat-20 rolls
+  normal damage. **Fix:** when the attack `RollResult.hasCriticalSuccess`, the
+  queued damage chip doubles each damage-die group (or offers a "Critical —
+  roll twice" chip). Lives in `CharacterActionDeriver`/`DiceRollerView`; no
+  content change.
+- ☐ **Damage chip offered on a natural 1** (playtest #2). **Fix:** suppress the
+  follow-up rail when `lastResult.hasCriticalFail`.
+- ☐ **Choose-damage spells locked to fire** (playtest, audit-adjacent).
+  Chromatic Orb / Dragon's Breath hard-code `fire`. **Fix (small):** give each a
+  `rawDamage` recipe per allowed type and let the player pick; **(richer):** a
+  damage-type picker in `SpellCastSheet`. Same mechanism would let
+  Elemental Affinity / Transmuted Spell choose a type.
+- ☐ **`resolveRawDamage` overwrites an inline `[type]` prefix** (audit #16).
+  **Fix:** only apply the recipe's damage type to groups lacking one.
+- ☐ **Weapon damage strings with inline modifiers mis-parse** (audit #15).
+  `parseDieString` only handles bare `NdM`. **Fix:** route weapon damage through
+  `DiceFormulaParser` (handles `1d8+2`, typed prefixes). Unblocks homebrew/import.
+- ☐ **Conditions tracked but not enforced** (playtest 3.5). `conditions.json`
+  carries rich `effects` arrays nothing consumes. **Fix:** have
+  `CharacterCalculator`/`ActionInterpreter` read `character.conditions` and apply
+  advantage/disadvantage/auto-fail to attacks, saves, and skill checks
+  (Poisoned → attack disadvantage, Restrained → DEX-save disadvantage, etc.).
+  Also surface armor `stealthDisadvantage` on Stealth.
+- ☐ **Fighting Styles: Great Weapon Fighting & Two-Weapon Fighting inert**
+  (playtest 3.3). Archery/Dueling/Defense work. **Fix:** GWF rerolls 1s/2s on
+  eligible two-handed damage dice; TWF adds the ability mod to off-hand damage —
+  both in `ActionInterpreter` using existing weapon properties.
+- ☐ **Weapon Mastery properties are display-only** (playtest 3.3). **Fix:** start
+  with the tractable ones via the existing rider system — Vex (advantage on next
+  attack after a hit), Graze (ability-mod damage on miss), Sap, Topple, Nick,
+  Slow.
+- ☐ **High-impact buff/debuff spells don't touch the sheet** (playtest 3.4).
+  **Fix incrementally on existing systems:** False Life → set `tempHP`;
+  Ray of Sickness/Hold Person/Fear/Charm Monster → apply the matching condition
+  on cast (honor-system save); Shield/Bless/Shield of Faith → short-lived
+  `activeEffects` modifying AC/attack once condition automation exists. Depends
+  on the conditions-enforcement item above.
+
+### P2 — High-priority engine / UX (audit #8–19)
+
+- ☐ **`PendingRollStore.followUps` not cleared on every handoff** (audit #8) —
+  clear at the start of each handoff; assign new follow-ups explicitly.
+- ☐ **Level-up doesn't apply all new grants** (audit #10, playtest) — generalize
+  commit to sync spells, resources, and subclass grants, not just proficiencies;
+  prompt for subclass at the level it unlocks.
+- ☐ **Level-up HP preview ignores feature HP delta** (audit #9) — run the
+  `featureHitPointBonus` diff in the preview so it matches the committed max.
+- ☐ **Multiclass: duplicate resources + unmerged slots** (audit #11, #28,
+  playtest) — dedupe feature resources by `definition.id`; implement the 5e
+  multiclass slot table; resolve spellcasting ability per source class.
+- ☐ **`grantedActions` can produce duplicate `ForEach` IDs** (audit #18) — index
+  the id and content-lint duplicate granted-action names per feature.
+- ☐ **3D dice misalignment / re-entrant roll** (audit #12, #13, #26, #33) — keep
+  a strict 1:1 formula-slot↔value mapping; guard `rollAll` against re-entry via
+  the existing `currentRollId`; make `attach` precede `roll()`; defensive
+  optionals on `DiceSceneController`.
+- ☐ **Multiple armors equippable; only first counts** (audit #17) — auto-unequip
+  other armor on equip, or warn.
+- ☐ **Spell follow-up pairs only the first damage roll** (audit #27) — return all
+  eligible follow-ups.
+
+### P3 — Creation / content fidelity (playtest §3.2, audit #20, #30)
+
+- ☐ **Background feats & equipment ignored at creation** — apply
+  `backgrounds.json` `equipment` (items) + `feat` (proficiency/feat); if feats
+  aren't modeled, surface a review-step note.
+- ☐ **Starting spell seeding ignores class spell list** — add a `spellIDs`
+  allow-list (or per-class list) so `seedStartingSpells` only grants
+  class-appropriate spells; let prepared casters curate (Add Spell currently
+  writes all three lists).
+- ☐ **Species skill-choice traits not resolved** (Elf Keen Senses, etc.) — model
+  as a `.fixedOptions`/skills selection recorded in `featureSelections`, like
+  class skills.
+- ☐ **`CharacterDraft.toCharacter()` hardcodes HP & omits background ASI** (audit
+  #30) — fold the background-bonus + real hit-die logic into `toCharacter()` so
+  the draft is self-contained (today only `finalizeDraft` is correct).
+- ☐ **`ContentValidator` gaps** (audit #20) — validate cross-references (spell/
+  subclass/feature/condition/resource IDs), all `ActionRecipe` dice types,
+  damage-type strings, `min ∈ 1...sides`, and cross-category duplicate IDs.
+
+### P4 — Medium / polish (audit #22–24, #29, #31, #32–40)
+
+- ☐ Quarantine corrupt character files + banner (audit #22); `binding(for:)`
+  returns stale character after deletion (audit #23).
+- ☐ Death save: auto-crit (two failures) when hit at 0 HP (audit #24).
+- ☐ Presets: require non-empty/unique names (audit #29).
+- ☐ Inventory weight is informational — document or add encumbrance (audit #31).
+- ☐ Polish bucket (audit #32–40): history optional-unwrap cleanup, d4/d100
+  magnifier face, delete-character 500ms delay, typed-flat display rounding,
+  tool-proficiency validation, dice-picker badge per-group removal, light-mode
+  crit color contrast.
+
+### Sequencing note
+P0 first (data integrity / no lost charges / no launch crash), then P1 (table
+credibility: crits, choose-damage, conditions, fighting styles). P1's
+buff-spell item depends on the conditions-enforcement item, so do conditions
+before wiring debuff spells. Several P0/P1 items (advantage+floor, class-skill
+proficiency, raw-damage type, weapon-damage parsing) are small and localized to
+`ActionInterpreter` + the parser — a good first batch.
+
 ---
 
 ## Status (as of 2026-06-09)
@@ -2241,17 +2399,21 @@ SRD 5.2.1, and nothing beyond it**. Verified SRD totals (not PHB):
   - Known simplifications: Font of Inspiration short-rest recovery and
     Magical Secrets/Discoveries cross-list spells are descriptive (not
     auto-applied).
-- **Subclasses 3/12 done** (Champion, Thief, Life Domain). Remaining must be
-  the SRD one-per-class: Berserker, College of Lore, Circle of the Land,
-  Warrior of the Open Hand, **Oath of Devotion** (Paladin — bundled class
-  lacks its subclass), Hunter, Draconic Sorcery, Fiend Patron, **Evoker**
-  (Wizard — same). NO Battle Master / EK / Arcane Trickster (PHB-only).
-- **Species 3/9 done** (Human, Elf, Dwarf). Remaining: Dragonborn, Gnome,
-  Goliath, Halfling, Orc, Tiefling. (Goliath, not Goblin.)
+- **Subclasses 5/12 done** (Champion, Thief, Life Domain, **College of Lore**,
+  **Draconic Sorcery**). Remaining SRD one-per-class: Berserker, Circle of the
+  Land, Warrior of the Open Hand, **Oath of Devotion** (Paladin — bundled class
+  lacks its subclass), Hunter, Fiend Patron, **Evoker** (Wizard — same). NO
+  Battle Master / EK / Arcane Trickster (PHB-only). New subclasses ship with
+  their parent class.
+- **Species 9/9 done ✅** (Human, Elf, Dwarf, Dragonborn, Gnome, Goliath,
+  Halfling, Orc, Tiefling — completed 2026-06-17). SRD-complete, with lineage/
+  ancestry/legacy pickers, Breath Weapon, granted spells, Giant Ancestry
+  mechanics, Unarmored Defense + feature HP for Draconic/Dwarven traits.
 - **Backgrounds 4/4 done ✅** (Acolyte, Sage, Soldier, Criminal — 2026-06-13).
-  The SRD has only these 4; backgrounds are SRD-complete.
-- Armor 8/8 ✅, conditions 14/14 ✅, weapons + gear nearly complete, ~14
-  spells of the (large) SRD spell list.
+  The SRD has only these 4; backgrounds are SRD-complete. (QA note: background
+  feats/equipment are not yet applied at creation — see P3 in the QA plan.)
+- Armor 8/8 ✅, conditions 14/14 ✅ (tracked but not yet mechanically enforced —
+  QA P1), weapons + gear nearly complete, **43 spells** of the (large) SRD list.
 
 Suggested authoring order, each batch shippable alone:
 - **11a. ~~Cleric~~ — DONE 2026-06-10.** Sixth class, first
@@ -2300,9 +2462,9 @@ Suggested authoring order, each batch shippable alone:
   `featureSelections` at finalize; background skills shown locked so picks
   aren't wasted; Expertise can now upgrade a class-skill grant). And a
   tool-name display fix (`ToolNames` — "thieves_tools" → "Thieves' Tools").
-  Remaining: the 6 missing SRD species (Dragonborn, Gnome, Goliath, Halfling,
-  Orc, Tiefling), mostly descriptive-trait work. Dwarven Toughness-style HP
-  traits build on item 8's `rolledHP` model.
+  ~~Remaining: the 6 missing SRD species~~ — **DONE 2026-06-17** (all 9 species
+  shipped; Dwarven Toughness-style HP traits now wired via
+  `FeatureDefinition.hitPointBonus`, see the classes/mechanics entries above).
 - **11d. Weapons + gear sweep** — remaining ~22 SRD weapons (all have
   existing property/mastery vocabulary), standard adventuring gear.
 - **11e. Spell batches** — all SRD cantrips, then L1, then L2–L3, gated per
