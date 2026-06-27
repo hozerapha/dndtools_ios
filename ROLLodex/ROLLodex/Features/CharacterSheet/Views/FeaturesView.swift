@@ -728,23 +728,42 @@ private struct SkillSelectionList: View {
         character.featureSelections[selectionID] = current
     }
 
-    /// For a `.skillsFrom` grant: a skill the character already has from
-    /// ANOTHER source (background, or a different class-skill selection)
-    /// shouldn't be pickable here — granting it again would waste the choice.
-    /// Only meaningful when offering an explicit options list.
-    private func alreadyHaveElsewhere(_ skill: Skill) -> Bool {
-        guard explicitOptions != nil else { return false }
-        if (character.proficiencies[.skill(skill)] ?? .none) != .none { return true }
-        return character.featureSelections.contains { key, values in
-            key != selectionID
-                && key.contains(FeatureIDs.classSkillsMarker)
-                && values.contains(skill.rawValue)
+    /// Why this skill is locked in the current picker (nil = selectable). A
+    /// pick shouldn't re-grant something the character already has from another
+    /// source, so the gate depends on what this picker grants:
+    /// - **Class-skill grant** (`.skillsFrom`): lock a skill already proficient
+    ///   anywhere (background, or another class-skill selection).
+    /// - **Expertise** (`.skills`, proficient-only): lock a skill that already
+    ///   has expertise from another expertise selection (Rogue L1+L6, Bard
+    ///   L2+L9, …) or stored expertise. The current picker's own picks stay
+    ///   selectable (so they can be toggled off) via the `key != selectionID`
+    ///   guard. Marker-driven, so it works for any class without naming IDs.
+    private func lockReason(_ skill: Skill) -> String? {
+        if explicitOptions != nil {
+            if (character.proficiencies[.skill(skill)] ?? .none) != .none { return "Already proficient" }
+            let elsewhere = character.featureSelections.contains { key, values in
+                key != selectionID
+                    && key.contains(FeatureIDs.classSkillsMarker)
+                    && values.contains(skill.rawValue)
+            }
+            return elsewhere ? "Already proficient" : nil
         }
+        if proficientOnly {
+            if character.proficiencies[.skill(skill)] == .expertise { return "Already expertise" }
+            let elsewhere = character.featureSelections.contains { key, values in
+                key != selectionID
+                    && key.contains(FeatureIDs.expertiseMarker)
+                    && values.contains(skill.rawValue)
+            }
+            return elsewhere ? "Already expertise" : nil
+        }
+        return nil
     }
 
     @ViewBuilder
     private func skillRow(_ skill: Skill) -> some View {
-        let locked = alreadyHaveElsewhere(skill)
+        let reason = lockReason(skill)
+        let locked = reason != nil
         Button {
             togglePick(skill)
         } label: {
@@ -760,8 +779,8 @@ private struct SkillSelectionList: View {
                         .foregroundStyle(.tertiary)
                 }
                 Spacer()
-                if locked {
-                    Text("Already proficient")
+                if let reason {
+                    Text(reason)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

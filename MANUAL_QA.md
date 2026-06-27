@@ -128,6 +128,39 @@ not surfacing at creation), which is why this list exists.
 - [ ] _Note:_ crit applies to the attack→damage follow-up (weapon + spell
   attack rolls), not to manual dice-tab rolls with no attack context.
 
+## Stackable damage riders (changed 2026-06-27)
+
+Riders (Sneak Attack, Divine Smite, Fire's Burn, …) are no longer mutually-
+exclusive chips — they're independent **toggles** stacked onto one damage roll.
+
+- [ ] **Riders are toggles, not one-shot chips.** After an attack, the rail
+  shows a "Roll damage" chip plus a toggle per available rider. Tapping a rider
+  highlights it (and updates the "Roll damage" subtitle to the combined dice);
+  tapping again turns it off. Tapping "Roll damage" rolls base + all active
+  riders as one roll.
+- [ ] **Stacking works.** A Paladin/Rogue multiclass can turn on **both** Sneak
+  Attack and Divine Smite and roll them together (previously impossible).
+- [ ] **Cost paid only at roll time.** Toggling a rider on/off spends nothing;
+  switching tabs without rolling spends nothing. Only tapping "Roll damage"
+  spends each active rider's resource (Sneak Attack once-per-turn flag, Divine
+  Smite spell slot). [Fixes the rider half of QA audit #2.]
+- [ ] **Crit doubles every active rider.** On a nat-20, "Roll critical damage"
+  applies the crit style to the whole combined formula — weapon + Sneak Attack +
+  Smite dice all transform.
+- [ ] **Divine Smite slot level** still shows in the toggle label ("Divine
+  Smite (L1 slot)") and consumes the slot it names.
+- [ ] **Once-per-turn riders disappear after use.** After firing Sneak Attack,
+  it's gone from the rail until Start New Turn clears the flag.
+
+## Selection pickers — no double-grants (fixed 2026-06-27)
+
+- [ ] **Second Expertise doesn't re-offer existing expertise.** A Rogue picks
+  Expertise at L1; at L6 the second Expertise picker shows the L1-chosen skills
+  as **disabled** with "Already expertise" (can't pick them twice). Same for a
+  **Bard** (L2 + L9 Expertise). The current picker's own picks stay toggleable.
+- [ ] **Class-skill pickers still exclude already-proficient skills** (existing
+  behavior unchanged — "Already proficient").
+
 ## QA fixes (P0 quick batch, 2026-06-27)
 
 Mostly unit-tested; two have an in-app surface worth a quick check:
