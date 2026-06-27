@@ -51,6 +51,8 @@ struct DiceRollerView: View {
     @Environment(ContentStore.self) private var contentStore
 
     @AppStorage("character.autoRoll.enabled") private var autoRollEnabled = false
+    @AppStorage(CritStyle.storageKey) private var critStyleRaw = CritStyle.default.rawValue
+    private var critStyle: CritStyle { CritStyle(rawValue: critStyleRaw) ?? .default }
 
     var body: some View {
         NavigationStack {
@@ -320,12 +322,28 @@ struct DiceRollerView: View {
         }
     }
 
+    /// A crit damage transform applies when the just-settled roll was a crit,
+    /// a crit style is enabled, and this follow-up is a damage roll (not a heal).
+    private func critAppliesTo(_ followUp: PendingFollowUp) -> Bool {
+        guard critStyle != .off, lastResult?.hasCriticalSuccess == true else { return false }
+        return !followUp.action.label.lowercased().contains("heal")
+    }
+
+    /// The formula to actually roll for a follow-up — crit-transformed when the
+    /// preceding attack was a critical hit, otherwise the plain formula.
+    private func effectiveFormula(for followUp: PendingFollowUp) -> DiceFormula? {
+        guard let base = followUp.action.formula else { return nil }
+        return critAppliesTo(followUp) ? base.applyingCrit(critStyle.rule) : base
+    }
+
     private func chip(for followUp: PendingFollowUp) -> some View {
-        let prompt = followUp.chipPrompt ?? followUpPrompt(for: followUp.action)
+        let crit = critAppliesTo(followUp)
+        let prompt = crit ? "Roll critical damage" : (followUp.chipPrompt ?? followUpPrompt(for: followUp.action))
         // Subtitle prefers the formula's display string ("1d8 + 1d6 + 3
         // piercing") so both chips read as comparable damage-roll options
-        // rather than echoing their own internal action labels.
-        let subtitle = followUp.action.formula?.compactDisplayString ?? followUp.action.label
+        // rather than echoing their own internal action labels. On a crit it
+        // shows the transformed formula so the player sees what they'll roll.
+        let subtitle = (effectiveFormula(for: followUp))?.compactDisplayString ?? followUp.action.label
         // Rider chips (any with a once-per-turn cost) get the bolt glyph to
         // telegraph "fires a finite resource" vs. the plain arrow for the
         // default chained roll.
@@ -371,8 +389,10 @@ struct DiceRollerView: View {
         if let cost = followUp.cost {
             pendingRoll.pendingCostsToApply.append(cost)
         }
-        guard let nextFormula = followUp.action.formula else { return }
-        applyLabeled(formula: nextFormula, label: followUp.action.label)
+        let crit = critAppliesTo(followUp)
+        guard let nextFormula = effectiveFormula(for: followUp) else { return }
+        let label = crit ? "\(followUp.action.label) (Critical)" : followUp.action.label
+        applyLabeled(formula: nextFormula, label: label)
         if autoRollEnabled {
             Task { await roll() }
         }

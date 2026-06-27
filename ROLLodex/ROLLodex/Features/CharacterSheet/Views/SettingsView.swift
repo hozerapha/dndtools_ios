@@ -19,6 +19,12 @@ struct SettingsView: View {
     @State private var importTarget: ImportTarget = .pack
     @State private var showImporter = false
 
+    /// First general app-preference setting (persisted via @AppStorage, the
+    /// same pattern as the dice tab's auto-roll toggle). The raw value is
+    /// stored; `critStyle` wraps it as the enum.
+    @AppStorage(CritStyle.storageKey) private var critStyleRaw = CritStyle.default.rawValue
+    private var critStyle: CritStyle { CritStyle(rawValue: critStyleRaw) ?? .default }
+
     @State private var alert: SettingsAlert?
     /// Pack staged for deletion — removing a pack drops its content (and
     /// re-surfaces any bundled ids it shadowed), so it gets an explicit prompt.
@@ -33,6 +39,7 @@ struct SettingsView: View {
             Form {
                 contentPacksSection
                 charactersSection
+                combatSection
                 #if DEBUG
                 devSection
                 #endif
@@ -175,6 +182,21 @@ struct SettingsView: View {
         }
     }
     #endif
+
+    private var combatSection: some View {
+        Section {
+            Picker("Natural 20 style", selection: $critStyleRaw) {
+                ForEach(CritStyle.allCases) { style in
+                    Text(style.label).tag(style.rawValue)
+                }
+            }
+        } header: {
+            Text("Combat")
+        } footer: {
+            // Show the chosen style's explanation so the effect is clear.
+            Text(critStyle.detail)
+        }
+    }
 
     private var aboutSection: some View {
         Section("About") {

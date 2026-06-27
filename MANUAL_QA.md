@@ -18,7 +18,9 @@ not surfacing at creation), which is why this list exists.
   for cases whose behavior changed. Claude does not check boxes — verification
   is yours.
 
-> **Recently changed — needs verification:** the **QA P0 quick batch**
+> **Recently changed — needs verification:** the **Settings page + Natural 20
+> crit styles** (2026-06-27, new — see "Settings & critical-hit styles"); the
+> **QA P0 quick batch**
 > (2026-06-27, mostly covered by unit tests — see "QA fixes" below); the
 > **Sorcerer** class + mechanics pass (Unarmored Defense, feature HP, granted
 > subclass spells, Innate Sorcery), which also fixed **Barbarian Unarmored
@@ -103,6 +105,28 @@ not surfacing at creation), which is why this list exists.
   metered** — actions/riders are always available; track uses yourself.
 
 ---
+
+## Settings & critical-hit styles (new 2026-06-27)
+
+- [ ] **Settings → Combat shows a "Natural 20 style" picker** with: Off, Double
+  the dice (RAW, default), Double the rolled value, Max die + roll, Maximize
+  dice, Double the total. The footer explains the selected style.
+- [ ] **Choice persists across relaunch.** Pick a non-default style, force-quit,
+  relaunch → it's still selected.
+- [ ] **Crit applies on the damage follow-up.** Roll a weapon (or spell) attack
+  that lands a **natural 20**; the damage chip reads **"Roll critical damage"**
+  and its subtitle shows the transformed dice. Each style:
+  - Double the dice → e.g. a greatsword's `2d6+3` becomes `4d6+3`.
+  - Double the rolled value → rolls `2d6`, the total doubles the dice you rolled, +3.
+  - Max die + roll → `12 + 2d6 + 3`.
+  - Maximize → every damage die shows its max (e.g. all 6s).
+  - Double the total → dice doubled and the +3 becomes +6.
+  - Off → damage rolls normally (no crit change).
+- [ ] **No crit on a dropped 20.** With disadvantage, a 20 that gets dropped
+  (keep-lowest) is NOT a crit — damage rolls normally.
+- [ ] **Non-crit attacks unaffected.** A normal hit's damage chip is unchanged.
+- [ ] _Note:_ crit applies to the attack→damage follow-up (weapon + spell
+  attack rolls), not to manual dice-tab rolls with no attack context.
 
 ## QA fixes (P0 quick batch, 2026-06-27)
 

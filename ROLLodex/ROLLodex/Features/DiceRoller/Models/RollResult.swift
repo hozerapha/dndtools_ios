@@ -64,7 +64,9 @@ struct RollResult: Identifiable, Codable, Hashable {
     var total: Int {
         let kept = dieRolls.filter(\.isKept).map(\.value).reduce(0, +)
         let typedModSum = formula.typedModifiers.values.reduce(0, +)
-        return kept + modifier + typedModSum
+        // The dice result multiplier (crit "double the rolled value") scales the
+        // rolled dice only — modifiers are unaffected.
+        return kept * formula.diceResultMultiplier + modifier + typedModSum
     }
 
     var hasCriticalSuccess: Bool { dieRolls.contains(where: \.isCriticalSuccess) }
@@ -98,7 +100,7 @@ struct RollResult: Identifiable, Codable, Hashable {
                 .filter(\.isKept)
                 .map(\.value)
                 .reduce(0, +)
-            totals[group.damageType, default: 0] += groupTotal
+            totals[group.damageType, default: 0] += groupTotal * formula.diceResultMultiplier
             cursor = endIndex
         }
 

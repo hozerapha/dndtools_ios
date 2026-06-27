@@ -120,21 +120,27 @@ struct DiceFormula: Codable, Hashable {
     /// negative if the user typed a `-`. Empty for untyped formulas. Zero
     /// entries are pruned so a "fire: 0" key never lingers after edits.
     var typedModifiers: [DamageType: Int] = [:]
+    /// Multiplier applied to the *rolled dice value* (not modifiers) when the
+    /// result is computed — used by the "double the rolled value" crit style,
+    /// which can't be expressed as a static dice count. Defaults to 1 (no-op).
+    var diceResultMultiplier: Int = 1
 
     init(
         groups: [DiceGroup] = [],
         modifier: Int = 0,
-        typedModifiers: [DamageType: Int] = [:]
+        typedModifiers: [DamageType: Int] = [:],
+        diceResultMultiplier: Int = 1
     ) {
         self.groups = groups
         self.modifier = modifier
         self.typedModifiers = typedModifiers
+        self.diceResultMultiplier = diceResultMultiplier
     }
 
     // MARK: - Codable (backward compatible)
 
     private enum CodingKeys: String, CodingKey {
-        case groups, modifier, typedModifiers
+        case groups, modifier, typedModifiers, diceResultMultiplier
     }
 
     init(from decoder: Decoder) throws {
@@ -144,6 +150,7 @@ struct DiceFormula: Codable, Hashable {
         // Pre-typed-modifiers formulas (any preset / history entry saved before
         // this field existed) decode with an empty dict instead of crashing.
         self.typedModifiers = try c.decodeIfPresent([DamageType: Int].self, forKey: .typedModifiers) ?? [:]
+        self.diceResultMultiplier = try c.decodeIfPresent(Int.self, forKey: .diceResultMultiplier) ?? 1
     }
 
     func encode(to encoder: Encoder) throws {
@@ -153,6 +160,55 @@ struct DiceFormula: Codable, Hashable {
         if !typedModifiers.isEmpty {
             try c.encode(typedModifiers, forKey: .typedModifiers)
         }
+        if diceResultMultiplier != 1 {
+            try c.encode(diceResultMultiplier, forKey: .diceResultMultiplier)
+        }
+    }
+
+    /// Returns a copy transformed for a critical hit per `rule`. Modifier
+    /// multiplier is applied to the original flat modifiers first; the dice mode
+    /// then either grows the dice, sets the result multiplier, or converts dice
+    /// to a flat "max" amount (kept in the dice's damage-type bucket so the
+    /// breakdown still reads right).
+    func applyingCrit(_ rule: CritRule) -> DiceFormula {
+        var copy = self
+        if rule.modifierMultiplier != 1 {
+            copy.modifier *= rule.modifierMultiplier
+            for (type, value) in copy.typedModifiers {
+                copy.typedModifiers[type] = value * rule.modifierMultiplier
+            }
+        }
+
+        func addMaxFlat() {
+            for group in groups {
+                let maxValue = group.count * group.kind.rawValue
+                if let type = group.damageType {
+                    copy.typedModifiers[type, default: 0] += maxValue
+                } else {
+                    copy.modifier += maxValue
+                }
+            }
+        }
+
+        switch rule.dice {
+        case .normal:
+            break
+        case .doubleCount:
+            for i in copy.groups.indices { copy.groups[i].count *= 2 }
+        case .doubleRolledValue:
+            copy.diceResultMultiplier *= 2
+        case .maxPlusRoll:
+            addMaxFlat()  // keep the dice, add their max as a flat
+        case .maximize:
+            // Floor each die to its own max (minimumValue == sides) so every
+            // die reads its top value. Reuses the existing floor machinery and
+            // keeps the dice in the tray rather than producing an unrollable
+            // zero-dice formula.
+            for i in copy.groups.indices {
+                copy.groups[i].minimumValue = copy.groups[i].kind.rawValue
+            }
+        }
+        return copy
     }
 
     var totalDiceCount: Int {

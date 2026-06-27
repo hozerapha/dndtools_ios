@@ -505,11 +505,17 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
 
 ### P1 — Rules fidelity that shows at the table (playtest priorities)
 
-- ☐ **Critical hits don't double damage dice** (playtest #1). A nat-20 rolls
-  normal damage. **Fix:** when the attack `RollResult.hasCriticalSuccess`, the
-  queued damage chip doubles each damage-die group (or offers a "Critical —
-  roll twice" chip). Lives in `CharacterActionDeriver`/`DiceRollerView`; no
-  content change.
+- ✅ **Critical hits don't double damage dice** (playtest #1). *Done 2026-06-27,
+  configurable.* New **Settings page → Combat → "Natural 20 style"**
+  (`@AppStorage` — the first general app preference). Crit handling is modeled
+  composably (`CritRule` = dice mode × modifier multiplier) with named presets
+  (`CritStyle`: Off / Double dice (RAW, default) / Double rolled value / Max die
+  + roll / Maximize / Double total) — the foundation for a future custom editor,
+  "like the dice formulas." `DiceFormula.applyingCrit(_:)` transforms the damage
+  formula (incl. a new `diceResultMultiplier` honored by `RollResult` for the
+  "double the rolled value" style); `DiceRollerView` applies it to the
+  attack→damage follow-up when `lastResult.hasCriticalSuccess` (weapon + spell).
+  *Remaining nicety:* a "Custom" style exposing the `CritRule` knobs directly.
 - ☐ **Damage chip offered on a natural 1** (playtest #2). **Fix:** suppress the
   follow-up rail when `lastResult.hasCriticalFail`.
 - ☐ **Choose-damage spells locked to fire** (playtest, audit-adjacent).

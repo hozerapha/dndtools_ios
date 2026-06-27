@@ -303,4 +303,72 @@ struct DiceRollerTests {
         #expect(f.groups[0].damageType == .fire)   // preserved
         #expect(f.groups[1].damageType == .cold)   // filled
     }
+
+    // MARK: - Critical-hit styles (applyingCrit)
+
+    /// Base damage: 2d6 + 3, slashing. resultFrom with both dice = 4 → dice sum 8.
+    private func critBase() -> DiceFormula {
+        var f = DiceFormula()
+        f.groups.append(DiceGroup(kind: .d6, count: 2, damageType: .slashing))
+        f.modifier = 3
+        return f
+    }
+
+    @Test func critDoubleDiceRollsTwiceTheDice() {
+        let f = critBase().applyingCrit(CritStyle.doubleDice.rule)
+        #expect(f.groups.first?.count == 4)         // 2d6 → 4d6
+        #expect(f.diceResultMultiplier == 1)
+        // Four 4s = 16, + 3 = 19.
+        #expect(roller.resultFrom(formula: f, values: [4, 4, 4, 4]).total == 19)
+    }
+
+    @Test func critDoubleRolledValueDoublesDiceNotModifier() {
+        let f = critBase().applyingCrit(CritStyle.doubleValue.rule)
+        #expect(f.groups.first?.count == 2)         // same dice
+        #expect(f.diceResultMultiplier == 2)
+        // (4+4)×2 = 16, + 3 = 19 — same EV as RAW but doubles the actual roll.
+        #expect(roller.resultFrom(formula: f, values: [4, 4]).total == 19)
+        // A low roll stays low (variance differs from RAW): (1+1)×2 + 3 = 7.
+        #expect(roller.resultFrom(formula: f, values: [1, 1]).total == 7)
+    }
+
+    @Test func critMaxPlusRollAddsMaxFlatAndKeepsDice() {
+        let f = critBase().applyingCrit(CritStyle.maxPlusRoll.rule)
+        #expect(f.groups.first?.count == 2)         // dice still rolled
+        // 2d6 max = 12 → added as a slashing typed flat.
+        #expect(f.typedModifiers[.slashing] == 12)
+        // Rolled 4+4 = 8, + 12 max + 3 = 23.
+        #expect(roller.resultFrom(formula: f, values: [4, 4]).total == 23)
+    }
+
+    @Test func critMaximizeFloorsEveryDieToMax() {
+        let f = critBase().applyingCrit(CritStyle.maximize.rule)
+        #expect(f.groups.first?.minimumValue == 6)  // floored to the die's max
+        #expect(f.groups.first?.count == 2)         // still rollable (no 0-dice)
+        // Even rolling 1s, each floors to 6: 6+6 + 3 = 15.
+        #expect(roller.resultFrom(formula: f, values: [1, 1]).total == 15)
+    }
+
+    @Test func critDoubleTotalDoublesDiceAndModifier() {
+        let f = critBase().applyingCrit(CritStyle.doubleTotal.rule)
+        #expect(f.diceResultMultiplier == 2)
+        #expect(f.modifier == 6)                    // 3 × 2
+        // (4+4)×2 = 16, + 6 = 22.
+        #expect(roller.resultFrom(formula: f, values: [4, 4]).total == 22)
+    }
+
+    @Test func critOffLeavesFormulaUnchanged() {
+        let f = critBase().applyingCrit(CritStyle.off.rule)
+        #expect(f.groups.first?.count == 2)
+        #expect(f.modifier == 3)
+        #expect(f.diceResultMultiplier == 1)
+        #expect(roller.resultFrom(formula: f, values: [4, 4]).total == 11)
+    }
+
+    @Test func critStylePresetsMapToExpectedRules() {
+        #expect(CritStyle.doubleDice.rule == CritRule(dice: .doubleCount))
+        #expect(CritStyle.doubleValue.rule == CritRule(dice: .doubleRolledValue))
+        #expect(CritStyle.doubleTotal.rule == CritRule(dice: .doubleRolledValue, modifierMultiplier: 2))
+        #expect(CritStyle.default == .doubleDice)
+    }
 }
