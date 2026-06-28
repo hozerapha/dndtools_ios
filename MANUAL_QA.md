@@ -152,6 +152,27 @@ exclusive chips — they're independent **toggles** stacked onto one damage roll
 - [ ] **Once-per-turn riders disappear after use.** After firing Sneak Attack,
   it's gone from the rail until Start New Turn clears the flag.
 
+## Spell effects on the sheet (new 2026-06-27)
+
+Spells can now change the caster's sheet on cast, and impose-condition spells
+offer an apply button (one-PC app — no enemy sheet).
+
+- [ ] **False Life grants temp HP.** Cast False Life (a leveled spell — tap a
+  slot) → the character gains 2d4+4 temp HP (rolled). Re-casting takes the
+  higher value, doesn't stack.
+- [ ] **Control spells offer "Apply to this character".** Open Hold Person /
+  Fear / Ray of Sickness / Charm Monster in the cast sheet → an "Imposes"
+  section shows an **Apply Paralyzed/Frightened/Poisoned/Charmed** button.
+  Tapping it adds the condition to the character; the button then reads
+  "applied" and disables.
+- [ ] **Applied debuff actually bites.** Apply Poisoned via Ray of Sickness →
+  go roll a skill/attack → it's at disadvantage (condition enforcement). Apply
+  Paralyzed → the character shows the condition badge.
+- [ ] **Plain damage spells have no effect section.** Fire Bolt / Magic Missile
+  show no "Imposes" section.
+- [ ] _Note:_ debuffs land on **your** character (honor-system, for when you're
+  the target) — there's no enemy sheet to target.
+
 ## Condition enforcement (new 2026-06-27)
 
 Tracked conditions now actually change d20 rolls (attacks, ability/skill checks,

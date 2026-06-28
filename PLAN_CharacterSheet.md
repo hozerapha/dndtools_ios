@@ -548,13 +548,16 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
   with the tractable ones via the existing rider system — Vex (advantage on next
   attack after a hit), Graze (ability-mod damage on miss), Sap, Topple, Nick,
   Slow.
-- ☐ **High-impact buff/debuff spells don't touch the sheet** (playtest 3.4).
-  **Fix incrementally on existing systems:** False Life → set `tempHP`;
-  Ray of Sickness/Hold Person/Fear/Charm Monster → apply the matching condition
-  on cast (honor-system save); Shield/Bless/Shield of Faith → short-lived
-  `activeEffects` modifying AC/attack once condition automation exists.
-  **Now unblocked** — condition enforcement shipped, so applying a condition on
-  cast will actually affect rolls.
+- ◐ **High-impact buff/debuff spells don't touch the sheet** (playtest 3.4).
+  *Mostly fixed 2026-06-27:* new `SpellDefinition.effects: [SpellEffect]`
+  (`tempHP` / `selfCondition` / `targetCondition`). On cast, `SpellCastSheet`
+  auto-applies caster effects (False Life → temp HP, taking the higher) and
+  offers an "Apply <condition> to this character" button for `targetCondition`
+  spells (Hold Person → paralyzed, Fear → frightened, Ray of Sickness →
+  poisoned, Charm Monster → charmed) — applied conditions now bite via condition
+  enforcement. **Still open:** AC/attack buffs (Shield, Bless, Shield of Faith,
+  Mage Armor) as short-lived `activeEffects`; spell-set speed (Longstrider/Fly).
+  No enemy sheet, so debuffs are honor-system "apply to me / track".
 
 ### P2 — High-priority engine / UX (audit #8–19)
 
@@ -639,6 +642,7 @@ All phases A–O shipped. Key per-phase notes:
 | O — triggered effects & active statuses | shipped (Slices A+B+C). See "Phase O Shipped reality" for open items (Divine Smite shipped 2026-06-09; Battle Master/superiority dice, GWM, attack-roll triggers still open) |
 
 **Shipped changelog (reverse-chronological highlights; reusable infra in `code`):**
+- **2026-06-27 — Spell sheet-effects.** `SpellDefinition.effects` (`SpellEffect`: tempHP / selfCondition / targetCondition). `SpellCastSheet` auto-applies caster effects on cast (False Life temp HP) and offers an "Apply <condition>" button for control spells (Hold Person/Fear/Ray of Sickness/Charm Monster) — applied conditions bite via condition enforcement. One-PC app → debuffs are honor-system apply-to-me.
 - **2026-06-27 — Condition enforcement.** `CharacterCalculator.conditionRollMode` / `combineRollMode` / `conditionAdjustedMode` impose advantage/disadvantage from active conditions (Poisoned, Blinded, Frightened, Prone, Restrained, Invisible) on attacks, ability/skill checks, and saves — wired into `dispatchRoll`, `handleWeaponAttack`, and `SpellCastSheet` spell attacks (adv+dis cancel per 5e). Unblocks debuff-spell wiring. *Deferred:* auto-fail STR/DEX saves, armor stealth-disadvantage.
 - **2026-06-27 — Structural P0 fixes.** Stroke of Luck records the forced-20 result without deleting an unrelated history entry + forces every d20 + no longer leaks onto manual rolls (audit #1/#14/#19); `ContentStore` degrades on bad bundled JSON via `loadErrors` (surfaced in Settings) instead of `fatalError` (#3); imported-pack filenames get a stable name-hash so distinct names don't collide (#4); rollable feature resource costs deferred to roll time via `PendingRollStore.pendingResourceCostsToApply` (#2 fully closed).
 - **2026-06-27 — Expertise picker** locks skills already granted in another expertise selection (Rogue/Bard) via marker-driven `lockReason`.
@@ -709,9 +713,35 @@ Live threads, ordered roughly by self-containment. The QA Findings section above
 - Feat catalog (Origin feats from backgrounds, General feats from ASI trade-ins). May force the deferred `ChoicePromptDefinition` / `ChoiceOutcome` recursive model if any feat carries sub-prompts.
 
 **Bigger architectural threads that haven't started**
-- **Initiative / combat tracker** (separate top-level feature; out of scope per PLAN.md).
-- **Replace the "Start New Turn" honor-system button** with initiative-aware turn advancement once a tracker exists.
+- **Combat round / time tracker (near-term, LOW effort — engine half-exists).**
+  `Character.startNewTurn()` already decrements every active effect's
+  `roundsRemaining` and auto-removes expired ones (Rage→10, Bless, Haste→10);
+  effects carry their countdown. What's missing is a *visible* clock: a
+  `round` counter + a "Next Round" button (rename/augment "Start New Turn") + an
+  elapsed readout (`round × 6s`), so the header can show "Round 4 · 18s" and
+  effect rows read "Rage — 4 rounds (24s) left." A "Reset/End combat" zeroes it.
+  - Effort: small (counter + header chip; decrement logic done).
+  - Nuance for later: non-round durations (concentration up to 1 hr, "8-hour"
+    buffs) want a minutes/hours track too — a separate refinement, not needed
+    for v1 in-combat rounds. Haste (1 min = 10 rounds) already fits the round model.
+  - Supersedes the honor-system "Start New Turn" framing below.
+- **Initiative tracker** (separate top-level feature) — orders multiple
+  combatants; would drive turn advancement once it exists. Distinct from the
+  single-character round tracker above (which one PC can use solo).
 - **In-app content editor** — substantial UI; only worth it if hand-editing JSON starts to hurt.
+
+**Future: online group play (depends on the online sync layer — DM ↔ players, state-sync only, no content distribution)**
+- **Cross-party targeted buffs.** Casting a buff that targets an ally (Haste,
+  Bless, Aid, Shield of Faith, Heroism) prompts "who?" from the connected party
+  roster, applies the effect to *that* player's sheet, and both UIs track its
+  duration on a shared round clock. Builds on `SpellEffect` (extend with an
+  ally-target variant) + the round/time tracker + the sync layer. High
+  "cool-factor"; the round tracker is the natural local precursor.
+- **Shared round/initiative clock.** Once online, the round counter becomes a
+  party-wide clock the DM advances, so everyone's effect durations tick together
+  — the multiplayer payoff of the local round tracker.
+- (Online is intentionally *state-sync only* per the project's stance: positions/
+  HP/effects/turn order, never bundled or homebrew content redistribution.)
 
 **Test gaps (beyond content lint + DiceRoller core, both done)**
 - `CharacterStore.load()` manifest-cleanup regression test (the every-launch rewrite bug).

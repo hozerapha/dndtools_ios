@@ -27,12 +27,19 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
     /// caster's outgoing rolls until concentration drops. Nil for spells that
     /// don't grant a rider.
     let grantsTriggeredEffect: TriggeredEffect?
+    /// Sheet state a cast produces. Caster-targeted effects (`tempHP`,
+    /// `selfCondition`) auto-apply on cast; `targetCondition` is offered as an
+    /// "apply to this character" button (the player is often the target a DM
+    /// calls out, and there's no enemy sheet in a one-PC app). Empty for spells
+    /// with no sheet effect.
+    let effects: [SpellEffect]
 
     var isCantrip: Bool { level == 0 }
 
     private enum CodingKeys: String, CodingKey {
         case id, name, level, school, castingTime, range, components, duration
         case description, higherLevel, actionRecipes, upcastEffect, grantsTriggeredEffect
+        case effects
     }
 
     init(
@@ -48,7 +55,8 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
         higherLevel: String? = nil,
         actionRecipes: [ActionRecipe] = [],
         upcastEffect: UpcastEffect? = nil,
-        grantsTriggeredEffect: TriggeredEffect? = nil
+        grantsTriggeredEffect: TriggeredEffect? = nil,
+        effects: [SpellEffect] = []
     ) {
         self.id = id
         self.name = name
@@ -63,6 +71,7 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
         self.actionRecipes = actionRecipes
         self.upcastEffect = upcastEffect
         self.grantsTriggeredEffect = grantsTriggeredEffect
+        self.effects = effects
     }
 
     init(from decoder: Decoder) throws {
@@ -80,6 +89,7 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
         actionRecipes = try c.decodeIfPresent([ActionRecipe].self, forKey: .actionRecipes) ?? []
         upcastEffect  = try c.decodeIfPresent(UpcastEffect.self, forKey: .upcastEffect)
         grantsTriggeredEffect = try c.decodeIfPresent(TriggeredEffect.self, forKey: .grantsTriggeredEffect)
+        effects = try c.decodeIfPresent([SpellEffect].self, forKey: .effects) ?? []
     }
 
     /// Returns the spell's recipes with upcast scaling applied for the given
@@ -108,6 +118,51 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
             return .heal(dice: "\(dice)+\(extra)", addLevel: addLevel, addSpellcastingMod: addMod, label: label)
         default:
             return recipe
+        }
+    }
+}
+
+/// A sheet state change a spell produces. Caster-targeted effects apply to the
+/// caster automatically on cast; `targetCondition` is surfaced as a manual
+/// "apply to this character" button (the one-PC app has no enemy sheet, but the
+/// player is often the *target* a DM calls out).
+enum SpellEffect: Codable, Equatable {
+    /// Caster gains temporary HP from a dice formula (False Life → "2d4+4").
+    /// Temp HP doesn't stack — the higher value wins.
+    case tempHP(dice: String)
+    /// Caster gains a condition on cast (a self-buff like Invisibility on self).
+    case selfCondition(id: String)
+    /// The spell imposes a condition on its target (Hold Person → paralyzed).
+    /// Offered as an apply button rather than auto-applied.
+    case targetCondition(id: String)
+
+    private enum CodingKeys: String, CodingKey { case type, dice, condition }
+    private enum Kind: String, Codable { case tempHP, selfCondition, targetCondition }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        switch try c.decode(Kind.self, forKey: .type) {
+        case .tempHP:
+            self = .tempHP(dice: try c.decode(String.self, forKey: .dice))
+        case .selfCondition:
+            self = .selfCondition(id: try c.decode(String.self, forKey: .condition))
+        case .targetCondition:
+            self = .targetCondition(id: try c.decode(String.self, forKey: .condition))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .tempHP(let dice):
+            try c.encode(Kind.tempHP, forKey: .type)
+            try c.encode(dice, forKey: .dice)
+        case .selfCondition(let id):
+            try c.encode(Kind.selfCondition, forKey: .type)
+            try c.encode(id, forKey: .condition)
+        case .targetCondition(let id):
+            try c.encode(Kind.targetCondition, forKey: .type)
+            try c.encode(id, forKey: .condition)
         }
     }
 }

@@ -701,7 +701,13 @@
         "label": "Ray of Sickness Damage"
       }
     ],
-    "higherLevel": "The damage increases by 1d8 for each spell slot level above 1."
+    "higherLevel": "The damage increases by 1d8 for each spell slot level above 1.",
+    "effects": [
+      {
+        "type": "targetCondition",
+        "condition": "poisoned"
+      }
+    ]
   },
   {
     "id": "false_life",
@@ -724,7 +730,13 @@
     },
     "description": "You gain 2d4 + 4 Temporary Hit Points.",
     "actionRecipes": [],
-    "higherLevel": "You gain 5 additional Temporary Hit Points for each spell slot level above 1."
+    "higherLevel": "You gain 5 additional Temporary Hit Points for each spell slot level above 1.",
+    "effects": [
+      {
+        "type": "tempHP",
+        "dice": "2d4+4"
+      }
+    ]
   },
   {
     "id": "hellish_rebuke",
@@ -824,7 +836,13 @@
     },
     "description": "Choose a Humanoid that you can see within range. The target must succeed on a Wisdom saving throw or have the Paralyzed condition for the duration. At the end of each of its turns, the target repeats the save, ending the spell on itself on a success.",
     "actionRecipes": [],
-    "higherLevel": "You can target one additional Humanoid for each spell slot level above 2."
+    "higherLevel": "You can target one additional Humanoid for each spell slot level above 2.",
+    "effects": [
+      {
+        "type": "targetCondition",
+        "condition": "paralyzed"
+      }
+    ]
   },
   {
     "id": "ray_of_enfeeblement",
@@ -1026,7 +1044,13 @@
       "value": 1
     },
     "description": "Each creature in a 30-foot Cone must succeed on a Wisdom saving throw or drop whatever it's holding and gain the Frightened condition for the duration. A Frightened creature must Dash away from you each turn if able; it repeats the save at the end of a turn it ends with no line of sight to you, ending the effect on a success.",
-    "actionRecipes": []
+    "actionRecipes": [],
+    "effects": [
+      {
+        "type": "targetCondition",
+        "condition": "frightened"
+      }
+    ]
   },
   {
     "id": "fly",
@@ -1098,7 +1122,13 @@
     },
     "description": "One creature you can see makes a Wisdom saving throw (with Advantage if you or your allies are fighting it). On a failure, it has the Charmed condition (Friendly to you) until the spell ends or you or your allies damage it. It knows it was charmed afterward.",
     "actionRecipes": [],
-    "higherLevel": "You can target one additional creature for each spell slot level above 4."
+    "higherLevel": "You can target one additional creature for each spell slot level above 4.",
+    "effects": [
+      {
+        "type": "targetCondition",
+        "condition": "charmed"
+      }
+    ]
   },
   {
     "id": "legend_lore",

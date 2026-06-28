@@ -337,6 +337,39 @@ struct SpellTests {
         #expect(block?.ritualCasting == true)
     }
 
+    // MARK: - Spell effects (on-cast sheet state)
+
+    @Test func spellEffectRoundTrips() throws {
+        let cases: [SpellEffect] = [
+            .tempHP(dice: "2d4+4"),
+            .selfCondition(id: "invisible"),
+            .targetCondition(id: "paralyzed"),
+        ]
+        for effect in cases {
+            let data = try JSONEncoder().encode(effect)
+            #expect(try JSONDecoder().decode(SpellEffect.self, from: data) == effect)
+        }
+    }
+
+    @Test func bundledSpellsCarryTheirEffects() {
+        let store = ContentStore()
+        if case .tempHP(let dice)? = store.spellDefinition(id: "false_life")?.effects.first {
+            #expect(dice == "2d4+4")
+        } else {
+            Issue.record("false_life missing tempHP effect")
+        }
+        func targetCond(_ spellID: String) -> String? {
+            guard case .targetCondition(let id)? = store.spellDefinition(id: spellID)?.effects.first else { return nil }
+            return id
+        }
+        #expect(targetCond("hold_person") == "paralyzed")
+        #expect(targetCond("fear") == "frightened")
+        #expect(targetCond("ray_of_sickness") == "poisoned")
+        #expect(targetCond("charm_monster") == "charmed")
+        // A damage cantrip with no sheet effect stays empty.
+        #expect(store.spellDefinition(id: "fire_bolt")?.effects.isEmpty == true)
+    }
+
     // MARK: - Helpers
 
     private func makeWizard(level: Int) -> Character {

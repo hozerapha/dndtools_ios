@@ -76,6 +76,7 @@ struct SpellCastSheet: View {
                     if canCastAsRitual { ritualSection }
                     if let pool = freeCastPool { freeCastSection(pool) }
                     if !rollEntries.isEmpty { rollsSection }
+                    if !targetConditions.isEmpty { applyConditionSection }
                     descriptionCard
                     if let higher = spell.higherLevel, !higher.isEmpty {
                         higherLevelCard(higher)
@@ -331,7 +332,7 @@ struct SpellCastSheet: View {
         let ok = ResourceCalculator.consume(amount: 1, from: resID, in: &character, content: content)
         guard ok else { return }
         slotConsumed = true
-        commitConcentrationIfNeeded()
+        commitCast()
         // Fire the primary roll (attack or damage); a chained damage roll
         // surfaces as a follow-up in the dice tab, same as a ritual cast.
         if let primary = rollEntries.first {
@@ -423,6 +424,45 @@ struct SpellCastSheet: View {
         return "No slot available at L\(selectedLevel)."
     }
 
+    /// Condition ids this spell imposes on a target (Hold Person → paralyzed).
+    private var targetConditions: [String] {
+        spell.effects.compactMap { if case .targetCondition(let id) = $0 { return id } else { return nil } }
+    }
+
+    /// Manual "apply to this character" affordance for a spell's imposed
+    /// condition. There's no enemy sheet in a one-PC app, so this is for when
+    /// the player is the target (honor-system) — or to track it yourself.
+    private var applyConditionSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Imposes")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+            ForEach(targetConditions, id: \.self) { id in
+                let name = content.conditionDefinition(id: id)?.name ?? id.capitalized
+                let alreadyOn = character.conditions.contains { $0.id == id }
+                Button {
+                    character.applyCondition(id: id, source: spell.name)
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: alreadyOn ? "checkmark.circle.fill" : "plus.circle")
+                            .foregroundStyle(alreadyOn ? .green : Color.accentColor)
+                        Text(alreadyOn ? "\(name) applied" : "Apply \(name) to this character")
+                            .font(.subheadline.weight(.semibold))
+                        Spacer(minLength: 0)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+                .disabled(alreadyOn)
+            }
+            Text("On a failed save. For when you're the target — there's no enemy sheet.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+    }
+
     private var descriptionCard: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(spell.description)
@@ -478,7 +518,7 @@ struct SpellCastSheet: View {
             guard ok else { return }
             slotConsumed = true
         }
-        commitConcentrationIfNeeded()
+        commitCast()
         onRoll(entry.action, followUp(for: entry))
         // The dice tab takes it from here — chained damage rolls surface as a
         // follow-up chip there, so there's nothing left for this sheet to do.
@@ -503,7 +543,7 @@ struct SpellCastSheet: View {
             guard ok else { return }
             slotConsumed = true
         }
-        commitConcentrationIfNeeded()
+        commitCast()
         dismiss()
     }
 
@@ -519,7 +559,7 @@ struct SpellCastSheet: View {
     }
 
     private func performRitualCast() {
-        commitConcentrationIfNeeded()
+        commitCast()
         // Fire any rolls anyway (Detect Magic has none; a hypothetical homebrew
         // ritual with damage would still work). No slot consumption — that's
         // the whole point of casting as ritual.
@@ -539,7 +579,11 @@ struct SpellCastSheet: View {
         return true
     }
 
-    private func commitConcentrationIfNeeded() {
+    /// Everything a confirmed cast does to the caster's own sheet:
+    /// concentration + caster-targeted spell effects (temp HP, self conditions).
+    /// `targetCondition` effects are NOT applied here — they're offered as a
+    /// button (the spell hits a target, not the caster).
+    private func commitCast() {
         if spell.duration.requiresConcentration {
             // Routes through the helper so any persistent rider on this spell
             // (Hex's necrotic damage, Hunter's Mark, etc.) attaches to the
@@ -549,6 +593,18 @@ struct SpellCastSheet: View {
                 on: spell.id,
                 grantsEffect: spell.grantsTriggeredEffect
             )
+        }
+        for effect in spell.effects {
+            switch effect {
+            case .tempHP(let dice):
+                // Temp HP doesn't stack — keep the higher value.
+                let rolled = (try? DiceFormulaParser().parse(dice)).map { DiceRoller().roll($0).total } ?? 0
+                character.tempHP = max(character.tempHP, rolled)
+            case .selfCondition(let id):
+                character.applyCondition(id: id, source: spell.name)
+            case .targetCondition:
+                break  // offered via applyTargetConditionSection, not auto-applied
+            }
         }
     }
 
