@@ -111,6 +111,9 @@ struct WeaponAttackRow: Identifiable, Equatable {
     let id: String
     let weaponName: String
     let mastery: WeaponMastery?
+    /// Character-specific resolved mechanic text for `mastery` (Topple's DC,
+    /// Graze's damage, …). Nil when the weapon has no active mastery.
+    let masteryMechanic: String?
     /// d20 attack roll. Always present (every weapon can swing).
     let attack: ResolvedAction
     /// Standard damage roll. Always present.
@@ -255,6 +258,9 @@ enum CharacterActionDeriver {
                 ) else { return nil }
                 return property
             }()
+            let masteryMechanic = activeMastery.map {
+                CharacterCalculator.masteryMechanic(weapon: weapon, mastery: $0, character: character)
+            }
 
             let riders = TriggeredEffectResolver.optInRiders(
                 weapon: weapon,
@@ -266,6 +272,7 @@ enum CharacterActionDeriver {
                 id: "weapon_\(inv.id.uuidString)",
                 weaponName: weapon.name,
                 mastery: activeMastery,
+                masteryMechanic: masteryMechanic,
                 attack: attack,
                 damage: damage,
                 versatileDamage: versatileEnriched,

@@ -39,6 +39,10 @@ struct SpellCastSheet: View {
     @Environment(ContentStore.self) private var content
     @Environment(\.dismiss) private var dismiss
     @State private var selectedLevel: Int
+    /// Chosen damage type for spells that offer a choice (Chromatic Orb,
+    /// Dragon's Breath). Nil for fixed-type spells. Stamped onto the damage
+    /// dice in `rollEntries`.
+    @State private var selectedDamageType: DamageType?
     /// Set once the first roll button is tapped — locks the slot picker so the
     /// player can't switch slot levels mid-cast.
     @State private var slotConsumed: Bool = false
@@ -65,6 +69,7 @@ struct SpellCastSheet: View {
         // spell's natural base.
         let startLevel = itemContext?.baseLevel ?? spell.level
         self._selectedLevel = State(initialValue: startLevel)
+        self._selectedDamageType = State(initialValue: spell.damageTypeChoices.first)
     }
 
     var body: some View {
@@ -73,6 +78,7 @@ struct SpellCastSheet: View {
                 VStack(alignment: .leading, spacing: 16) {
                     metadataGrid
                     if showsPicker { slotPicker }
+                    if !spell.damageTypeChoices.isEmpty { damageTypePicker }
                     if canCastAsRitual { ritualSection }
                     if let pool = freeCastPool { freeCastSection(pool) }
                     if !rollEntries.isEmpty { rollsSection }
@@ -238,6 +244,39 @@ struct SpellCastSheet: View {
                 Text("Tap a level to cast.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// Damage-type chooser for spells that let the caster pick (Chromatic Orb,
+    /// Dragon's Breath). The selection stamps the spell's damage dice in
+    /// `rollEntries`. Stays editable after the slot is consumed — the SRD lets
+    /// you pick at cast time, and the damage roll happens after.
+    private var damageTypePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Damage type")
+                .font(.subheadline.weight(.semibold))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(spell.damageTypeChoices, id: \.self) { type in
+                        Button {
+                            selectedDamageType = type
+                        } label: {
+                            Text(type.rawValue.capitalized)
+                                .font(.subheadline.weight(.semibold))
+                                .padding(.horizontal, 14)
+                                .frame(minHeight: 40)
+                                .background(
+                                    type == selectedDamageType
+                                        ? Color.accentColor.opacity(0.22)
+                                        : Color.secondary.opacity(0.12),
+                                    in: Capsule()
+                                )
+                                .foregroundStyle(type == selectedDamageType ? Color.accentColor : .primary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
         }
     }
@@ -604,6 +643,11 @@ struct SpellCastSheet: View {
                 character.applyCondition(id: id, source: spell.name)
             case .targetCondition:
                 break  // offered via applyTargetConditionSection, not auto-applied
+            case .selfBuff(let buff):
+                // Park the buff as a spell-sourced active effect: it ticks down
+                // with rounds (Shield → 1) and is dropped with concentration
+                // (Bless, Shield of Faith) by removeSpellSourcedEffects.
+                character.applySpellBuff(spellID: spell.id, rounds: buff.rounds)
             }
         }
     }
@@ -742,6 +786,17 @@ struct SpellCastSheet: View {
                 spellcastingAbility: ability
             )
             guard var formula = resolved.formula else { return nil }
+            // Stamp the chosen damage type onto the spell's damage dice,
+            // overriding the recipe's placeholder type (Chromatic Orb, Dragon's
+            // Breath). Only damage recipes carry a type to override.
+            if let chosen = selectedDamageType, !spell.damageTypeChoices.isEmpty {
+                switch recipe {
+                case .rawDamage, .scaledDamage:
+                    formula.applyDamageType(chosen)
+                default:
+                    break
+                }
+            }
             var label = resolved.label
             if let upcastSuffix { label = "\(resolved.label) (\(upcastSuffix))" }
             // Spell attack roll mode: Innate Sorcery grants advantage; the
@@ -760,6 +815,12 @@ struct SpellCastSheet: View {
                     formula.groups[i].count = 2
                     formula.groups[i].modifier = (mode == .advantage) ? .keepHighest(1) : .keepLowest(1)
                     label += mode == .advantage ? " (Adv)" : " (Dis)"
+                }
+                // Bless and similar buffs add dice (1d4) to the spell attack roll.
+                let blessDice = CharacterCalculator.attackSaveBuffDiceGroups(character: character, content: content)
+                if !blessDice.isEmpty {
+                    formula.groups.append(contentsOf: blessDice)
+                    label += " +Bless"
                 }
             }
             let stamped = ResolvedAction(

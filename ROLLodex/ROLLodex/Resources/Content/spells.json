@@ -142,7 +142,10 @@
       "value": 1
     },
     "description": "An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from magic missile.",
-    "actionRecipes": []
+    "actionRecipes": [],
+    "effects": [
+      { "type": "selfBuff", "buff": { "acBonus": 5, "rounds": 1 } }
+    ]
   },
   {
     "id": "cure_wounds",
@@ -390,9 +393,12 @@
       "type": "concentration",
       "value": 1
     },
-    "description": "You bless up to three creatures within range. Whenever a blessed target makes an attack roll or a saving throw before the spell ends, the target adds 1d4 to the roll. (Attack-roll riders aren't automated yet — add the d4 manually.)",
+    "description": "You bless up to three creatures within range. Whenever a blessed target makes an attack roll or a saving throw before the spell ends, the target adds 1d4 to the roll. While active on you, the 1d4 is folded into your attack and save rolls automatically.",
     "higherLevel": "When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.",
-    "actionRecipes": []
+    "actionRecipes": [],
+    "effects": [
+      { "type": "selfBuff", "buff": { "attackAndSaveBonusDice": "1d4" } }
+    ]
   },
   {
     "id": "shield_of_faith",
@@ -415,8 +421,11 @@
       "type": "concentration",
       "value": 10
     },
-    "description": "A shimmering field surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration. (AC buffs aren't automated yet — adjust manually if it targets you.)",
-    "actionRecipes": []
+    "description": "A shimmering field surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration. While active on you, the +2 is folded into your AC automatically.",
+    "actionRecipes": [],
+    "effects": [
+      { "type": "selfBuff", "buff": { "acBonus": 2 } }
+    ]
   },
   {
     "id": "dancing_lights",
@@ -789,9 +798,38 @@
       "type": "hours",
       "value": 1
     },
-    "description": "You touch a creature. The target's Speed increases by 10 feet until the spell ends.",
+    "description": "You touch a creature. The target's Speed increases by 10 feet until the spell ends. While active on you, the +10 ft is folded into your Speed automatically.",
     "actionRecipes": [],
-    "higherLevel": "You can target one additional creature for each spell slot level above 1."
+    "effects": [
+      { "type": "selfBuff", "buff": { "speedBonus": 10 } }
+    ],
+    "higherLevel": "You can target one additional creature for each slot level above 1."
+  },
+  {
+    "id": "mage_armor",
+    "name": "Mage Armor",
+    "level": 1,
+    "school": "abjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a piece of cured leather"
+    },
+    "duration": {
+      "type": "hours",
+      "value": 8
+    },
+    "description": "You touch a willing creature who isn't wearing armor. Until the spell ends, the target's base AC becomes 13 plus its Dexterity modifier. While active on you and unarmored, this base is folded into your AC automatically.",
+    "actionRecipes": [],
+    "effects": [
+      { "type": "selfBuff", "buff": { "unarmoredACBase": 13 } }
+    ]
   },
   {
     "id": "misty_step",
@@ -946,6 +984,7 @@
         "label": "Chromatic Orb Damage (choose type)"
       }
     ],
+    "damageTypeChoices": ["acid", "cold", "fire", "lightning", "poison", "thunder"],
     "higherLevel": "The damage increases by 1d8 for each spell slot level above 1; the orb can leap a number of times equal to the slot level."
   },
   {
@@ -1021,6 +1060,7 @@
         "label": "Dragon's Breath Damage (choose type)"
       }
     ],
+    "damageTypeChoices": ["acid", "cold", "fire", "lightning", "poison"],
     "higherLevel": "The damage increases by 1d6 for each spell slot level above 2."
   },
   {

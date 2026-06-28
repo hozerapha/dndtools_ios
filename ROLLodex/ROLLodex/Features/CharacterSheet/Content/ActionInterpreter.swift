@@ -232,7 +232,7 @@ enum ActionInterpreter {
         // this to weapons with the ammunition property — bows, crossbows,
         // etc. — not thrown melee weapons).
         let archeryBonus: Int = {
-            guard fightingStyle?.style == FeatureIDs.FightingStyle.archery,
+            guard fightingStyle?.has(FeatureIDs.FightingStyle.archery) == true,
                   let weapon, weapon.properties.contains(.ammunition)
             else { return 0 }
             return 2
@@ -288,7 +288,20 @@ enum ActionInterpreter {
         }
 
         let abilityMod = CharacterCalculator.abilityModifier(score: character.abilityScores[ability] ?? 10)
-        let abilityContribution = addAbility ? abilityMod : 0
+
+        let isMelee = !(weapon?.properties.contains(.ammunition) ?? false)
+        let isTwoHandedSwing = (weapon?.properties.contains(.twoHanded) ?? false) || versatile
+
+        // Two-Weapon Fighting: the off-hand (Light-weapon) attack normally omits
+        // your ability modifier — TWF adds it back. We model an off-hand recipe
+        // as `addAbility: false`; with TWF active on a Light melee weapon, the
+        // mod is restored. (Until off-hand attacks are generated separately this
+        // only fires for recipes that explicitly drop the mod.)
+        let twfRestoresMod = !addAbility
+            && fightingStyle?.has(FeatureIDs.FightingStyle.twoWeaponFighting) == true
+            && isMelee
+            && (weapon?.properties.contains(.light) ?? false)
+        let abilityContribution = (addAbility || twfRestoresMod) ? abilityMod : 0
 
         // Dueling: +2 damage when wielding a melee weapon in one hand and no
         // other weapons. The "no other weapons" gate comes pre-computed in
@@ -296,7 +309,7 @@ enum ActionInterpreter {
         // and intrinsic two-handed weapons are excluded — Dueling only applies
         // to one-handed melee swings.
         let duelingBonus: Int = {
-            guard fightingStyle?.style == FeatureIDs.FightingStyle.dueling,
+            guard fightingStyle?.has(FeatureIDs.FightingStyle.dueling) == true,
                   fightingStyle?.onlyOneWeaponEquipped == true,
                   let weapon,
                   !weapon.properties.contains(.ammunition),
@@ -306,6 +319,12 @@ enum ActionInterpreter {
             return 2
         }()
 
+        // Great Weapon Fighting: reroll 1s and 2s on the damage dice of a melee
+        // weapon wielded with two hands (two-handed or versatile-used-2H).
+        // Implemented as a per-die `rerollOnceIfAtMost(2)` on the weapon dice.
+        let greatWeaponFighting = fightingStyle?.has(FeatureIDs.FightingStyle.greatWeaponFighting) == true
+            && isMelee && isTwoHandedSwing
+
         let totalMod = abilityContribution + duelingBonus
 
         // Route through the full parser so weapon dice with inline modifiers or
@@ -313,16 +332,29 @@ enum ActionInterpreter {
         // Fall back to an empty formula if a homebrew string is unparseable.
         var formula = (try? DiceFormulaParser().parse(dieString)) ?? DiceFormula()
         formula.modifier += totalMod
+        if greatWeaponFighting {
+            // Only stamp the reroll onto plain weapon dice — don't clobber a
+            // homebrew group that already carries a keep/drop modifier.
+            for i in formula.groups.indices where formula.groups[i].isPlain {
+                formula.groups[i].modifier = .rerollOnceIfAtMost(2)
+            }
+        }
         if let dmgType = weapon?.damageType {
             formula.fillDamageType(dmgType)
         }
         let label = weapon?.name ?? "Damage"
         var desc = dieString
-        if addAbility {
+        if addAbility || twfRestoresMod {
             desc += " + \(ability.abbreviation) (\(abilityContribution >= 0 ? "+" : "")\(abilityContribution))"
+        }
+        if twfRestoresMod {
+            desc += " [Two-Weapon Fighting]"
         }
         if duelingBonus > 0 {
             desc += " + Dueling (+\(duelingBonus))"
+        }
+        if greatWeaponFighting {
+            desc += " (reroll 1-2)"
         }
 
         return ResolvedAction(

@@ -26,6 +26,10 @@ struct CharacterSheetView: View {
     /// In-sheet mini dice tray (death saves today; level-up HP and
     /// concentration saves adopt it in 14c). Non-nil presents the overlay.
     @State private var quickRoll: QuickRollRequest?
+    /// Set when the player taps a STR/DEX save that an active condition
+    /// (Paralyzed, Stunned, Unconscious, …) forces to auto-fail. Presents an
+    /// alert and skips the roll — the save can't succeed.
+    @State private var autoFailedSave: AutoFailedSave?
     /// Which sub-tab of the character sheet is showing. The header (badges,
     /// HP bar, stat pills) stays fixed above the picker so every tab can see
     /// "who am I and how am I doing right now".
@@ -58,6 +62,14 @@ struct CharacterSheetView: View {
             case .spells:    return "wand.and.stars"
             }
         }
+    }
+
+    /// Payload for the auto-fail save alert: which save and the condition that
+    /// forces the failure.
+    struct AutoFailedSave: Identifiable {
+        let id = UUID()
+        let ability: Ability
+        let conditionName: String
     }
 
     var body: some View {
@@ -202,6 +214,18 @@ struct CharacterSheetView: View {
         .sheet(isPresented: $showAddCondition) {
             AddConditionSheet(character: $character)
                 .presentationDetents([.medium, .large])
+        }
+        .alert(
+            "Save auto-fails",
+            isPresented: Binding(
+                get: { autoFailedSave != nil },
+                set: { if !$0 { autoFailedSave = nil } }
+            ),
+            presenting: autoFailedSave
+        ) { _ in
+            Button("OK", role: .cancel) { autoFailedSave = nil }
+        } message: { save in
+            Text("\(save.ability.rawValue.capitalized) saving throws automatically fail while \(save.conditionName). No roll needed.")
         }
         .sheet(isPresented: $showLevelUp) {
             LevelUpSheet(character: $character)
@@ -444,11 +468,20 @@ struct CharacterSheetView: View {
             character: character, content: content, context: .attack
         )
         let attackMode = CharacterCalculator.combineRollMode(.normal, advantage: adv, disadvantage: dis)
-        if attackMode != .normal, let formula = applyAdvantage(to: row.attack.formula, mode: attackMode) {
+        // Bless adds 1d4 to attack rolls. Fold it (and any adv/dis) into a
+        // single resolved attack so the dice tab rolls it all at once.
+        let blessDice = CharacterCalculator.attackSaveBuffDiceGroups(character: character, content: content)
+        var attackFormula = applyAdvantage(to: row.attack.formula, mode: attackMode) ?? row.attack.formula
+        if !blessDice.isEmpty { attackFormula?.groups.append(contentsOf: blessDice) }
+        var label = row.attack.label
+        if attackMode == .disadvantage { label += " (Disadvantage)" }
+        else if attackMode == .advantage { label += " (Advantage)" }
+        if !blessDice.isEmpty { label += " +Bless" }
+        if attackMode != .normal || !blessDice.isEmpty {
             pendingRoll.pending = ResolvedAction(
                 id: row.attack.id,
-                label: row.attack.label + (attackMode == .disadvantage ? " (Disadvantage)" : " (Advantage)"),
-                formula: formula,
+                label: label,
+                formula: attackFormula,
                 description: row.attack.description
             )
         } else {
@@ -601,6 +634,15 @@ struct CharacterSheetView: View {
     /// advantage/disadvantage, the formula's plain d20 group is expanded to
     /// 2d20kh1 / 2d20kl1 so the tray actually rolls two dice and drops one.
     private func dispatchRoll(_ recipe: ActionRecipe, mode: RollMode) {
+        // A STR/DEX save under Paralyzed/Stunned/etc. auto-fails — surface that
+        // instead of rolling a die that can't matter.
+        if case .savingThrow(let ability) = recipe,
+           let condition = CharacterCalculator.autoFailedSaveCondition(
+               character: character, content: content, ability: ability
+           ) {
+            autoFailedSave = AutoFailedSave(ability: ability, conditionName: condition)
+            return
+        }
         let resolved = ActionInterpreter.resolve(
             recipe: recipe,
             character: character,
@@ -616,7 +658,16 @@ struct CharacterSheetView: View {
         let effectiveMode = CharacterCalculator.conditionAdjustedMode(
             for: recipe, userMode: mode, character: character, content: content
         )
-        let formula = applyAdvantage(to: resolved.formula, mode: effectiveMode)
+        var formula = applyAdvantage(to: resolved.formula, mode: effectiveMode)
+        // Bless and similar buffs add dice (1d4) to saving throws. Attack rolls
+        // get theirs in handleWeaponAttack / the spell sheet; ability & skill
+        // checks don't qualify.
+        if case .savingThrow = recipe {
+            let blessDice = CharacterCalculator.attackSaveBuffDiceGroups(character: character, content: content)
+            if !blessDice.isEmpty, formula != nil {
+                formula?.groups.append(contentsOf: blessDice)
+            }
+        }
         // The interpreter's label includes the modifier ("Athletics +5") for
         // the on-sheet button, but in history that just duplicates the formula
         // line, so we use a cleaner recipe-based name there. Note when a
@@ -838,7 +889,8 @@ struct CharacterSheetView: View {
     }
 
     private var speedFt: Int {
-        content.speciesDefinition(id: character.speciesID)?.speed ?? 30
+        let base = content.speciesDefinition(id: character.speciesID)?.speed ?? 30
+        return base + CharacterCalculator.spellSpeedBonus(character: character, content: content)
     }
 
     private var armorClass: Int {
@@ -860,7 +912,13 @@ struct CharacterSheetView: View {
             armor: equippedArmor,
             hasShield: hasShield,
             fightingStyleBonus: fsBonus,
-            unarmoredDefenseBonus: unarmoredBonus
+            unarmoredDefenseBonus: unarmoredBonus,
+            // Active buff spells: flat AC (Shield, Shield of Faith) + an
+            // unarmored base override (Mage Armor → 13 + DEX, no armor only).
+            spellACBonus: CharacterCalculator.spellACBonus(character: character, content: content),
+            unarmoredACBase: equippedArmor == nil
+                ? CharacterCalculator.spellUnarmoredACBase(character: character, content: content)
+                : nil
         )
     }
 

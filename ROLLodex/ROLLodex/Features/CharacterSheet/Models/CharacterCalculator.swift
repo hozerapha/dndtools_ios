@@ -142,7 +142,9 @@ enum CharacterCalculator {
         armor: ArmorDefinition?,
         hasShield: Bool,
         fightingStyleBonus: Int = 0,
-        unarmoredDefenseBonus: Int = 0
+        unarmoredDefenseBonus: Int = 0,
+        spellACBonus: Int = 0,
+        unarmoredACBase: Int? = nil
     ) -> Int {
         let base: Int
         if let armor = armor {
@@ -153,13 +155,67 @@ enum CharacterCalculator {
                 dexContribution = dexMod // No cap = full Dex mod (light armor)
             }
             base = armor.acBase + dexContribution
+        } else if let mageBase = unarmoredACBase {
+            // Mage Armor (13 + Dex) overrides Unarmored Defense — they don't
+            // stack; the better one wins, and a 13 base beats most low-mod
+            // unarmored builds. Use the higher of the two so we never downgrade.
+            base = max(mageBase, 10 + unarmoredDefenseBonus) + dexMod
         } else {
             // No armor: 10 + Dex, plus any Unarmored Defense ability mod.
             base = 10 + dexMod + unarmoredDefenseBonus
         }
 
         let shieldBonus = hasShield ? 2 : 0
-        return base + shieldBonus + fightingStyleBonus
+        return base + shieldBonus + fightingStyleBonus + spellACBonus
+    }
+
+    /// Every `SpellBuffEffect` currently riding on the character via an active
+    /// spell effect (Bless, Shield of Faith, Mage Armor, Longstrider, Shield).
+    @MainActor
+    static func activeSpellBuffs(character: Character, content: ContentStore) -> [SpellBuffEffect] {
+        var out: [SpellBuffEffect] = []
+        for active in character.activeEffects {
+            guard case .spell(let id) = active.source,
+                  let spell = content.spellDefinition(id: id) else { continue }
+            for effect in spell.effects {
+                if case .selfBuff(let buff) = effect { out.append(buff) }
+            }
+        }
+        return out
+    }
+
+    /// Flat AC bonus from active spell buffs (Shield + Shield of Faith stack).
+    @MainActor
+    static func spellACBonus(character: Character, content: ContentStore) -> Int {
+        activeSpellBuffs(character: character, content: content).reduce(0) { $0 + $1.acBonus }
+    }
+
+    /// The highest unarmored AC base granted by an active buff (Mage Armor →
+    /// 13), or nil when none is active. Only meaningful while no armor is worn.
+    @MainActor
+    static func spellUnarmoredACBase(character: Character, content: ContentStore) -> Int? {
+        activeSpellBuffs(character: character, content: content)
+            .compactMap(\.unarmoredACBase)
+            .max()
+    }
+
+    /// Walking-speed bonus in feet from active spell buffs (Longstrider +10).
+    @MainActor
+    static func spellSpeedBonus(character: Character, content: ContentStore) -> Int {
+        activeSpellBuffs(character: character, content: content).reduce(0) { $0 + $1.speedBonus }
+    }
+
+    /// Dice groups every active buff adds to attack rolls and saving throws
+    /// (Bless → 1d4). Callers append these to the resolved d20 formula.
+    @MainActor
+    static func attackSaveBuffDiceGroups(character: Character, content: ContentStore) -> [DiceGroup] {
+        var groups: [DiceGroup] = []
+        for buff in activeSpellBuffs(character: character, content: content) {
+            guard let dice = buff.attackAndSaveBonusDice,
+                  let parsed = try? DiceFormulaParser().parse(dice) else { continue }
+            groups.append(contentsOf: parsed.groups)
+        }
+        return groups
     }
 
     /// The ability whose modifier feeds Unarmored Defense for this character,
@@ -202,12 +258,18 @@ enum CharacterCalculator {
         character: Character,
         content: ContentStore
     ) -> FightingStyleEffects {
-        let style = character.featureSelections[FeatureIDs.fightingStyle]?.first
+        // Collect every fighting-style selection: the base `fighting_style`
+        // slot plus extras like the Fighter's `fighter_fighting_style_2`. All
+        // such selection ids contain "fighting_style".
+        var styles: Set<String> = []
+        for (key, values) in character.featureSelections where key.contains("fighting_style") {
+            styles.formUnion(values)
+        }
         let equippedWeapons = character.inventory
             .filter { $0.equipped }
             .compactMap { content.weaponDefinition(id: $0.itemID) }
         return FightingStyleEffects(
-            style: style,
+            styles: styles,
             onlyOneWeaponEquipped: equippedWeapons.count == 1
         )
     }
@@ -434,6 +496,50 @@ enum CharacterCalculator {
         return (character.featureSelections[FeatureIDs.weaponMastery] ?? []).contains(weaponID)
     }
 
+    /// The ability whose modifier a weapon's attack roll uses — finesse picks
+    /// the better of STR/DEX, otherwise the weapon's declared damage ability
+    /// (default STR). Mirrors `ActionInterpreter.resolveWeaponAttack`'s choice.
+    static func weaponAttackAbilityMod(character: Character, weapon: WeaponDefinition) -> Int {
+        let str = abilityModifier(score: character.abilityScores[.strength] ?? 10)
+        let dex = abilityModifier(score: character.abilityScores[.dexterity] ?? 10)
+        if weapon.properties.contains(.finesse) { return max(str, dex) }
+        let ability = weapon.damageAbility ?? .strength
+        return abilityModifier(score: character.abilityScores[ability] ?? 10)
+    }
+
+    /// Character-specific, resolved mechanic text for a weapon's Mastery
+    /// property — the numbers filled in (Topple save DC, Graze damage) so the
+    /// player can act on it without flipping to a reference. Self-affecting
+    /// masteries (Vex's "advantage on your next attack") read as guidance;
+    /// enemy-only ones (Sap, Slow) stay narrative — there's no enemy sheet.
+    static func masteryMechanic(
+        weapon: WeaponDefinition,
+        mastery: WeaponMastery,
+        character: Character
+    ) -> String {
+        let abilityMod = weaponAttackAbilityMod(character: character, weapon: weapon)
+        let pb = proficiencyBonus(level: character.level)
+        let type = weapon.damageType.rawValue
+        switch mastery {
+        case .vex:
+            return "On a hit that deals damage: Advantage on your next attack against that target."
+        case .graze:
+            return "On a miss: deal \(max(0, abilityMod)) \(type) damage anyway."
+        case .topple:
+            return "On a hit: target makes a DC \(8 + abilityMod + pb) Constitution save or falls Prone."
+        case .sap:
+            return "On a hit: target has Disadvantage on its next attack."
+        case .slow:
+            return "On a hit that deals damage: target's Speed −10 ft until your next turn."
+        case .push:
+            return "On a hit: push a Large-or-smaller target up to 10 ft away."
+        case .nick:
+            return "Make the Light extra attack as part of your Attack action (no Bonus Action)."
+        case .cleave:
+            return "On a hit: a second creature within 5 ft takes the weapon's damage (no ability mod). Once per turn."
+        }
+    }
+
     /// Per-weapon attack + damage breakdown shown in the inventory description.
     /// Lets the player audit why their Shortbow attack is "+3" instead of "+5":
     /// they see the DEX mod and proficiency contributions inline.
@@ -566,15 +672,51 @@ enum CharacterCalculator {
     }
 
     /// One-call: a recipe's effective roll mode after folding in the character's
-    /// conditions on top of the user's choice. Returns `userMode` unchanged for
-    /// recipes conditions don't affect.
+    /// conditions AND worn-armor effects on top of the user's choice. Returns
+    /// `userMode` unchanged for recipes neither touches.
     @MainActor
     static func conditionAdjustedMode(
         for recipe: ActionRecipe, userMode: RollMode, character: Character, content: ContentStore
     ) -> RollMode {
         guard let context = conditionContext(for: recipe) else { return userMode }
-        let (adv, dis) = conditionRollMode(character: character, content: content, context: context)
+        var (adv, dis) = conditionRollMode(character: character, content: content, context: context)
+        // Heavy/medium armor's Stealth penalty isn't a condition — fold it in
+        // here so a single call yields the true Stealth roll mode.
+        if case .skillCheck(.stealth) = recipe,
+           stealthDisadvantageFromArmor(character: character, content: content) {
+            dis = true
+        }
         return combineRollMode(userMode, advantage: adv, disadvantage: dis)
+    }
+
+    /// True when the character wears (non-shield) armor that imposes
+    /// disadvantage on Dexterity (Stealth) checks. Drives the Stealth roll mode
+    /// and a sheet note. Honors the first equipped body armor (only one counts).
+    @MainActor
+    static func stealthDisadvantageFromArmor(character: Character, content: ContentStore) -> Bool {
+        for item in character.inventory where item.equipped {
+            if let armor = content.armorDefinition(id: item.itemID),
+               armor.armorCategory != .shield {
+                return armor.stealthDisadvantage
+            }
+        }
+        return false
+    }
+
+    /// The name of an active condition that makes a saving throw of `ability`
+    /// auto-fail (Paralyzed / Stunned / Unconscious → STR & DEX saves), or nil
+    /// when nothing forces a failure. Surfaced as an alert so the player doesn't
+    /// waste a roll on a save that can't succeed.
+    @MainActor
+    static func autoFailedSaveCondition(
+        character: Character, content: ContentStore, ability: Ability
+    ) -> String? {
+        guard ability == .strength || ability == .dexterity else { return nil }
+        for cond in character.conditions {
+            guard let def = content.conditionDefinition(id: cond.id) else { continue }
+            if def.effects.contains(.autoFailStrengthAndDexSaves) { return def.name }
+        }
+        return nil
     }
 }
 
@@ -600,11 +742,15 @@ struct WeaponRollBreakdown: Equatable {
 /// resolution ignores this entirely. Built via
 /// `CharacterCalculator.fightingStyleEffects(character:content:)`.
 struct FightingStyleEffects: Equatable {
-    /// Picked option ID, e.g. `archery` / `defense` / `dueling`. Nil when the
-    /// character hasn't chosen a style yet.
-    let style: String?
+    /// Every chosen Fighting Style option id (`archery`, `dueling`,
+    /// `great_weapon_fighting`, …). A set because Fighters get a second style
+    /// (Champion) and a character could carry one from each of two classes.
+    let styles: Set<String>
     /// True when exactly one weapon is equipped — the Dueling pre-condition.
     let onlyOneWeaponEquipped: Bool
 
-    static let none = FightingStyleEffects(style: nil, onlyOneWeaponEquipped: false)
+    /// Whether the character has the given Fighting Style active.
+    func has(_ id: String) -> Bool { styles.contains(id) }
+
+    static let none = FightingStyleEffects(styles: [], onlyOneWeaponEquipped: false)
 }

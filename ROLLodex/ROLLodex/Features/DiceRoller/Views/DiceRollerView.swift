@@ -323,15 +323,24 @@ struct DiceRollerView: View {
     /// edits clear the rail.
     @ViewBuilder
     private var followUpRail: some View {
-        if !pendingFollowUps.isEmpty, lastResult != nil {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(pendingFollowUps) { rollDamageChip(for: $0.action) }
-                    ForEach(pendingRiders) { riderToggleChip(for: $0) }
+        if !pendingFollowUps.isEmpty, let result = lastResult {
+            if result.hasCriticalFail {
+                // Natural 1 on the attack = automatic miss, so there's no damage
+                // to roll. Suppress the whole rail (chip + riders) and say why.
+                Label("Natural 1 — miss. No damage.", systemImage: "xmark.circle.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.red)
+                    .transition(.opacity)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(pendingFollowUps) { rollDamageChip(for: $0.action) }
+                        ForEach(pendingRiders) { riderToggleChip(for: $0) }
+                    }
+                    .padding(.vertical, 2)
                 }
-                .padding(.vertical, 2)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
 

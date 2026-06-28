@@ -518,13 +518,14 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
   "double the rolled value" style); `DiceRollerView` applies it to the
   attack→damage follow-up when `lastResult.hasCriticalSuccess` (weapon + spell).
   *Remaining nicety:* a "Custom" style exposing the `CritRule` knobs directly.
-- ☐ **Damage chip offered on a natural 1** (playtest #2). **Fix:** suppress the
-  follow-up rail when `lastResult.hasCriticalFail`.
-- ☐ **Choose-damage spells locked to fire** (playtest, audit-adjacent).
-  Chromatic Orb / Dragon's Breath hard-code `fire`. **Fix (small):** give each a
-  `rawDamage` recipe per allowed type and let the player pick; **(richer):** a
-  damage-type picker in `SpellCastSheet`. Same mechanism would let
-  Elemental Affinity / Transmuted Spell choose a type.
+- ✅ **Damage chip offered on a natural 1** (playtest #2). *Fixed 2026-06-27:*
+  `DiceRollerView.followUpRail` shows "Natural 1 — miss. No damage." and
+  suppresses the damage chip + rider toggles when `lastResult.hasCriticalFail`.
+- ✅ **Choose-damage spells locked to fire** (playtest, audit-adjacent). *Fixed
+  2026-06-27:* new `SpellDefinition.damageTypeChoices` drives a damage-type
+  picker in `SpellCastSheet`; the chosen type is stamped onto the spell's damage
+  dice in `rollEntries`. Wired for Chromatic Orb (6 types) + Dragon's Breath (5).
+  Same mechanism is ready for Elemental Affinity / Transmuted Spell later.
 - ✅ **`resolveRawDamage` overwrites an inline `[type]` prefix** (audit #16).
   *Fixed 2026-06-27:* uses the new `DiceFormula.fillDamageType(_:)` (fills only
   untyped groups) instead of `applyDamageType`, so an inline `[type]` wins.
@@ -532,32 +533,37 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
   *Fixed 2026-06-27:* `resolveWeaponDamage` now routes the dice string through
   `DiceFormulaParser` (handles `1d8+2` + typed prefixes), then fills the weapon
   type onto untyped groups. Unblocks homebrew/import.
-- ◐ **Conditions tracked but not enforced** (playtest 3.5). *Mostly fixed
-  2026-06-27:* `CharacterCalculator.conditionRollMode` / `combineRollMode` /
-  `conditionAdjustedMode` read `character.conditions` and impose advantage/
-  disadvantage on attacks, ability/skill checks, and saves (Poisoned, Blinded,
-  Frightened, Prone, Restrained, Invisible). Wired into `dispatchRoll`,
-  `handleWeaponAttack`, and `SpellCastSheet` spell attacks; adv+dis cancel per
-  5e. **Still open:** `autoFailStrengthAndDexSaves` (Paralyzed/Stunned/etc.) not
-  auto-applied, and armor `stealthDisadvantage` not surfaced on Stealth.
-- ☐ **Fighting Styles: Great Weapon Fighting & Two-Weapon Fighting inert**
-  (playtest 3.3). Archery/Dueling/Defense work. **Fix:** GWF rerolls 1s/2s on
-  eligible two-handed damage dice; TWF adds the ability mod to off-hand damage —
-  both in `ActionInterpreter` using existing weapon properties.
-- ☐ **Weapon Mastery properties are display-only** (playtest 3.3). **Fix:** start
-  with the tractable ones via the existing rider system — Vex (advantage on next
-  attack after a hit), Graze (ability-mod damage on miss), Sap, Topple, Nick,
-  Slow.
-- ◐ **High-impact buff/debuff spells don't touch the sheet** (playtest 3.4).
-  *Mostly fixed 2026-06-27:* new `SpellDefinition.effects: [SpellEffect]`
-  (`tempHP` / `selfCondition` / `targetCondition`). On cast, `SpellCastSheet`
-  auto-applies caster effects (False Life → temp HP, taking the higher) and
-  offers an "Apply <condition> to this character" button for `targetCondition`
-  spells (Hold Person → paralyzed, Fear → frightened, Ray of Sickness →
-  poisoned, Charm Monster → charmed) — applied conditions now bite via condition
-  enforcement. **Still open:** AC/attack buffs (Shield, Bless, Shield of Faith,
-  Mage Armor) as short-lived `activeEffects`; spell-set speed (Longstrider/Fly).
-  No enemy sheet, so debuffs are honor-system "apply to me / track".
+- ✅ **Conditions tracked but not enforced** (playtest 3.5). *Fully closed
+  2026-06-27.* The adv/dis path (`conditionRollMode` / `combineRollMode` /
+  `conditionAdjustedMode`) ships, **plus** the remaining tail: STR/DEX saves
+  auto-fail under Paralyzed/Stunned/etc. via `autoFailedSaveCondition` (an alert
+  in `dispatchRoll` skips the pointless roll), and worn medium/heavy armor's
+  `stealthDisadvantage` now folds into the Stealth roll mode through
+  `stealthDisadvantageFromArmor`.
+- ✅ **Fighting Styles: Great Weapon Fighting & Two-Weapon Fighting inert**
+  (playtest 3.3). *Fixed 2026-06-27:* `FightingStyleEffects` now aggregates ALL
+  fighting-style picks (Set, supports the Fighter's 2nd style). GWF stamps
+  `rerollOnceIfAtMost(2)` onto the damage dice of a two-handed/versatile-2H melee
+  swing; TWF restores the ability mod on an off-hand recipe (`addAbility:false`)
+  for a Light melee weapon. **Note:** off-hand attacks aren't *generated*
+  separately yet, so TWF only fires for recipes that explicitly drop the mod —
+  off-hand attack generation is the remaining wiring (see backlog).
+- ◐ **Weapon Mastery properties are display-only** (playtest 3.3). *Improved
+  2026-06-27:* `CharacterCalculator.masteryMechanic` resolves each mastery to
+  character-specific text with the numbers filled in (Topple's CON save DC,
+  Graze's ability-mod damage), surfaced on the weapon row + in the mastery
+  detail sheet. **Still narrative** (no enemy sheet): Vex/Sap/Slow/Nick stay
+  guidance — they act on a target ROLLodex doesn't model. Auto-applying Vex's
+  "advantage on your next attack" is the next tractable step.
+- ✅ **High-impact buff/debuff spells don't touch the sheet** (playtest 3.4).
+  *Closed 2026-06-27:* on top of the earlier `tempHP`/`selfCondition`/
+  `targetCondition` work, `SpellEffect.selfBuff(SpellBuffEffect)` lands timed
+  buffs in `activeEffects` (ticking with rounds, dropping with concentration):
+  **AC** (Shield +5, Shield of Faith +2 — stack), **unarmored AC base** (Mage
+  Armor → 13 + DEX), **attack & save dice** (Bless → 1d4, folded into weapon +
+  spell attacks and saves), and **speed** (Longstrider +10). Buffs show a named,
+  dismissable pill in `EffectsRow`. **Deferred:** Fly's separate fly-speed
+  movement mode (we render one speed); debuffs on enemies remain out of scope.
 
 ### P2 — High-priority engine / UX (audit #8–19)
 
@@ -642,6 +648,7 @@ All phases A–O shipped. Key per-phase notes:
 | O — triggered effects & active statuses | shipped (Slices A+B+C). See "Phase O Shipped reality" for open items (Divine Smite shipped 2026-06-09; Battle Master/superiority dice, GWM, attack-roll triggers still open) |
 
 **Shipped changelog (reverse-chronological highlights; reusable infra in `code`):**
+- **2026-06-27 — P1 rules-fidelity batch (all open P1s).** (1) Nat-1 suppresses the damage chip/riders with a "miss" note (`DiceRollerView.followUpRail`). (2) Choose-damage spells: `SpellDefinition.damageTypeChoices` + a damage-type picker in `SpellCastSheet` (Chromatic Orb, Dragon's Breath). (3) Condition-enforcement tail: STR/DEX save auto-fail alert (`autoFailedSaveCondition`) + armor Stealth disadvantage (`stealthDisadvantageFromArmor`). (4) Fighting Styles: GWF reroll 1-2 on two-handed melee dice + TWF off-hand mod restore; `FightingStyleEffects` now a Set of all picks. (5) Weapon Mastery: `CharacterCalculator.masteryMechanic` resolves per-weapon numbers (Topple DC, Graze damage) onto the row + detail sheet. (6) Buff spells: `SpellEffect.selfBuff(SpellBuffEffect)` → AC (Shield, Shield of Faith), unarmored base (Mage Armor — new spell), attack/save dice (Bless, folded into weapon + spell attacks + saves), speed (Longstrider); parked in `activeEffects`, dismissable pill in `EffectsRow`. Tests: FightingStyleTests (GWF/TWF), CharacterActionDeriverTests (mastery), SpellBuffTests (new).
 - **2026-06-27 — Spell sheet-effects.** `SpellDefinition.effects` (`SpellEffect`: tempHP / selfCondition / targetCondition). `SpellCastSheet` auto-applies caster effects on cast (False Life temp HP) and offers an "Apply <condition>" button for control spells (Hold Person/Fear/Ray of Sickness/Charm Monster) — applied conditions bite via condition enforcement. One-PC app → debuffs are honor-system apply-to-me.
 - **2026-06-27 — Condition enforcement.** `CharacterCalculator.conditionRollMode` / `combineRollMode` / `conditionAdjustedMode` impose advantage/disadvantage from active conditions (Poisoned, Blinded, Frightened, Prone, Restrained, Invisible) on attacks, ability/skill checks, and saves — wired into `dispatchRoll`, `handleWeaponAttack`, and `SpellCastSheet` spell attacks (adv+dis cancel per 5e). Unblocks debuff-spell wiring. *Deferred:* auto-fail STR/DEX saves, armor stealth-disadvantage.
 - **2026-06-27 — Structural P0 fixes.** Stroke of Luck records the forced-20 result without deleting an unrelated history entry + forces every d20 + no longer leaks onto manual rolls (audit #1/#14/#19); `ContentStore` degrades on bad bundled JSON via `loadErrors` (surfaced in Settings) instead of `fatalError` (#3); imported-pack filenames get a stable name-hash so distinct names don't collide (#4); rollable feature resource costs deferred to roll time via `PendingRollStore.pendingResourceCostsToApply` (#2 fully closed).
@@ -762,6 +769,9 @@ Authoring order, each batch shippable alone:
 **14d. Quick Roll polish (later)** — per-prompt "roll resolution" preference (mini tray / full tray / type manually); realizes Phase I.5's `RollPrompt` and absorbs open decision #8.
 
 **UX + structure polish backlog (small, parallelizable)**
+- **Off-hand attack generation** — the deriver makes one row per equipped weapon with the ability mod always on; a true off-hand (bonus-action, Light, mod-off-unless-TWF) attack isn't generated. The interpreter rule for TWF already exists (`addAbility:false` → mod restored under TWF); the missing piece is the deriver emitting an off-hand row for a second Light weapon. Until then TWF is engine-correct but only fires for explicit off-hand recipes.
+- **Weapon Mastery auto-apply (Vex)** — surface "advantage on your next attack" as a one-shot self effect the player confirms after a hit, consumed by the next weapon attack. The other masteries (Sap/Slow/Nick/Topple condition) stay narrative without an enemy sheet.
+- **Fly speed** — model a separate fly-speed movement mode (the buff infra carries `speedBonus`; Fly needs a distinct mode + display).
 - Spell "forget" confirmation still open; empty-name guard on character rename.
 - `.searchable` on the add-spell picker; spell-description preview without opening the cast sheet (long-press / info button).
 - Attunement-cap feedback: tapping attune at 3/3 currently no-ops silently — show a brief explanation.

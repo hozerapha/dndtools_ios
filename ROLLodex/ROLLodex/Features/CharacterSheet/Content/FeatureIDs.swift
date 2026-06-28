@@ -41,5 +41,7 @@ enum FeatureIDs {
         static let archery = "archery"
         static let defense = "defense"
         static let dueling = "dueling"
+        static let greatWeaponFighting = "great_weapon_fighting"
+        static let twoWeaponFighting = "two_weapon_fighting"
     }
 }

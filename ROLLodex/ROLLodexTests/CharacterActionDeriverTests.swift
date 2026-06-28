@@ -114,6 +114,31 @@ struct CharacterActionDeriverTests {
         #expect(rows.first?.mastery == nil)
     }
 
+    @Test func weaponRowCarriesResolvedMasteryMechanic() {
+        let store = ContentStore()
+        let character = makeFighter(masteringLongsword: true)
+        let rows = CharacterActionDeriver.weaponAttacks(for: character, content: store)
+        // Longsword → Sap: target has disadvantage on its next attack.
+        #expect(rows.first?.masteryMechanic?.contains("Disadvantage") == true)
+    }
+
+    @Test func grazeMechanicFillsInAbilityModDamage() {
+        let store = ContentStore()
+        let weapon = store.weaponDefinition(id: "greatsword")! // graze, slashing
+        let character = makeFighter()                          // STR 16 → +3
+        let text = CharacterCalculator.masteryMechanic(weapon: weapon, mastery: .graze, character: character)
+        #expect(text.contains("3 slashing"))
+    }
+
+    @Test func toppleMechanicComputesSaveDC() {
+        let store = ContentStore()
+        let weapon = store.weaponDefinition(id: "quarterstaff")! // topple
+        let character = makeFighter()  // STR 16 (+3), L1 PB +2 → DC 13
+        let text = CharacterCalculator.masteryMechanic(weapon: weapon, mastery: .topple, character: character)
+        #expect(text.contains("DC 13"))
+        #expect(text.contains("Constitution"))
+    }
+
     @Test func featureWithRecipeAppearsAsRow() {
         // Fighter level 1 includes "Second Wind" in classes.json with a heal recipe.
         let store = ContentStore()

@@ -166,6 +166,83 @@ struct FightingStyleTests {
         #expect(resolved.formula?.modifier == 2) // DEX (+2), no Dueling
     }
 
+    // MARK: - Great Weapon Fighting
+
+    @Test func greatWeaponFightingRerollsOnTwoHandedWeapon() {
+        let store = ContentStore()
+        let character = makeFighter(style: "great_weapon_fighting", equipped: ["greatsword"])
+        let fs = CharacterCalculator.fightingStyleEffects(character: character, content: store)
+        let weapon = store.weaponDefinition(id: "greatsword")!
+        let resolved = ActionInterpreter.resolve(
+            recipe: .weaponDamage(dieOverride: nil, addAbility: true, versatile: false),
+            character: character,
+            weapon: weapon,
+            fightingStyle: fs
+        )
+        // Every weapon damage group rerolls 1s and 2s.
+        #expect(resolved.formula?.groups.allSatisfy { $0.modifier == .rerollOnceIfAtMost(2) } == true)
+    }
+
+    @Test func greatWeaponFightingAppliesToVersatileTwoHandedSwing() {
+        let store = ContentStore()
+        let character = makeFighter(style: "great_weapon_fighting", equipped: ["longsword"])
+        let fs = CharacterCalculator.fightingStyleEffects(character: character, content: store)
+        let weapon = store.weaponDefinition(id: "longsword")!
+        let resolved = ActionInterpreter.resolve(
+            recipe: .weaponDamage(dieOverride: nil, addAbility: true, versatile: true),
+            character: character,
+            weapon: weapon,
+            fightingStyle: fs
+        )
+        #expect(resolved.formula?.groups.first?.modifier == .rerollOnceIfAtMost(2))
+    }
+
+    @Test func greatWeaponFightingDoesNothingOneHanded() {
+        let store = ContentStore()
+        let character = makeFighter(style: "great_weapon_fighting", equipped: ["longsword"])
+        let fs = CharacterCalculator.fightingStyleEffects(character: character, content: store)
+        let weapon = store.weaponDefinition(id: "longsword")!
+        let resolved = ActionInterpreter.resolve(
+            recipe: .weaponDamage(dieOverride: nil, addAbility: true, versatile: false),
+            character: character,
+            weapon: weapon,
+            fightingStyle: fs
+        )
+        // One-handed swing: no reroll.
+        #expect(resolved.formula?.groups.first?.modifier == nil)
+    }
+
+    // MARK: - Two-Weapon Fighting
+
+    @Test func twoWeaponFightingRestoresAbilityModToOffHand() {
+        let store = ContentStore()
+        let character = makeFighter(style: "two_weapon_fighting", equipped: ["dagger"])
+        let fs = CharacterCalculator.fightingStyleEffects(character: character, content: store)
+        let weapon = store.weaponDefinition(id: "dagger")!
+        // Off-hand recipe omits the mod (addAbility: false); TWF adds it back.
+        let resolved = ActionInterpreter.resolve(
+            recipe: .weaponDamage(dieOverride: nil, addAbility: false, versatile: false),
+            character: character,
+            weapon: weapon,
+            fightingStyle: fs
+        )
+        #expect(resolved.formula?.modifier == 3) // finesse → STR (+3) restored
+    }
+
+    @Test func withoutTwoWeaponFightingOffHandOmitsMod() {
+        let store = ContentStore()
+        let character = makeFighter(style: "dueling", equipped: ["dagger"])
+        let fs = CharacterCalculator.fightingStyleEffects(character: character, content: store)
+        let weapon = store.weaponDefinition(id: "dagger")!
+        let resolved = ActionInterpreter.resolve(
+            recipe: .weaponDamage(dieOverride: nil, addAbility: false, versatile: false),
+            character: character,
+            weapon: weapon,
+            fightingStyle: fs
+        )
+        #expect(resolved.formula?.modifier == 0) // no mod, no TWF
+    }
+
     // MARK: - Helpers
 
     private func makeFighter(

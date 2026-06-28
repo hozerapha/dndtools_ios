@@ -33,13 +33,18 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
     /// calls out, and there's no enemy sheet in a one-PC app). Empty for spells
     /// with no sheet effect.
     let effects: [SpellEffect]
+    /// When non-empty, the caster picks one of these damage types at cast time
+    /// (Chromatic Orb, Dragon's Breath). The chosen type is stamped onto the
+    /// spell's damage dice, overriding the recipe's placeholder `damageType`.
+    /// Empty for spells with a fixed damage type.
+    let damageTypeChoices: [DamageType]
 
     var isCantrip: Bool { level == 0 }
 
     private enum CodingKeys: String, CodingKey {
         case id, name, level, school, castingTime, range, components, duration
         case description, higherLevel, actionRecipes, upcastEffect, grantsTriggeredEffect
-        case effects
+        case effects, damageTypeChoices
     }
 
     init(
@@ -56,7 +61,8 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
         actionRecipes: [ActionRecipe] = [],
         upcastEffect: UpcastEffect? = nil,
         grantsTriggeredEffect: TriggeredEffect? = nil,
-        effects: [SpellEffect] = []
+        effects: [SpellEffect] = [],
+        damageTypeChoices: [DamageType] = []
     ) {
         self.id = id
         self.name = name
@@ -72,6 +78,7 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
         self.upcastEffect = upcastEffect
         self.grantsTriggeredEffect = grantsTriggeredEffect
         self.effects = effects
+        self.damageTypeChoices = damageTypeChoices
     }
 
     init(from decoder: Decoder) throws {
@@ -90,6 +97,7 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
         upcastEffect  = try c.decodeIfPresent(UpcastEffect.self, forKey: .upcastEffect)
         grantsTriggeredEffect = try c.decodeIfPresent(TriggeredEffect.self, forKey: .grantsTriggeredEffect)
         effects = try c.decodeIfPresent([SpellEffect].self, forKey: .effects) ?? []
+        damageTypeChoices = try c.decodeIfPresent([DamageType].self, forKey: .damageTypeChoices) ?? []
     }
 
     /// Returns the spell's recipes with upcast scaling applied for the given
@@ -135,9 +143,13 @@ enum SpellEffect: Codable, Equatable {
     /// The spell imposes a condition on its target (Hold Person → paralyzed).
     /// Offered as an apply button rather than auto-applied.
     case targetCondition(id: String)
+    /// A timed buff the cast lands on the caster's own sheet — AC, attack/save
+    /// dice (Bless), speed, or an unarmored AC base (Mage Armor). Parked as an
+    /// `ActiveEffect` so it ticks down with rounds and drops with concentration.
+    case selfBuff(SpellBuffEffect)
 
-    private enum CodingKeys: String, CodingKey { case type, dice, condition }
-    private enum Kind: String, Codable { case tempHP, selfCondition, targetCondition }
+    private enum CodingKeys: String, CodingKey { case type, dice, condition, buff }
+    private enum Kind: String, Codable { case tempHP, selfCondition, targetCondition, selfBuff }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -148,6 +160,8 @@ enum SpellEffect: Codable, Equatable {
             self = .selfCondition(id: try c.decode(String.self, forKey: .condition))
         case .targetCondition:
             self = .targetCondition(id: try c.decode(String.self, forKey: .condition))
+        case .selfBuff:
+            self = .selfBuff(try c.decode(SpellBuffEffect.self, forKey: .buff))
         }
     }
 
@@ -163,6 +177,56 @@ enum SpellEffect: Codable, Equatable {
         case .targetCondition(let id):
             try c.encode(Kind.targetCondition, forKey: .type)
             try c.encode(id, forKey: .condition)
+        case .selfBuff(let buff):
+            try c.encode(Kind.selfBuff, forKey: .type)
+            try c.encode(buff, forKey: .buff)
         }
+    }
+}
+
+/// The mechanical payload of a `SpellEffect.selfBuff`. All fields optional/zero
+/// so a spell declares only what it changes. Read back by `CharacterCalculator`
+/// while the buff sits in `Character.activeEffects`.
+struct SpellBuffEffect: Codable, Equatable {
+    /// Flat AC bonus while active — Shield (+5), Shield of Faith (+2).
+    var acBonus: Int
+    /// Sets the unarmored AC base (10 → this) — Mage Armor → 13 (+ DEX). Only
+    /// applies while no armor is worn; doesn't stack with Unarmored Defense
+    /// (the better of the two wins). Nil for buffs that don't touch the base.
+    var unarmoredACBase: Int?
+    /// Dice added to every attack roll AND saving throw while active — Bless
+    /// ("1d4"). Nil for buffs that don't touch d20 rolls.
+    var attackAndSaveBonusDice: String?
+    /// Walking-speed bonus in feet — Longstrider (+10).
+    var speedBonus: Int
+    /// Lifetime in combat rounds; nil for buffs measured in minutes/hours that
+    /// persist until dismissed or concentration drops (Mage Armor, Longstrider).
+    var rounds: Int?
+
+    init(
+        acBonus: Int = 0,
+        unarmoredACBase: Int? = nil,
+        attackAndSaveBonusDice: String? = nil,
+        speedBonus: Int = 0,
+        rounds: Int? = nil
+    ) {
+        self.acBonus = acBonus
+        self.unarmoredACBase = unarmoredACBase
+        self.attackAndSaveBonusDice = attackAndSaveBonusDice
+        self.speedBonus = speedBonus
+        self.rounds = rounds
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case acBonus, unarmoredACBase, attackAndSaveBonusDice, speedBonus, rounds
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        acBonus = try c.decodeIfPresent(Int.self, forKey: .acBonus) ?? 0
+        unarmoredACBase = try c.decodeIfPresent(Int.self, forKey: .unarmoredACBase)
+        attackAndSaveBonusDice = try c.decodeIfPresent(String.self, forKey: .attackAndSaveBonusDice)
+        speedBonus = try c.decodeIfPresent(Int.self, forKey: .speedBonus) ?? 0
+        rounds = try c.decodeIfPresent(Int.self, forKey: .rounds)
     }
 }

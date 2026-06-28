@@ -196,9 +196,14 @@ attacker, so they're not applied to the afflicted character's own dice.)
   cancel to a normal roll.
 - [ ] **Damage unaffected.** Conditions change only the d20 (attack/check/save),
   never damage dice.
-- [ ] _Known gap (flagged):_ `autoFailStrengthAndDexSaves` (Paralyzed, Stunned,
-  Unconscious, Petrified) is **not** auto-applied — those STR/DEX saves still
-  roll normally; track the auto-fail yourself for now.
+- [ ] **STR/DEX saves auto-fail (new 2026-06-27).** Add Paralyzed (or Stunned)
+  to a character, then tap a **Strength** or **Dexterity** save → an alert
+  "Save auto-fails" appears and **no roll happens**. A Wisdom save still rolls
+  normally. Remove the condition → STR/DEX saves roll again.
+- [ ] **Armor Stealth disadvantage (new 2026-06-27).** Equip Chain Mail (or any
+  medium/heavy armor flagged `stealthDisadvantage`), then roll a **Stealth**
+  check → it rolls 2d20 keep-lowest and the label notes "Disadvantage". Other
+  Dexterity skills are unaffected. Unequip → Stealth rolls normally.
 
 ## Structural P0 fixes (2026-06-27)
 
@@ -303,6 +308,54 @@ Mostly unit-tested; two have an in-app surface worth a quick check:
   character level** (previously descriptive only).
 
 ---
+
+## P1 rules-fidelity batch (new 2026-06-27)
+
+### Natural 1 suppresses the damage chip
+- [ ] Tap a weapon **Attack**; on the dice tab, roll a **natural 1** on the
+  attack d20 → the follow-up rail shows **"Natural 1 — miss. No damage."** and
+  the "Roll damage" chip + any rider toggles are hidden.
+- [ ] Roll a non-1 attack → the damage chip + riders appear as before.
+
+### Choose-damage spells
+- [ ] Cast **Chromatic Orb** → a **Damage type** picker shows 6 options (acid,
+  cold, fire, lightning, poison, thunder). Pick **cold**, roll damage → the
+  result breakdown reads **cold** (not fire).
+- [ ] Cast **Dragon's Breath** → picker shows 5 options; the chosen type carries
+  into the damage roll.
+- [ ] A fixed-type damage spell (e.g. Fire Bolt) shows **no** type picker.
+
+### Fighting Styles — Great Weapon Fighting & Two-Weapon Fighting
+- [ ] A Fighter with **Great Weapon Fighting** wielding a **Greatsword** (or a
+  longsword's **2H** damage) → the damage roll **rerolls 1s and 2s** once
+  (description shows "(reroll 1-2)"); a one-handed longsword swing does **not**.
+- [ ] A Fighter with **Two-Weapon Fighting** — verify the engine restores the
+  ability mod to an off-hand (mod-less) attack. _Note: a separate off-hand
+  attack row isn't generated yet, so this is mostly engine-level for now._
+- [ ] Archery / Dueling / Defense still behave as before (no regression).
+
+### Weapon Mastery — resolved mechanics
+- [ ] Equip a **Quarterstaff** (Topple) with the Weapon Mastery feature + it
+  selected → tap the **Topple** badge → the sheet shows **"…DC N Constitution
+  save or falls Prone"** with N computed (8 + attack mod + PB).
+- [ ] Equip a **Greatsword** (Graze) similarly → the badge detail shows
+  **"On a miss: deal N <type> damage"** with N = your attack ability mod.
+- [ ] Sap/Slow/Nick/Vex masteries still show their rule text (narrative — no
+  enemy sheet).
+
+### Buff spells touch the sheet
+- [ ] Cast **Shield of Faith** (concentration) → **AC goes up by 2**; an
+  effect pill appears. Drop concentration → AC returns and the pill clears.
+- [ ] Cast **Shield** (reaction, 1 round) → **AC +5**; tap **Start New Turn** →
+  the buff expires and AC returns.
+- [ ] Cast **Mage Armor** while **unarmored** → AC becomes **13 + DEX** (pill
+  shows "Unarmored AC base 13"). With body armor equipped it has no effect.
+- [ ] Cast **Bless** → tap a weapon **Attack**, a **spell attack**, and a
+  **saving throw** → each rolls an extra **1d4** (label notes "+Bless"). Ability
+  and skill checks do **not** get the d4. Drop concentration → the d4 stops.
+- [ ] Cast **Longstrider** → **Speed increases by 10 ft**. Dismiss the pill →
+  speed returns.
+- [ ] Shield + Shield of Faith together → **AC +7** (they stack).
 
 ## Backlog to backfill (older features, not yet itemized here)
 

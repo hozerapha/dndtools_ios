@@ -35,10 +35,16 @@ struct EffectsRow: View {
 
     private func activePill(for active: ActiveEffect) -> some View {
         let resolved = resolved(for: active)
-        let label = resolved?.name ?? active.effectID
+        // Spell buffs (Bless, Shield of Faith, Mage Armor) carry their payload in
+        // `spell.effects`, not a TriggeredEffect — fall back to the spell name +
+        // a buff summary so the pill reads cleanly instead of "spellbuff_…".
+        let buffSpell = spellBuff(for: active)
+        let label = resolved?.name ?? buffSpell?.name ?? active.effectID
         return Menu {
             if let resolved {
                 Text(descriptionLine(for: resolved, source: active.source))
+            } else if let buffSpell {
+                Text(buffSummary(for: buffSpell))
             }
             Button(role: .destructive) {
                 character.dismissActiveEffect(active.effectID)
@@ -172,6 +178,29 @@ struct EffectsRow: View {
         case .item:
             return nil
         }
+    }
+
+    /// The spell behind a `.selfBuff`-only active effect (no TriggeredEffect),
+    /// or nil. Lets the pill show the spell name + a buff summary.
+    private func spellBuff(for active: ActiveEffect) -> SpellDefinition? {
+        guard case .spell(let id) = active.source,
+              let spell = content.spellDefinition(id: id),
+              spell.effects.contains(where: { if case .selfBuff = $0 { return true } else { return false } })
+        else { return nil }
+        return spell
+    }
+
+    /// One-line readout of a buff spell's mechanical effect for the pill menu.
+    private func buffSummary(for spell: SpellDefinition) -> String {
+        var parts: [String] = []
+        for effect in spell.effects {
+            guard case .selfBuff(let buff) = effect else { continue }
+            if buff.acBonus != 0 { parts.append("AC \(buff.acBonus >= 0 ? "+" : "")\(buff.acBonus)") }
+            if let base = buff.unarmoredACBase { parts.append("Unarmored AC base \(base)") }
+            if let dice = buff.attackAndSaveBonusDice { parts.append("+\(dice) to attacks & saves") }
+            if buff.speedBonus != 0 { parts.append("Speed \(buff.speedBonus >= 0 ? "+" : "")\(buff.speedBonus) ft") }
+        }
+        return parts.isEmpty ? spell.name : parts.joined(separator: " · ")
     }
 
     private func classFeature(id: String) -> FeatureDefinition? {

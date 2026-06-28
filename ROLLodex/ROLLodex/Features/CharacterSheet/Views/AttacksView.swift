@@ -17,8 +17,16 @@ struct AttacksView: View {
     /// Called when the player taps Damage directly (no preceding attack).
     let onDamage: (ResolvedAction) -> Void
 
-    @State private var masteryDetail: WeaponMastery?
+    @State private var masteryDetail: MasteryDetail?
     @State private var expanded: Bool = true
+
+    /// Carries both the mastery and its character-resolved mechanic text into
+    /// the detail sheet so it can show the filled-in numbers (Topple DC, etc.).
+    struct MasteryDetail: Identifiable {
+        let mastery: WeaponMastery
+        let mechanic: String?
+        var id: String { mastery.rawValue }
+    }
 
     var body: some View {
         if rows.isEmpty {
@@ -29,7 +37,9 @@ struct AttacksView: View {
                     ForEach(rows) { row in
                         WeaponRow(
                             row: row,
-                            onMasteryTap: { masteryDetail = $0 },
+                            onMasteryTap: { mastery in
+                                masteryDetail = MasteryDetail(mastery: mastery, mechanic: row.masteryMechanic)
+                            },
                             onAttackTap: { onAttack(row) },
                             onDamageTap: { onDamage(row.damage) },
                             onVersatileDamageTap: row.versatileDamage.map { v in
@@ -45,8 +55,8 @@ struct AttacksView: View {
             }
             .padding(16)
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
-            .sheet(item: $masteryDetail) { mastery in
-                MasteryDetailSheet(mastery: mastery)
+            .sheet(item: $masteryDetail) { detail in
+                MasteryDetailSheet(mastery: detail.mastery, mechanic: detail.mechanic)
                     .presentationDetents([.fraction(0.35), .medium])
             }
         }
@@ -169,12 +179,27 @@ private struct AttackChip: View {
 
 private struct MasteryDetailSheet: View {
     let mastery: WeaponMastery
+    /// Character-resolved mechanic ("…DC 13 Constitution save…"); nil falls
+    /// back to the generic rule text only.
+    let mechanic: String?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 12) {
+                    if let mechanic {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("For this weapon")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(.secondary)
+                            Text(mechanic)
+                                .font(.subheadline.weight(.semibold))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
+                        .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                    }
                     Text(mastery.summary)
                         .font(.subheadline)
                         .frame(maxWidth: .infinity, alignment: .leading)

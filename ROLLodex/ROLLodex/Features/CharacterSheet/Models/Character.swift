@@ -300,6 +300,20 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         }
     }
 
+    /// Park a `SpellEffect.selfBuff` as a spell-sourced active effect (AC,
+    /// attack/save dice, speed). Deduped by spell so re-casting refreshes rather
+    /// than stacking. Round-limited buffs (Shield) tick down in `startNewTurn`;
+    /// concentration buffs (Bless) drop via `removeSpellSourcedEffects`; long
+    /// buffs (Mage Armor) persist until dismissed. The mechanical payload is
+    /// resolved from `spell.effects` by `CharacterCalculator`, not stored here.
+    mutating func applySpellBuff(spellID: String, rounds: Int?) {
+        let effectID = "spellbuff_\(spellID)"
+        activeEffects.removeAll { $0.effectID == effectID }
+        activeEffects.append(
+            ActiveEffect(effectID: effectID, source: .spell(spellID: spellID), roundsRemaining: rounds)
+        )
+    }
+
     private mutating func removeSpellSourcedEffects(forSpellID spellID: String) {
         activeEffects.removeAll {
             if case .spell(let id) = $0.source, id == spellID { return true }
