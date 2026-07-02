@@ -218,6 +218,71 @@ enum CharacterCalculator {
         return groups
     }
 
+    // MARK: - Spell preparation
+
+    /// The character's primary spellcasting class — the first class entry that
+    /// carries a `SpellcastingBlock`. Multiclass casters with diverging
+    /// abilities/rules need a per-class resolver later.
+    @MainActor
+    static func primarySpellcasting(
+        character: Character, content: ContentStore
+    ) -> (classID: String, level: Int, block: SpellcastingBlock)? {
+        for entry in character.classEntries {
+            if let block = content.classDefinition(id: entry.classID)?.spellcasting {
+                return (entry.classID, entry.level, block)
+            }
+        }
+        return nil
+    }
+
+    /// True when the primary caster prepares spells daily (cleric/druid/paladin
+    /// = `preparedFromAll`, wizard = `preparedFromBook`). Known/pact casters and
+    /// non-casters return false.
+    @MainActor
+    static func isPreparedCaster(character: Character, content: ContentStore) -> Bool {
+        guard let sc = primarySpellcasting(character: character, content: content) else { return false }
+        return sc.block.preparedRule == .preparedFromAll || sc.block.preparedRule == .preparedFromBook
+    }
+
+    /// Max LEVELED spells the primary prepared caster can have prepared:
+    /// spellcasting-ability modifier + class level (min 1). Cantrips don't count.
+    /// Nil for known/pact casters (no prep cap) and non-casters.
+    @MainActor
+    static func maxPreparedSpells(character: Character, content: ContentStore) -> Int? {
+        guard let sc = primarySpellcasting(character: character, content: content),
+              sc.block.preparedRule == .preparedFromAll || sc.block.preparedRule == .preparedFromBook
+        else { return nil }
+        let mod = abilityModifier(score: character.abilityScores[sc.block.ability] ?? 10)
+        return max(1, mod + sc.level)
+    }
+
+    /// Cantrips-known budget for the primary caster (sparse table → its value at
+    /// the caster's class level), or nil for non-casters.
+    @MainActor
+    static func cantripsKnownBudget(character: Character, content: ContentStore) -> Int? {
+        guard let sc = primarySpellcasting(character: character, content: content) else { return nil }
+        return sc.block.cantripsKnown.value(classLevel: sc.level, characterLevel: character.level)
+    }
+
+    /// Count of currently-prepared LEVELED spells (cantrips excluded — they
+    /// don't count against the prep cap).
+    @MainActor
+    static func preparedLeveledCount(character: Character, content: ContentStore) -> Int {
+        character.spells.preparedIDs
+            .compactMap { content.spellDefinition(id: $0) }
+            .filter { !$0.isCantrip }
+            .count
+    }
+
+    /// The spell list a class chooses from: spells tagged with `classID`. If the
+    /// class has NO tagged spells in the catalog, falls back to the full catalog
+    /// so untagged classes behave exactly as before (incremental tagging).
+    @MainActor
+    static func spellList(forClassID classID: String, content: ContentStore) -> [SpellDefinition] {
+        let tagged = content.allSpells.filter { $0.classes.contains(classID) }
+        return tagged.isEmpty ? content.allSpells : tagged
+    }
+
     /// The ability whose modifier feeds Unarmored Defense for this character,
     /// or nil if no feature grants it. First match across resolved class /
     /// subclass features. Content-aware (walks features); the AC formula stays

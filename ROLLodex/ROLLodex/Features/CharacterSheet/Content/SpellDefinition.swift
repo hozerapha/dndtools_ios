@@ -38,13 +38,18 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
     /// spell's damage dice, overriding the recipe's placeholder `damageType`.
     /// Empty for spells with a fixed damage type.
     let damageTypeChoices: [DamageType]
+    /// Class IDs whose spell list this spell belongs to (`["druid", "cleric"]`).
+    /// Used to filter the prepare/known picker to a caster's list. Tagging is
+    /// incremental per class: a class with NO tagged spells falls back to the
+    /// full catalog, so untagged classes behave exactly as before.
+    let classes: [String]
 
     var isCantrip: Bool { level == 0 }
 
     private enum CodingKeys: String, CodingKey {
         case id, name, level, school, castingTime, range, components, duration
         case description, higherLevel, actionRecipes, upcastEffect, grantsTriggeredEffect
-        case effects, damageTypeChoices
+        case effects, damageTypeChoices, classes
     }
 
     init(
@@ -62,7 +67,8 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
         upcastEffect: UpcastEffect? = nil,
         grantsTriggeredEffect: TriggeredEffect? = nil,
         effects: [SpellEffect] = [],
-        damageTypeChoices: [DamageType] = []
+        damageTypeChoices: [DamageType] = [],
+        classes: [String] = []
     ) {
         self.id = id
         self.name = name
@@ -79,6 +85,7 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
         self.grantsTriggeredEffect = grantsTriggeredEffect
         self.effects = effects
         self.damageTypeChoices = damageTypeChoices
+        self.classes = classes
     }
 
     init(from decoder: Decoder) throws {
@@ -98,6 +105,7 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
         grantsTriggeredEffect = try c.decodeIfPresent(TriggeredEffect.self, forKey: .grantsTriggeredEffect)
         effects = try c.decodeIfPresent([SpellEffect].self, forKey: .effects) ?? []
         damageTypeChoices = try c.decodeIfPresent([DamageType].self, forKey: .damageTypeChoices) ?? []
+        classes = try c.decodeIfPresent([String].self, forKey: .classes) ?? []
     }
 
     /// Returns the spell's recipes with upcast scaling applied for the given

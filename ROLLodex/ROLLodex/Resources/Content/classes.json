@@ -2947,5 +2947,289 @@
         }
       }
     ]
+  },
+  {
+    "id": "druid",
+    "name": "Druid",
+    "hitDie": 8,
+    "primaryAbility": "wisdom",
+    "savingThrows": ["intelligence", "wisdom"],
+    "armorProficiencies": ["light", "shield"],
+    "weaponProficiencies": ["simple"],
+    "subclassLevel": 3,
+    "spellcasting": {
+      "ability": "wisdom",
+      "preparedRule": "preparedFromAll",
+      "cantripsKnown": {
+        "byClassLevel": { "1": 2, "4": 3, "10": 4 }
+      },
+      "spellsKnown": null,
+      "slotTable": {
+        "kind": "fullCaster",
+        "table": {
+          "1": { "1": 2 },
+          "2": { "1": 3 },
+          "3": { "1": 4, "2": 2 },
+          "4": { "1": 4, "2": 3 },
+          "5": { "1": 4, "2": 3, "3": 2 },
+          "6": { "1": 4, "2": 3, "3": 3 },
+          "7": { "1": 4, "2": 3, "3": 3, "4": 1 },
+          "8": { "1": 4, "2": 3, "3": 3, "4": 2 },
+          "9": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 1 },
+          "10": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2 },
+          "11": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1 },
+          "13": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1 },
+          "15": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1, "8": 1 },
+          "17": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1, "8": 1, "9": 1 },
+          "18": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 1, "7": 1, "8": 1, "9": 1 },
+          "19": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 2, "7": 1, "8": 1, "9": 1 },
+          "20": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 2, "7": 2, "8": 1, "9": 1 }
+        }
+      },
+      "ritualCasting": true,
+      "spellcastingFocus": true
+    },
+    "levelFeatures": {
+      "1": [
+        {
+          "id": "druid_class_skills",
+          "name": "Skill Proficiencies",
+          "description": "Choose 2 skills from your Druid list.",
+          "kind": "selection",
+          "selection": {
+            "id": "druid_class_skills",
+            "prompt": "Choose 2 skills",
+            "count": 2,
+            "optionsSource": {
+              "type": "skillsFrom",
+              "skills": [
+                "animal_handling",
+                "arcana",
+                "insight",
+                "medicine",
+                "nature",
+                "perception",
+                "religion",
+                "survival"
+              ]
+            }
+          }
+        },
+        {
+          "id": "druid_spellcasting",
+          "name": "Spellcasting",
+          "description": "You can cast prepared Druid spells using Wisdom as your spellcasting ability. After a Long Rest you can change your prepared spells; you can use a Druidic Focus as a Spellcasting Focus, and cast prepared Druid spells with the Ritual tag as rituals.",
+          "kind": "passive"
+        },
+        {
+          "id": "druidic",
+          "name": "Druidic",
+          "description": "You know Druidic, the secret language of Druids, and can use it to leave hidden messages. You also always have the Druidcraft cantrip prepared (it doesn't count against your cantrips known).",
+          "kind": "passive"
+        },
+        {
+          "id": "primal_order",
+          "name": "Primal Order",
+          "description": "You have dedicated yourself to a sacred role. Magician: you know one extra Druid cantrip and add your Wisdom modifier to your Intelligence (Arcana/Nature) checks. Warden: you gain proficiency with Martial weapons and Medium armor. (Picks are recorded; the granted proficiencies/cantrip aren't auto-applied yet.)",
+          "kind": "selection",
+          "selection": {
+            "id": "primal_order",
+            "prompt": "Choose your Primal Order",
+            "count": 1,
+            "optionsSource": {
+              "type": "fixedOptions",
+              "options": [
+                {
+                  "id": "magician",
+                  "name": "Magician",
+                  "description": "One extra Druid cantrip; add WIS to Arcana and Nature checks."
+                },
+                {
+                  "id": "warden",
+                  "name": "Warden",
+                  "description": "Proficiency with Martial weapons and Medium armor."
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "2": [
+        {
+          "id": "wild_shape",
+          "name": "Wild Shape",
+          "description": "As a Bonus Action, you can expend a use to transform into a Beast form you've learned (Wild Shape forms aren't modeled on the sheet yet — track your assumed form manually). You regain one use on a Short Rest and all uses on a Long Rest.",
+          "actionCost": "bonusAction",
+          "resource": {
+            "id": "druid_wild_shape",
+            "name": "Wild Shape Uses",
+            "max": {
+              "byClassLevel": { "2": 2, "6": 3, "17": 4 }
+            },
+            "refreshOn": "shortRest",
+            "refreshAmount": { "fixed": 1 }
+          }
+        },
+        {
+          "id": "wild_companion",
+          "name": "Wild Companion",
+          "description": "You can expend a use of Wild Shape to cast the Find Familiar spell without Material components; the familiar is Fey and lasts a number of hours equal to half your Druid level.",
+          "kind": "passive"
+        }
+      ],
+      "3": [
+        {
+          "id": "druid_subclass",
+          "name": "Druid Subclass",
+          "description": "Choose a Druid subclass (a Primal Circle); you gain its features of your Druid level or lower.",
+          "selection": {
+            "id": "druid_subclass",
+            "prompt": "Choose a Primal Circle",
+            "count": 1,
+            "optionsSource": {
+              "type": "subclasses",
+              "parentClassID": "druid"
+            }
+          }
+        }
+      ],
+      "4": [
+        {
+          "id": "druid_asi_4",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "druid_asi_4",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "8": [
+        {
+          "id": "druid_asi_8",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "druid_asi_8",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "12": [
+        {
+          "id": "druid_asi_12",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "druid_asi_12",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "16": [
+        {
+          "id": "druid_asi_16",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "druid_asi_16",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "18": [
+        {
+          "id": "beast_spells",
+          "name": "Beast Spells",
+          "description": "While using Wild Shape, you can cast spells with Verbal and Somatic components, using your beast form's mouth and limbs to satisfy them.",
+          "kind": "passive"
+        }
+      ],
+      "19": [
+        {
+          "id": "druid_epic_boon",
+          "name": "Epic Boon",
+          "description": "You gain an Epic Boon feat of your choice for which you qualify (Boon of Spell Recall recommended).",
+          "kind": "passive"
+        }
+      ],
+      "20": [
+        {
+          "id": "archdruid",
+          "name": "Archdruid",
+          "description": "Your Wild Shape uses are effectively unlimited, you ignore Verbal/Somatic/Material components of Druid spells, and you can convert unexpended spell slots into Wild Shape uses. You also age more slowly.",
+          "kind": "passive"
+        }
+      ]
+    },
+    "subclasses": [
+      {
+        "id": "circle_of_the_land",
+        "name": "Circle of the Land",
+        "description": "A mystic druid whose magic is shaped by a chosen land — arid, polar, temperate, or tropical — granting extra prepared spells and the ability to recover magic by communing with nature.",
+        "levelFeatures": {
+          "3": [
+            {
+              "id": "circle_of_the_land_type",
+              "name": "Circle of the Land",
+              "description": "Choose a type of land. While in this Circle you always have its circle spells prepared at Druid levels 3/5/7/9 (the SRD per-land spell lists aren't all bundled yet — track your land's spells manually). You also learn one extra Druid cantrip.",
+              "kind": "selection",
+              "selection": {
+                "id": "circle_of_the_land_type",
+                "prompt": "Choose your land",
+                "count": 1,
+                "optionsSource": {
+                  "type": "fixedOptions",
+                  "options": [
+                    { "id": "arid", "name": "Arid", "description": "Deserts and savannahs — fire and lightning magic." },
+                    { "id": "polar", "name": "Polar", "description": "Frozen lands — cold and control magic." },
+                    { "id": "temperate", "name": "Temperate", "description": "Forests and grasslands — lightning and movement magic." },
+                    { "id": "tropical", "name": "Tropical", "description": "Jungles and swamps — poison, acid, and illusion magic." }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "lands_aid",
+              "name": "Land's Aid",
+              "description": "As a Magic action, you can expend a use of Wild Shape to channel life force into a point within 60 feet: one creature there makes a Constitution save (your spell save DC), taking 2d6 Necrotic damage on a failure (half on success), and a different creature of your choice there regains 2d6 Hit Points. Both dice increase by 1d6 at Druid levels 10 (+1d6) and 14 (+1d6).",
+              "kind": "passive"
+            }
+          ],
+          "6": [
+            {
+              "id": "natural_recovery",
+              "name": "Natural Recovery",
+              "description": "You can cast one of your circle spells without a spell slot once per Long Rest. Additionally, when you finish a Short Rest you can recover expended spell slots whose combined level is up to half your Druid level (rounded up); none can be 6th level or higher. (Slot recovery is tracked manually.)",
+              "kind": "passive"
+            }
+          ],
+          "10": [
+            {
+              "id": "natures_ward",
+              "name": "Nature's Ward",
+              "description": "You are immune to the Poisoned condition, and you have Resistance to a damage type associated with your circle's land. You also can't be charmed or frightened by Elementals or Fey.",
+              "kind": "passive"
+            }
+          ],
+          "14": [
+            {
+              "id": "natures_sanctuary",
+              "name": "Nature's Sanctuary",
+              "description": "As a Magic action, you create a 15-foot Cube of protective energy within 120 feet for 1 minute. You and your allies in it have Half Cover and gain your choice of resistance to Bludgeoning, Piercing, or Slashing damage; you can move the Cube 60 feet as a Bonus Action.",
+              "kind": "passive"
+            }
+          ]
+        }
+      }
+    ]
   }
 ]

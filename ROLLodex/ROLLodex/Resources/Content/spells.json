@@ -149,6 +149,7 @@
   },
   {
     "id": "cure_wounds",
+    "classes": ["druid"],
     "name": "Cure Wounds",
     "level": 1,
     "school": "abjuration",
@@ -184,6 +185,7 @@
   },
   {
     "id": "detect_magic",
+    "classes": ["druid"],
     "name": "Detect Magic",
     "level": 1,
     "school": "divination",
@@ -317,6 +319,7 @@
   },
   {
     "id": "guidance",
+    "classes": ["druid"],
     "name": "Guidance",
     "level": 0,
     "school": "divination",
@@ -339,6 +342,7 @@
   },
   {
     "id": "healing_word",
+    "classes": ["druid"],
     "name": "Healing Word",
     "level": 1,
     "school": "abjuration",
@@ -476,6 +480,7 @@
   },
   {
     "id": "druidcraft",
+    "classes": ["druid"],
     "name": "Druidcraft",
     "level": 0,
     "school": "transmutation",
@@ -521,6 +526,7 @@
   },
   {
     "id": "mending",
+    "classes": ["druid"],
     "name": "Mending",
     "level": 0,
     "school": "transmutation",
@@ -566,6 +572,7 @@
   },
   {
     "id": "poison_spray",
+    "classes": ["druid"],
     "name": "Poison Spray",
     "level": 0,
     "school": "necromancy",
@@ -633,6 +640,7 @@
   },
   {
     "id": "speak_with_animals",
+    "classes": ["druid"],
     "name": "Speak with Animals",
     "level": 1,
     "school": "divination",
@@ -658,6 +666,7 @@
   },
   {
     "id": "faerie_fire",
+    "classes": ["druid"],
     "name": "Faerie Fire",
     "level": 1,
     "school": "evocation",
@@ -780,6 +789,7 @@
   },
   {
     "id": "longstrider",
+    "classes": ["druid"],
     "name": "Longstrider",
     "level": 1,
     "school": "transmutation",
@@ -853,6 +863,7 @@
   },
   {
     "id": "hold_person",
+    "classes": ["druid"],
     "name": "Hold Person",
     "level": 2,
     "school": "enchantment",
@@ -907,6 +918,7 @@
   },
   {
     "id": "pass_without_trace",
+    "classes": ["druid"],
     "name": "Pass without Trace",
     "level": 2,
     "school": "abjuration",
@@ -1142,6 +1154,7 @@
   },
   {
     "id": "charm_monster",
+    "classes": ["druid"],
     "name": "Charm Monster",
     "level": 4,
     "school": "enchantment",

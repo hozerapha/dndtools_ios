@@ -307,6 +307,39 @@ Mostly unit-tested; two have an in-app surface worth a quick check:
 - [ ] **Dwarven Toughness** now actually adds HP: a Dwarf's max HP is **+1 per
   character level** (previously descriptive only).
 
+### Druid + spell preparation (new 2026-07-01)
+- [ ] **Create a Druid** — Wisdom caster, d8 HP, Light armor + Shields + Simple
+  weapons, INT & WIS saves. Creation offers 2 skills from the Druid list and a
+  Primal Order pick (Magician / Warden).
+- [ ] **Full-caster slots** — a level-3 Druid has 4× L1 and 2× L2 slots in the
+  Spells card.
+- [ ] **Wild Shape** appears as a **Bonus Action** on the Actions tab with a
+  **2-use** pool (3 at L6, 4 at L17); tapping consumes a use; Short Rest gives
+  one back, Long Rest refills.
+- [ ] **Circle of the Land at L3** — subclass picker offers it; choosing it
+  prompts a land type (Arid/Polar/Temperate/Tropical) and lists Land's Aid,
+  Natural Recovery (L6), Nature's Ward (L10), Nature's Sanctuary (L14).
+- [ ] **Prepare Spells button** — the Spells card shows **"Prepared: X / N"**
+  (N = WIS mod + Druid level) and a **"Prepare Spells"** button (not "Add
+  Spell").
+- [ ] **Prep picker is class-filtered** — tapping Prepare Spells lists **only
+  Druid spells** (Druidcraft, Cure Wounds, Faerie Fire, Hold Person, …); Fire
+  Bolt / Magic Missile do **not** appear.
+- [ ] **Prepare / unprepare toggles** — tap a leveled spell to prepare it
+  (green check); tap again to unprepare. The "Leveled prepared: X / N" counter
+  updates live.
+- [ ] **Cap enforced** — once leveled prepared hits N, un-prepared leveled
+  spells show a slashed circle and can't be added until you unprepare one.
+  Cantrips have their own "x / y" budget.
+- [ ] **Daily re-prep** — you can freely unprepare and prepare different spells
+  (models "change your prepared list after a long rest").
+- [ ] **Fresh Druid isn't over-prepared** — a newly created Druid starts with a
+  prepared list capped at N leveled spells (all Druid-list), not every L1 spell.
+- [ ] _Known simplifications:_ Wild Shape beast forms aren't modeled (track your
+  form + stats manually); per-land circle spell lists are text-only; Natural
+  Recovery slot recovery is manual; the "must long-rest to re-prepare" gate is
+  honor-system (editing is always allowed).
+
 ---
 
 ## P1 rules-fidelity batch (new 2026-06-27)

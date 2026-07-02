@@ -164,12 +164,15 @@ struct CharacterListView: View {
         let classLevel = character.classEntries.first(where: { $0.classID == classDef.id })?.level ?? 1
         let cantripBudget = block.cantripsKnown.value(classLevel: classLevel, characterLevel: character.level)
 
-        let allSpells = Array(contentStore.spells.values)
-        let cantrips = allSpells
+        // Only consider spells on this class's list (tagged; falls back to the
+        // full catalog for untagged classes) so a fresh druid doesn't start
+        // with wizard spells prepared.
+        let classList = CharacterCalculator.spellList(forClassID: classDef.id, content: contentStore)
+        let cantrips = classList
             .filter { $0.level == 0 }
             .sorted { $0.name < $1.name }
             .prefix(cantripBudget)
-        let leveledSpells = allSpells
+        let leveledSpells = classList
             .filter { $0.level == 1 }
             .sorted { $0.name < $1.name }
 
@@ -186,10 +189,12 @@ struct CharacterListView: View {
             character.spells.spellbookIDs = leveledIDs
             character.spells.preparedIDs = cantripIDs + leveledIDs
         case .preparedFromAll:
-            // Clerics / druids / paladins: cantrips + prepared list (curated
-            // from the full class list, which we don't model yet — so seed
-            // everything we have).
-            character.spells.preparedIDs = cantripIDs + leveledIDs
+            // Clerics / druids / paladins prepare from the whole class list each
+            // day. Seed cantrips up to budget + a starting prepared set capped at
+            // (ability mod + class level); the player re-picks via Prepare Spells.
+            let mod = CharacterCalculator.abilityModifier(score: character.abilityScores[block.ability] ?? 10)
+            let maxPrepared = max(1, mod + classLevel)
+            character.spells.preparedIDs = cantripIDs + Array(leveledIDs.prefix(maxPrepared))
         }
     }
 }

@@ -52,10 +52,22 @@ struct SpellListView: View {
                                 )
                             }
                         }
+                        if let max = maxPrepared {
+                            // Prepared casters (druid, cleric, paladin, wizard):
+                            // show how many of the daily prep slots are spent.
+                            HStack(spacing: 6) {
+                                Image(systemName: "checklist")
+                                    .font(.caption2)
+                                Text("Prepared: \(preparedLeveledCount) / \(max)")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(preparedLeveledCount > max ? .red : .secondary)
+                            }
+                            .padding(.top, 2)
+                        }
                         Button {
                             showAddSpell = true
                         } label: {
-                            Label("Add Spell", systemImage: "plus.circle")
+                            Label(isPreparedCaster ? "Prepare Spells" : "Add Spell", systemImage: "plus.circle")
                                 .font(.caption.weight(.semibold))
                         }
                         .buttonStyle(.bordered)
@@ -90,6 +102,18 @@ struct SpellListView: View {
         character.classEntries.contains { entry in
             content.classDefinition(id: entry.classID)?.spellcasting != nil
         }
+    }
+
+    private var isPreparedCaster: Bool {
+        CharacterCalculator.isPreparedCaster(character: character, content: content)
+    }
+
+    private var maxPrepared: Int? {
+        CharacterCalculator.maxPreparedSpells(character: character, content: content)
+    }
+
+    private var preparedLeveledCount: Int {
+        CharacterCalculator.preparedLeveledCount(character: character, content: content)
     }
 
     /// Species-granted, always-prepared spells (lineage / legacy picks). Live-
@@ -330,18 +354,65 @@ private struct SpellRow: View {
     }
 }
 
-/// Picker that lists every spell in the content store, grouped by level, with
-/// a chip showing whether the character already knows it. Tapping a "new"
-/// row appends to `knownIDs`. No class-list filtering in v1 — the player can
-/// grant any spell. Sheet-style presentation matches `AddConditionSheet`.
+/// Spell picker, grouped by level. Two modes:
+/// - **Prepare mode** (cleric / druid / paladin — `preparedFromAll`): lists the
+///   class's spell list and lets the player toggle each spell in/out of today's
+///   prepared set, enforcing the prep cap (leveled = WIS/INT mod + level) and
+///   the cantrips-known budget. This is how a druid "changes spells every day".
+/// - **Add mode** (everyone else): the original behavior — tapping reconciles
+///   the spell into all three lists. Wizards/known casters land here for now.
+///
+/// The class spell list is `CharacterCalculator.spellList(forClassID:)`, which
+/// falls back to the full catalog for classes with no tagged spells.
 struct AddSpellSheet: View {
     @Binding var character: Character
     @Environment(ContentStore.self) private var content
     @Environment(\.dismiss) private var dismiss
 
+    private var primary: (classID: String, level: Int, block: SpellcastingBlock)? {
+        CharacterCalculator.primarySpellcasting(character: character, content: content)
+    }
+
+    /// Prepare mode applies to "prepare from the whole list" casters. Wizards
+    /// (`preparedFromBook`) keep Add mode until spellbook management lands.
+    private var isPrepareMode: Bool {
+        primary?.block.preparedRule == .preparedFromAll
+    }
+
+    private var maxPrepared: Int {
+        CharacterCalculator.maxPreparedSpells(character: character, content: content) ?? 0
+    }
+
+    private var cantripBudget: Int {
+        CharacterCalculator.cantripsKnownBudget(character: character, content: content) ?? 0
+    }
+
+    private var preparedLeveled: Int {
+        CharacterCalculator.preparedLeveledCount(character: character, content: content)
+    }
+
+    private var preparedCantrips: Int {
+        character.spells.preparedIDs
+            .compactMap { content.spellDefinition(id: $0) }
+            .filter { $0.isCantrip }.count
+    }
+
     var body: some View {
         NavigationStack {
             List {
+                if isPrepareMode {
+                    Section {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Leveled prepared: \(preparedLeveled) / \(maxPrepared)")
+                                .foregroundStyle(preparedLeveled > maxPrepared ? .red : .primary)
+                            Text("Cantrips: \(preparedCantrips) / \(cantripBudget)")
+                                .foregroundStyle(preparedCantrips > cantripBudget ? .red : .secondary)
+                        }
+                        .font(.caption.weight(.semibold))
+                    } footer: {
+                        Text("Tap to prepare or unprepare. You can re-pick after a long rest.")
+                    }
+                }
                 ForEach(spellsByLevel, id: \.level) { group in
                     Section(header: Text(headerText(for: group.level))) {
                         ForEach(group.spells) { spell in
@@ -350,7 +421,7 @@ struct AddSpellSheet: View {
                     }
                 }
             }
-            .navigationTitle("Add Spell")
+            .navigationTitle(isPrepareMode ? "Prepare Spells" : "Add Spell")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -360,15 +431,61 @@ struct AddSpellSheet: View {
         }
     }
 
+    @ViewBuilder
     private func row(for spell: SpellDefinition) -> some View {
+        if isPrepareMode {
+            prepareRow(for: spell)
+        } else {
+            addRow(for: spell)
+        }
+    }
+
+    // MARK: - Prepare-mode row (toggle in/out of preparedIDs)
+
+    private func prepareRow(for spell: SpellDefinition) -> some View {
+        let isPrepared = character.spells.preparedIDs.contains(spell.id)
+        // Block preparing a NEW spell once the relevant cap is hit. Already-
+        // prepared spells stay tappable so you can unprepare to make room.
+        let atCap = spell.isCantrip ? preparedCantrips >= cantripBudget : preparedLeveled >= maxPrepared
+        let blocked = !isPrepared && atCap
+        return Button {
+            if isPrepared {
+                character.spells.preparedIDs.removeAll { $0 == spell.id }
+            } else if !blocked {
+                character.spells.preparedIDs.append(spell.id)
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: spell.school.systemImage)
+                    .foregroundStyle(.purple)
+                    .frame(width: 22)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(spell.name)
+                        .font(.subheadline.weight(.semibold))
+                    Text(spell.duration.requiresConcentration
+                         ? "\(spell.school.displayName) · Conc"
+                         : spell.school.displayName)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: isPrepared ? "checkmark.circle.fill" : (blocked ? "circle.slash" : "circle"))
+                    .foregroundStyle(isPrepared ? .green : (blocked ? Color.secondary.opacity(0.4) : Color.accentColor))
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(blocked)
+    }
+
+    // MARK: - Add-mode row (reconcile into all lists)
+
+    private func addRow(for spell: SpellDefinition) -> some View {
         let inAllLists = character.spells.knownIDs.contains(spell.id)
             && character.spells.preparedIDs.contains(spell.id)
             && character.spells.spellbookIDs.contains(spell.id)
         return Button {
             // Idempotent reconcile: ensure the spell is in every list. Fixes
-            // orphans from older flows that only wrote to one list (a spell
-            // in `knownIDs` alone is invisible if `preparedIDs` is non-empty,
-            // so the user can't long-press to forget it from the main list).
+            // orphans from older flows that only wrote to one list.
             if !character.spells.knownIDs.contains(spell.id) {
                 character.spells.knownIDs.append(spell.id)
             }
@@ -404,8 +521,15 @@ struct AddSpellSheet: View {
         .disabled(inAllLists)
     }
 
+    /// The pool to choose from: in prepare mode, the class's spell list (tagged,
+    /// or the full catalog as fallback); in add mode, the full catalog.
+    private var spellPool: [SpellDefinition] {
+        guard isPrepareMode, let classID = primary?.classID else { return content.allSpells }
+        return CharacterCalculator.spellList(forClassID: classID, content: content)
+    }
+
     private var spellsByLevel: [(level: Int, spells: [SpellDefinition])] {
-        Dictionary(grouping: content.allSpells, by: \.level)
+        Dictionary(grouping: spellPool, by: \.level)
             .map { (level: $0.key, spells: $0.value.sorted { $0.name < $1.name }) }
             .sorted { $0.level < $1.level }
     }
