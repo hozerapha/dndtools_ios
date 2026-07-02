@@ -1,6 +1,8 @@
 import Foundation
 
-enum Ability: String, Codable, CaseIterable, Identifiable, Hashable {
+// `nonisolated`: pure leaf enum used inside other nonisolated model
+// types (ProficiencyKey) despite the target's MainActor default isolation.
+nonisolated enum Ability: String, Codable, CaseIterable, Identifiable, Hashable {
     case strength = "strength"
     case dexterity = "dexterity"
     case constitution = "constitution"

@@ -142,22 +142,48 @@ struct CharacterListView: View {
                 }
             }
 
-            // Seed the starting spell list for caster classes. Phase J MVP
-            // grants every level-appropriate spell we ship so a fresh wizard
-            // can cast immediately — Phase M's level-up flow will replace
-            // this with proper "choose your starting spells" prompts.
+            // Starting spells: the creation wizard's Spells step now collects
+            // the player's picks (draft.chosenSpellIDs) — route those into the
+            // right lists. Auto-seed only as a fallback for drafts that
+            // predate the step or skipped it (DEBUG autofill).
             if classDef.spellcasting != nil {
-                seedStartingSpells(character: &character, classDef: classDef)
+                if draft.chosenSpellIDs.isEmpty {
+                    seedStartingSpells(character: &character, classDef: classDef)
+                } else {
+                    applyChosenSpells(draft.chosenSpellIDs, character: &character, classDef: classDef)
+                }
             }
         }
 
         return character
     }
 
+    /// Route the creation wizard's spell picks into the right lists for the
+    /// class's prepared rule: prepared casters' picks land in their per-class
+    /// prepared bucket (wizard's leveled picks also fill the spellbook);
+    /// known casters' picks land in `knownIDs`.
+    private func applyChosenSpells(
+        _ spellIDs: [String], character: inout Character, classDef: ClassDefinition
+    ) {
+        guard let block = classDef.spellcasting else { return }
+        switch block.preparedRule {
+        case .knownList, .pactMagic:
+            character.spells.knownIDs = spellIDs
+        case .preparedFromBook:
+            character.spells.spellbookIDs = spellIDs.filter {
+                !(contentStore.spellDefinition(id: $0)?.isCantrip ?? false)
+            }
+            character.spells.preparedByClass[classDef.id] = spellIDs
+        case .preparedFromAll:
+            character.spells.preparedByClass[classDef.id] = spellIDs
+        }
+    }
+
     /// Bulk-load all bundled spells the class would reasonably know at L1:
     /// cantrips up to `cantripsKnown(L1)`, plus every L1 spell in the store.
     /// Sets `spellbookIDs` and `preparedIDs` for prepared casters; sets
-    /// `knownIDs` for "known list" casters.
+    /// `knownIDs` for "known list" casters. Fallback only — the wizard's
+    /// Spells step normally supplies explicit picks.
     private func seedStartingSpells(character: inout Character, classDef: ClassDefinition) {
         guard let block = classDef.spellcasting else { return }
 

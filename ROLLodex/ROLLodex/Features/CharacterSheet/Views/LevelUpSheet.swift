@@ -10,6 +10,11 @@ import SwiftUI
 /// gain a class picker in a later slice.
 struct LevelUpSheet: View {
     @Binding var character: Character
+    /// Invoked on commit when this level grew any spell budget (cantrips
+    /// known, prepared cap, spells known, new slot levels). The sheet's owner
+    /// uses it to chain the spell picker after dismissal, so the player is
+    /// prompted to learn/prepare their new spells.
+    var onSpellBudgetsGrew: (() -> Void)? = nil
     @Environment(ContentStore.self) private var content
     @Environment(\.dismiss) private var dismiss
 
@@ -372,6 +377,9 @@ struct LevelUpSheet: View {
 
     private func commit() {
         guard let dieGain = stagedDieGain, let classID = resolvedClassID else { return }
+        // Evaluate against the PRE-commit state — spellBudgetChanges diffs the
+        // current level against the new one.
+        let budgetsGrew = !spellBudgetChanges.isEmpty
         var copy = character
         // Feature HP bonus before the level bump (subclass already chosen in
         // this sheet, so a subclass gained now is counted in the "after").
@@ -394,6 +402,7 @@ struct LevelUpSheet: View {
         }
         applyNewFeatureProficiencies(to: &copy)
         character = copy
+        if budgetsGrew { onSpellBudgetsGrew?() }
         dismiss()
     }
 

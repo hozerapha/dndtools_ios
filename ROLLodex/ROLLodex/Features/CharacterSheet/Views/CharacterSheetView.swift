@@ -30,6 +30,11 @@ struct CharacterSheetView: View {
     /// (Paralyzed, Stunned, Unconscious, …) forces to auto-fail. Presents an
     /// alert and skips the roll — the save can't succeed.
     @State private var autoFailedSave: AutoFailedSave?
+    /// Level-up → spell-learning chain: set by LevelUpSheet's commit when the
+    /// level grew any spell budget; consumed on its dismissal to present the
+    /// spell picker so the player is prompted to learn/prepare new spells.
+    @State private var promptSpellsAfterLevelUp = false
+    @State private var showSpellPicker = false
     /// Which sub-tab of the character sheet is showing. The header (badges,
     /// HP bar, stat pills) stays fixed above the picker so every tab can see
     /// "who am I and how am I doing right now".
@@ -72,7 +77,16 @@ struct CharacterSheetView: View {
         let conditionName: String
     }
 
+    // The full screen is one long modifier chain; as of the multiclass pass it
+    // outgrew what the type-checker will solve as a single expression. The
+    // stages below (`screenContent` → change handlers → dialogs → sheets) are
+    // each type-checked independently, which keeps builds fast. Add new
+    // sheets/alerts to the matching stage, not to `body`.
     var body: some View {
+        withSheetsAndOverlay(withDialogs(withChangeHandlers(screenContent)))
+    }
+
+    private var screenContent: some View {
         VStack(spacing: 0) {
             stickyHeader
             sectionPicker
@@ -94,154 +108,190 @@ struct CharacterSheetView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(character.name)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showLevelUp = true
-                } label: {
-                    Label("Level Up", systemImage: "arrow.up.circle.fill")
-                }
-                .disabled(character.level >= 20)
+        .toolbar { sheetToolbar }
+    }
+
+    @ToolbarContentBuilder
+    private var sheetToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                showLevelUp = true
+            } label: {
+                Label("Level Up", systemImage: "arrow.up.circle.fill")
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showRestConfirm = true
-                } label: {
-                    Label("Rest", systemImage: "moon.zzz.fill")
-                }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    ShareLink(
-                        item: ExportedCharacter(character: character),
-                        preview: SharePreview(character.name)
-                    ) {
-                        Label("Export Character", systemImage: "square.and.arrow.up")
-                    }
-                    Button(role: .destructive) {
-                        showDeleteConfirm = true
-                    } label: {
-                        Label("Delete Character", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                }
+            .disabled(character.level >= 20)
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                showRestConfirm = true
+            } label: {
+                Label("Rest", systemImage: "moon.zzz.fill")
             }
         }
-        .onChange(of: showsSpellsTab) { _, shows in
-            // Defensive: if the Spells tab disappears (class swap drops casting,
-            // or a granted-spell source is removed) while the user is on it,
-            // bounce them to Actions so they're not stuck on a hidden tab.
-            if !shows && section == .spells { section = .actions }
-        }
-        .onChange(of: pendingRoll.pendingCostsToApply) { _, costs in
-            guard !costs.isEmpty else { return }
-            // Apply each cost the dice tab parked to the bound character,
-            // then clear the queue so the same chip can't double-debit on a
-            // re-render.
-            for cost in costs {
-                switch cost {
-                case .oncePerTurn(let flag):
-                    character.setTurnFlag(flag)
-                case .spellSlot(let minLevel, let maxLevel):
-                    // The resolver concretizes the range to one level before
-                    // parking the chip, so this consumes exactly the slot the
-                    // player saw. If it was spent elsewhere in between (edge
-                    // case), the consume no-ops rather than over-charging.
-                    if let level = ResourceCalculator.lowestAvailableSlotLevel(
-                        min: minLevel, max: maxLevel,
-                        character: character, content: content
-                    ) {
-                        ResourceCalculator.consumeSpellSlot(
-                            level: level, in: &character, content: content
-                        )
-                    }
+        ToolbarItem(placement: .topBarTrailing) {
+            Menu {
+                ShareLink(
+                    item: ExportedCharacter(character: character),
+                    preview: SharePreview(character.name)
+                ) {
+                    Label("Export Character", systemImage: "square.and.arrow.up")
                 }
+                Button(role: .destructive) {
+                    showDeleteConfirm = true
+                } label: {
+                    Label("Delete Character", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
             }
-            pendingRoll.pendingCostsToApply = []
         }
-        .onChange(of: pendingRoll.pendingResourceCostsToApply) { _, costs in
-            // Feature resource costs the dice tab parked when a rollable action
-            // actually fired (Second Wind, etc.) — debit now, then clear.
-            guard !costs.isEmpty else { return }
-            for cost in costs {
-                _ = ResourceCalculator.consume(
-                    amount: cost.amount, from: cost.resourceID, in: &character, content: content
+    }
+
+    private func withChangeHandlers(_ content: some View) -> some View {
+        content
+            .onChange(of: showsSpellsTab) { _, shows in
+                // Defensive: if the Spells tab disappears (class swap drops
+                // casting, or a granted-spell source is removed) while the user
+                // is on it, bounce them to Actions.
+                if !shows && section == .spells { section = .actions }
+            }
+            .onChange(of: pendingRoll.pendingCostsToApply) { _, costs in
+                applyPendingCosts(costs)
+            }
+            .onChange(of: pendingRoll.pendingResourceCostsToApply) { _, costs in
+                applyPendingResourceCosts(costs)
+            }
+    }
+
+    private func withDialogs(_ content: some View) -> some View {
+        content
+            .confirmationDialog("Rest", isPresented: $showRestConfirm, titleVisibility: .hidden) {
+                Button("Short Rest") { takeRest(.short) }
+                Button("Long Rest")  { takeRest(.long) }
+                Button("Cancel", role: .cancel) {}
+            }
+            .confirmationDialog("Delete Character", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+                Button("Delete \(character.name)", role: .destructive) {
+                    deleteCharacter()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This permanently removes \(character.name) and cannot be undone.")
+            }
+            .alert(
+                "Save auto-fails",
+                isPresented: Binding(
+                    get: { autoFailedSave != nil },
+                    set: { if !$0 { autoFailedSave = nil } }
+                ),
+                presenting: autoFailedSave
+            ) { _ in
+                Button("OK", role: .cancel) { autoFailedSave = nil }
+            } message: { save in
+                Text("\(save.ability.rawValue.capitalized) saving throws automatically fail while \(save.conditionName). No roll needed.")
+            }
+    }
+
+    private func withSheetsAndOverlay(_ content: some View) -> some View {
+        content
+            .sheet(isPresented: Binding(
+                get: { !pendingRefreshes.isEmpty },
+                set: { if !$0 { pendingRefreshes = [] } }
+            )) {
+                RefreshResolutionSheet(
+                    character: $character,
+                    pendingRefreshes: pendingRefreshes,
+                    onDismiss: { pendingRefreshes = [] }
                 )
-            }
-            pendingRoll.pendingResourceCostsToApply = []
-        }
-        .confirmationDialog("Rest", isPresented: $showRestConfirm, titleVisibility: .hidden) {
-            Button("Short Rest") { takeRest(.short) }
-            Button("Long Rest")  { takeRest(.long) }
-            Button("Cancel", role: .cancel) {}
-        }
-        .confirmationDialog("Delete Character", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
-            Button("Delete \(character.name)", role: .destructive) {
-                deleteCharacter()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This permanently removes \(character.name) and cannot be undone.")
-        }
-        .sheet(isPresented: Binding(
-            get: { !pendingRefreshes.isEmpty },
-            set: { if !$0 { pendingRefreshes = [] } }
-        )) {
-            RefreshResolutionSheet(
-                character: $character,
-                pendingRefreshes: pendingRefreshes,
-                onDismiss: { pendingRefreshes = [] }
-            )
-            .presentationDetents([.medium, .large])
-        }
-        .sheet(item: $spellBeingCast) { pending in
-            SpellCastSheet(
-                character: $character,
-                spell: pending.spell,
-                itemContext: pending.itemContext,
-                innateAbility: pending.innateAbility,
-                freeCastResourceID: pending.freeCastResourceID
-            ) { action, followUp in
-                handleSpellRoll(action, followUp: followUp)
-            }
-            .presentationDetents([.large])
-        }
-        .sheet(item: $pendingConcentrationCheck) { check in
-            ConcentrationSaveSheet(character: $character, check: check)
-                .presentationDetents([.medium])
-        }
-        .sheet(isPresented: $showAddCondition) {
-            AddConditionSheet(character: $character)
                 .presentationDetents([.medium, .large])
-        }
-        .alert(
-            "Save auto-fails",
-            isPresented: Binding(
-                get: { autoFailedSave != nil },
-                set: { if !$0 { autoFailedSave = nil } }
-            ),
-            presenting: autoFailedSave
-        ) { _ in
-            Button("OK", role: .cancel) { autoFailedSave = nil }
-        } message: { save in
-            Text("\(save.ability.rawValue.capitalized) saving throws automatically fail while \(save.conditionName). No roll needed.")
-        }
-        .sheet(isPresented: $showLevelUp) {
-            LevelUpSheet(character: $character)
+            }
+            .sheet(item: $spellBeingCast) { pending in
+                SpellCastSheet(
+                    character: $character,
+                    spell: pending.spell,
+                    itemContext: pending.itemContext,
+                    innateAbility: pending.innateAbility,
+                    freeCastResourceID: pending.freeCastResourceID
+                ) { action, followUp in
+                    handleSpellRoll(action, followUp: followUp)
+                }
                 .presentationDetents([.large])
-        }
-        .overlay {
-            if let request = quickRoll {
-                QuickRollOverlay(
-                    request: request,
-                    onResult: { applyDeathSaveResult($0) },
-                    onDismiss: { quickRoll = nil }
+            }
+            .sheet(item: $pendingConcentrationCheck) { check in
+                ConcentrationSaveSheet(character: $character, check: check)
+                    .presentationDetents([.medium])
+            }
+            .sheet(isPresented: $showAddCondition) {
+                AddConditionSheet(character: $character)
+                    .presentationDetents([.medium, .large])
+            }
+            .sheet(isPresented: $showLevelUp, onDismiss: {
+                // Chain the spell picker when the level grew spell budgets so
+                // the player is prompted to learn/prepare their new spells.
+                if promptSpellsAfterLevelUp {
+                    promptSpellsAfterLevelUp = false
+                    showSpellPicker = true
+                }
+            }) {
+                LevelUpSheet(
+                    character: $character,
+                    onSpellBudgetsGrew: { promptSpellsAfterLevelUp = true }
                 )
-                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .presentationDetents([.large])
+            }
+            .sheet(isPresented: $showSpellPicker) {
+                AddSpellSheet(character: $character)
+                    .presentationDetents([.medium, .large])
+            }
+            .overlay {
+                if let request = quickRoll {
+                    QuickRollOverlay(
+                        request: request,
+                        onResult: { applyDeathSaveResult($0) },
+                        onDismiss: { quickRoll = nil }
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                }
+            }
+            .animation(.snappy(duration: 0.2), value: quickRoll != nil)
+    }
+
+    /// Apply each cost the dice tab parked to the bound character, then clear
+    /// the queue so the same chip can't double-debit on a re-render.
+    private func applyPendingCosts(_ costs: [TriggerCost]) {
+        guard !costs.isEmpty else { return }
+        for cost in costs {
+            switch cost {
+            case .oncePerTurn(let flag):
+                character.setTurnFlag(flag)
+            case .spellSlot(let minLevel, let maxLevel):
+                // The resolver concretizes the range to one level before
+                // parking the chip, so this consumes exactly the slot the
+                // player saw. If it was spent elsewhere in between (edge
+                // case), the consume no-ops rather than over-charging.
+                if let level = ResourceCalculator.lowestAvailableSlotLevel(
+                    min: minLevel, max: maxLevel,
+                    character: character, content: content
+                ) {
+                    ResourceCalculator.consumeSpellSlot(
+                        level: level, in: &character, content: content
+                    )
+                }
             }
         }
-        .animation(.snappy(duration: 0.2), value: quickRoll != nil)
+        pendingRoll.pendingCostsToApply = []
+    }
+
+    /// Feature resource costs the dice tab parked when a rollable action
+    /// actually fired (Second Wind, etc.) — debit now, then clear.
+    private func applyPendingResourceCosts(_ costs: [ResourceCost]) {
+        guard !costs.isEmpty else { return }
+        for cost in costs {
+            _ = ResourceCalculator.consume(
+                amount: cost.amount, from: cost.resourceID, in: &character, content: content
+            )
+        }
+        pendingRoll.pendingResourceCostsToApply = []
     }
 
     /// Persistent-error banner: edits flow through `binding(for:)` → `save`,

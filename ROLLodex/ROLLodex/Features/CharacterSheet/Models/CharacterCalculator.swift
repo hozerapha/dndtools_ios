@@ -329,6 +329,31 @@ enum CharacterCalculator {
         return tagged.isEmpty ? content.allSpells : tagged
     }
 
+    /// LEVELED spells a known-list caster can know at its class level, from the
+    /// class's `spellsKnown` table (SRD "prepared spells" column for Bard /
+    /// Sorcerer / Warlock). Nil for prepared casters, non-casters, and classes
+    /// whose table isn't authored (→ no cap, old behavior).
+    @MainActor
+    static func knownSpellBudget(
+        character: Character, content: ContentStore, forClassID classID: String
+    ) -> Int? {
+        guard let entry = character.classEntries.first(where: { $0.classID == classID }),
+              let block = content.classDefinition(id: classID)?.spellcasting,
+              block.preparedRule == .knownList || block.preparedRule == .pactMagic,
+              let table = block.spellsKnown else { return nil }
+        return table.value(classLevel: entry.level, characterLevel: character.level)
+    }
+
+    /// Count of LEVELED spells in the known list (cantrips excluded — they
+    /// have their own budget).
+    @MainActor
+    static func knownLeveledCount(character: Character, content: ContentStore) -> Int {
+        character.spells.knownIDs
+            .compactMap { content.spellDefinition(id: $0) }
+            .filter { !$0.isCantrip }
+            .count
+    }
+
     /// The ability a multiclass caster uses for a specific spell: the class
     /// whose prepared bucket holds it wins; else the single caster class whose
     /// tagged spell list contains it; else the first casting class (matching

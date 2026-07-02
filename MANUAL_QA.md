@@ -377,6 +377,35 @@ Mostly unit-tested; two have an in-app surface worth a quick check:
   table, not the merged pools; on the level-up that first merges slots, the
   pools reset to full (old per-class ids are retired).
 
+### Spell class lists, learning budgets & starting spells (new 2026-07-01)
+- [ ] **Class-restricted lists.** A Wizard's spell picker no longer shows
+  Bless (cleric/paladin only); a Cleric's does. Every picker (Prepare/Learn/
+  Add) shows only the class's own list.
+- [ ] **Mode titles per class.** Druid/Cleric → "Prepare Spells"; Bard/
+  Sorcerer → "Learn Spells" with a "Spells known: X / N" counter; Wizard →
+  "Add Spell". A Druid/Sorcerer multiclass shows a class segment picker and
+  "Manage Spells" on the button.
+- [ ] **Learn budget enforced.** A level-1 Sorcerer can learn at most 2
+  leveled spells (bard: 4); at the cap un-learned spells show a slashed
+  circle until one is toggled off. Cantrips have their own budget.
+- [ ] **Creation Spells step (casters only).** Creating a Druid: after
+  Abilities a "Spells" step appears with Cantrips and Level 1 sections, live
+  "X / N" counters (druid: 2 cantrips; leveled = WIS mod + 1); creating a
+  Fighter skips straight to Review.
+- [ ] **Cap + auto-pick in creation.** Over-budget picks are blocked (slashed
+  circle); "Auto-pick the rest" fills remaining budget alphabetically; Next
+  requires at least one pick.
+- [ ] **Created character matches picks.** The finished character's Spells
+  card lists exactly the chosen spells (not the whole catalog, which was the
+  old behavior).
+- [ ] **Level-up prompts spell learning.** Level a Sorcerer 1 → 2 (spells
+  known 2 → 4): after Finish, the spell picker opens automatically in Learn
+  mode. A Fighter level-up opens no picker.
+- [ ] _Known simplifications:_ wizard remains Add mode until spellbook
+  management lands; Learn-mode edits aren't time-gated (RAW "swap one spell
+  per level-up" is honor-system); auto-seed still applies to drafts that skip
+  the step (DEBUG autofill).
+
 ### Level-up sheet sync (new 2026-07-01)
 - [ ] **HP preview includes feature bonuses.** Level up a **Dwarf** (Dwarven
   Toughness) → the staged HP line shows **+1 more** than die + CON, with an

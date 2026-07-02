@@ -1,6 +1,9 @@
 import Foundation
 
-enum ProficiencyKey: Hashable {
+// `nonisolated`: pure data key — its Hashable/Codable conformances are used
+// in nonisolated contexts (default arguments, background encodes) despite the
+// target's MainActor default isolation.
+nonisolated enum ProficiencyKey: Hashable {
     case savingThrow(Ability)
     case skill(Skill)
     case armor(ArmorCategory)

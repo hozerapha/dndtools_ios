@@ -606,9 +606,12 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
   decode), per-class caps/counts, class segment picker in Prepare mode,
   castable = union of buckets + known. (6) Class summary "Druid 3 / Cleric 2"
   in list + header. *Known simplifications:* known-caster per-level spell picks
-  still ungated (`spellsKnown` null); multiclass Bard/Rogue/Ranger skill/tool
-  CHOICE grants stay manual; the level-up Spellcasting card diffs the leveled
-  class's own table (informational) rather than the merged pools.
+  are now gated — `spellsKnown` tables are authored for Bard/Sorcerer, Learn
+  mode enforces them, and level-up prompts the picker (2026-07-01); the only
+  remaining tail is the RAW "swap exactly one spell on level-up" rule (edits
+  aren't time-gated). Multiclass Bard/Rogue/Ranger skill/tool CHOICE grants
+  stay manual; the level-up Spellcasting card diffs the leveled class's own
+  table (informational) rather than the merged pools.
 - ☐ **`grantedActions` can produce duplicate `ForEach` IDs** (audit #18) — index
   the id and content-lint duplicate granted-action names per feature.
 - ☐ **3D dice misalignment / re-entrant roll** (audit #12, #13, #26, #33) — keep
@@ -625,10 +628,11 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
 - ☐ **Background feats & equipment ignored at creation** — apply
   `backgrounds.json` `equipment` (items) + `feat` (proficiency/feat); if feats
   aren't modeled, surface a review-step note.
-- ☐ **Starting spell seeding ignores class spell list** — add a `spellIDs`
-  allow-list (or per-class list) so `seedStartingSpells` only grants
-  class-appropriate spells; let prepared casters curate (Add Spell currently
-  writes all three lists).
+- ✅ **Starting spell seeding ignores class spell list** — *done 2026-07-01.*
+  The creation wizard's new Spells step collects explicit picks within budgets
+  from the class list; bulk `seedStartingSpells` now filters by class list and
+  is fallback-only (skipped/legacy drafts); the Add Spell picker is
+  class-filtered in every mode (Prepare/Learn/Add).
 - ☐ **Species skill-choice traits not resolved** (Elf Keen Senses, etc.) — model
   as a `.fixedOptions`/skills selection recorded in `featureSelections`, like
   class skills.
@@ -678,6 +682,7 @@ All phases A–O shipped. Key per-phase notes:
 | O — triggered effects & active statuses | shipped (Slices A+B+C). See "Phase O Shipped reality" for open items (Divine Smite shipped 2026-06-09; Battle Master/superiority dice, GWM, attack-roll triggers still open) |
 
 **Shipped changelog (reverse-chronological highlights; reusable infra in `code`):**
+- **2026-07-01 — Spell class lists, learning budgets, starting-spell picks & level-up prompts.** All 44 bundled spells now tagged with SRD 5.2.1 class lists via `SpellDefinition.classes` (e.g. Bless → cleric/paladin only); spell pickers filter to the selected class's list everywhere, full-catalog fallback now only for untagged (homebrew) classes. `AddSpellSheet` reworked to three modes by `preparedRule`: **Prepare** (`preparedFromAll` — per-class prepared bucket, cap-enforced), **Learn** (`knownList`/`pactMagic` — toggles `knownIDs`, gated by `spellsKnown`), **Add** (`preparedFromBook` wizard reconciliation); multiclass segment picker lists ALL casting classes; button label Prepare Spells / Learn Spells / Add Spell / Manage Spells (mixed multiclass). Authored `spellsKnown` tables (SRD "prepared spells" column) for Bard (L1 4 → L20 22) and Sorcerer (L1 2 → L20 22); new calculators `knownSpellBudget` / `knownLeveledCount`. Creation wizard gained a **Spells step** (casters only, after Abilities): pick cantrips + level-1 spells within budgets from the class list, with an "Auto-pick the rest" button; picks stored in `CharacterDraft.chosenSpellIDs`, routed by `applyChosenSpells` (known → `knownIDs`; wizard → spellbook + prepared bucket; prepared → per-class bucket); bulk auto-seeding is now only a fallback for skipped/legacy drafts. Level-up now PROMPTS spell learning: `LevelUpSheet.onSpellBudgetsGrew` fires on commit when any spell budget grew; `CharacterSheetView` chains the spell picker sheet after dismissal. Tests: `SpellSelectionTests` (new file, 8).
 - **2026-07-01 — Multiclassing (QA P2 #11/#28, RAW).** Add-a-class in `LevelUpSheet` (picker + "Multiclass into…" menu, hard-blocked 13+ prereqs via `multiclassBlocker`, per-class hit die); `applyLevelUp` appends a new `ClassEntry` for unknown classIDs. 5e shared multiclass slot table (`multiclass_slot_<n>`) with `casterLevelDivisor` (paladin ½); pact stays separate. `CharacterSpells.preparedByClass` per-class prep buckets + decode migration; Prepare-mode class segment picker; castable = union. `spellcastingAbility(forSpellID:)` per-spell ability. `ClassDefinition.multiclassProficiencies` content (all 9); L1 skill picks suppressed for later classes; resource dedup by id; "Druid 3 / Cleric 2" summaries. Tests: MulticlassTests (new, 13).
 - **2026-07-01 — Level-up sheet sync (QA P2 #9/#10).** HP preview now includes the feature-HP delta (simulated level bump, "incl. +N from features" caption) so it matches the committed max; named subclass-unlock callout at the unlock level; new Spellcasting card lists cantrips-known growth, prepared-cap growth, newly unlocked slot levels, and grown slot counts. Confirmed resources + granted spells need no commit sync (derived live). New-features `ForEach` keyed by feature id. Tests: LevelUpTests +3 (slot diff, cantrip growth, feature-HP diff simulation).
 - **2026-07-01 — Druid (9th class) + Circle of the Land (6th subclass) + spell preparation.** Full L1–20 Druid (`preparedFromAll`, WIS, full-caster slots, Wild Shape resource 2/3/4 by level, ASIs, Primal Order/Druidic selections). **Preparation system (works for all prepared casters):** `SpellDefinition.classes: [String]` tag + `CharacterCalculator.spellList(forClassID:)` (tagged, else full-catalog fallback); `maxPreparedSpells` = ability mod + class level (min 1); `isPreparedCaster` / `preparedLeveledCount` / `cantripsKnownBudget`. `AddSpellSheet` gained a **Prepare mode** for `preparedFromAll`: filtered to the class list, toggle in/out of `preparedIDs`, live "leveled X/N · cantrips x/y" counters, caps enforced. `SpellListView` shows "Prepared: X/N" + a "Prepare Spells" button; `seedStartingSpells` now filters by class list and caps the starting prepared set. Tagged the 13 SRD Druid-list spells; added Mage Armor. Tests: `DruidTests` (new). Circle of the Land: land-type + Land's Aid + Natural Recovery + Nature's Ward/Sanctuary (per-land circle spells are text-only — SRD land lists not bundled).
@@ -794,7 +799,7 @@ Live threads, ordered roughly by self-containment. The QA Findings section above
 
 Authoring order, each batch shippable alone:
 - **11d. Weapons + gear sweep** — remaining ~22 SRD weapons (all have existing property/mastery vocabulary), standard adventuring gear.
-- **11e. Spell batches** — all SRD cantrips, then L1, then L2–L3, gated per bundled caster class. **Encoding decided (2026-07-01):** per-spell `classes: [String]` tag on `SpellDefinition`; `CharacterCalculator.spellList(forClassID:)` filters the prep/known picker, falling back to the full catalog for untagged classes (so tagging is incremental). Only the Druid list is tagged so far — tag the other classes' lists as spells are authored. (Overlaps QA P3 "starting spell seeding" — now partly closed: seeding filters by class list.)
+- **11e. Spell batches** — all SRD cantrips, then L1, then L2–L3, gated per bundled caster class. **Encoding decided (2026-07-01):** per-spell `classes: [String]` tag on `SpellDefinition`; `CharacterCalculator.spellList(forClassID:)` filters the prep/known picker, falling back to the full catalog for untagged classes (so tagging is incremental). **All 44 bundled spells are now tagged (2026-07-01)** — new spells must ship with their class tags; a lint test (`SpellSelectionTests.everyBundledSpellCarriesAClassList`) enforces it. (Overlaps QA P3 "starting spell seeding" — now closed: seeding filters by class list.)
 - **11f. ASI prompts audit** — Fighter currently has ASI at 4/13/19; SRD 5.2.1 Fighter gets 4/6/8/12/14/16/19. Audit every bundled class's ASI levels against the SRD while authoring.
 - **11g. Feat catalog** — Origin feats first (backgrounds already reference `savage_attacker`, `magic_initiate_*` as dangling ids — flagged by the content lint). General feats need the ASI-vs-feat fork in `LevelUpSheet`; may force the deferred `ChoicePromptDefinition` recursive model (a feat granting a +1 ability sub-choice).
 - **11h. More subclasses — SRD one-per-class ONLY** (Berserker, Circle of the Land, Warrior of the Open Hand, Oath of Devotion, Hunter, Fiend Patron, Evoker). Battle Master / Eldritch Knight / Arcane Trickster are PHB-only — importable pack only. (Battle Master's superiority dice still motivate `TriggerCost.resource(id:amount:)` as engine groundwork for the pack, not bundled content.)

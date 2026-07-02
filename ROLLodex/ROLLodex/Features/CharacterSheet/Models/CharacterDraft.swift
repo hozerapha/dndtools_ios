@@ -53,6 +53,12 @@ struct CharacterDraft {
     /// Gnomish lineage, Fiendish Legacy, innate-spellcasting ability — keyed by
     /// selection id. Merged into the character's `featureSelections` at finalize.
     var featureSelections: [String: [String]] = [:]
+    /// Starting spells the player picked in the creation wizard's Spells step
+    /// (cantrips + level-1 spells mixed; the finalizer splits by `isCantrip`
+    /// and routes into the right list per the class's `preparedRule`). Empty
+    /// for non-casters or when the step was skipped — the finalizer then
+    /// falls back to auto-seeding.
+    var chosenSpellIDs: [String] = []
 
     static let standardArray = [15, 14, 13, 12, 10, 8]
 
@@ -190,9 +196,9 @@ struct CharacterDraft {
     func toCharacter() -> Character {
         let classEntry = ClassEntry(classID: classID, level: 1)
 
-        // Apply background ASIs
-        var finalScores = abilityScores
-        // Will be applied by caller or content lookup; for now store base scores
+        // Background ASIs are applied by the caller (finalizeDraft) — this
+        // stores the base scores. (QA P3 #30 tracks folding that in here.)
+        let finalScores = abilityScores
 
         return Character(
             name: name,

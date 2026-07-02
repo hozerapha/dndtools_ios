@@ -1,6 +1,7 @@
 [
   {
     "id": "fire_bolt",
+    "classes": ["sorcerer", "wizard"],
     "name": "Fire Bolt",
     "level": 0,
     "school": "evocation",
@@ -35,6 +36,7 @@
   },
   {
     "id": "sacred_flame",
+    "classes": ["cleric"],
     "name": "Sacred Flame",
     "level": 0,
     "school": "evocation",
@@ -65,6 +67,7 @@
   },
   {
     "id": "mage_hand",
+    "classes": ["bard", "sorcerer", "warlock", "wizard"],
     "name": "Mage Hand",
     "level": 0,
     "school": "conjuration",
@@ -88,6 +91,7 @@
   },
   {
     "id": "magic_missile",
+    "classes": ["sorcerer", "wizard"],
     "name": "Magic Missile",
     "level": 1,
     "school": "evocation",
@@ -123,6 +127,7 @@
   },
   {
     "id": "shield",
+    "classes": ["sorcerer", "wizard"],
     "name": "Shield",
     "level": 1,
     "school": "abjuration",
@@ -149,7 +154,7 @@
   },
   {
     "id": "cure_wounds",
-    "classes": ["druid"],
+    "classes": ["bard", "cleric", "druid", "paladin", "ranger"],
     "name": "Cure Wounds",
     "level": 1,
     "school": "abjuration",
@@ -185,7 +190,7 @@
   },
   {
     "id": "detect_magic",
-    "classes": ["druid"],
+    "classes": ["bard", "cleric", "druid", "paladin", "ranger", "sorcerer", "wizard"],
     "name": "Detect Magic",
     "level": 1,
     "school": "divination",
@@ -211,6 +216,7 @@
   },
   {
     "id": "hex",
+    "classes": ["warlock"],
     "name": "Hex",
     "level": 1,
     "school": "enchantment",
@@ -254,6 +260,7 @@
   },
   {
     "id": "hunters_mark",
+    "classes": ["ranger"],
     "name": "Hunter's Mark",
     "level": 1,
     "school": "divination",
@@ -295,6 +302,7 @@
   },
   {
     "id": "feather_fall",
+    "classes": ["bard", "sorcerer", "wizard"],
     "name": "Feather Fall",
     "level": 1,
     "school": "transmutation",
@@ -319,7 +327,7 @@
   },
   {
     "id": "guidance",
-    "classes": ["druid"],
+    "classes": ["cleric", "druid"],
     "name": "Guidance",
     "level": 0,
     "school": "divination",
@@ -342,7 +350,7 @@
   },
   {
     "id": "healing_word",
-    "classes": ["druid"],
+    "classes": ["bard", "cleric", "druid"],
     "name": "Healing Word",
     "level": 1,
     "school": "abjuration",
@@ -378,6 +386,7 @@
   },
   {
     "id": "bless",
+    "classes": ["cleric", "paladin"],
     "name": "Bless",
     "level": 1,
     "school": "enchantment",
@@ -406,6 +415,7 @@
   },
   {
     "id": "shield_of_faith",
+    "classes": ["cleric", "paladin"],
     "name": "Shield of Faith",
     "level": 1,
     "school": "abjuration",
@@ -433,6 +443,7 @@
   },
   {
     "id": "dancing_lights",
+    "classes": ["bard", "sorcerer", "wizard"],
     "name": "Dancing Lights",
     "level": 0,
     "school": "illusion",
@@ -457,6 +468,7 @@
   },
   {
     "id": "prestidigitation",
+    "classes": ["bard", "sorcerer", "warlock", "wizard"],
     "name": "Prestidigitation",
     "level": 0,
     "school": "transmutation",
@@ -503,6 +515,7 @@
   },
   {
     "id": "minor_illusion",
+    "classes": ["bard", "sorcerer", "warlock", "wizard"],
     "name": "Minor Illusion",
     "level": 0,
     "school": "illusion",
@@ -526,7 +539,7 @@
   },
   {
     "id": "mending",
-    "classes": ["druid"],
+    "classes": ["bard", "cleric", "druid", "sorcerer", "wizard"],
     "name": "Mending",
     "level": 0,
     "school": "transmutation",
@@ -550,6 +563,7 @@
   },
   {
     "id": "thaumaturgy",
+    "classes": ["cleric"],
     "name": "Thaumaturgy",
     "level": 0,
     "school": "transmutation",
@@ -572,7 +586,7 @@
   },
   {
     "id": "poison_spray",
-    "classes": ["druid"],
+    "classes": ["druid", "sorcerer", "warlock", "wizard"],
     "name": "Poison Spray",
     "level": 0,
     "school": "necromancy",
@@ -607,6 +621,7 @@
   },
   {
     "id": "chill_touch",
+    "classes": ["sorcerer", "warlock", "wizard"],
     "name": "Chill Touch",
     "level": 0,
     "school": "necromancy",
@@ -640,7 +655,7 @@
   },
   {
     "id": "speak_with_animals",
-    "classes": ["druid"],
+    "classes": ["bard", "druid", "ranger", "warlock"],
     "name": "Speak with Animals",
     "level": 1,
     "school": "divination",
@@ -666,7 +681,7 @@
   },
   {
     "id": "faerie_fire",
-    "classes": ["druid"],
+    "classes": ["bard", "druid"],
     "name": "Faerie Fire",
     "level": 1,
     "school": "evocation",
@@ -689,6 +704,7 @@
   },
   {
     "id": "ray_of_sickness",
+    "classes": ["sorcerer", "wizard"],
     "name": "Ray of Sickness",
     "level": 1,
     "school": "necromancy",
@@ -729,6 +745,7 @@
   },
   {
     "id": "false_life",
+    "classes": ["sorcerer", "wizard"],
     "name": "False Life",
     "level": 1,
     "school": "necromancy",
@@ -758,6 +775,7 @@
   },
   {
     "id": "hellish_rebuke",
+    "classes": ["warlock"],
     "name": "Hellish Rebuke",
     "level": 1,
     "school": "evocation",
@@ -789,7 +807,7 @@
   },
   {
     "id": "longstrider",
-    "classes": ["druid"],
+    "classes": ["bard", "druid", "ranger", "wizard"],
     "name": "Longstrider",
     "level": 1,
     "school": "transmutation",
@@ -817,6 +835,7 @@
   },
   {
     "id": "mage_armor",
+    "classes": ["sorcerer", "wizard"],
     "name": "Mage Armor",
     "level": 1,
     "school": "abjuration",
@@ -843,6 +862,7 @@
   },
   {
     "id": "misty_step",
+    "classes": ["sorcerer", "warlock", "wizard"],
     "name": "Misty Step",
     "level": 2,
     "school": "conjuration",
@@ -863,7 +883,7 @@
   },
   {
     "id": "hold_person",
-    "classes": ["druid"],
+    "classes": ["bard", "cleric", "druid", "sorcerer", "warlock", "wizard"],
     "name": "Hold Person",
     "level": 2,
     "school": "enchantment",
@@ -895,6 +915,7 @@
   },
   {
     "id": "ray_of_enfeeblement",
+    "classes": ["warlock", "wizard"],
     "name": "Ray of Enfeeblement",
     "level": 2,
     "school": "necromancy",
@@ -918,7 +939,7 @@
   },
   {
     "id": "pass_without_trace",
-    "classes": ["druid"],
+    "classes": ["druid", "ranger"],
     "name": "Pass without Trace",
     "level": 2,
     "school": "abjuration",
@@ -942,6 +963,7 @@
   },
   {
     "id": "darkness",
+    "classes": ["sorcerer", "warlock", "wizard"],
     "name": "Darkness",
     "level": 2,
     "school": "evocation",
@@ -965,6 +987,7 @@
   },
   {
     "id": "chromatic_orb",
+    "classes": ["sorcerer", "wizard"],
     "name": "Chromatic Orb",
     "level": 1,
     "school": "evocation",
@@ -1001,6 +1024,7 @@
   },
   {
     "id": "command",
+    "classes": ["bard", "cleric", "paladin"],
     "name": "Command",
     "level": 1,
     "school": "enchantment",
@@ -1023,6 +1047,7 @@
   },
   {
     "id": "alter_self",
+    "classes": ["sorcerer", "wizard"],
     "name": "Alter Self",
     "level": 2,
     "school": "transmutation",
@@ -1045,6 +1070,7 @@
   },
   {
     "id": "dragons_breath",
+    "classes": ["sorcerer", "wizard"],
     "name": "Dragon's Breath",
     "level": 2,
     "school": "transmutation",
@@ -1077,6 +1103,7 @@
   },
   {
     "id": "fear",
+    "classes": ["bard", "sorcerer", "warlock", "wizard"],
     "name": "Fear",
     "level": 3,
     "school": "illusion",
@@ -1106,6 +1133,7 @@
   },
   {
     "id": "fly",
+    "classes": ["sorcerer", "warlock", "wizard"],
     "name": "Fly",
     "level": 3,
     "school": "transmutation",
@@ -1130,6 +1158,7 @@
   },
   {
     "id": "arcane_eye",
+    "classes": ["wizard"],
     "name": "Arcane Eye",
     "level": 4,
     "school": "divination",
@@ -1154,7 +1183,7 @@
   },
   {
     "id": "charm_monster",
-    "classes": ["druid"],
+    "classes": ["bard", "druid", "sorcerer", "warlock", "wizard"],
     "name": "Charm Monster",
     "level": 4,
     "school": "enchantment",
@@ -1185,6 +1214,7 @@
   },
   {
     "id": "legend_lore",
+    "classes": ["bard", "cleric", "wizard"],
     "name": "Legend Lore",
     "level": 5,
     "school": "divination",
@@ -1208,6 +1238,7 @@
   },
   {
     "id": "summon_dragon",
+    "classes": ["wizard"],
     "name": "Summon Dragon",
     "level": 5,
     "school": "conjuration",

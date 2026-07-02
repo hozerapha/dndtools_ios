@@ -40,6 +40,12 @@ struct CharacterCreationView: View {
                     }
                 case .abilities:
                     AbilitiesStep(draft: $draft, contentStore: contentStore) {
+                        // Only casters pick starting spells; martials skip
+                        // straight to review.
+                        path.append(classIsCaster(draft.classID) ? CreationStep.spells : CreationStep.review)
+                    }
+                case .spells:
+                    SpellsStep(draft: $draft, contentStore: contentStore) {
                         path.append(CreationStep.review)
                     }
                 case .review:
@@ -60,10 +66,14 @@ struct CharacterCreationView: View {
             return false
         }
     }
+
+    private func classIsCaster(_ id: String) -> Bool {
+        contentStore.classDefinition(id: id)?.spellcasting != nil
+    }
 }
 
 private enum CreationStep: Hashable {
-    case species, speciesChoices, background, classSelection, classSkills, abilities, review
+    case species, speciesChoices, background, classSelection, classSkills, abilities, spells, review
 }
 
 // MARK: - Name Step
@@ -919,5 +929,159 @@ private struct ReviewStep: View {
 
     private var className: String {
         contentStore.classDefinition(id: draft.classID)?.name ?? "Unknown"
+    }
+}
+
+// MARK: - Spells Step
+
+/// Starting-spell selection for casting classes: pick cantrips + level-1
+/// spells from the class's spell list, within the class's L1 budgets
+/// (cantrips-known table; prepared cap = ability mod + 1 for prepared casters,
+/// `spellsKnown` table for known casters). Auto-pick fills the remainder
+/// alphabetically for players who just want to play.
+private struct SpellsStep: View {
+    @Binding var draft: CharacterDraft
+    let contentStore: ContentStore
+    let onNext: () -> Void
+
+    private var block: SpellcastingBlock? {
+        contentStore.classDefinition(id: draft.classID)?.spellcasting
+    }
+
+    private var cantripBudget: Int {
+        block?.cantripsKnown.value(classLevel: 1, characterLevel: 1) ?? 0
+    }
+
+    /// Leveled budget at L1 by prepared rule. Known casters without an
+    /// authored table fall back to the cantrip-style "pick what you like"
+    /// (nil = uncapped).
+    private var leveledBudget: Int? {
+        guard let block else { return nil }
+        switch block.preparedRule {
+        case .preparedFromAll, .preparedFromBook:
+            let mod = CharacterCalculator.abilityModifier(score: draft.abilityScores[block.ability] ?? 10)
+            return max(1, mod + 1)
+        case .knownList, .pactMagic:
+            return block.spellsKnown?.value(classLevel: 1, characterLevel: 1)
+        }
+    }
+
+    /// The class's L0/L1 spell list, split for the two sections.
+    private var pool: [SpellDefinition] {
+        CharacterCalculator.spellList(forClassID: draft.classID, content: contentStore)
+            .filter { $0.level <= 1 }
+            .sorted { lhs, rhs in
+                if lhs.level != rhs.level { return lhs.level < rhs.level }
+                return lhs.name < rhs.name
+            }
+    }
+
+    private var chosenCantrips: Int {
+        draft.chosenSpellIDs.compactMap { contentStore.spellDefinition(id: $0) }
+            .filter(\.isCantrip).count
+    }
+
+    private var chosenLeveled: Int {
+        draft.chosenSpellIDs.compactMap { contentStore.spellDefinition(id: $0) }
+            .filter { !$0.isCantrip }.count
+    }
+
+    var body: some View {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Cantrips: \(chosenCantrips) / \(cantripBudget)")
+                        .foregroundStyle(chosenCantrips > cantripBudget ? .red : .primary)
+                    if let budget = leveledBudget {
+                        Text("Level-1 spells: \(chosenLeveled) / \(budget)")
+                            .foregroundStyle(chosenLeveled > budget ? .red : .primary)
+                    }
+                }
+                .font(.caption.weight(.semibold))
+                Button("Auto-pick the rest") { autoPick() }
+                    .font(.caption.weight(.semibold))
+            } footer: {
+                Text(footerText)
+            }
+            Section("Cantrips") {
+                ForEach(pool.filter(\.isCantrip)) { spell in
+                    row(for: spell)
+                }
+            }
+            Section("Level 1") {
+                ForEach(pool.filter { !$0.isCantrip }) { spell in
+                    row(for: spell)
+                }
+            }
+        }
+        .navigationTitle("Spells")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Next", action: onNext)
+                    .disabled(chosenCantrips == 0 && chosenLeveled == 0)
+            }
+        }
+    }
+
+    private var footerText: String {
+        switch block?.preparedRule {
+        case .preparedFromAll:
+            return "These become your prepared list — you can re-pick after any long rest."
+        case .preparedFromBook:
+            return "Level-1 picks land in your spellbook and start prepared."
+        case .knownList, .pactMagic:
+            return "These are your known spells — you learn more as you level up."
+        case .none:
+            return ""
+        }
+    }
+
+    private func row(for spell: SpellDefinition) -> some View {
+        let isChosen = draft.chosenSpellIDs.contains(spell.id)
+        let atCap = spell.isCantrip
+            ? chosenCantrips >= cantripBudget
+            : leveledBudget.map { chosenLeveled >= $0 } ?? false
+        let blocked = !isChosen && atCap
+        return Button {
+            if isChosen {
+                draft.chosenSpellIDs.removeAll { $0 == spell.id }
+            } else if !blocked {
+                draft.chosenSpellIDs.append(spell.id)
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: spell.school.systemImage)
+                    .foregroundStyle(.purple)
+                    .frame(width: 22)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(spell.name)
+                        .font(.subheadline.weight(.semibold))
+                    Text(spell.school.displayName)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: isChosen ? "checkmark.circle.fill" : (blocked ? "circle.slash" : "circle"))
+                    .foregroundStyle(isChosen ? .green : (blocked ? Color.secondary.opacity(0.4) : Color.accentColor))
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(blocked)
+    }
+
+    /// Fill the remaining cantrip + leveled budget alphabetically — the quick
+    /// path for players who don't want to curate at creation.
+    private func autoPick() {
+        for spell in pool.filter(\.isCantrip) where chosenCantrips < cantripBudget {
+            if !draft.chosenSpellIDs.contains(spell.id) {
+                draft.chosenSpellIDs.append(spell.id)
+            }
+        }
+        let cap = leveledBudget ?? Int.max
+        for spell in pool.filter({ !$0.isCantrip }) where chosenLeveled < cap {
+            if !draft.chosenSpellIDs.contains(spell.id) {
+                draft.chosenSpellIDs.append(spell.id)
+            }
+        }
     }
 }

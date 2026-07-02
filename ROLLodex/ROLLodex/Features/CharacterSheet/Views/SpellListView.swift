@@ -70,7 +70,7 @@ struct SpellListView: View {
                         Button {
                             showAddSpell = true
                         } label: {
-                            Label(isPreparedCaster ? "Prepare Spells" : "Add Spell", systemImage: "plus.circle")
+                            Label(spellButtonLabel, systemImage: "plus.circle")
                                 .font(.caption.weight(.semibold))
                         }
                         .buttonStyle(.bordered)
@@ -111,6 +111,21 @@ struct SpellListView: View {
 
     private var isPreparedCaster: Bool {
         CharacterCalculator.isPreparedCaster(character: character, content: content)
+    }
+
+    /// Button label matches the picker's mode for the primary casting class:
+    /// prepared casters manage a daily list, known casters learn spells, the
+    /// wizard (and multi-mode multiclassers) get the generic label.
+    private var spellButtonLabel: String {
+        let rules = character.classEntries.compactMap {
+            content.classDefinition(id: $0.classID)?.spellcasting?.preparedRule
+        }
+        if rules.count > 1 { return "Manage Spells" }
+        switch rules.first {
+        case .preparedFromAll:        return "Prepare Spells"
+        case .knownList, .pactMagic:  return "Learn Spells"
+        case .preparedFromBook, .none: return "Add Spell"
+        }
     }
 
     /// One (class, prepared, cap) triple per prepared-caster class — drives
@@ -363,89 +378,94 @@ private struct SpellRow: View {
     }
 }
 
-/// Spell picker, grouped by level. Two modes:
-/// - **Prepare mode** (cleric / druid / paladin — `preparedFromAll`): lists the
-///   class's spell list and lets the player toggle each spell in/out of today's
-///   prepared set, enforcing the prep cap (leveled = WIS/INT mod + level) and
-///   the cantrips-known budget. This is how a druid "changes spells every day".
-/// - **Add mode** (everyone else): the original behavior — tapping reconciles
-///   the spell into all three lists. Wizards/known casters land here for now.
+/// Spell picker, grouped by level. Three modes, per the SELECTED class's rule:
+/// - **Prepare mode** (`preparedFromAll` — cleric / druid / paladin): toggle
+///   spells in/out of today's per-class prepared bucket, cap-enforced. Models
+///   "change your prepared spells after a long rest".
+/// - **Learn mode** (`knownList` / `pactMagic` — bard / sorcerer / warlock):
+///   toggle spells in/out of the known list, gated by the class's
+///   `spellsKnown` table. RAW you swap on level-up; edits aren't time-gated.
+/// - **Add mode** (`preparedFromBook` — wizard): reconciles into every list
+///   until spellbook management lands.
 ///
-/// The class spell list is `CharacterCalculator.spellList(forClassID:)`, which
-/// falls back to the full catalog for classes with no tagged spells.
+/// The pool is always the selected class's spell list
+/// (`CharacterCalculator.spellList(forClassID:)`; full catalog only for
+/// classes with no tagged spells). Multiclass casters get a segment picker.
 struct AddSpellSheet: View {
     @Binding var character: Character
     @Environment(ContentStore.self) private var content
     @Environment(\.dismiss) private var dismiss
-    /// The prepared-caster class being edited in Prepare mode. Defaults to the
-    /// first one; a segment picker appears for multiclass prepared casters
-    /// (each class preps separately, per 5e).
-    @State private var selectedPrepClassID: String?
+    /// The casting class being edited. Defaults to the first; a segment picker
+    /// appears for multiclass casters (each class picks separately, per 5e).
+    @State private var selectedClassID: String?
 
-    /// `preparedFromAll` casting classes — each gets its own Prepare mode
-    /// bucket. Wizards (`preparedFromBook`) keep Add mode until spellbook
-    /// management lands.
-    private var prepClasses: [(classID: String, level: Int, block: SpellcastingBlock)] {
-        CharacterCalculator.preparedCasterClasses(character: character, content: content)
-            .filter { $0.block.preparedRule == .preparedFromAll }
+    private enum PickMode { case prepare, learn, add }
+
+    /// Every casting class the character has, in classEntries order.
+    private var castingClasses: [(classID: String, level: Int, block: SpellcastingBlock)] {
+        character.classEntries.compactMap { entry in
+            guard let block = content.classDefinition(id: entry.classID)?.spellcasting else { return nil }
+            return (entry.classID, entry.level, block)
+        }
     }
 
-    private var isPrepareMode: Bool { !prepClasses.isEmpty }
-
-    /// The class whose bucket the toggles edit — the picked one, or the first.
-    private var prepClassID: String? {
-        selectedPrepClassID ?? prepClasses.first?.classID
+    /// The class whose lists the toggles edit — the picked one, or the first.
+    private var activeClass: (classID: String, level: Int, block: SpellcastingBlock)? {
+        castingClasses.first { $0.classID == selectedClassID } ?? castingClasses.first
     }
 
-    private var maxPrepared: Int {
-        guard let id = prepClassID else { return 0 }
-        return CharacterCalculator.maxPreparedSpells(character: character, content: content, forClassID: id) ?? 0
+    private var mode: PickMode {
+        switch activeClass?.block.preparedRule {
+        case .preparedFromAll:          return .prepare
+        case .knownList, .pactMagic:    return .learn
+        case .preparedFromBook, .none:  return .add
+        }
+    }
+
+    /// Leveled-spell budget for the active class: prep cap (prepare mode) or
+    /// the spellsKnown table (learn mode). Nil = uncapped (wizard add mode, or
+    /// a known caster with no authored table).
+    private var leveledBudget: Int? {
+        guard let ac = activeClass else { return nil }
+        switch mode {
+        case .prepare:
+            return CharacterCalculator.maxPreparedSpells(character: character, content: content, forClassID: ac.classID)
+        case .learn:
+            return CharacterCalculator.knownSpellBudget(character: character, content: content, forClassID: ac.classID)
+        case .add:
+            return nil
+        }
     }
 
     private var cantripBudget: Int {
-        guard let id = prepClassID else { return 0 }
-        return CharacterCalculator.cantripsKnownBudget(character: character, content: content, forClassID: id) ?? 0
+        guard let ac = activeClass else { return 0 }
+        return CharacterCalculator.cantripsKnownBudget(character: character, content: content, forClassID: ac.classID) ?? 0
     }
 
-    private var preparedLeveled: Int {
-        guard let id = prepClassID else { return 0 }
-        return CharacterCalculator.preparedLeveledCount(character: character, content: content, forClassID: id)
+    /// The active class's leveled/cantrip counts in whichever list this mode
+    /// edits (prepared bucket or known list).
+    private var editedIDs: [String] {
+        guard let ac = activeClass else { return [] }
+        switch mode {
+        case .prepare: return character.spells.preparedByClass[ac.classID] ?? []
+        case .learn:   return character.spells.knownIDs
+        case .add:     return []
+        }
     }
 
-    private var preparedCantrips: Int {
-        guard let id = prepClassID else { return 0 }
-        return (character.spells.preparedByClass[id] ?? [])
-            .compactMap { content.spellDefinition(id: $0) }
-            .filter { $0.isCantrip }.count
+    private var leveledCount: Int {
+        editedIDs.compactMap { content.spellDefinition(id: $0) }.filter { !$0.isCantrip }.count
+    }
+
+    private var cantripCount: Int {
+        editedIDs.compactMap { content.spellDefinition(id: $0) }.filter { $0.isCantrip }.count
     }
 
     var body: some View {
         NavigationStack {
             List {
-                if isPrepareMode {
-                    Section {
-                        if prepClasses.count > 1 {
-                            Picker("Class", selection: Binding(
-                                get: { prepClassID ?? "" },
-                                set: { selectedPrepClassID = $0 }
-                            )) {
-                                ForEach(prepClasses, id: \.classID) { sc in
-                                    Text(content.classDefinition(id: sc.classID)?.name ?? sc.classID)
-                                        .tag(sc.classID)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                        }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Leveled prepared: \(preparedLeveled) / \(maxPrepared)")
-                                .foregroundStyle(preparedLeveled > maxPrepared ? .red : .primary)
-                            Text("Cantrips: \(preparedCantrips) / \(cantripBudget)")
-                                .foregroundStyle(preparedCantrips > cantripBudget ? .red : .secondary)
-                        }
-                        .font(.caption.weight(.semibold))
-                    } footer: {
-                        Text("Tap to prepare or unprepare. You can re-pick after a long rest.")
-                    }
+                if mode != .add || castingClasses.count > 1 {
+                    budgetSection
                 }
                 ForEach(spellsByLevel, id: \.level) { group in
                     Section(header: Text(headerText(for: group.level))) {
@@ -455,7 +475,7 @@ struct AddSpellSheet: View {
                     }
                 }
             }
-            .navigationTitle(isPrepareMode ? "Prepare Spells" : "Add Spell")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -465,23 +485,91 @@ struct AddSpellSheet: View {
         }
     }
 
+    private var navigationTitle: String {
+        switch mode {
+        case .prepare: return "Prepare Spells"
+        case .learn:   return "Learn Spells"
+        case .add:     return "Add Spell"
+        }
+    }
+
+    private var budgetSection: some View {
+        Section {
+            if castingClasses.count > 1 {
+                Picker("Class", selection: Binding(
+                    get: { activeClass?.classID ?? "" },
+                    set: { selectedClassID = $0 }
+                )) {
+                    ForEach(castingClasses, id: \.classID) { sc in
+                        Text(content.classDefinition(id: sc.classID)?.name ?? sc.classID)
+                            .tag(sc.classID)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+            if mode != .add {
+                VStack(alignment: .leading, spacing: 2) {
+                    if let budget = leveledBudget {
+                        Text("\(mode == .prepare ? "Leveled prepared" : "Spells known"): \(leveledCount) / \(budget)")
+                            .foregroundStyle(leveledCount > budget ? .red : .primary)
+                    }
+                    Text("Cantrips: \(cantripCount) / \(cantripBudget)")
+                        .foregroundStyle(cantripCount > cantripBudget ? .red : .secondary)
+                }
+                .font(.caption.weight(.semibold))
+            }
+        } footer: {
+            switch mode {
+            case .prepare:
+                Text("Tap to prepare or unprepare. You can re-pick after a long rest.")
+            case .learn:
+                Text("Tap to learn or forget. RAW you learn new spells on level-up and may swap one.")
+            case .add:
+                Text("Wizard spellbook management is coming — added spells land in the book and prepared list.")
+            }
+        }
+    }
+
     @ViewBuilder
     private func row(for spell: SpellDefinition) -> some View {
-        if isPrepareMode {
-            prepareRow(for: spell)
-        } else {
-            addRow(for: spell)
+        switch mode {
+        case .prepare: prepareRow(for: spell)
+        case .learn:   learnRow(for: spell)
+        case .add:     addRow(for: spell)
         }
+    }
+
+    // MARK: - Learn-mode row (toggle in/out of knownIDs, budget-gated)
+
+    private func learnRow(for spell: SpellDefinition) -> some View {
+        let isKnown = character.spells.knownIDs.contains(spell.id)
+        let atCap = spell.isCantrip
+            ? cantripCount >= cantripBudget
+            : leveledBudget.map { leveledCount >= $0 } ?? false
+        let blocked = !isKnown && atCap
+        return Button {
+            if isKnown {
+                character.spells.knownIDs.removeAll { $0 == spell.id }
+            } else if !blocked {
+                character.spells.knownIDs.append(spell.id)
+            }
+        } label: {
+            toggleLabel(for: spell, isOn: isKnown, blocked: blocked)
+        }
+        .buttonStyle(.plain)
+        .disabled(blocked)
     }
 
     // MARK: - Prepare-mode row (toggle in/out of the selected class's bucket)
 
     private func prepareRow(for spell: SpellDefinition) -> some View {
-        let classID = prepClassID ?? ""
+        let classID = activeClass?.classID ?? ""
         let isPrepared = (character.spells.preparedByClass[classID] ?? []).contains(spell.id)
         // Block preparing a NEW spell once the relevant cap is hit. Already-
         // prepared spells stay tappable so you can unprepare to make room.
-        let atCap = spell.isCantrip ? preparedCantrips >= cantripBudget : preparedLeveled >= maxPrepared
+        let atCap = spell.isCantrip
+            ? cantripCount >= cantripBudget
+            : leveledBudget.map { leveledCount >= $0 } ?? false
         let blocked = !isPrepared && atCap
         return Button {
             if isPrepared {
@@ -490,26 +578,32 @@ struct AddSpellSheet: View {
                 character.spells.preparedByClass[classID, default: []].append(spell.id)
             }
         } label: {
-            HStack(spacing: 10) {
-                Image(systemName: spell.school.systemImage)
-                    .foregroundStyle(.purple)
-                    .frame(width: 22)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(spell.name)
-                        .font(.subheadline.weight(.semibold))
-                    Text(spell.duration.requiresConcentration
-                         ? "\(spell.school.displayName) · Conc"
-                         : spell.school.displayName)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Image(systemName: isPrepared ? "checkmark.circle.fill" : (blocked ? "circle.slash" : "circle"))
-                    .foregroundStyle(isPrepared ? .green : (blocked ? Color.secondary.opacity(0.4) : Color.accentColor))
-            }
+            toggleLabel(for: spell, isOn: isPrepared, blocked: blocked)
         }
         .buttonStyle(.plain)
         .disabled(blocked)
+    }
+
+    /// Shared row label for the prepare/learn toggle modes: spell name, school
+    /// (+ concentration tag), and a check/slash/empty state circle.
+    private func toggleLabel(for spell: SpellDefinition, isOn: Bool, blocked: Bool) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: spell.school.systemImage)
+                .foregroundStyle(.purple)
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(spell.name)
+                    .font(.subheadline.weight(.semibold))
+                Text(spell.duration.requiresConcentration
+                     ? "\(spell.school.displayName) · Conc"
+                     : spell.school.displayName)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Image(systemName: isOn ? "checkmark.circle.fill" : (blocked ? "circle.slash" : "circle"))
+                .foregroundStyle(isOn ? .green : (blocked ? Color.secondary.opacity(0.4) : Color.accentColor))
+        }
     }
 
     // MARK: - Add-mode row (reconcile into all lists)
@@ -566,11 +660,11 @@ struct AddSpellSheet: View {
         .disabled(inAllLists)
     }
 
-    /// The pool to choose from: in prepare mode, the SELECTED class's spell
-    /// list (tagged, or the full catalog as fallback); in add mode, the full
-    /// catalog.
+    /// The pool to choose from: the SELECTED class's spell list in every mode
+    /// (tagged; full-catalog fallback only for classes with no tagged spells).
+    /// Non-casters — who can't normally reach this sheet — see everything.
     private var spellPool: [SpellDefinition] {
-        guard isPrepareMode, let classID = prepClassID else { return content.allSpells }
+        guard let classID = activeClass?.classID else { return content.allSpells }
         return CharacterCalculator.spellList(forClassID: classID, content: content)
     }
 

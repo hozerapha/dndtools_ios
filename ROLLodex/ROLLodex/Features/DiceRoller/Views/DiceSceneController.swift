@@ -43,8 +43,11 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
     /// render as one physical die per formula entry.
     var isStandalone: Bool { self != .d100 }
 
-    /// Bridges from the project-wide `DieKind` (which spans d4–d100) to the subset
-    /// the 3D scene currently knows how to model. Returns nil for unsupported kinds.
+    /// Bridges from the project-wide `DieKind` (which spans d4–d100) to the
+    /// scene's kinds. The switch is exhaustive — every DieKind renders today.
+    /// Failable so callers keep their nil-handling if DieKind ever grows a
+    /// kind the 3D scene can't model (the new case then fails to compile
+    /// here, forcing a decision).
     init?(_ kind: DieKind) {
         switch kind {
         case .d4:   self = .d4
@@ -54,7 +57,6 @@ enum Dice3DKind: String, CaseIterable, Identifiable {
         case .d12:  self = .d12
         case .d20:  self = .d20
         case .d100: self = .d100
-        default:    return nil
         }
     }
 }

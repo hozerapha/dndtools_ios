@@ -11,9 +11,14 @@ struct ExportedCharacter: Transferable {
 
     static var transferRepresentation: some TransferRepresentation {
         DataRepresentation(exportedContentType: .json) { exported in
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            return try encoder.encode(exported.character)
+            // Character (like the whole model layer) is MainActor-isolated by
+            // the target's default isolation, but this export closure runs
+            // nonisolated — hop to the main actor to encode.
+            try await MainActor.run {
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                return try encoder.encode(exported.character)
+            }
         }
         .suggestedFileName { exported in
             let safe = exported.character.name
