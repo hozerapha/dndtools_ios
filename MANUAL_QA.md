@@ -18,7 +18,11 @@ not surfacing at creation), which is why this list exists.
   for cases whose behavior changed. Claude does not check boxes — verification
   is yours.
 
-> **Recently changed — needs verification:** the **Settings page + Natural 20
+> **Recently changed — needs verification:** the **Warlock** class + Fiend
+> Patron (2026-07-02, new — see "Warlock" under Classes; first pact-magic
+> caster + Eldritch Blast) and the **subclass backfill** — Path of the
+> Berserker, Oath of Devotion, Evoker (2026-07-02, new — see "Subclass
+> backfill" under Classes); the **Settings page + Natural 20
 > crit styles** (2026-06-27, new — see "Settings & critical-hit styles"); the
 > **QA P0 quick batch**
 > (2026-06-27, mostly covered by unit tests — see "QA fixes" below); the
@@ -422,6 +426,63 @@ Mostly unit-tested; two have an in-app surface worth a quick check:
 - [ ] **New resources appear without any sync step.** Level a Druid 1 → 2 →
   Wild Shape shows up on the Actions tab with a full 2-use pool; the new L1
   slot and (at 3) L2 slots appear in the Spells card already full.
+
+### Warlock (new 2026-07-02)
+- [ ] **Create a Warlock.** Charisma caster, d8 HP, Light armor + Simple
+  weapons, WIS & CHA saves; class skills step offers 2 of 7 (Arcana,
+  Deception, History, Intimidation, Investigation, Nature, Religion). The
+  creation Spells step shows only warlock-list spells (Eldritch Blast present;
+  Fire Bolt absent) with budgets of 2 cantrips / 2 known spells.
+- [ ] **Pact Magic slots.** A level-1 Warlock's Spells card shows ONE slot
+  pool (1× L1); at L5 it's **2 slots, both level 3** (no separate L1/L2
+  pools). A **Short Rest** refills them (unlike every other caster's slots).
+- [ ] **Learn Spells.** The Spells card button reads **"Learn Spells"** with a
+  "Spells known: X / N" counter following the Warlock table (2 at L1, 6 at
+  L5); at the cap, un-learned spells show a slashed circle until one is
+  toggled off.
+- [ ] **Eldritch Invocations.** The Features tab shows an invocations picker
+  offering **13** options — **1** pick at L1, growing to **3** at L2 (re-open
+  the picker after leveling); the feature text notes mechanics are manual.
+- [ ] **Level-up prompts spell learning.** Warlock 1 → 2 (spells known 2 → 3,
+  second pact slot): after Finish, the spell picker opens automatically.
+- [ ] **Fiend Patron at L3.** Subclass picker offers it; choosing it puts
+  **Command** in the Granted section of the Spells tab; at L6 **Dark One's Own
+  Luck** shows a use pool equal to your CHA modifier; at L14 **Hurl Through
+  Hell** is a tappable action rolling **8d10 psychic** with a 1 / Long Rest
+  counter.
+- [ ] **Multiclass keeps pact separate.** A Druid 3 / Warlock 3 shows the
+  normal Druid slots AND the pact slots as separate pools (pact magic is
+  excluded from the shared multiclass slot table — no merged pool).
+- [ ] _Known simplifications:_ invocation effects are text-only (Agonizing
+  Blast's +CHA damage is manual); Eldritch Blast's multi-beam scaling means
+  rolling the attack once per beam manually; Dark One's Blessing temp HP is
+  applied by hand via the HP editor; Mystic Arcanum spells (L6+) aren't
+  bundled; Magical Cunning's slot regain is manual (the 1/LR counter just
+  tracks the rite).
+
+### Subclass backfill — Berserker, Devotion, Evoker (new 2026-07-02)
+- [ ] **Every class now has a subclass picker.** A Barbarian / Paladin /
+  Wizard at L3 offers a subclass picker on the Features tab ("Choose your
+  Primal Path" / "Choose your Sacred Oath" / "Choose your Arcane Tradition"),
+  and leveling 2 → 3 without one shows the purple subclass-unlock banner.
+- [ ] **Frenzy rider (Berserker).** With Path of the Berserker picked and a
+  melee weapon equipped, a weapon attack shows a **"Frenzy"** toggle chip that
+  adds **2d6** (weapon-typed) to the damage roll; at L9 it's **3d6**; after
+  using it, the chip greys out until **Start New Turn**. The Rage-active +
+  Reckless-Attack requirement is a note in the feature text, not enforced.
+- [ ] **Intimidating Presence (Berserker L14).** Appears as a **Bonus Action**
+  row showing a **Strength-based save DC** with a **1 / Long Rest** counter.
+- [ ] **Devotion oath spells.** Picking Oath of Devotion at L3 puts **Shield
+  of Faith** in the Granted section of the Spells tab (castable — its +2 AC
+  buff applies); the other oath spells are listed as text.
+- [ ] **Holy Nimbus (Devotion L20).** A **Bonus Action** with a **1 / Long
+  Rest** counter; its damage/advantage effects are manual.
+- [ ] **Evoker.** All five features (Evocation Savant + Potent Cantrip at L3,
+  Sculpt Spells L6, Empowered Evocation L10, Overchannel L14) appear at their
+  levels as text; no action rows expected.
+- [ ] _Known simplifications:_ Frenzy's Rage/Reckless gate, Sacred Weapon's
+  +CHA attack bonus, Mindless Rage's condition immunity, and the Sculpt
+  Spells / Potent Cantrip / Overchannel math are all manual.
 
 ---
 

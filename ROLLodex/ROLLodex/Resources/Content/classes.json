@@ -287,6 +287,7 @@
     ],
     "armorProficiencies": [],
     "weaponProficiencies": [],
+    "subclassLevel": 3,
     "levelFeatures": {
       "1": [
         {
@@ -323,6 +324,22 @@
           "name": "Arcane Recovery",
           "description": "Once per day after a Short Rest, recover expended spell slots up to half your Wizard level.",
           "actionRecipes": []
+        }
+      ],
+      "3": [
+        {
+          "id": "wizard_subclass",
+          "name": "Wizard Subclass",
+          "description": "Choose a Wizard subclass (an Arcane Tradition); you gain its features of your Wizard level or lower.",
+          "selection": {
+            "id": "wizard_subclass",
+            "prompt": "Choose your Arcane Tradition",
+            "count": 1,
+            "optionsSource": {
+              "type": "subclasses",
+              "parentClassID": "wizard"
+            }
+          }
         }
       ]
     },
@@ -467,7 +484,54 @@
       },
       "ritualCasting": true,
       "spellcastingFocus": true
-    }
+    },
+    "subclasses": [
+      {
+        "id": "evoker",
+        "name": "Evoker",
+        "description": "You focus your study on magic that channels raw elemental energy — and on hurling it precisely past your allies.",
+        "levelFeatures": {
+          "3": [
+            {
+              "id": "evocation_savant",
+              "name": "Evocation Savant",
+              "description": "Choose two Wizard evocation spells (level 2 or lower) and add them to your spellbook for free. Whenever you gain a Wizard level thereafter, you can add one Wizard evocation spell of a castable level the same way.",
+              "kind": "passive"
+            },
+            {
+              "id": "potent_cantrip",
+              "name": "Potent Cantrip",
+              "description": "Your damaging cantrips hit even on a miss or successful save: the target takes half the cantrip's damage (round it manually) and suffers no additional effect.",
+              "kind": "passive"
+            }
+          ],
+          "6": [
+            {
+              "id": "sculpt_spells",
+              "name": "Sculpt Spells",
+              "description": "When you cast an evocation spell, you can protect creatures you can see equal to 1 + the spell's level: they automatically succeed on their saves against it and take no damage if they would take half.",
+              "kind": "passive"
+            }
+          ],
+          "10": [
+            {
+              "id": "empowered_evocation",
+              "name": "Empowered Evocation",
+              "description": "Add your Intelligence modifier to one damage roll of any Wizard evocation spell you cast (add it manually to the rolled total).",
+              "kind": "passive"
+            }
+          ],
+          "14": [
+            {
+              "id": "overchannel",
+              "name": "Overchannel",
+              "description": "When you cast a Wizard spell of level 1–5 that deals damage, you can deal maximum damage with it (use the Maximize crit-style idea manually). First use per Long Rest is safe; each later use deals you 2d12 Necrotic per spell level, increasing by 1d12 each additional time.",
+              "kind": "passive"
+            }
+          ]
+        }
+      }
+    ]
   },
   {
     "id": "rogue",
@@ -943,6 +1007,7 @@
       "simple",
       "martial"
     ],
+    "subclassLevel": 3,
     "levelFeatures": {
       "1": [
         {
@@ -1027,10 +1092,106 @@
           "kind": "passive",
           "unarmoredDefenseAbility": "constitution"
         }
+      ],
+      "3": [
+        {
+          "id": "barbarian_subclass",
+          "name": "Barbarian Subclass",
+          "description": "Choose a Barbarian subclass (a Primal Path); you gain its features of your Barbarian level or lower.",
+          "selection": {
+            "id": "barbarian_subclass",
+            "prompt": "Choose your Primal Path",
+            "count": 1,
+            "optionsSource": {
+              "type": "subclasses",
+              "parentClassID": "barbarian"
+            }
+          }
+        }
       ]
     },
     "masteryCount": 2,
-    "masteryRestrictions": []
+    "masteryRestrictions": [],
+    "subclasses": [
+      {
+        "id": "path_of_the_berserker",
+        "name": "Path of the Berserker",
+        "description": "You channel your Rage into violent fury, frenzying beyond the limits of ordinary warriors.",
+        "levelFeatures": {
+          "3": [
+            {
+              "id": "frenzy",
+              "name": "Frenzy",
+              "description": "While your Rage is active and you use Reckless Attack, the first creature you hit on your turn with a Strength-based attack takes extra damage equal to your Rage Damage bonus in d6s (2d6, 3d6 at level 9, 4d6 at level 16). (The chip below the attack roll adds the dice — only use it while raging and attacking recklessly.)",
+              "triggeredEffect": {
+                "id": "frenzy_damage",
+                "name": "Frenzy",
+                "trigger": {
+                  "type": "onAttackHit"
+                },
+                "effect": {
+                  "type": "addScaledDamageDice",
+                  "count": {
+                    "byClassLevel": {
+                      "3": 2,
+                      "9": 3,
+                      "16": 4
+                    }
+                  },
+                  "die": "d6",
+                  "damageType": "$weapon"
+                },
+                "lifecycle": {
+                  "type": "oneShot"
+                },
+                "activation": "optIn",
+                "cost": {
+                  "type": "oncePerTurn",
+                  "flagID": "frenzy"
+                }
+              }
+            }
+          ],
+          "6": [
+            {
+              "id": "mindless_rage",
+              "name": "Mindless Rage",
+              "description": "You have Immunity to the Charmed and Frightened conditions while your Rage is active; if you're Charmed or Frightened when you enter your Rage, the condition is suspended for the Rage's duration. (Apply/remove the conditions manually.)",
+              "kind": "passive"
+            }
+          ],
+          "10": [
+            {
+              "id": "retaliation",
+              "name": "Retaliation",
+              "description": "When you take damage from a creature within 5 feet of you, you can take a Reaction to make one melee attack against it (use your weapon's normal attack roll).",
+              "actionCost": "reaction"
+            }
+          ],
+          "14": [
+            {
+              "id": "intimidating_presence",
+              "name": "Intimidating Presence",
+              "description": "As a Bonus Action, creatures of your choice in a 30-foot Emanation must succeed on a Wisdom save (DC shown) or be Frightened until the start of your next turn. Once per Long Rest free; afterwards it costs a Rage use (track manually).",
+              "actionCost": "bonusAction",
+              "resource": {
+                "id": "barbarian_intimidating_presence",
+                "name": "Intimidating Presence",
+                "max": 1,
+                "refreshOn": "longRest",
+                "refreshAmount": "all"
+              },
+              "actionRecipes": [
+                {
+                  "type": "saveDC",
+                  "ability": "strength"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
   },
   {
     "id": "paladin",
@@ -1291,6 +1452,20 @@
               "fixed": 1
             }
           }
+        },
+        {
+          "id": "paladin_subclass",
+          "name": "Paladin Subclass",
+          "description": "Choose a Paladin subclass (a Sacred Oath); you gain its features of your Paladin level or lower.",
+          "selection": {
+            "id": "paladin_subclass",
+            "prompt": "Choose your Sacred Oath",
+            "count": 1,
+            "optionsSource": {
+              "type": "subclasses",
+              "parentClassID": "paladin"
+            }
+          }
         }
       ],
       "4": [
@@ -1425,7 +1600,66 @@
       ]
     },
     "masteryCount": 2,
-    "masteryRestrictions": []
+    "masteryRestrictions": [],
+    "subclasses": [
+      {
+        "id": "oath_of_devotion",
+        "name": "Oath of Devotion",
+        "description": "The ideal of the knight in shining armor: honesty, courage, compassion, and duty bound into a sacred oath.",
+        "levelFeatures": {
+          "3": [
+            {
+              "id": "devotion_spells",
+              "name": "Devotion Spells",
+              "description": "Your oath keeps certain spells always prepared — L3: Protection from Evil and Good, Shield of Faith; L5: Aid, Zone of Truth; L9: Beacon of Hope, Dispel Magic; L13: Freedom of Movement, Guardian of Faith; L17: Commune, Flame Strike. (Only Shield of Faith is bundled so far; the rest are text-only until authored.)",
+              "grantsSpells": [
+                {
+                  "spellID": "shield_of_faith",
+                  "minCharacterLevel": 3
+                }
+              ]
+            },
+            {
+              "id": "sacred_weapon",
+              "name": "Sacred Weapon",
+              "description": "When you take the Attack action, you can expend a use of Channel Divinity to imbue one weapon for 10 minutes: add your Charisma modifier to its attack rolls (add it manually), and it sheds 20 feet of bright light.",
+              "kind": "passive"
+            }
+          ],
+          "7": [
+            {
+              "id": "aura_of_devotion",
+              "name": "Aura of Devotion",
+              "description": "You and your allies within your Aura of Protection can't be Charmed while you're conscious.",
+              "kind": "passive"
+            }
+          ],
+          "15": [
+            {
+              "id": "smite_of_protection",
+              "name": "Smite of Protection",
+              "description": "Whenever you use Divine Smite, you and your allies in your Aura of Protection gain Half Cover until the start of your next turn.",
+              "kind": "passive"
+            }
+          ],
+          "20": [
+            {
+              "id": "holy_nimbus",
+              "name": "Holy Nimbus",
+              "description": "As a Bonus Action, emanate a sun-bright aura for 10 minutes: at the start of each of your turns, enemies in your Aura of Protection take Radiant damage equal to your Charisma modifier + Proficiency Bonus (apply manually), and you have Advantage on saves forced by Fiends and Undead. Once per Long Rest, or expend a level-5 spell slot.",
+              "actionCost": "bonusAction",
+              "resource": {
+                "id": "paladin_holy_nimbus",
+                "name": "Holy Nimbus",
+                "max": 1,
+                "refreshOn": "longRest",
+                "refreshAmount": "all"
+              }
+            }
+          ]
+        }
+      }
+    ]
   },
   {
     "id": "cleric",
@@ -3238,6 +3472,349 @@
               "name": "Nature's Sanctuary",
               "description": "As a Magic action, you create a 15-foot Cube of protective energy within 120 feet for 1 minute. You and your allies in it have Half Cover and gain your choice of resistance to Bludgeoning, Piercing, or Slashing damage; you can move the Cube 60 feet as a Bonus Action.",
               "kind": "passive"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "warlock",
+    "multiclassProficiencies": ["armor_light", "weapon_simple"],
+    "name": "Warlock",
+    "hitDie": 8,
+    "primaryAbility": "charisma",
+    "savingThrows": ["wisdom", "charisma"],
+    "armorProficiencies": ["light"],
+    "weaponProficiencies": ["simple"],
+    "subclassLevel": 3,
+    "spellcasting": {
+      "ability": "charisma",
+      "preparedRule": "pactMagic",
+      "cantripsKnown": {
+        "byClassLevel": { "1": 2, "4": 3, "10": 4 }
+      },
+      "spellsKnown": { "byClassLevel": { "1": 2, "2": 3, "3": 4, "4": 5, "5": 6, "6": 7, "7": 8, "8": 9, "9": 10, "11": 11, "13": 12, "15": 13, "17": 14, "19": 15 } },
+      "slotTable": {
+        "kind": "pactMagic",
+        "table": {
+          "1": { "slotLevel": 1, "count": 1 },
+          "2": { "slotLevel": 1, "count": 2 },
+          "3": { "slotLevel": 2, "count": 2 },
+          "5": { "slotLevel": 3, "count": 2 },
+          "7": { "slotLevel": 4, "count": 2 },
+          "9": { "slotLevel": 5, "count": 2 },
+          "11": { "slotLevel": 5, "count": 3 },
+          "17": { "slotLevel": 5, "count": 4 }
+        }
+      },
+      "ritualCasting": false,
+      "spellcastingFocus": true
+    },
+    "levelFeatures": {
+      "1": [
+        {
+          "id": "warlock_class_skills",
+          "name": "Skill Proficiencies",
+          "description": "Choose 2 skills from your Warlock list.",
+          "kind": "selection",
+          "selection": {
+            "id": "warlock_class_skills",
+            "prompt": "Choose 2 skills",
+            "count": 2,
+            "optionsSource": {
+              "type": "skillsFrom",
+              "skills": [
+                "arcana",
+                "deception",
+                "history",
+                "intimidation",
+                "investigation",
+                "nature",
+                "religion"
+              ]
+            }
+          }
+        },
+        {
+          "id": "pact_magic",
+          "name": "Pact Magic",
+          "description": "You can cast prepared Warlock spells using Charisma. Your Pact Magic slots are all the same level (shown in the Spells tab), and you regain all of them on a Short or Long Rest.",
+          "kind": "passive"
+        },
+        {
+          "id": "eldritch_invocations",
+          "name": "Eldritch Invocations",
+          "description": "You gain eldritch invocations of your choice — magical abilities powered by your patron. You gain more as you level and can swap one whenever you gain a Warlock level. (Invocation mechanics are tracked as text; apply their effects manually.)",
+          "kind": "selection",
+          "selection": {
+            "id": "eldritch_invocations",
+            "prompt": "Choose your Eldritch Invocations",
+            "count": {
+              "byClassLevel": { "1": 1, "2": 3, "5": 5, "7": 6, "9": 7, "12": 8, "15": 9, "18": 10 }
+            },
+            "optionsSource": {
+              "type": "fixedOptions",
+              "options": [
+                { "id": "agonizing_blast", "name": "Agonizing Blast", "description": "When you cast Eldritch Blast, add your Charisma modifier to each beam's damage." },
+                { "id": "armor_of_shadows", "name": "Armor of Shadows", "description": "You can cast Mage Armor on yourself at will, without a spell slot." },
+                { "id": "devils_sight", "name": "Devil's Sight", "description": "You can see normally in dim light, darkness, and magical darkness to 120 feet." },
+                { "id": "eldritch_spear", "name": "Eldritch Spear", "description": "Your Eldritch Blast range increases to 300 feet." },
+                { "id": "fiendish_vigor", "name": "Fiendish Vigor", "description": "You can cast False Life on yourself at will as a level-1 spell, without a spell slot." },
+                { "id": "mask_of_many_faces", "name": "Mask of Many Faces", "description": "You can cast Disguise Self at will, without a spell slot." },
+                { "id": "misty_visions", "name": "Misty Visions", "description": "You can cast Silent Image at will, without a spell slot." },
+                { "id": "one_with_shadows", "name": "One with Shadows", "description": "In dim light or darkness you can become Invisible as a Magic action; it ends when you move or act." },
+                { "id": "otherworldly_leap", "name": "Otherworldly Leap", "description": "You can cast Jump on yourself at will, without a spell slot." },
+                { "id": "repelling_blast", "name": "Repelling Blast", "description": "When you hit a Large-or-smaller creature with Eldritch Blast, you can push it 10 feet away." },
+                { "id": "pact_of_the_blade", "name": "Pact of the Blade", "description": "Conjure a pact weapon as a Bonus Action; you can attack with your Charisma modifier and its damage is magical." },
+                { "id": "pact_of_the_chain", "name": "Pact of the Chain", "description": "You learn Find Familiar and can take special familiar forms (imp, sprite, etc.)." },
+                { "id": "pact_of_the_tome", "name": "Pact of the Tome", "description": "Your Book of Shadows grants three extra cantrips from any class list and two level-1 ritual spells." }
+              ]
+            }
+          }
+        }
+      ],
+      "2": [
+        {
+          "id": "magical_cunning",
+          "name": "Magical Cunning",
+          "description": "Once per Long Rest, you can perform a 1-minute rite to regain expended Pact Magic spell slots equal to half your maximum (round up).",
+          "kind": "active",
+          "resource": {
+            "id": "warlock_magical_cunning",
+            "name": "Magical Cunning",
+            "max": 1,
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          }
+        }
+      ],
+      "3": [
+        {
+          "id": "warlock_subclass",
+          "name": "Warlock Subclass",
+          "description": "Choose a Warlock subclass (an Otherworldly Patron); you gain its features at your Warlock level or lower.",
+          "selection": {
+            "id": "warlock_subclass",
+            "prompt": "Choose your Otherworldly Patron",
+            "count": 1,
+            "optionsSource": {
+              "type": "subclasses",
+              "parentClassID": "warlock"
+            }
+          }
+        }
+      ],
+      "4": [
+        {
+          "id": "warlock_asi_4",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "warlock_asi_4",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "8": [
+        {
+          "id": "warlock_asi_8",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "warlock_asi_8",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "9": [
+        {
+          "id": "contact_patron",
+          "name": "Contact Patron",
+          "description": "You always have the Contact Other Plane spell prepared; once per Long Rest you can cast it without a slot to contact your patron, automatically succeeding on the save. (Spell not yet bundled — narrate the result.)",
+          "kind": "passive"
+        }
+      ],
+      "11": [
+        {
+          "id": "mystic_arcanum_6",
+          "name": "Mystic Arcanum (6th)",
+          "description": "Choose one level-6 Warlock spell as an arcanum; you can cast it once per Long Rest without a spell slot. (Pick and track the spell manually — level-6+ spells aren't bundled yet.)",
+          "kind": "active",
+          "resource": {
+            "id": "warlock_arcanum_6",
+            "name": "Mystic Arcanum (6th)",
+            "max": 1,
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          }
+        }
+      ],
+      "12": [
+        {
+          "id": "warlock_asi_12",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "warlock_asi_12",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "13": [
+        {
+          "id": "mystic_arcanum_7",
+          "name": "Mystic Arcanum (7th)",
+          "description": "Choose one level-7 Warlock spell as an arcanum; you can cast it once per Long Rest without a spell slot. (Pick and track the spell manually — level-6+ spells aren't bundled yet.)",
+          "kind": "active",
+          "resource": {
+            "id": "warlock_arcanum_7",
+            "name": "Mystic Arcanum (7th)",
+            "max": 1,
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          }
+        }
+      ],
+      "15": [
+        {
+          "id": "mystic_arcanum_8",
+          "name": "Mystic Arcanum (8th)",
+          "description": "Choose one level-8 Warlock spell as an arcanum; you can cast it once per Long Rest without a spell slot. (Pick and track the spell manually — level-6+ spells aren't bundled yet.)",
+          "kind": "active",
+          "resource": {
+            "id": "warlock_arcanum_8",
+            "name": "Mystic Arcanum (8th)",
+            "max": 1,
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          }
+        }
+      ],
+      "16": [
+        {
+          "id": "warlock_asi_16",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "warlock_asi_16",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "17": [
+        {
+          "id": "mystic_arcanum_9",
+          "name": "Mystic Arcanum (9th)",
+          "description": "Choose one level-9 Warlock spell as an arcanum; you can cast it once per Long Rest without a spell slot. (Pick and track the spell manually — level-6+ spells aren't bundled yet.)",
+          "kind": "active",
+          "resource": {
+            "id": "warlock_arcanum_9",
+            "name": "Mystic Arcanum (9th)",
+            "max": 1,
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          }
+        }
+      ],
+      "19": [
+        {
+          "id": "warlock_epic_boon",
+          "name": "Epic Boon",
+          "description": "You gain an Epic Boon feat of your choice for which you qualify (Boon of Fate recommended).",
+          "kind": "passive"
+        }
+      ],
+      "20": [
+        {
+          "id": "eldritch_master",
+          "name": "Eldritch Master",
+          "description": "When you use Magical Cunning, you regain ALL your expended Pact Magic spell slots.",
+          "kind": "passive"
+        }
+      ]
+    },
+    "subclasses": [
+      {
+        "id": "fiend_patron",
+        "name": "Fiend Patron",
+        "description": "You have struck a bargain with a fiend of the Lower Planes, gaining destructive gifts of fire and desperate luck.",
+        "levelFeatures": {
+          "3": [
+            {
+              "id": "dark_ones_blessing",
+              "name": "Dark One's Blessing",
+              "description": "When you reduce an enemy to 0 Hit Points, or an enemy within 10 feet of you drops to 0, you gain Temporary Hit Points equal to your Charisma modifier plus your Warlock level (add them manually via the HP editor).",
+              "kind": "passive"
+            },
+            {
+              "id": "fiend_spells",
+              "name": "Fiend Spells",
+              "description": "You always have certain spells prepared — L3: Burning Hands, Command, Scorching Ray, Suggestion; L5: Fireball, Stinking Cloud; L7: Fire Shield, Wall of Fire; L9: Geas, Insect Plague. (Only Command is bundled so far; the rest are text-only until authored.)",
+              "grantsSpells": [
+                {
+                  "spellID": "command",
+                  "minCharacterLevel": 3
+                }
+              ]
+            }
+          ],
+          "6": [
+            {
+              "id": "dark_ones_own_luck",
+              "name": "Dark One's Own Luck",
+              "description": "When you make an ability check or saving throw, you can add 1d10 after seeing the roll but before its effects. Uses equal your Charisma modifier (min 1), regained on a Long Rest.",
+              "kind": "active",
+              "actionCost": "free",
+              "surfacesAsAction": false,
+              "resource": {
+                "id": "warlock_dark_ones_own_luck",
+                "name": "Dark One's Own Luck",
+                "max": 1,
+                "maxAbilityModifier": "charisma",
+                "refreshOn": "longRest",
+                "refreshAmount": "all"
+              }
+            }
+          ],
+          "10": [
+            {
+              "id": "fiendish_resilience",
+              "name": "Fiendish Resilience",
+              "description": "Choose a damage type when you finish a Short or Long Rest; you have Resistance to it until you choose a different one. (Track your chosen resistance manually.)",
+              "kind": "passive"
+            }
+          ],
+          "14": [
+            {
+              "id": "hurl_through_hell",
+              "name": "Hurl Through Hell",
+              "description": "Once per Long Rest when you hit a creature with an attack, you can instantly transport it through the Lower Planes; it takes 8d10 Psychic damage (fiends are immune) and returns at the end of your next turn.",
+              "kind": "active",
+              "actionCost": "free",
+              "resource": {
+                "id": "warlock_hurl_through_hell",
+                "name": "Hurl Through Hell",
+                "max": 1,
+                "refreshOn": "longRest",
+                "refreshAmount": "all"
+              },
+              "actionRecipes": [
+                {
+                  "type": "rawDamage",
+                  "dice": "8d10",
+                  "damageType": "psychic",
+                  "label": "Hurl Through Hell"
+                }
+              ]
             }
           ]
         }

@@ -364,18 +364,18 @@ Master, Eldritch Knight, Arcane Trickster, etc.) is PHB-only.
 
 | Class | SRD subclass | Bundled? |
 |---|---|---|
-| Barbarian | Path of the Berserker | class ✓ / subclass ✗ |
+| Barbarian | Path of the Berserker | ✓ ✓ |
 | Bard | College of Lore | ✓ ✓ |
 | Cleric | Life Domain | ✓ ✓ |
-| Druid | Circle of the Land | ✗ |
+| Druid | Circle of the Land | ✓ ✓ |
 | Fighter | Champion | ✓ ✓ |
 | Monk | Warrior of the Open Hand | ✗ |
-| Paladin | Oath of Devotion | class ✓ / subclass ✗ |
+| Paladin | Oath of Devotion | ✓ ✓ |
 | Ranger | Hunter | ✗ |
 | Rogue | Thief | ✓ ✓ |
 | Sorcerer | Draconic Sorcery | ✓ ✓ |
-| Warlock | Fiend Patron | ✗ |
-| Wizard | Evoker | class ✓ / subclass ✗ |
+| Warlock | Fiend Patron | ✓ ✓ |
+| Wizard | Evoker | ✓ ✓ |
 
 ### Classes (Level 1)
 | Class | Hit Die | Primary | Saves | Armor | Weapons | Mastery |
@@ -428,8 +428,8 @@ Using SRD content **requires** displaying this exact statement in-app (it's the 
 
 Per the license: do **not** add any other WotC attribution beyond the above, and don't imply endorsement. "Compatible with fifth edition" / "5E compatible" is permitted. (Shipped 2026-06-13 in Settings → Legal & Attribution; item 16.)
 
-### Audit verdict (2026-06-13, updated 2026-06-27)
-Bundle is SRD-clean at the inventory level: 9 classes (all SRD), 6 subclasses (Champion/Thief/Life Domain/College of Lore/Draconic Sorcery/Circle of the Land — exactly the SRD ones), 9 species (all SRD), 4 backgrounds (all 4 SRD), 44 spells (all SRD), all weapons/armor/conditions/gear, the 2 referenced feats. Attribution notice shipped. Description-text wording should track SRD phrasing (CC-licensed) — never PHB-exclusive wording.
+### Audit verdict (2026-06-13, updated 2026-07-02)
+Bundle is SRD-clean at the inventory level: 10 classes (all SRD), 10 subclasses (Champion/Thief/Life Domain/College of Lore/Draconic Sorcery/Circle of the Land/Fiend Patron/Path of the Berserker/Oath of Devotion/Evoker — exactly the SRD ones), 9 species (all SRD), 4 backgrounds (all 4 SRD), 45 spells (all SRD), all weapons/armor/conditions/gear, the 2 referenced feats. Attribution notice shipped. Description-text wording should track SRD phrasing (CC-licensed) — never PHB-exclusive wording.
 
 ---
 
@@ -682,6 +682,8 @@ All phases A–O shipped. Key per-phase notes:
 | O — triggered effects & active statuses | shipped (Slices A+B+C). See "Phase O Shipped reality" for open items (Divine Smite shipped 2026-06-09; Battle Master/superiority dice, GWM, attack-roll triggers still open) |
 
 **Shipped changelog (reverse-chronological highlights; reusable infra in `code`):**
+- **2026-07-02 — Subclass backfill: Path of the Berserker, Oath of Devotion, Evoker (10/12 subclasses).** Every authored class now has its SRD subclass + a picker at L3 (barbarian/wizard gained `subclassLevel: 3` + `<class>_subclass` picker features; paladin's picker joined Channel Divinity at L3). **Berserker:** Frenzy = opt-in damage rider on the Sneak Attack pattern (`addScaledDamageDice` 2d6 → 3d6 at L9 → 4d6 at L16, weapon-typed, once per turn via `oncePerTurn` flag — the Rage-active + Reckless-Attack gating is honor-system); Intimidating Presence = Bonus Action with a STR `saveDC` recipe + 1/Long Rest pool. **Devotion:** grants Shield of Faith at L3 via `grantsSpells` (other oath spells text-only until authored); Sacred Weapon rides the existing Channel Divinity pool as text; Holy Nimbus = Bonus Action 1/Long Rest pool. **Evoker:** all-text (Evocation Savant / Potent Cantrip / Sculpt Spells / Empowered Evocation / Overchannel). Tests: `SubclassBackfillTests` (new file, 9).
+- **2026-07-02 — Warlock (10th class) + Fiend Patron (7th subclass), full L1–20.** First `pactMagic` caster — exercises the pact slot engine end to end: `SlotTable.pactMagic` synthesizes a single-level slot pool (1× L1 at 1 → 2× L3 at 5 → 4× L5 at 17) that refreshes on a **Short Rest** and stays **excluded from the multiclass caster level** (`isPactMagic`). CHA caster with a `spellsKnown` table (L1 2 → L20 15) — Learn-mode budgets, the creation Spells step, and level-up spell prompts all apply automatically. **Eldritch Invocations** = `.fixedOptions` selection (13 SRD options, count table 1 → 10 by level; swap-on-level is honor-system). Magical Cunning (L2), Mystic Arcanum 6–9 (L11/13/15/17), and Hurl Through Hell are 1-per-Long-Rest resources; **Dark One's Own Luck** (Fiend L6) is a CHA-mod pool via `maxAbilityModifier`. **Eldritch Blast** authored (45th spell, warlock-only tag; spellAttack + 1d10 force — beam scaling is text, roll separate attack rolls per beam manually). Fiend Patron: Dark One's Blessing (manual temp HP), Fiend Spells (only Command bundled; the rest text-only), Fiendish Resilience (manual resistance), Hurl Through Hell (8d10 psychic recipe). Tests: `WarlockTests` (new file, 9).
 - **2026-07-01 — Spell class lists, learning budgets, starting-spell picks & level-up prompts.** All 44 bundled spells now tagged with SRD 5.2.1 class lists via `SpellDefinition.classes` (e.g. Bless → cleric/paladin only); spell pickers filter to the selected class's list everywhere, full-catalog fallback now only for untagged (homebrew) classes. `AddSpellSheet` reworked to three modes by `preparedRule`: **Prepare** (`preparedFromAll` — per-class prepared bucket, cap-enforced), **Learn** (`knownList`/`pactMagic` — toggles `knownIDs`, gated by `spellsKnown`), **Add** (`preparedFromBook` wizard reconciliation); multiclass segment picker lists ALL casting classes; button label Prepare Spells / Learn Spells / Add Spell / Manage Spells (mixed multiclass). Authored `spellsKnown` tables (SRD "prepared spells" column) for Bard (L1 4 → L20 22) and Sorcerer (L1 2 → L20 22); new calculators `knownSpellBudget` / `knownLeveledCount`. Creation wizard gained a **Spells step** (casters only, after Abilities): pick cantrips + level-1 spells within budgets from the class list, with an "Auto-pick the rest" button; picks stored in `CharacterDraft.chosenSpellIDs`, routed by `applyChosenSpells` (known → `knownIDs`; wizard → spellbook + prepared bucket; prepared → per-class bucket); bulk auto-seeding is now only a fallback for skipped/legacy drafts. Level-up now PROMPTS spell learning: `LevelUpSheet.onSpellBudgetsGrew` fires on commit when any spell budget grew; `CharacterSheetView` chains the spell picker sheet after dismissal. Tests: `SpellSelectionTests` (new file, 8).
 - **2026-07-01 — Multiclassing (QA P2 #11/#28, RAW).** Add-a-class in `LevelUpSheet` (picker + "Multiclass into…" menu, hard-blocked 13+ prereqs via `multiclassBlocker`, per-class hit die); `applyLevelUp` appends a new `ClassEntry` for unknown classIDs. 5e shared multiclass slot table (`multiclass_slot_<n>`) with `casterLevelDivisor` (paladin ½); pact stays separate. `CharacterSpells.preparedByClass` per-class prep buckets + decode migration; Prepare-mode class segment picker; castable = union. `spellcastingAbility(forSpellID:)` per-spell ability. `ClassDefinition.multiclassProficiencies` content (all 9); L1 skill picks suppressed for later classes; resource dedup by id; "Druid 3 / Cleric 2" summaries. Tests: MulticlassTests (new, 13).
 - **2026-07-01 — Level-up sheet sync (QA P2 #9/#10).** HP preview now includes the feature-HP delta (simulated level bump, "incl. +N from features" caption) so it matches the committed max; named subclass-unlock callout at the unlock level; new Spellcasting card lists cantrips-known growth, prepared-cap growth, newly unlocked slot levels, and grown slot counts. Confirmed resources + granted spells need no commit sync (derived live). New-features `ForEach` keyed by feature id. Tests: LevelUpTests +3 (slot diff, cantrip growth, feature-HP diff simulation).
@@ -793,9 +795,9 @@ Live threads, ordered roughly by self-containment. The QA Findings section above
 - Spell-preparation enforcement ✅ (shipped with Druid 2026-07-01): `maxPreparedSpells` (ability mod + level), prepare/unprepare picker with cap enforcement, per-class list filter. **Still open:** wizard spellbook-vs-prepared UI (`preparedFromBook` stays in Add mode); per-day "must be at a long rest to re-prepare" gate is honor-system (free edit).
 
 **Content authoring catalog — SRD 5.2.1 ONLY (JSON-only, no Swift). Goal: 100% of SRD 5.2.1 and nothing beyond it.**
-- **Classes 9/12 done** (Fighter, Wizard, Rogue, Barbarian, Paladin, Cleric, Bard, Sorcerer, Druid). **Remaining: Monk, Ranger, Warlock** (one full class per turn).
-- **Subclasses 6/12 done** (Champion, Thief, Life Domain, College of Lore, Draconic Sorcery, Circle of the Land). **Remaining SRD one-per-class:** Berserker, Warrior of the Open Hand, **Oath of Devotion** (Paladin), Hunter, Fiend Patron, **Evoker** (Wizard). NO Battle Master / EK / Arcane Trickster (PHB-only → importable pack only). New subclasses ship with their parent class.
-- **Species 9/9 done ✅**, **Backgrounds 4/4 done ✅**, **Armor 8/8 ✅**, **conditions 14/14 ✅** (enforced — QA P1 ✅), weapons + gear nearly complete, **44 spells** (added Mage Armor + tagged the 13 SRD Druid-list spells with `classes`).
+- **Classes 10/12 done** (Fighter, Wizard, Rogue, Barbarian, Paladin, Cleric, Bard, Sorcerer, Druid, Warlock). **Remaining: Monk, Ranger** (one full class per turn).
+- **Subclasses 10/12 done** (Champion, Thief, Life Domain, College of Lore, Draconic Sorcery, Circle of the Land, Fiend Patron, Path of the Berserker, Oath of Devotion, Evoker). **Remaining SRD one-per-class:** Warrior of the Open Hand, Hunter — shipping with Monk/Ranger. NO Battle Master / EK / Arcane Trickster (PHB-only → importable pack only). New subclasses ship with their parent class.
+- **Species 9/9 done ✅**, **Backgrounds 4/4 done ✅**, **Armor 8/8 ✅**, **conditions 14/14 ✅** (enforced — QA P1 ✅), weapons + gear nearly complete, **45 spells** (added Eldritch Blast; earlier Mage Armor + tagged the 13 SRD Druid-list spells with `classes`).
 
 Authoring order, each batch shippable alone:
 - **11d. Weapons + gear sweep** — remaining ~22 SRD weapons (all have existing property/mastery vocabulary), standard adventuring gear.

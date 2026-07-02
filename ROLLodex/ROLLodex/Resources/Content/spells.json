@@ -35,6 +35,41 @@
     ]
   },
   {
+    "id": "eldritch_blast",
+    "classes": ["warlock"],
+    "name": "Eldritch Blast",
+    "level": 0,
+    "school": "evocation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 120
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You hurl a beam of crackling energy. Make a ranged spell attack against one creature or object in range. On a hit, the target takes 1d10 Force damage. The spell creates two beams at level 5, three at level 11, and four at level 17; you can direct the beams at the same target or different ones, making a separate attack roll for each.",
+    "higherLevel": "Two beams at 5th level, three at 11th, four at 17th — roll each beam's attack and damage separately.",
+    "actionRecipes": [
+      {
+        "type": "spellAttack",
+        "label": "Eldritch Blast Attack"
+      },
+      {
+        "type": "rawDamage",
+        "dice": "1d10",
+        "damageType": "force",
+        "label": "Eldritch Blast Damage"
+      }
+    ]
+  },
+  {
     "id": "sacred_flame",
     "classes": ["cleric"],
     "name": "Sacred Flame",
