@@ -52,15 +52,18 @@ struct SpellListView: View {
                                 )
                             }
                         }
-                        if let max = maxPrepared {
-                            // Prepared casters (druid, cleric, paladin, wizard):
-                            // show how many of the daily prep slots are spent.
+                        // Prepared casters (druid, cleric, paladin, wizard):
+                        // one "Prepared: X / N" line per prepared-caster class
+                        // (each class preps separately in 5e multiclass).
+                        ForEach(preparedCounts, id: \.classID) { item in
                             HStack(spacing: 6) {
                                 Image(systemName: "checklist")
                                     .font(.caption2)
-                                Text("Prepared: \(preparedLeveledCount) / \(max)")
+                                Text(preparedCounts.count > 1
+                                     ? "\(item.className) prepared: \(item.count) / \(item.max)"
+                                     : "Prepared: \(item.count) / \(item.max)")
                                     .font(.caption.weight(.semibold))
-                                    .foregroundStyle(preparedLeveledCount > max ? .red : .secondary)
+                                    .foregroundStyle(item.count > item.max ? .red : .secondary)
                             }
                             .padding(.top, 2)
                         }
@@ -89,13 +92,15 @@ struct SpellListView: View {
         }
     }
 
-    /// Drop the spell from every list that carries it. Long-press on a spell
-    /// row exposes this — useful for cleaning up test characters and for the
-    /// eventual "Forget Spell" gesture on prepared casters.
+    /// Drop the spell from every list that carries it — including every
+    /// class's prepared bucket. Long-press on a spell row exposes this.
     private func forget(_ spell: SpellDefinition) {
         character.spells.knownIDs.removeAll { $0 == spell.id }
         character.spells.preparedIDs.removeAll { $0 == spell.id }
         character.spells.spellbookIDs.removeAll { $0 == spell.id }
+        for classID in character.spells.preparedByClass.keys {
+            character.spells.preparedByClass[classID]?.removeAll { $0 == spell.id }
+        }
     }
 
     private var hasAnySpellcasting: Bool {
@@ -108,12 +113,20 @@ struct SpellListView: View {
         CharacterCalculator.isPreparedCaster(character: character, content: content)
     }
 
-    private var maxPrepared: Int? {
-        CharacterCalculator.maxPreparedSpells(character: character, content: content)
-    }
-
-    private var preparedLeveledCount: Int {
-        CharacterCalculator.preparedLeveledCount(character: character, content: content)
+    /// One (class, prepared, cap) triple per prepared-caster class — drives
+    /// the "Prepared: X / N" line(s) above the Prepare Spells button.
+    private var preparedCounts: [(classID: String, className: String, count: Int, max: Int)] {
+        CharacterCalculator.preparedCasterClasses(character: character, content: content)
+            .compactMap { sc in
+                guard let max = CharacterCalculator.maxPreparedSpells(
+                    character: character, content: content, forClassID: sc.classID
+                ) else { return nil }
+                let count = CharacterCalculator.preparedLeveledCount(
+                    character: character, content: content, forClassID: sc.classID
+                )
+                let name = content.classDefinition(id: sc.classID)?.name ?? sc.classID
+                return (sc.classID, name, count, max)
+            }
     }
 
     /// Species-granted, always-prepared spells (lineage / legacy picks). Live-
@@ -130,15 +143,11 @@ struct SpellListView: View {
             }
     }
 
-    /// The list of spells the character can actually cast right now. Reads
-    /// from `preparedIDs` if non-empty (wizards / clerics) else `knownIDs`
-    /// (sorcerers / warlocks). Cantrips are always castable; we union them
-    /// in so a wizard's cantrip choice survives prep curation.
+    /// The list of spells the character can actually cast right now: the
+    /// union of every class's prepared bucket (+ the legacy flat list) and
+    /// the known list — a Druid/Sorcerer multiclass casts from both.
     private var castableSpells: [SpellDefinition] {
-        let primaryIDs = character.spells.preparedIDs.isEmpty
-            ? character.spells.knownIDs
-            : character.spells.preparedIDs
-        let ids = Set(primaryIDs)
+        let ids = Set(character.spells.allPreparedIDs).union(character.spells.knownIDs)
         return ids.compactMap { content.spellDefinition(id: $0) }
             .sorted { lhs, rhs in
                 if lhs.level != rhs.level { return lhs.level < rhs.level }
@@ -368,31 +377,44 @@ struct AddSpellSheet: View {
     @Binding var character: Character
     @Environment(ContentStore.self) private var content
     @Environment(\.dismiss) private var dismiss
+    /// The prepared-caster class being edited in Prepare mode. Defaults to the
+    /// first one; a segment picker appears for multiclass prepared casters
+    /// (each class preps separately, per 5e).
+    @State private var selectedPrepClassID: String?
 
-    private var primary: (classID: String, level: Int, block: SpellcastingBlock)? {
-        CharacterCalculator.primarySpellcasting(character: character, content: content)
+    /// `preparedFromAll` casting classes — each gets its own Prepare mode
+    /// bucket. Wizards (`preparedFromBook`) keep Add mode until spellbook
+    /// management lands.
+    private var prepClasses: [(classID: String, level: Int, block: SpellcastingBlock)] {
+        CharacterCalculator.preparedCasterClasses(character: character, content: content)
+            .filter { $0.block.preparedRule == .preparedFromAll }
     }
 
-    /// Prepare mode applies to "prepare from the whole list" casters. Wizards
-    /// (`preparedFromBook`) keep Add mode until spellbook management lands.
-    private var isPrepareMode: Bool {
-        primary?.block.preparedRule == .preparedFromAll
+    private var isPrepareMode: Bool { !prepClasses.isEmpty }
+
+    /// The class whose bucket the toggles edit — the picked one, or the first.
+    private var prepClassID: String? {
+        selectedPrepClassID ?? prepClasses.first?.classID
     }
 
     private var maxPrepared: Int {
-        CharacterCalculator.maxPreparedSpells(character: character, content: content) ?? 0
+        guard let id = prepClassID else { return 0 }
+        return CharacterCalculator.maxPreparedSpells(character: character, content: content, forClassID: id) ?? 0
     }
 
     private var cantripBudget: Int {
-        CharacterCalculator.cantripsKnownBudget(character: character, content: content) ?? 0
+        guard let id = prepClassID else { return 0 }
+        return CharacterCalculator.cantripsKnownBudget(character: character, content: content, forClassID: id) ?? 0
     }
 
     private var preparedLeveled: Int {
-        CharacterCalculator.preparedLeveledCount(character: character, content: content)
+        guard let id = prepClassID else { return 0 }
+        return CharacterCalculator.preparedLeveledCount(character: character, content: content, forClassID: id)
     }
 
     private var preparedCantrips: Int {
-        character.spells.preparedIDs
+        guard let id = prepClassID else { return 0 }
+        return (character.spells.preparedByClass[id] ?? [])
             .compactMap { content.spellDefinition(id: $0) }
             .filter { $0.isCantrip }.count
     }
@@ -402,6 +424,18 @@ struct AddSpellSheet: View {
             List {
                 if isPrepareMode {
                     Section {
+                        if prepClasses.count > 1 {
+                            Picker("Class", selection: Binding(
+                                get: { prepClassID ?? "" },
+                                set: { selectedPrepClassID = $0 }
+                            )) {
+                                ForEach(prepClasses, id: \.classID) { sc in
+                                    Text(content.classDefinition(id: sc.classID)?.name ?? sc.classID)
+                                        .tag(sc.classID)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Leveled prepared: \(preparedLeveled) / \(maxPrepared)")
                                 .foregroundStyle(preparedLeveled > maxPrepared ? .red : .primary)
@@ -440,19 +474,20 @@ struct AddSpellSheet: View {
         }
     }
 
-    // MARK: - Prepare-mode row (toggle in/out of preparedIDs)
+    // MARK: - Prepare-mode row (toggle in/out of the selected class's bucket)
 
     private func prepareRow(for spell: SpellDefinition) -> some View {
-        let isPrepared = character.spells.preparedIDs.contains(spell.id)
+        let classID = prepClassID ?? ""
+        let isPrepared = (character.spells.preparedByClass[classID] ?? []).contains(spell.id)
         // Block preparing a NEW spell once the relevant cap is hit. Already-
         // prepared spells stay tappable so you can unprepare to make room.
         let atCap = spell.isCantrip ? preparedCantrips >= cantripBudget : preparedLeveled >= maxPrepared
         let blocked = !isPrepared && atCap
         return Button {
             if isPrepared {
-                character.spells.preparedIDs.removeAll { $0 == spell.id }
+                character.spells.preparedByClass[classID]?.removeAll { $0 == spell.id }
             } else if !blocked {
-                character.spells.preparedIDs.append(spell.id)
+                character.spells.preparedByClass[classID, default: []].append(spell.id)
             }
         } label: {
             HStack(spacing: 10) {
@@ -480,17 +515,27 @@ struct AddSpellSheet: View {
     // MARK: - Add-mode row (reconcile into all lists)
 
     private func addRow(for spell: SpellDefinition) -> some View {
+        // The prepared bucket Add mode reconciles into: the first casting
+        // class (wizard for `preparedFromBook`; nothing for pure known-list
+        // casters, who read `knownIDs` anyway).
+        let prepBucketID = CharacterCalculator.primarySpellcasting(
+            character: character, content: content
+        )?.classID
+        let inPrepared = prepBucketID.map {
+            (character.spells.preparedByClass[$0] ?? []).contains(spell.id)
+        } ?? true
         let inAllLists = character.spells.knownIDs.contains(spell.id)
-            && character.spells.preparedIDs.contains(spell.id)
             && character.spells.spellbookIDs.contains(spell.id)
+            && inPrepared
         return Button {
             // Idempotent reconcile: ensure the spell is in every list. Fixes
             // orphans from older flows that only wrote to one list.
             if !character.spells.knownIDs.contains(spell.id) {
                 character.spells.knownIDs.append(spell.id)
             }
-            if !character.spells.preparedIDs.contains(spell.id) {
-                character.spells.preparedIDs.append(spell.id)
+            if let prepBucketID,
+               !(character.spells.preparedByClass[prepBucketID] ?? []).contains(spell.id) {
+                character.spells.preparedByClass[prepBucketID, default: []].append(spell.id)
             }
             if !character.spells.spellbookIDs.contains(spell.id) {
                 character.spells.spellbookIDs.append(spell.id)
@@ -521,10 +566,11 @@ struct AddSpellSheet: View {
         .disabled(inAllLists)
     }
 
-    /// The pool to choose from: in prepare mode, the class's spell list (tagged,
-    /// or the full catalog as fallback); in add mode, the full catalog.
+    /// The pool to choose from: in prepare mode, the SELECTED class's spell
+    /// list (tagged, or the full catalog as fallback); in add mode, the full
+    /// catalog.
     private var spellPool: [SpellDefinition] {
-        guard isPrepareMode, let classID = primary?.classID else { return content.allSpells }
+        guard isPrepareMode, let classID = prepClassID else { return content.allSpells }
         return CharacterCalculator.spellList(forClassID: classID, content: content)
     }
 

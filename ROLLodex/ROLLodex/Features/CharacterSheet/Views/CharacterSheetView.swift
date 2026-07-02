@@ -881,7 +881,8 @@ struct CharacterSheetView: View {
     // MARK: - Derived values
 
     private var primaryClassName: String? {
-        character.classEntries.first.flatMap { content.classDefinition(id: $0.classID)?.name }
+        // "Druid" single-class, "Druid 3 / Cleric 2" once multiclassed.
+        CharacterCalculator.classSummary(character: character, content: content)
     }
 
     private var speciesName: String? {

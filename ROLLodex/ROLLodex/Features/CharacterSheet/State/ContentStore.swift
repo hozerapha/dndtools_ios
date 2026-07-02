@@ -57,6 +57,12 @@ final class ContentStore {
         }
     }
 
+    /// All bundled + loaded classes, name-sorted. Used by the level-up
+    /// multiclass picker.
+    var allClasses: [ClassDefinition] {
+        classes.values.sorted { $0.name < $1.name }
+    }
+
     func itemName(forItemID id: String) -> String? {
         gear[id]?.name ?? weapons[id]?.name ?? armor[id]?.name
     }

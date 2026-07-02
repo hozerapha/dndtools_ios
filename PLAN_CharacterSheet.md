@@ -571,14 +571,44 @@ approach that fits the existing architecture. Status legend: ☐ open · ◐ par
   *Fixed 2026-06-27:* the dice tab clears both `followUps` and the new
   `pendingRiders` when it consumes a handoff, and the rider refactor below resets
   the local rail state on consume / manual edit / roll.
-- ☐ **Level-up doesn't apply all new grants** (audit #10, playtest) — generalize
-  commit to sync spells, resources, and subclass grants, not just proficiencies;
-  prompt for subclass at the level it unlocks.
-- ☐ **Level-up HP preview ignores feature HP delta** (audit #9) — run the
-  `featureHitPointBonus` diff in the preview so it matches the committed max.
-- ☐ **Multiclass: duplicate resources + unmerged slots** (audit #11, #28,
-  playtest) — dedupe feature resources by `definition.id`; implement the 5e
-  multiclass slot table; resolve spellcasting ability per source class.
+- ◐ **Level-up doesn't apply all new grants** (audit #10, playtest). *Mostly
+  closed 2026-07-01.* Investigated: resources (Wild Shape, slots) and granted
+  spells are **derived live** — they appear automatically after the level bump,
+  no commit sync needed. What was missing was *surfacing*: `LevelUpSheet` now
+  shows (a) a named **subclass-unlock callout** at the unlock level, (b) a
+  **Spellcasting card** listing cantrips-known growth, prepared-cap growth
+  (ability mod + level), newly unlocked slot levels, and grown slot counts,
+  pointing at Prepare Spells / Add Spell. **Still open:** known-list casters'
+  per-level "spells known" picks (needs `spellsKnown` tables, currently null
+  for all bundled classes) and multiclass (below).
+- ✅ **Level-up HP preview ignores feature HP delta** (audit #9). *Fixed
+  2026-07-01:* the preview simulates the level bump on a copy and folds the
+  `featureHitPointBonus` diff into the staged gain (with an "incl. +N from
+  features" caption), matching what commit banks. Also fixed the new-features
+  `ForEach` to key by feature id, not `\.offset` (polish backlog).
+- ✅ **Multiclass: duplicate resources + unmerged slots** (audit #11, #28,
+  playtest). *Shipped 2026-07-01 as the full multiclassing feature (RAW):*
+  (1) **Slot merging** — 2+ non-pact casting classes share the 5e multiclass
+  slot table (`ResourceCalculator.multiclassSlotTable`, ids
+  `multiclass_slot_<n>`) at the combined caster level; half casters divide via
+  `SpellcastingBlock.casterLevelDivisor` (paladin = 2); pact magic stays
+  separate; single-class pools/ids unchanged. (2) **Resource dedup** by
+  `definition.id` in `availableResources`. (3) **Per-spell casting ability** —
+  `spellcastingAbility(forSpellID:)`: prepared-bucket owner → tagged class list
+  → first block; wired into `SpellCastSheet`. (4) **Add-a-class at level-up** —
+  class picker (existing classes as buttons + "Multiclass into…" menu),
+  RAW 13+ primary-ability prereqs **hard-blocked** (`multiclassBlocker`), the
+  5e limited proficiency list auto-applied via new
+  `ClassDefinition.multiclassProficiencies` content (all 9 classes), hit die
+  follows the picked class, L1 skill choices suppressed for classes
+  multiclassed into (FeaturesView + prompt count). (5) **Per-class spell prep**
+  — `CharacterSpells.preparedByClass` (legacy flat list auto-migrates on
+  decode), per-class caps/counts, class segment picker in Prepare mode,
+  castable = union of buckets + known. (6) Class summary "Druid 3 / Cleric 2"
+  in list + header. *Known simplifications:* known-caster per-level spell picks
+  still ungated (`spellsKnown` null); multiclass Bard/Rogue/Ranger skill/tool
+  CHOICE grants stay manual; the level-up Spellcasting card diffs the leveled
+  class's own table (informational) rather than the merged pools.
 - ☐ **`grantedActions` can produce duplicate `ForEach` IDs** (audit #18) — index
   the id and content-lint duplicate granted-action names per feature.
 - ☐ **3D dice misalignment / re-entrant roll** (audit #12, #13, #26, #33) — keep
@@ -648,6 +678,8 @@ All phases A–O shipped. Key per-phase notes:
 | O — triggered effects & active statuses | shipped (Slices A+B+C). See "Phase O Shipped reality" for open items (Divine Smite shipped 2026-06-09; Battle Master/superiority dice, GWM, attack-roll triggers still open) |
 
 **Shipped changelog (reverse-chronological highlights; reusable infra in `code`):**
+- **2026-07-01 — Multiclassing (QA P2 #11/#28, RAW).** Add-a-class in `LevelUpSheet` (picker + "Multiclass into…" menu, hard-blocked 13+ prereqs via `multiclassBlocker`, per-class hit die); `applyLevelUp` appends a new `ClassEntry` for unknown classIDs. 5e shared multiclass slot table (`multiclass_slot_<n>`) with `casterLevelDivisor` (paladin ½); pact stays separate. `CharacterSpells.preparedByClass` per-class prep buckets + decode migration; Prepare-mode class segment picker; castable = union. `spellcastingAbility(forSpellID:)` per-spell ability. `ClassDefinition.multiclassProficiencies` content (all 9); L1 skill picks suppressed for later classes; resource dedup by id; "Druid 3 / Cleric 2" summaries. Tests: MulticlassTests (new, 13).
+- **2026-07-01 — Level-up sheet sync (QA P2 #9/#10).** HP preview now includes the feature-HP delta (simulated level bump, "incl. +N from features" caption) so it matches the committed max; named subclass-unlock callout at the unlock level; new Spellcasting card lists cantrips-known growth, prepared-cap growth, newly unlocked slot levels, and grown slot counts. Confirmed resources + granted spells need no commit sync (derived live). New-features `ForEach` keyed by feature id. Tests: LevelUpTests +3 (slot diff, cantrip growth, feature-HP diff simulation).
 - **2026-07-01 — Druid (9th class) + Circle of the Land (6th subclass) + spell preparation.** Full L1–20 Druid (`preparedFromAll`, WIS, full-caster slots, Wild Shape resource 2/3/4 by level, ASIs, Primal Order/Druidic selections). **Preparation system (works for all prepared casters):** `SpellDefinition.classes: [String]` tag + `CharacterCalculator.spellList(forClassID:)` (tagged, else full-catalog fallback); `maxPreparedSpells` = ability mod + class level (min 1); `isPreparedCaster` / `preparedLeveledCount` / `cantripsKnownBudget`. `AddSpellSheet` gained a **Prepare mode** for `preparedFromAll`: filtered to the class list, toggle in/out of `preparedIDs`, live "leveled X/N · cantrips x/y" counters, caps enforced. `SpellListView` shows "Prepared: X/N" + a "Prepare Spells" button; `seedStartingSpells` now filters by class list and caps the starting prepared set. Tagged the 13 SRD Druid-list spells; added Mage Armor. Tests: `DruidTests` (new). Circle of the Land: land-type + Land's Aid + Natural Recovery + Nature's Ward/Sanctuary (per-land circle spells are text-only — SRD land lists not bundled).
 - **2026-06-27 — P1 rules-fidelity batch (all open P1s).** (1) Nat-1 suppresses the damage chip/riders with a "miss" note (`DiceRollerView.followUpRail`). (2) Choose-damage spells: `SpellDefinition.damageTypeChoices` + a damage-type picker in `SpellCastSheet` (Chromatic Orb, Dragon's Breath). (3) Condition-enforcement tail: STR/DEX save auto-fail alert (`autoFailedSaveCondition`) + armor Stealth disadvantage (`stealthDisadvantageFromArmor`). (4) Fighting Styles: GWF reroll 1-2 on two-handed melee dice + TWF off-hand mod restore; `FightingStyleEffects` now a Set of all picks. (5) Weapon Mastery: `CharacterCalculator.masteryMechanic` resolves per-weapon numbers (Topple DC, Graze damage) onto the row + detail sheet. (6) Buff spells: `SpellEffect.selfBuff(SpellBuffEffect)` → AC (Shield, Shield of Faith), unarmored base (Mage Armor — new spell), attack/save dice (Bless, folded into weapon + spell attacks + saves), speed (Longstrider); parked in `activeEffects`, dismissable pill in `EffectsRow`. Tests: FightingStyleTests (GWF/TWF), CharacterActionDeriverTests (mastery), SpellBuffTests (new).
 - **2026-06-27 — Spell sheet-effects.** `SpellDefinition.effects` (`SpellEffect`: tempHP / selfCondition / targetCondition). `SpellCastSheet` auto-applies caster effects on cast (False Life temp HP) and offers an "Apply <condition>" button for control spells (Hold Person/Fear/Ray of Sickness/Charm Monster) — applied conditions bite via condition enforcement. One-PC app → debuffs are honor-system apply-to-me.
@@ -695,7 +727,7 @@ All phases A–O shipped. Key per-phase notes:
 1. **Tab layout:** 3D playground tab removed; legacy file kept for reference. (Resolved.)
 2. **Character portrait:** placeholder shipped; camera/photo picker deferred.
 3. **Death saves:** shipped 2026-06-09 as a header tracker row. (Resolved.)
-4. **Multi-classing:** character JSON already stores `classEntries: [ClassEntry]`; multi-class UI + proficiency/slot reconciliation still open (lands with Phase M level-up flow; see QA P2 audit #11/#28).
+4. **Multi-classing:** ✅ shipped 2026-07-01 (RAW: hard-blocked 13+ prereqs, 5e multiclass proficiency lists, shared slot table, per-class prep). Remaining tail lives in the QA P2 entry's known simplifications.
 5. **Resource ID collisions across packs:** imported ids shadow bundled by id (deliberate override). `<pack>.<id>` namespace still deferred; revisit only if different third-party packs collide. The importer/validator is the seam.
 6. **Per-stack item charges:** two of the same wand share one pool. Revisit if a real case appears.
 7. **`dawn` refresh trigger:** folded into long rest for now (K.5). Add a separate "advance time" button only if a use case demands it.
@@ -776,7 +808,7 @@ Authoring order, each batch shippable alone:
 - Spell "forget" confirmation still open; empty-name guard on character rename.
 - `.searchable` on the add-spell picker; spell-description preview without opening the cast sheet (long-press / info button).
 - Attunement-cap feedback: tapping attune at 3/3 currently no-ops silently — show a brief explanation.
-- Stable identity for the level-up new-features `ForEach` (use feature id, not `\.offset`).
+- ~~Stable identity for the level-up new-features `ForEach`~~ ✅ done 2026-07-01 (keyed by feature id).
 - EffectsRow two-stripe divider + chip-rail wording sweep (also under Phase O polish).
 
 ### How to resume

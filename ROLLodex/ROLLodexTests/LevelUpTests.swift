@@ -88,16 +88,62 @@ struct LevelUpTests {
         #expect(character.level == 3)
     }
 
-    @Test func applyLevelUpWithUnknownClassIDStillBumpsCharacterLevel() {
-        // Edge case: classID doesn't match any entry. Character level still
-        // ticks up + HP applies; the class entry just doesn't move. (UI
-        // shouldn't ever call this path, but the helper shouldn't crash.)
+    @Test func applyLevelUpWithNewClassIDAppendsAMulticlassEntry() {
+        // A classID with no existing entry is the multiclass path: a new
+        // ClassEntry is appended at level 1 and the character level bumps.
         var character = makeFighter(level: 1, maxHP: 10, currentHP: 10)
         CharacterCalculator.applyLevelUp(to: &character, hpGain: 5, classID: "ranger")
         #expect(character.level == 2)
         #expect(character.classEntries.first?.level == 1)
+        #expect(character.classEntries.count == 2)
+        #expect(character.classEntries.last?.classID == "ranger")
+        #expect(character.classEntries.last?.level == 1)
         // maxHP 10 at L1/CON +2 → rolledHP 8; +5 die → 13; +2×2 CON = 17.
         #expect(character.maxHP == 17)
+    }
+
+    // MARK: - Level-up sheet inputs (audit #9/#10)
+    //
+    // The sheet's HP preview and spell-budget card are simulations over these
+    // primitives — pin the level transitions the UI reports.
+
+    @Test func druidSlotTableUnlocksAndGrowsAcrossLevels() {
+        let store = ContentStore()
+        let block = store.classDefinition(id: "druid")?.spellcasting
+        let l1 = block?.slotTable.slots(atClassLevel: 1) ?? [:]
+        let l2 = block?.slotTable.slots(atClassLevel: 2) ?? [:]
+        let l3 = block?.slotTable.slots(atClassLevel: 3) ?? [:]
+        // L1→L2: same slot levels, L1 count grows 2 → 3.
+        #expect(Set(l2.keys) == Set(l1.keys))
+        #expect(l1[1] == 2 && l2[1] == 3)
+        // L2→L3: L2 slots unlock.
+        #expect(Set(l3.keys).subtracting(l2.keys) == [2])
+    }
+
+    @Test func druidCantripBudgetGrowsAtLevelFour() {
+        let store = ContentStore()
+        let block = store.classDefinition(id: "druid")?.spellcasting
+        #expect(block?.cantripsKnown.value(classLevel: 3, characterLevel: 3) == 2)
+        #expect(block?.cantripsKnown.value(classLevel: 4, characterLevel: 4) == 3)
+    }
+
+    @Test func featureHPBonusDiffMatchesLevelBumpSimulation() {
+        // The sheet previews the feature-HP delta by re-computing
+        // featureHitPointBonus on a level-bumped copy — a Dwarf (Dwarven
+        // Toughness, +1/character level) must show +1 per level.
+        let store = ContentStore()
+        var dwarf = Character(
+            name: "Bruenor", level: 3,
+            speciesID: "dwarf", backgroundID: "soldier",
+            classEntries: [ClassEntry(classID: "fighter", level: 3)],
+            abilityScores: [.strength: 16, .constitution: 14],
+            maxHP: 28
+        )
+        let before = CharacterCalculator.featureHitPointBonus(character: dwarf, content: store)
+        dwarf.level += 1
+        dwarf.classEntries[0] = ClassEntry(classID: "fighter", level: 4)
+        let after = CharacterCalculator.featureHitPointBonus(character: dwarf, content: store)
+        #expect(after - before == 1)
     }
 
     // MARK: - Helpers

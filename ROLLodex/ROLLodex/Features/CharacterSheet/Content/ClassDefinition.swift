@@ -23,12 +23,18 @@ struct ClassDefinition: Codable, Identifiable, Equatable {
     /// Class level at which the subclass is chosen (Fighter = 3, Wizard = 2,
     /// Cleric = 1). Nil for classes that don't have subclasses authored.
     let subclassLevel: Int?
+    /// Proficiencies granted when multiclassing INTO this class (the 5e
+    /// multiclass table — a subset of the class's full L1 grants; never saving
+    /// throws or the class skill choices). Applied by the level-up flow when a
+    /// new class is added. Encoded as `ProficiencyKey` strings
+    /// (`armor_light`, `weapon_martial`). Empty = nothing (wizard, sorcerer).
+    let multiclassProficiencies: [ProficiencyKey]
 
     private enum CodingKeys: String, CodingKey {
         case id, name, hitDie, primaryAbility, savingThrows
         case armorProficiencies, weaponProficiencies, toolProficiencies, levelFeatures
         case masteryCount, masteryRestrictions, spellcasting
-        case subclasses, subclassLevel
+        case subclasses, subclassLevel, multiclassProficiencies
     }
 
     init(
@@ -45,7 +51,8 @@ struct ClassDefinition: Codable, Identifiable, Equatable {
         masteryRestrictions: [String] = [],
         spellcasting: SpellcastingBlock? = nil,
         subclasses: [SubclassDefinition] = [],
-        subclassLevel: Int? = nil
+        subclassLevel: Int? = nil,
+        multiclassProficiencies: [ProficiencyKey] = []
     ) {
         self.id = id
         self.name = name
@@ -61,6 +68,7 @@ struct ClassDefinition: Codable, Identifiable, Equatable {
         self.spellcasting = spellcasting
         self.subclasses = subclasses
         self.subclassLevel = subclassLevel
+        self.multiclassProficiencies = multiclassProficiencies
     }
 
     init(from decoder: Decoder) throws {
@@ -83,6 +91,7 @@ struct ClassDefinition: Codable, Identifiable, Equatable {
         spellcasting        = try c.decodeIfPresent(SpellcastingBlock.self, forKey: .spellcasting)
         subclasses          = try c.decodeIfPresent([SubclassDefinition].self, forKey: .subclasses) ?? []
         subclassLevel       = try c.decodeIfPresent(Int.self, forKey: .subclassLevel)
+        multiclassProficiencies = try c.decodeIfPresent([ProficiencyKey].self, forKey: .multiclassProficiencies) ?? []
     }
 
     /// The level-1 skill-proficiency selection this class grants (Rogue: 4 of

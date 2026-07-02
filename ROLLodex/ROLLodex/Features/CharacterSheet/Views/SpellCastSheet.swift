@@ -747,18 +747,14 @@ struct SpellCastSheet: View {
         return hasSlotAtLevel(selectedLevel)
     }
 
-    /// The character's spellcasting ability — the first class with a
-    /// spellcasting block. Multi-class casters with diverging abilities will
-    /// need a per-class picker in a later phase.
+    /// The ability used to cast THIS spell. Multiclass-aware: the class whose
+    /// prepared bucket holds the spell wins, else the tagged class list, else
+    /// the first casting class. Falls back to the species innate ability for
+    /// non-casters so a granted spell-attack (Fire Bolt) still resolves.
     private var spellcastingAbility: Ability? {
-        for entry in character.classEntries {
-            if let block = content.classDefinition(id: entry.classID)?.spellcasting {
-                return block.ability
-            }
-        }
-        // No class caster: fall back to the species innate ability so a
-        // granted spell-attack (Fire Bolt) still resolves a to-hit roll.
-        return innateAbility
+        CharacterCalculator.spellcastingAbility(
+            forSpellID: spell.id, character: character, content: content
+        ) ?? innateAbility
     }
 
     // MARK: - Roll entries

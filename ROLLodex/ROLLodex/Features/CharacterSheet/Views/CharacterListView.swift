@@ -187,14 +187,14 @@ struct CharacterListView: View {
             // always-known. Prepared list starts as everything until the
             // player curates it.
             character.spells.spellbookIDs = leveledIDs
-            character.spells.preparedIDs = cantripIDs + leveledIDs
+            character.spells.preparedByClass[classDef.id] = cantripIDs + leveledIDs
         case .preparedFromAll:
             // Clerics / druids / paladins prepare from the whole class list each
             // day. Seed cantrips up to budget + a starting prepared set capped at
             // (ability mod + class level); the player re-picks via Prepare Spells.
             let mod = CharacterCalculator.abilityModifier(score: character.abilityScores[block.ability] ?? 10)
             let maxPrepared = max(1, mod + classLevel)
-            character.spells.preparedIDs = cantripIDs + Array(leveledIDs.prefix(maxPrepared))
+            character.spells.preparedByClass[classDef.id] = cantripIDs + Array(leveledIDs.prefix(maxPrepared))
         }
     }
 }
@@ -232,7 +232,7 @@ private struct CharacterRow: View {
     }
 
     private var className: String {
-        character.classEntries.first.flatMap { contentStore.classDefinition(id: $0.classID)?.name } ?? "Unknown"
+        CharacterCalculator.classSummary(character: character, content: contentStore) ?? "Unknown"
     }
 
     private var speciesName: String {

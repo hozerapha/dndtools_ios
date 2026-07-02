@@ -179,6 +179,12 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         attunementSlotsOverride = try container.decodeIfPresent(Int.self, forKey: .attunementSlotsOverride)
         resources = try container.decodeIfPresent([String: ResourceState].self, forKey: .resources) ?? [:]
         spells = try container.decodeIfPresent(CharacterSpells.self, forKey: .spells) ?? CharacterSpells()
+        // Per-class prep migration: saves from before `preparedByClass` carry a
+        // flat prepared list — move it into the first class's bucket (the only
+        // class, for every pre-multiclass save).
+        if let firstClassID = classEntries.first?.classID {
+            spells.migrateLegacyPrepared(toClassID: firstClassID)
+        }
         // Migrate the legacy chosenWeaponMasteries field if present.
         var selections = try container.decodeIfPresent([String: [String]].self, forKey: .featureSelections) ?? [:]
         if let legacyMasteries = try container.decodeIfPresent([String].self, forKey: .chosenWeaponMasteries),

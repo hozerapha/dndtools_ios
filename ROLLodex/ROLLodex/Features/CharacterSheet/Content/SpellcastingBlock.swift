@@ -18,6 +18,49 @@ struct SpellcastingBlock: Codable, Equatable {
     let slotTable: SlotTable
     let ritualCasting: Bool
     let spellcastingFocus: Bool
+    /// 5e multiclass caster-level divisor: class levels ÷ this (round down)
+    /// count toward the combined caster level that indexes the shared
+    /// multiclass slot table. 1 = full caster (wizard, cleric, druid, bard,
+    /// sorcerer), 2 = half caster (paladin, ranger). Pact magic is excluded
+    /// from the combined level entirely (its slots stay separate).
+    let casterLevelDivisor: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case ability, preparedRule, cantripsKnown, spellsKnown, slotTable
+        case ritualCasting, spellcastingFocus, casterLevelDivisor
+    }
+
+    init(
+        ability: Ability,
+        preparedRule: PreparedRule,
+        cantripsKnown: LevelScaledValue,
+        spellsKnown: LevelScaledValue? = nil,
+        slotTable: SlotTable,
+        ritualCasting: Bool,
+        spellcastingFocus: Bool,
+        casterLevelDivisor: Int = 1
+    ) {
+        self.ability = ability
+        self.preparedRule = preparedRule
+        self.cantripsKnown = cantripsKnown
+        self.spellsKnown = spellsKnown
+        self.slotTable = slotTable
+        self.ritualCasting = ritualCasting
+        self.spellcastingFocus = spellcastingFocus
+        self.casterLevelDivisor = casterLevelDivisor
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        ability            = try c.decode(Ability.self, forKey: .ability)
+        preparedRule       = try c.decode(PreparedRule.self, forKey: .preparedRule)
+        cantripsKnown      = try c.decode(LevelScaledValue.self, forKey: .cantripsKnown)
+        spellsKnown        = try c.decodeIfPresent(LevelScaledValue.self, forKey: .spellsKnown)
+        slotTable          = try c.decode(SlotTable.self, forKey: .slotTable)
+        ritualCasting      = try c.decode(Bool.self, forKey: .ritualCasting)
+        spellcastingFocus  = try c.decode(Bool.self, forKey: .spellcastingFocus)
+        casterLevelDivisor = try c.decodeIfPresent(Int.self, forKey: .casterLevelDivisor) ?? 1
+    }
 }
 
 /// Different classes manage their daily spell list differently.

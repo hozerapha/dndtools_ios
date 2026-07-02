@@ -43,6 +43,11 @@ enum ResourceCalculator {
     ) -> [ResolvedResource] {
         var resolved: [ResolvedResource] = []
 
+        // A character with 2+ slot-table (non-pact) casting classes uses the
+        // SHARED 5e multiclass slot table at the combined caster level instead
+        // of per-class pools; pact magic always keeps its own short-rest slots.
+        let mergesSlots = slotCastingEntries(character: character, content: content).count >= 2
+
         for entry in character.classEntries {
             guard let cls = content.classDefinition(id: entry.classID) else { continue }
             let subclassID = character.featureSelections[
@@ -53,6 +58,10 @@ enum ResourceCalculator {
                 subclassID: subclassID
             ) {
                 guard let definition = resolvedFeature.feature.resource else { continue }
+                // Dedupe by resource id — a same-id feature pool from a second
+                // class (or a re-granted feature) must share one pool, not
+                // render twice (audit #11).
+                guard !resolved.contains(where: { $0.definition.id == definition.id }) else { continue }
                 let maxValue = resolvedMax(definition, character: character, classLevel: entry.level)
                 let current = currentClamped(
                     character: character,
@@ -70,8 +79,16 @@ enum ResourceCalculator {
 
             // Spell slots: synthesize one resource per slot level from the
             // class's slot table. Refresh trigger = long rest for full
-            // casters, short rest for pact magic.
-            resolved.append(contentsOf: synthesizedSlotResources(for: entry, in: cls, character: character))
+            // casters, short rest for pact magic. Skipped for non-pact classes
+            // when the shared multiclass pools apply (added once, below).
+            let isPact = cls.spellcasting?.slotTable.isPactMagic ?? false
+            if !mergesSlots || isPact {
+                resolved.append(contentsOf: synthesizedSlotResources(for: entry, in: cls, character: character))
+            }
+        }
+
+        if mergesSlots {
+            resolved.append(contentsOf: multiclassSlotResources(character: character, content: content))
         }
 
         // Species traits carry their own pools too (Dragonborn Breath Weapon,
@@ -181,6 +198,86 @@ enum ResourceCalculator {
                 max: count,
                 current: current,
                 sourceLabel: "\(cls.name) (L\(entry.level))"
+            )
+        }
+    }
+
+    // MARK: - Multiclass spellcasting
+
+    /// Class entries that contribute to the combined multiclass caster level:
+    /// any class with a non-pact slot table. Warlock's pact magic is excluded
+    /// (its slots stay separate per 5e).
+    static func slotCastingEntries(
+        character: Character, content: ContentStore
+    ) -> [(entry: ClassEntry, block: SpellcastingBlock)] {
+        character.classEntries.compactMap { entry in
+            guard let block = content.classDefinition(id: entry.classID)?.spellcasting,
+                  !block.slotTable.isPactMagic else { return nil }
+            return (entry, block)
+        }
+    }
+
+    /// 5e combined caster level: full casters count every level, half casters
+    /// (paladin/ranger, `casterLevelDivisor: 2`) count half rounded down.
+    static func combinedCasterLevel(character: Character, content: ContentStore) -> Int {
+        slotCastingEntries(character: character, content: content)
+            .reduce(0) { $0 + $1.entry.level / max(1, $1.block.casterLevelDivisor) }
+    }
+
+    /// The shared 5e multiclass spell-slot table, indexed by combined caster
+    /// level (identical to the standard full-caster progression).
+    static let multiclassSlotTable: [Int: [Int: Int]] = [
+        1:  [1: 2],
+        2:  [1: 3],
+        3:  [1: 4, 2: 2],
+        4:  [1: 4, 2: 3],
+        5:  [1: 4, 2: 3, 3: 2],
+        6:  [1: 4, 2: 3, 3: 3],
+        7:  [1: 4, 2: 3, 3: 3, 4: 1],
+        8:  [1: 4, 2: 3, 3: 3, 4: 2],
+        9:  [1: 4, 2: 3, 3: 3, 4: 3, 5: 1],
+        10: [1: 4, 2: 3, 3: 3, 4: 3, 5: 2],
+        11: [1: 4, 2: 3, 3: 3, 4: 3, 5: 2, 6: 1],
+        13: [1: 4, 2: 3, 3: 3, 4: 3, 5: 2, 6: 1, 7: 1],
+        15: [1: 4, 2: 3, 3: 3, 4: 3, 5: 2, 6: 1, 7: 1, 8: 1],
+        17: [1: 4, 2: 3, 3: 3, 4: 3, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1],
+        18: [1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1, 9: 1],
+        19: [1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 2, 7: 1, 8: 1, 9: 1],
+        20: [1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 2, 7: 2, 8: 1, 9: 1]
+    ]
+
+    /// Slot counts at a combined caster level (sparse table — take the entry
+    /// at the highest level ≤ `level`).
+    static func multiclassSlots(atCasterLevel level: Int) -> [Int: Int] {
+        guard let key = multiclassSlotTable.keys.filter({ $0 <= level }).max() else { return [:] }
+        return multiclassSlotTable[key] ?? [:]
+    }
+
+    /// Shared slot pools for a 2+-caster multiclass character, ids
+    /// `multiclass_slot_<level>`. Replaces the per-class non-pact pools (the
+    /// old `<classID>_slot_<n>` states are orphaned — pools start full once,
+    /// on the level-up that made the character a multiclass caster).
+    private static func multiclassSlotResources(
+        character: Character, content: ContentStore
+    ) -> [ResolvedResource] {
+        let casterLevel = combinedCasterLevel(character: character, content: content)
+        let slots = multiclassSlots(atCasterLevel: casterLevel)
+        return slots.sorted(by: { $0.key < $1.key }).map { (slotLevel, count) in
+            let id = "multiclass_slot_\(slotLevel)"
+            let definition = ResourceDefinition(
+                id: id,
+                name: slotLabel(level: slotLevel),
+                max: .flat(count),
+                refreshOn: .longRest,
+                refreshAmount: .all,
+                displayHint: .spellSlot(level: slotLevel)
+            )
+            let current = currentClamped(character: character, resourceID: id, max: count)
+            return ResolvedResource(
+                definition: definition,
+                max: count,
+                current: current,
+                sourceLabel: "Multiclass (caster level \(casterLevel))"
             )
         }
     }

@@ -235,40 +235,86 @@ enum CharacterCalculator {
         return nil
     }
 
-    /// True when the primary caster prepares spells daily (cleric/druid/paladin
-    /// = `preparedFromAll`, wizard = `preparedFromBook`). Known/pact casters and
-    /// non-casters return false.
+    /// Every class entry that prepares spells daily (`preparedFromAll` or
+    /// `preparedFromBook`), in classEntries order. Each prepares SEPARATELY
+    /// with its own cap and list (5e multiclass rule).
     @MainActor
-    static func isPreparedCaster(character: Character, content: ContentStore) -> Bool {
-        guard let sc = primarySpellcasting(character: character, content: content) else { return false }
-        return sc.block.preparedRule == .preparedFromAll || sc.block.preparedRule == .preparedFromBook
+    static func preparedCasterClasses(
+        character: Character, content: ContentStore
+    ) -> [(classID: String, level: Int, block: SpellcastingBlock)] {
+        character.classEntries.compactMap { entry in
+            guard let block = content.classDefinition(id: entry.classID)?.spellcasting,
+                  block.preparedRule == .preparedFromAll || block.preparedRule == .preparedFromBook
+            else { return nil }
+            return (entry.classID, entry.level, block)
+        }
     }
 
-    /// Max LEVELED spells the primary prepared caster can have prepared:
-    /// spellcasting-ability modifier + class level (min 1). Cantrips don't count.
-    /// Nil for known/pact casters (no prep cap) and non-casters.
+    /// True when any of the character's classes prepares spells daily.
     @MainActor
-    static func maxPreparedSpells(character: Character, content: ContentStore) -> Int? {
-        guard let sc = primarySpellcasting(character: character, content: content),
-              sc.block.preparedRule == .preparedFromAll || sc.block.preparedRule == .preparedFromBook
-        else { return nil }
+    static func isPreparedCaster(character: Character, content: ContentStore) -> Bool {
+        !preparedCasterClasses(character: character, content: content).isEmpty
+    }
+
+    /// Max LEVELED spells `classID` can have prepared: that class's
+    /// spellcasting-ability modifier + its class level (min 1). Cantrips don't
+    /// count. Nil when `classID` isn't one of the character's prepared-caster
+    /// classes.
+    @MainActor
+    static func maxPreparedSpells(
+        character: Character, content: ContentStore, forClassID classID: String
+    ) -> Int? {
+        guard let sc = preparedCasterClasses(character: character, content: content)
+            .first(where: { $0.classID == classID }) else { return nil }
         let mod = abilityModifier(score: character.abilityScores[sc.block.ability] ?? 10)
         return max(1, mod + sc.level)
     }
 
-    /// Cantrips-known budget for the primary caster (sparse table → its value at
-    /// the caster's class level), or nil for non-casters.
+    /// Whole-character convenience: the FIRST prepared-caster class's cap.
+    /// Single-class callers (the common case) keep working; multiclass UIs
+    /// should use the per-class variant.
+    @MainActor
+    static func maxPreparedSpells(character: Character, content: ContentStore) -> Int? {
+        guard let first = preparedCasterClasses(character: character, content: content).first
+        else { return nil }
+        return maxPreparedSpells(character: character, content: content, forClassID: first.classID)
+    }
+
+    /// Cantrips-known budget for `classID` at its class level, or nil when the
+    /// class isn't one of the character's casting classes.
+    @MainActor
+    static func cantripsKnownBudget(
+        character: Character, content: ContentStore, forClassID classID: String
+    ) -> Int? {
+        guard let entry = character.classEntries.first(where: { $0.classID == classID }),
+              let block = content.classDefinition(id: classID)?.spellcasting else { return nil }
+        return block.cantripsKnown.value(classLevel: entry.level, characterLevel: character.level)
+    }
+
+    /// Whole-character convenience: the primary caster's cantrip budget.
     @MainActor
     static func cantripsKnownBudget(character: Character, content: ContentStore) -> Int? {
         guard let sc = primarySpellcasting(character: character, content: content) else { return nil }
         return sc.block.cantripsKnown.value(classLevel: sc.level, characterLevel: character.level)
     }
 
-    /// Count of currently-prepared LEVELED spells (cantrips excluded — they
-    /// don't count against the prep cap).
+    /// Count of LEVELED spells prepared in `classID`'s bucket (cantrips
+    /// excluded — they don't count against the prep cap).
+    @MainActor
+    static func preparedLeveledCount(
+        character: Character, content: ContentStore, forClassID classID: String
+    ) -> Int {
+        (character.spells.preparedByClass[classID] ?? [])
+            .compactMap { content.spellDefinition(id: $0) }
+            .filter { !$0.isCantrip }
+            .count
+    }
+
+    /// Whole-character count of prepared leveled spells across every class
+    /// bucket plus the legacy flat list.
     @MainActor
     static func preparedLeveledCount(character: Character, content: ContentStore) -> Int {
-        character.spells.preparedIDs
+        character.spells.allPreparedIDs
             .compactMap { content.spellDefinition(id: $0) }
             .filter { !$0.isCantrip }
             .count
@@ -281,6 +327,30 @@ enum CharacterCalculator {
     static func spellList(forClassID classID: String, content: ContentStore) -> [SpellDefinition] {
         let tagged = content.allSpells.filter { $0.classes.contains(classID) }
         return tagged.isEmpty ? content.allSpells : tagged
+    }
+
+    /// The ability a multiclass caster uses for a specific spell: the class
+    /// whose prepared bucket holds it wins; else the single caster class whose
+    /// tagged spell list contains it; else the first casting class (matching
+    /// the old single-class behavior). Nil for non-casters.
+    @MainActor
+    static func spellcastingAbility(
+        forSpellID spellID: String, character: Character, content: ContentStore
+    ) -> Ability? {
+        let casters = character.classEntries.compactMap { entry -> (classID: String, block: SpellcastingBlock)? in
+            guard let block = content.classDefinition(id: entry.classID)?.spellcasting else { return nil }
+            return (entry.classID, block)
+        }
+        guard !casters.isEmpty else { return nil }
+        for caster in casters
+        where (character.spells.preparedByClass[caster.classID] ?? []).contains(spellID) {
+            return caster.block.ability
+        }
+        let listed = casters.filter { caster in
+            content.spellDefinition(id: spellID)?.classes.contains(caster.classID) == true
+        }
+        if listed.count == 1 { return listed[0].block.ability }
+        return casters.first?.block.ability
     }
 
     /// The ability whose modifier feeds Unarmored Defense for this character,
@@ -359,8 +429,9 @@ enum CharacterCalculator {
     /// `hpGain` is the hit-die roll or die average WITHOUT the CON modifier.
     /// `recalculateHP()` then derives the new max, so the per-level CON
     /// bonus stays retroactive (a later CON change reflows every level).
-    /// Centralized so the level-up sheet and any future automation share
-    /// the same math.
+    /// A `classID` with no existing entry is a MULTICLASS pick — a new entry
+    /// is appended at level 1. Centralized so the level-up sheet and any
+    /// future automation share the same math.
     static func applyLevelUp(
         to character: inout Character,
         hpGain: Int,
@@ -372,8 +443,46 @@ enum CharacterCalculator {
         if let idx = character.classEntries.firstIndex(where: { $0.classID == classID }) {
             let entry = character.classEntries[idx]
             character.classEntries[idx] = ClassEntry(classID: entry.classID, level: entry.level + 1)
+        } else {
+            character.classEntries.append(ClassEntry(classID: classID, level: 1))
         }
         character.recalculateHP()
+    }
+
+    /// "Druid 3 / Cleric 2" — one segment per class entry, in order. Single-
+    /// class characters read as just the class name ("Druid") since the
+    /// character level is shown separately everywhere this appears.
+    @MainActor
+    static func classSummary(character: Character, content: ContentStore) -> String? {
+        let parts = character.classEntries.map { entry -> String in
+            let name = content.classDefinition(id: entry.classID)?.name ?? entry.classID
+            return character.classEntries.count > 1 ? "\(name) \(entry.level)" : name
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " / ")
+    }
+
+    /// RAW multiclass prerequisite: 13+ in the primary ability of EVERY class
+    /// the character already has AND of the class being added. Returns nil
+    /// when eligible, else the failing requirement as display text.
+    @MainActor
+    static func multiclassBlocker(
+        addingClassID newClassID: String, character: Character, content: ContentStore
+    ) -> String? {
+        var required: [(name: String, ability: Ability)] = []
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            required.append((cls.name, cls.primaryAbility))
+        }
+        if let newCls = content.classDefinition(id: newClassID) {
+            required.append((newCls.name, newCls.primaryAbility))
+        }
+        for req in required {
+            let score = character.abilityScores[req.ability] ?? 10
+            if score < 13 {
+                return "\(req.name) needs \(req.ability.abbreviation) 13 (you have \(score))"
+            }
+        }
+        return nil
     }
 
     /// Total feature-granted Hit-Point bonus the character currently qualifies

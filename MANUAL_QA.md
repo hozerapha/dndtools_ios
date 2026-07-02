@@ -340,6 +340,60 @@ Mostly unit-tested; two have an in-app surface worth a quick check:
   Recovery slot recovery is manual; the "must long-rest to re-prepare" gate is
   honor-system (editing is always allowed).
 
+### Multiclassing (new 2026-07-01)
+- [ ] **Class picker at level-up.** On a Druid 2, tap Level Up → a **Class**
+  card shows a "Druid L2 → 3" button (selected) and a **"Multiclass into…"**
+  menu listing the other classes.
+- [ ] **RAW prerequisites hard-block.** A character with WIS 10 opens the
+  multiclass menu → **Druid** shows a lock with "Druid needs WIS 13 (you have
+  10)" and can't be tapped. A STR 10 Fighter is blocked from adding ANY class
+  (fighter's own primary must also be 13+).
+- [ ] **Adding a class.** An eligible Druid 2 (WIS 16, STR 13) picks Fighter →
+  header reads "Fighter · NEW class → Level 1", the HP card uses **1d10** (not
+  1d8), and the card notes what multiclassing grants (Light/Medium armor,
+  Shield, Simple/Martial weapons). Finish → sheet header shows
+  **"Druid 2 / Fighter 1"**, and the granted proficiencies appear.
+- [ ] **No L1 skill picks for the second class.** After adding Fighter, the
+  Features tab does **not** offer Fighter's "choose 2 skills" picker (5e
+  multiclass rule). The first class's picker is unaffected.
+- [ ] **Slot merging.** Level a Druid 2 / Cleric 2 → the Spells card shows ONE
+  set of slots: **4× L1 and 3× L2** (combined caster level 4 on the shared
+  table), not two separate 3× L1 pools. A Druid 3 / Fighter 2 keeps normal
+  Druid slots (one casting class → no merge).
+- [ ] **Half-caster counts half.** Druid 3 / Paladin 3 → combined caster level
+  4 (3 + 3÷2).
+- [ ] **Per-class preparation.** As Druid 3 / Cleric 2 (WIS 16), open Prepare
+  Spells → a **class segment picker** appears; Druid shows "Leveled prepared:
+  X / 6", Cleric "X / 5", each with its own class-filtered list and bucket.
+  The Spells card lists both "Druid prepared: X/6" and "Cleric prepared: X/5".
+- [ ] **Casting ability follows the class.** A spell prepared under the Druid
+  bucket casts with WIS even when another casting class (different ability)
+  is present — check the spell attack/DC math in the cast sheet.
+- [ ] **Old saves migrate.** A pre-existing single-class prepared caster loads
+  with its prepared list intact (moved into the class bucket invisibly).
+- [ ] _Known simplifications:_ known-caster (Bard/Sorcerer) per-level spell
+  picks aren't budget-gated; Bard/Rogue multiclass skill/tool CHOICE grants are
+  manual; the level-up Spellcasting card diffs the leveled class's own slot
+  table, not the merged pools; on the level-up that first merges slots, the
+  pools reset to full (old per-class ids are retired).
+
+### Level-up sheet sync (new 2026-07-01)
+- [ ] **HP preview includes feature bonuses.** Level up a **Dwarf** (Dwarven
+  Toughness) → the staged HP line shows **+1 more** than die + CON, with an
+  "incl. +1 from features" caption, and the committed max matches the preview
+  exactly. A Draconic Sorcerer shows the same (+1/level).
+- [ ] **Subclass unlock callout.** Level a Druid (or any class) from 2 → 3 with
+  no subclass chosen → a purple banner names the unlock ("Level 3 unlocks your
+  Druid subclass — choose it in the Features tab"). After picking a subclass,
+  leveling further shows no banner.
+- [ ] **Spellcasting card on caster level-ups.** Druid 1 → 2 shows "More slots
+  at: L1 (2 → 3)" and "Prepared spells: N → N+1"; Druid 2 → 3 shows "New spell
+  slot level: L2"; Druid 3 → 4 shows "Cantrips known: 2 → 3". A Fighter
+  level-up shows no Spellcasting card.
+- [ ] **New resources appear without any sync step.** Level a Druid 1 → 2 →
+  Wild Shape shows up on the Actions tab with a full 2-use pool; the new L1
+  slot and (at 3) L2 slots appear in the Spells card already full.
+
 ---
 
 ## P1 rules-fidelity batch (new 2026-06-27)

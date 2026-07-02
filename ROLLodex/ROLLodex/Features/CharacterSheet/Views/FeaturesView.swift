@@ -65,10 +65,17 @@ struct FeaturesView: View {
             let subclassID = character.featureSelections[
                 ClassDefinition.subclassSelectionID(forClassID: entry.classID)
             ]?.first
+            // 5e multiclass rule: a class you multiclassed INTO doesn't grant
+            // its L1 skill choices — hide that picker for every class after
+            // the first so the player isn't offered skills they shouldn't have.
+            let isFirstClass = entry.classID == character.classEntries.first?.classID
             for resolved in cls.resolvedFeatures(
                 throughClassLevel: entry.level,
                 subclassID: subclassID
             ) {
+                if !isFirstClass, resolved.grantedAtLevel == 1,
+                   let selection = resolved.feature.selection,
+                   case .skillsFrom = selection.optionsSource { continue }
                 let sourceName = resolved.subclassName ?? cls.name
                 let idPrefix = resolved.subclassName == nil ? "class" : "subclass"
                 rows.append(FeatureRowModel(

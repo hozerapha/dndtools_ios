@@ -19,13 +19,25 @@ struct LevelUpSheet: View {
     /// Set when the player picks "Take Average" — locks the staged gain.
     @State private var usedAverage: Bool = false
     @State private var quickRoll: QuickRollRequest?
+    /// Which class this level goes into: an existing entry's classID, or a
+    /// class the character doesn't have yet (multiclassing into it). Nil
+    /// defaults to the first entry. Switching resets the staged HP roll —
+    /// the hit die may differ.
+    @State private var selectedClassID: String?
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     levelHeader
+                    classPickerCard
                     hpGainCard
+                    if unlocksSubclass {
+                        subclassUnlockBanner
+                    }
+                    if !spellBudgetChanges.isEmpty {
+                        spellBudgetCard
+                    }
                     if unresolvedPromptsCount > 0 {
                         pendingPicksBanner
                     }
@@ -45,7 +57,7 @@ struct LevelUpSheet: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Finish") { commit() }
                         .bold()
-                        .disabled(stagedHPGain == nil || classEntry == nil)
+                        .disabled(stagedHPGain == nil || resolvedClassID == nil)
                 }
             }
         }
@@ -71,12 +83,117 @@ struct LevelUpSheet: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Level \(character.level) → \(newCharacterLevel)")
                 .font(.title2.bold().monospacedDigit())
-            if let cls = classDef, let entry = classEntry {
-                Text("\(cls.name) · Class Level \(entry.level) → \(newClassLevel)")
+            if let cls = classDef {
+                Text(isAddingNewClass
+                     ? "\(cls.name) · NEW class → Level 1"
+                     : "\(cls.name) · Class Level \(classEntry?.level ?? 1) → \(newClassLevel)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    /// Which class receives this level: the character's existing classes, plus
+    /// a "Multiclass into…" menu of every other authored class, hard-gated by
+    /// the RAW 13+ primary-ability prerequisites.
+    private var classPickerCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Class", systemImage: "person.text.rectangle")
+                .font(.headline)
+            HStack(spacing: 8) {
+                ForEach(character.classEntries, id: \.classID) { entry in
+                    let name = content.classDefinition(id: entry.classID)?.name ?? entry.classID
+                    Button {
+                        select(classID: entry.classID)
+                    } label: {
+                        VStack(spacing: 2) {
+                            Text(name)
+                                .font(.subheadline.weight(.semibold))
+                            Text("L\(entry.level) → \(entry.level + 1)")
+                                .font(.caption2.monospacedDigit())
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(
+                            resolvedClassID == entry.classID
+                                ? Color.accentColor.opacity(0.22)
+                                : Color.secondary.opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: 10)
+                        )
+                        .foregroundStyle(resolvedClassID == entry.classID ? Color.accentColor : .primary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            Menu {
+                ForEach(multiclassCandidates, id: \.cls.id) { candidate in
+                    Button {
+                        select(classID: candidate.cls.id)
+                    } label: {
+                        if let blocker = candidate.blocker {
+                            Label("\(candidate.cls.name) — \(blocker)", systemImage: "lock")
+                        } else {
+                            Text(candidate.cls.name)
+                        }
+                    }
+                    .disabled(candidate.blocker != nil)
+                }
+            } label: {
+                Label(
+                    isAddingNewClass
+                        ? "Multiclass into: \(classDef?.name ?? "?") (L1)"
+                        : "Multiclass into…",
+                    systemImage: "plus.circle"
+                )
+                .font(.caption.weight(.semibold))
+            }
+            if isAddingNewClass, let cls = classDef {
+                Text(multiclassGrantSummary(for: cls))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func select(classID: String) {
+        selectedClassID = classID
+        // Different class may mean a different hit die — restage the HP gain.
+        stagedRoll = nil
+        usedAverage = false
+    }
+
+    /// Classes the character could multiclass into, each with its RAW blocker
+    /// (nil = eligible). Existing classes are excluded (they're the buttons).
+    private var multiclassCandidates: [(cls: ClassDefinition, blocker: String?)] {
+        let owned = Set(character.classEntries.map(\.classID))
+        return content.allClasses
+            .filter { !owned.contains($0.id) }
+            .sorted { $0.name < $1.name }
+            .map { cls in
+                (cls, CharacterCalculator.multiclassBlocker(
+                    addingClassID: cls.id, character: character, content: content
+                ))
+            }
+    }
+
+    /// What multiclassing into `cls` grants (the 5e limited proficiency list),
+    /// so the pick isn't a mystery box.
+    private func multiclassGrantSummary(for cls: ClassDefinition) -> String {
+        guard !cls.multiclassProficiencies.isEmpty else {
+            return "Multiclass grants: no new proficiencies."
+        }
+        let names = cls.multiclassProficiencies.map { key -> String in
+            switch key {
+            case .armor(let cat):  return "\(cat.rawValue.capitalized) armor"
+            case .weapon(let cat): return "\(cat.rawValue.capitalized) weapons"
+            case .skill(let s):    return s.displayName
+            case .savingThrow(let a): return "\(a.abbreviation) saves"
+            case .tool(let t):     return t
+            }
+        }
+        return "Multiclass grants: " + names.joined(separator: ", ") + "."
     }
 
     private var hpGainCard: some View {
@@ -152,6 +269,11 @@ struct LevelUpSheet: View {
                 Text("+\(gain) HP (max \(character.maxHP) → \(character.maxHP + gain))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.green)
+                if featureHPDelta > 0 {
+                    Text("incl. +\(featureHPDelta) from features (Toughness-style bonuses)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
             Button("Reset") {
@@ -163,6 +285,43 @@ struct LevelUpSheet: View {
             .controlSize(.small)
         }
         .padding(.top, 4)
+    }
+
+    /// Named callout when the upcoming level is the subclass-unlock level and
+    /// no subclass has been chosen — more actionable than the generic
+    /// pending-picks count.
+    private var subclassUnlockBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "star.circle.fill")
+                .foregroundStyle(.purple)
+            Text("Level \(newClassLevel) unlocks your \(classDef?.name ?? "class") subclass — choose it in the Features tab after finishing.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.purple.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// What this level does to the character's spell budgets — cantrips known,
+    /// prepared-spell cap, newly unlocked slot levels. Slots themselves appear
+    /// automatically (derived live); this card tells the player to go re-pick.
+    private var spellBudgetCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Spellcasting", systemImage: "sparkles")
+                .font(.headline)
+                .foregroundStyle(.purple)
+            ForEach(spellBudgetChanges, id: \.self) { line in
+                Text("• \(line)")
+                    .font(.subheadline)
+            }
+            Text("Update your list on the Spells tab (Prepare Spells / Add Spell).")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
     private var pendingPicksBanner: some View {
@@ -182,7 +341,7 @@ struct LevelUpSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("New at \(classDef?.name ?? "this class") L\(newClassLevel)", systemImage: "sparkles")
                 .font(.headline)
-            ForEach(Array(newFeatures.enumerated()), id: \.offset) { _, entry in
+            ForEach(newFeatures, id: \.feature.id) { entry in
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text(entry.feature.name)
@@ -212,19 +371,27 @@ struct LevelUpSheet: View {
     // MARK: - Commit
 
     private func commit() {
-        guard let dieGain = stagedDieGain, let entry = classEntry else { return }
+        guard let dieGain = stagedDieGain, let classID = resolvedClassID else { return }
         var copy = character
         // Feature HP bonus before the level bump (subclass already chosen in
         // this sheet, so a subclass gained now is counted in the "after").
         let oldFeatureHP = CharacterCalculator.featureHitPointBonus(character: copy, content: content)
         // Die-only value — applyLevelUp banks it into rolledHP and
-        // recalculateHP() layers the CON share on retroactively.
-        CharacterCalculator.applyLevelUp(to: &copy, hpGain: dieGain, classID: entry.classID)
+        // recalculateHP() layers the CON share on retroactively. A classID
+        // with no entry appends one at level 1 (multiclassing in).
+        CharacterCalculator.applyLevelUp(to: &copy, hpGain: dieGain, classID: classID)
         // Fold the change in feature HP (per-level growth + any newly-granted
         // feature like Draconic Resilience at L3) into rolledHP, then recalc.
         let newFeatureHP = CharacterCalculator.featureHitPointBonus(character: copy, content: content)
         copy.rolledHP += (newFeatureHP - oldFeatureHP)
         copy.recalculateHP()
+        // Multiclassing in grants the class's LIMITED proficiency list (never
+        // its saves or skill choices) — the 5e multiclass table.
+        if isAddingNewClass, let cls = classDef {
+            for key in cls.multiclassProficiencies where copy.proficiencies[key] == nil {
+                copy.proficiencies[key] = .proficient
+            }
+        }
         applyNewFeatureProficiencies(to: &copy)
         character = copy
         dismiss()
@@ -232,8 +399,10 @@ struct LevelUpSheet: View {
 
     /// Scan features that are new at the upcoming class level and apply any
     /// automatic proficiency grants (e.g. Rogue's Slippery Mind → WIS/CHA saves).
+    /// Skipped when ADDING a class — its L1 `grantsProficiencies` are the
+    /// full-class grants; multiclassing in gets only the limited list above.
     private func applyNewFeatureProficiencies(to character: inout Character) {
-        guard let cls = classDef, let entry = classEntry else { return }
+        guard let cls = classDef, let entry = classEntry, !isAddingNewClass else { return }
         let subclassID = character.featureSelections[
             ClassDefinition.subclassSelectionID(forClassID: entry.classID)
         ]?.first
@@ -255,13 +424,26 @@ struct LevelUpSheet: View {
 
     // MARK: - Derived state
 
-    /// First class entry — v1 single-class assumption.
-    private var classEntry: ClassEntry? { character.classEntries.first }
-    private var classDef: ClassDefinition? {
-        classEntry.flatMap { content.classDefinition(id: $0.classID) }
+    /// The class receiving this level — the picked one, or the first entry.
+    private var resolvedClassID: String? {
+        selectedClassID ?? character.classEntries.first?.classID
     }
 
-    private var newClassLevel: Int { (classEntry?.level ?? 1) + 1 }
+    /// The existing entry for the resolved class; nil when multiclassing into
+    /// a class the character doesn't have yet.
+    private var classEntry: ClassEntry? {
+        character.classEntries.first { $0.classID == resolvedClassID }
+    }
+
+    private var isAddingNewClass: Bool {
+        resolvedClassID != nil && classEntry == nil
+    }
+
+    private var classDef: ClassDefinition? {
+        resolvedClassID.flatMap { content.classDefinition(id: $0) }
+    }
+
+    private var newClassLevel: Int { (classEntry?.level ?? 0) + 1 }
     private var newCharacterLevel: Int { character.level + 1 }
     private var hitDie: Int { classDef?.hitDie.rawValue ?? 8 }
     private var conMod: Int {
@@ -277,22 +459,97 @@ struct LevelUpSheet: View {
         return nil
     }
 
-    /// What the player sees as this level's HP change: die value + CON mod.
+    /// What the player sees as this level's HP change: die value + CON mod +
+    /// any feature-HP growth (audit #9 — the preview now matches the commit,
+    /// which folds the `featureHitPointBonus` diff into `rolledHP`).
     /// Display only — the commit path goes through `stagedDieGain`.
     private var stagedHPGain: Int? {
-        stagedDieGain.map { $0 + conMod }
+        stagedDieGain.map { $0 + conMod + featureHPDelta }
+    }
+
+    /// Feature-HP change this level-up produces (Dwarven Toughness +1/level,
+    /// Draconic Resilience +1/sorcerer level). Simulated on a copy with the
+    /// bumped levels — the same diff `commit()` applies for real. Handles a
+    /// brand-new class (appends a level-1 entry to the simulation).
+    private var featureHPDelta: Int {
+        guard let classID = resolvedClassID else { return 0 }
+        let old = CharacterCalculator.featureHitPointBonus(character: character, content: content)
+        var bumped = character
+        bumped.level += 1
+        if let idx = bumped.classEntries.firstIndex(where: { $0.classID == classID }) {
+            let e = bumped.classEntries[idx]
+            bumped.classEntries[idx] = ClassEntry(classID: e.classID, level: e.level + 1)
+        } else {
+            bumped.classEntries.append(ClassEntry(classID: classID, level: 1))
+        }
+        let new = CharacterCalculator.featureHitPointBonus(character: bumped, content: content)
+        return new - old
+    }
+
+    /// True when the upcoming class level is the subclass-unlock level and no
+    /// subclass has been picked yet.
+    private var unlocksSubclass: Bool {
+        guard let cls = classDef, let classID = resolvedClassID, !cls.subclasses.isEmpty else { return false }
+        guard cls.subclassLevel == newClassLevel else { return false }
+        let picked = character.featureSelections[
+            ClassDefinition.subclassSelectionID(forClassID: classID)
+        ]?.first
+        return picked == nil
+    }
+
+    /// Human-readable spell-budget changes this level brings: cantrips known,
+    /// prepared-spell cap (ability mod + class level for prepared casters),
+    /// and newly unlocked slot levels. Empty for non-casters / no changes.
+    /// A brand-new casting class diffs from level 0 (everything is new).
+    private var spellBudgetChanges: [String] {
+        guard let cls = classDef, let block = cls.spellcasting else { return [] }
+        let oldLevel = classEntry?.level ?? 0
+        var out: [String] = []
+
+        let oldCantrips = oldLevel == 0 ? 0
+            : block.cantripsKnown.value(classLevel: oldLevel, characterLevel: character.level)
+        let newCantrips = block.cantripsKnown.value(classLevel: newClassLevel, characterLevel: newCharacterLevel)
+        if newCantrips > oldCantrips {
+            out.append("Cantrips known: \(oldCantrips) → \(newCantrips)")
+        }
+
+        if block.preparedRule == .preparedFromAll || block.preparedRule == .preparedFromBook {
+            let mod = CharacterCalculator.abilityModifier(score: character.abilityScores[block.ability] ?? 10)
+            let oldMax = oldLevel == 0 ? 0 : max(1, mod + oldLevel)
+            let newMax = max(1, mod + newClassLevel)
+            if newMax > oldMax {
+                out.append("Prepared spells: \(oldMax) → \(newMax)")
+            }
+        }
+
+        let oldSlots = oldLevel == 0 ? [:] : block.slotTable.slots(atClassLevel: oldLevel)
+        let newSlots = block.slotTable.slots(atClassLevel: newClassLevel)
+        let unlocked = Set(newSlots.keys).subtracting(oldSlots.keys).sorted()
+        if !unlocked.isEmpty {
+            out.append("New spell slot level\(unlocked.count == 1 ? "" : "s"): " + unlocked.map { "L\($0)" }.joined(separator: ", "))
+        }
+        // Existing slot levels that grow (L1: 2 → 3) — summarize compactly.
+        let grown = oldSlots.keys.filter { (newSlots[$0] ?? 0) > (oldSlots[$0] ?? 0) }.sorted()
+        if !grown.isEmpty {
+            out.append("More slots at: " + grown.map { "L\($0) (\(oldSlots[$0] ?? 0) → \(newSlots[$0] ?? 0))" }.joined(separator: ", "))
+        }
+        return out
     }
 
     /// Selection prompts the character hasn't filled to capacity, across all
     /// levels through `newClassLevel`. Used for the "pending picks" banner.
+    /// For a class being multiclassed INTO, L1 skill choices don't apply
+    /// (the 5e multiclass rule) and are excluded.
     private var unresolvedPromptsCount: Int {
-        guard let cls = classDef, let entry = classEntry else { return 0 }
+        guard let cls = classDef, let classID = resolvedClassID else { return 0 }
         let subclassID = character.featureSelections[
-            ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ClassDefinition.subclassSelectionID(forClassID: classID)
         ]?.first
         var count = 0
         for resolved in cls.resolvedFeatures(throughClassLevel: newClassLevel, subclassID: subclassID) {
             guard let selection = resolved.feature.selection else { continue }
+            if isAddingNewClass, resolved.grantedAtLevel == 1,
+               case .skillsFrom = selection.optionsSource { continue }
             let max = selection.count.value(
                 classLevel: newClassLevel,
                 characterLevel: newCharacterLevel
@@ -304,15 +561,16 @@ struct LevelUpSheet: View {
     }
 
     /// Features new at the upcoming class level — both base-class additions
-    /// and (once a subclass is picked) new subclass level-features.
+    /// and (once a subclass is picked) new subclass level-features. For a
+    /// brand-new class this is its whole L1 feature list.
     private var newFeatures: [(feature: FeatureDefinition, subclassName: String?)] {
-        guard let cls = classDef, let entry = classEntry else { return [] }
+        guard let cls = classDef, let classID = resolvedClassID else { return [] }
         var out: [(FeatureDefinition, String?)] = []
         for feature in cls.levelFeatures[newClassLevel] ?? [] {
             out.append((feature, nil))
         }
         let subclassID = character.featureSelections[
-            ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ClassDefinition.subclassSelectionID(forClassID: classID)
         ]?.first
         if let subclassID, let subclass = cls.subclasses.first(where: { $0.id == subclassID }) {
             for feature in subclass.levelFeatures[newClassLevel] ?? [] {

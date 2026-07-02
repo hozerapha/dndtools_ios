@@ -121,9 +121,9 @@ struct CharacterCreationFinalizationTests {
             character.spells.knownIDs = cantripIDs + leveledIDs
         case .preparedFromBook:
             character.spells.spellbookIDs = leveledIDs
-            character.spells.preparedIDs = cantripIDs + leveledIDs
+            character.spells.preparedByClass[classDef.id] = cantripIDs + leveledIDs
         case .preparedFromAll:
-            character.spells.preparedIDs = cantripIDs + leveledIDs
+            character.spells.preparedByClass[classDef.id] = cantripIDs + leveledIDs
         }
     }
 
@@ -215,8 +215,9 @@ struct CharacterCreationFinalizationTests {
         draft.classSkillChoices = [.arcana, .investigation]
         let character = finalize(draft)
 
+        let prepared = character.spells.preparedByClass["wizard"] ?? []
         #expect(!character.spells.spellbookIDs.isEmpty)
-        #expect(!character.spells.preparedIDs.isEmpty)
-        #expect(character.spells.preparedIDs.contains(where: { character.spells.spellbookIDs.contains($0) }))
+        #expect(!prepared.isEmpty)
+        #expect(prepared.contains(where: { character.spells.spellbookIDs.contains($0) }))
     }
 }
