@@ -952,17 +952,21 @@ private struct SpellsStep: View {
         block?.cantripsKnown.value(classLevel: 1, characterLevel: 1) ?? 0
     }
 
-    /// Leveled budget at L1 by prepared rule. Known casters without an
-    /// authored table fall back to the cantrip-style "pick what you like"
-    /// (nil = uncapped).
+    /// Leveled budget at L1. Prefers the `spellsKnown` fixed table when the
+    /// class declares one (2024 Bard/Sorcerer/Warlock — "Prepared Spells"
+    /// column), else `ability mod + 1` for prepared-from-all classes. Nil =
+    /// uncapped for prepared-from-book (wizards seed the whole spellbook).
     private var leveledBudget: Int? {
         guard let block else { return nil }
+        if let table = block.spellsKnown {
+            return table.value(classLevel: 1, characterLevel: 1)
+        }
         switch block.preparedRule {
-        case .preparedFromAll, .preparedFromBook:
+        case .preparedFromAll:
             let mod = CharacterCalculator.abilityModifier(score: draft.abilityScores[block.ability] ?? 10)
             return max(1, mod + 1)
-        case .knownList, .pactMagic:
-            return block.spellsKnown?.value(classLevel: 1, characterLevel: 1)
+        case .preparedFromBook, .knownList, .pactMagic:
+            return nil
         }
     }
 
@@ -1024,6 +1028,12 @@ private struct SpellsStep: View {
     }
 
     private var footerText: String {
+        // Classes with a fixed `spellsKnown` table (2024 Bard/Sorcerer) —
+        // prepared list is fixed by the class table; swap on level-up, not
+        // long rest.
+        if block?.spellsKnown != nil {
+            return "These are your prepared spells — the class table sets the count, and RAW you swap one spell when you gain a level."
+        }
         switch block?.preparedRule {
         case .preparedFromAll:
             return "These become your prepared list — you can re-pick after any long rest."

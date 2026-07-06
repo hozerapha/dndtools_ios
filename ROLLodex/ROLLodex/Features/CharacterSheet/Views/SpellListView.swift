@@ -493,6 +493,24 @@ struct AddSpellSheet: View {
         }
     }
 
+    /// Rule-accurate copy for the footer. Prepare mode splits based on
+    /// whether the class has a fixed `spellsKnown` table: those (2024
+    /// Bard/Sorcerer) swap on level-up, others re-pick each long rest.
+    private var footerText: String {
+        switch mode {
+        case .prepare:
+            if let ac = activeClass,
+               CharacterCalculator.hasFixedSpellsTable(classID: ac.classID, content: content) {
+                return "Your prepared list is fixed by the class table. RAW you swap one spell when you gain a level (edits aren't time-gated here — the app trusts you)."
+            }
+            return "Tap to prepare or unprepare. You can re-pick after a long rest."
+        case .learn:
+            return "Tap to learn or forget. RAW you learn new spells on level-up and may swap one."
+        case .add:
+            return "Wizard spellbook management is coming — added spells land in the book and prepared list."
+        }
+    }
+
     private var budgetSection: some View {
         Section {
             if castingClasses.count > 1 {
@@ -519,14 +537,7 @@ struct AddSpellSheet: View {
                 .font(.caption.weight(.semibold))
             }
         } footer: {
-            switch mode {
-            case .prepare:
-                Text("Tap to prepare or unprepare. You can re-pick after a long rest.")
-            case .learn:
-                Text("Tap to learn or forget. RAW you learn new spells on level-up and may swap one.")
-            case .add:
-                Text("Wizard spellbook management is coming — added spells land in the book and prepared list.")
-            }
+            Text(footerText)
         }
     }
 

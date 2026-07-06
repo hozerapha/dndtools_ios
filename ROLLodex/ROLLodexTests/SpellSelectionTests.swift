@@ -58,31 +58,37 @@ struct SpellSelectionTests {
         )
     }
 
-    @Test func knownSpellBudgetsFollowTheSRDTables() {
+    // MARK: - Fixed-table prep budgets (2024 Bard/Sorcerer regression)
+
+    @Test func fixedTableClassesUseTheirSpellsKnownTableAsPrepCap() {
+        // Bard L1 = 4 prepared regardless of CHA — the SRD 2024 "Prepared
+        // Spells" column, not ability mod + level. This is the bug the user
+        // hit: a CHA-8 bard was getting max(1, -1 + 1) = 1 instead of 4.
         let store = ContentStore()
-        #expect(CharacterCalculator.knownSpellBudget(
-            character: makeCaster(classID: "bard", level: 1), content: store, forClassID: "bard") == 4)
-        #expect(CharacterCalculator.knownSpellBudget(
+        var lowChaBard = makeCaster(classID: "bard", level: 1)
+        lowChaBard.abilityScores[.charisma] = 8
+        #expect(CharacterCalculator.maxPreparedSpells(
+            character: lowChaBard, content: store, forClassID: "bard") == 4)
+        // Sorcerer L1 = 2 by the table.
+        #expect(CharacterCalculator.maxPreparedSpells(
             character: makeCaster(classID: "sorcerer", level: 1), content: store, forClassID: "sorcerer") == 2)
-        #expect(CharacterCalculator.knownSpellBudget(
-            character: makeCaster(classID: "sorcerer", level: 3), content: store, forClassID: "sorcerer") == 6)
-        #expect(CharacterCalculator.knownSpellBudget(
+        // Growth follows the table, not the ability score.
+        #expect(CharacterCalculator.maxPreparedSpells(
             character: makeCaster(classID: "bard", level: 20), content: store, forClassID: "bard") == 22)
+        // Druid still uses ability mod + level (no fixed table).
+        let wisDruid = makeCaster(classID: "druid", level: 3)  // WIS 14 → +2
+        #expect(CharacterCalculator.maxPreparedSpells(
+            character: wisDruid, content: store, forClassID: "druid") == 5)
     }
 
-    @Test func preparedCastersHaveNoKnownBudget() {
+    @Test func fixedTableFlagIdentifiesTheRightClasses() {
         let store = ContentStore()
-        #expect(CharacterCalculator.knownSpellBudget(
-            character: makeCaster(classID: "druid", level: 3), content: store, forClassID: "druid") == nil)
-        #expect(CharacterCalculator.knownSpellBudget(
-            character: makeCaster(classID: "wizard", level: 3), content: store, forClassID: "wizard") == nil)
-    }
-
-    @Test func knownLeveledCountExcludesCantrips() {
-        let store = ContentStore()
-        var bard = makeCaster(classID: "bard", level: 1)
-        bard.spells.knownIDs = ["dancing_lights", "healing_word", "faerie_fire"] // 1 cantrip + 2 leveled
-        #expect(CharacterCalculator.knownLeveledCount(character: bard, content: store) == 2)
+        #expect(CharacterCalculator.hasFixedSpellsTable(classID: "bard", content: store))
+        #expect(CharacterCalculator.hasFixedSpellsTable(classID: "sorcerer", content: store))
+        // Druid/wizard/cleric are unlimited-prep (no table).
+        #expect(!CharacterCalculator.hasFixedSpellsTable(classID: "druid", content: store))
+        #expect(!CharacterCalculator.hasFixedSpellsTable(classID: "wizard", content: store))
+        #expect(!CharacterCalculator.hasFixedSpellsTable(classID: "cleric", content: store))
     }
 
     // MARK: - Creation draft picks

@@ -280,18 +280,33 @@ enum CharacterCalculator {
         !preparedCasterClasses(character: character, content: content).isEmpty
     }
 
-    /// Max LEVELED spells `classID` can have prepared: that class's
-    /// spellcasting-ability modifier + its class level (min 1). Cantrips don't
-    /// count. Nil when `classID` isn't one of the character's prepared-caster
-    /// classes.
+    /// Max LEVELED spells `classID` can have prepared. Two shapes:
+    /// - If the class declares a fixed `spellsKnown` table (2024 Bard,
+    ///   Sorcerer — "Prepared Spells" column of their level table), the table
+    ///   value at the class level wins. Prep is capped by the table; players
+    ///   swap on level-up (RAW), not each long rest.
+    /// - Otherwise `ability mod + class level` (min 1) — the SRD "prepare from
+    ///   the whole list" formula (cleric, druid, paladin, wizard-from-book).
+    /// Cantrips don't count. Nil when `classID` isn't a prepared-caster class.
     @MainActor
     static func maxPreparedSpells(
         character: Character, content: ContentStore, forClassID classID: String
     ) -> Int? {
         guard let sc = preparedCasterClasses(character: character, content: content)
             .first(where: { $0.classID == classID }) else { return nil }
+        if let table = sc.block.spellsKnown {
+            return table.value(classLevel: sc.level, characterLevel: character.level)
+        }
         let mod = abilityModifier(score: character.abilityScores[sc.block.ability] ?? 10)
         return max(1, mod + sc.level)
+    }
+
+    /// True when the class uses the 2024 "Prepared Spells" fixed-table shape
+    /// (Bard, Sorcerer) — swap on level-up, not on long rest. Drives the
+    /// picker footer copy and separates the two prep regimes for UI.
+    @MainActor
+    static func hasFixedSpellsTable(classID: String, content: ContentStore) -> Bool {
+        content.classDefinition(id: classID)?.spellcasting?.spellsKnown != nil
     }
 
     /// Whole-character convenience: the FIRST prepared-caster class's cap.
