@@ -65,12 +65,22 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
     /// → +1/level; Draconic Resilience → +3 flat and +1/level). Nil for the
     /// vast majority of features.
     let hitPointBonus: HitPointBonus?
+    /// Cost this feature's tap/roll spends from ANOTHER feature's pool —
+    /// Monk's Flurry of Blows spends 1 from `monk_focus`, which the Monk's
+    /// Focus feature owns. Distinct from `resource` (which DEFINES a pool this
+    /// feature owns and implicitly costs 1 of). Nil for free features.
+    let resourceCost: ResourceCost?
+    /// Walking-speed bonus in feet while the character wears no armor and no
+    /// shield (Monk Unarmored Movement +10 → +30; Barbarian Fast Movement).
+    /// Scaled by the owning class level. Nil for features that don't touch
+    /// speed.
+    let speedBonus: LevelScaledValue?
 
     private enum CodingKeys: String, CodingKey {
         case id, name, description, actionRecipes
         case attunementSlots, resource, grantsProficiencies, kind, selection, actionCost, triggeredEffect
         case skillCheckMinimum, surfacesAsAction, grantedActions, grantsSpells
-        case unarmoredDefenseAbility, hitPointBonus
+        case unarmoredDefenseAbility, hitPointBonus, resourceCost, speedBonus
     }
 
     init(
@@ -90,7 +100,9 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         grantedActions: [GrantedAction] = [],
         grantsSpells: [SpellGrant] = [],
         unarmoredDefenseAbility: Ability? = nil,
-        hitPointBonus: HitPointBonus? = nil
+        hitPointBonus: HitPointBonus? = nil,
+        resourceCost: ResourceCost? = nil,
+        speedBonus: LevelScaledValue? = nil
     ) {
         self.id = id
         self.name = name
@@ -109,6 +121,8 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         self.grantsSpells = grantsSpells
         self.unarmoredDefenseAbility = unarmoredDefenseAbility
         self.hitPointBonus = hitPointBonus
+        self.resourceCost = resourceCost
+        self.speedBonus = speedBonus
     }
 
     init(from decoder: Decoder) throws {
@@ -128,6 +142,8 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         grantsSpells = try c.decodeIfPresent([SpellGrant].self, forKey: .grantsSpells) ?? []
         unarmoredDefenseAbility = try c.decodeIfPresent(Ability.self, forKey: .unarmoredDefenseAbility)
         hitPointBonus = try c.decodeIfPresent(HitPointBonus.self, forKey: .hitPointBonus)
+        resourceCost = try c.decodeIfPresent(ResourceCost.self, forKey: .resourceCost)
+        speedBonus = try c.decodeIfPresent(LevelScaledValue.self, forKey: .speedBonus)
         // Explicit JSON wins; otherwise default to .action when the feature
         // surfaces a tappable recipe, and nil for pure passives.
         if let declared = try c.decodeIfPresent(ActionCost.self, forKey: .actionCost) {

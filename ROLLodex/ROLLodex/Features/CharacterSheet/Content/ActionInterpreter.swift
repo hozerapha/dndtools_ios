@@ -77,17 +77,18 @@ enum ActionInterpreter {
                 label: label
             )
 
-        case .scaledDamage(let dieKind, let count, let damageType, let label):
+        case .scaledDamage(let dieKind, let count, let damageType, let addAbility, let label):
             return resolveScaledDamage(
                 character: character,
                 dieKind: dieKind,
                 count: count,
                 damageType: damageType,
+                addAbility: addAbility,
                 label: label
             )
 
-        case .abilityRoll(let dice, let ability, let label):
-            return resolveAbilityRoll(character: character, dice: dice, ability: ability, label: label)
+        case .abilityRoll(let dice, let ability, let addLevel, let label):
+            return resolveAbilityRoll(character: character, dice: dice, ability: ability, addLevel: addLevel, label: label)
         }
     }
 
@@ -95,39 +96,53 @@ enum ActionInterpreter {
         character: Character,
         dice: String,
         ability: Ability,
+        addLevel: Bool,
         label: String
     ) -> ResolvedAction {
         let mod = CharacterCalculator.abilityModifier(score: character.abilityScores[ability] ?? 10)
+        let total = mod + (addLevel ? character.level : 0)
         var formula = (try? DiceFormulaParser().parse(dice)) ?? DiceFormula()
-        formula.modifier += mod
-        let sign = mod >= 0 ? "+" : ""
+        formula.modifier += total
+        let sign = total >= 0 ? "+" : ""
+        var desc = "\(dice) + \(ability.abbreviation) (\(mod >= 0 ? "+" : "")\(mod))"
+        if addLevel { desc += " + level (\(character.level))" }
         return ResolvedAction(
             id: "abilityroll_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))",
-            label: "\(label) (\(dice) \(sign)\(mod))",
+            label: "\(label) (\(dice) \(sign)\(total))",
             formula: formula,
-            description: "\(dice) + \(ability.abbreviation) (\(sign)\(mod))"
+            description: desc
         )
     }
 
     private static func resolveScaledDamage(
         character: Character,
-        dieKind: Int,
+        dieKind: LevelScaledValue,
         count: LevelScaledValue,
         damageType: DamageType?,
+        addAbility: Ability?,
         label: String
     ) -> ResolvedAction {
+        // Single-class assumption: character level stands in for class level
+        // (matches the existing count scaling; a multiclass monk's Martial
+        // Arts die runs slightly hot — flagged in the plan).
+        let sides = dieKind.value(classLevel: character.level, characterLevel: character.level)
         let n = count.value(classLevel: character.level, characterLevel: character.level)
         var formula = DiceFormula()
-        if let kind = DieKind(rawValue: dieKind), n > 0 {
+        if let kind = DieKind(rawValue: sides), n > 0 {
             formula.groups.append(DiceGroup(kind: kind, count: n))
             if let damageType { formula.applyDamageType(damageType) }
         }
-        let dice = "\(n)d\(dieKind)"
+        var desc = "\(n)d\(sides)"
+        if let addAbility {
+            let mod = CharacterCalculator.abilityModifier(score: character.abilityScores[addAbility] ?? 10)
+            formula.modifier += mod
+            desc += " + \(addAbility.abbreviation) (\(mod >= 0 ? "+" : "")\(mod))"
+        }
         return ResolvedAction(
             id: "scaled_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))",
-            label: "\(label) (\(dice))",
+            label: "\(label) (\(desc))",
             formula: formula,
-            description: dice
+            description: desc
         )
     }
 
@@ -223,7 +238,9 @@ enum ActionInterpreter {
         if let weapon = weapon {
             isProficient = character.proficiencies[.weapon(weapon.weaponCategory)] != nil
         } else {
-            isProficient = false
+            // No weapon = an unarmed strike; 5e (2024) makes everyone
+            // proficient with those, so the attack always adds PB.
+            isProficient = true
         }
 
         let profBonus = CharacterCalculator.proficiencyBonus(level: character.level)

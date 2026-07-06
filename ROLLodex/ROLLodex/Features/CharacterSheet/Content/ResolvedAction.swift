@@ -31,7 +31,9 @@ struct ResolvedAction: Identifiable, Equatable {
     }
 }
 
-struct ResourceCost: Equatable {
+/// Codable so content JSON can declare it directly (a feature spending from a
+/// shared pool — `FeatureDefinition.resourceCost`, Monk Focus spends).
+struct ResourceCost: Equatable, Codable, Hashable {
     let resourceID: String
     let amount: Int
 }

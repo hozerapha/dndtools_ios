@@ -82,8 +82,8 @@ struct ContentStoreTests {
         #expect(breathCost == .action)
         #expect(breath?.resource?.id == "dragonborn_breath_weapon")
         var breathScales = false
-        if case .scaledDamage(let dieKind, _, _, _)? = breath?.actionRecipes.first {
-            breathScales = dieKind == 10
+        if case .scaledDamage(let dieKind, _, _, _, _)? = breath?.actionRecipes.first {
+            breathScales = dieKind == .flat(10)
         }
         #expect(breathScales)
 

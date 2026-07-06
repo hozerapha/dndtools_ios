@@ -205,6 +205,30 @@ enum CharacterCalculator {
         activeSpellBuffs(character: character, content: content).reduce(0) { $0 + $1.speedBonus }
     }
 
+    /// Walking-speed bonus from class features (Monk Unarmored Movement,
+    /// Barbarian Fast Movement), scaled by the owning class level. Applies
+    /// only while UNARMORED (no body armor, no shield) — the shared 5e
+    /// condition for both features; the caller passes that state.
+    @MainActor
+    static func featureSpeedBonus(
+        character: Character, content: ContentStore, unarmored: Bool
+    ) -> Int {
+        guard unarmored else { return 0 }
+        var total = 0
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
+                if let bonus = resolved.feature.speedBonus {
+                    total += bonus.value(classLevel: entry.level, characterLevel: character.level)
+                }
+            }
+        }
+        return total
+    }
+
     /// Dice groups every active buff adds to attack rolls and saving throws
     /// (Bless → 1d4). Callers append these to the resolved d20 formula.
     @MainActor

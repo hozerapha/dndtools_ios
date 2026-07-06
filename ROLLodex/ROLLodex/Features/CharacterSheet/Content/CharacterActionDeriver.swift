@@ -304,13 +304,21 @@ enum CharacterActionDeriver {
                 // action-grid row — the dice tab handles them after a roll.
                 // Data-driven now, no feature-id string match.
                 guard feature.surfacesAsAction else { continue }
-                let cost = feature.resource.map { ResourceCost(resourceID: $0.id, amount: 1) }
-                let resolvedResource = feature.resource.flatMap { def in
+                // Cost precedence: an explicit `resourceCost` (spends another
+                // feature's pool — Flurry of Blows → monk_focus) wins over the
+                // implicit "1 of my own pool" a `resource`-owning feature gets.
+                let cost = feature.resourceCost
+                    ?? feature.resource.map { ResourceCost(resourceID: $0.id, amount: 1) }
+                let costPoolID = cost?.resourceID
+                let resolvedResource = costPoolID.flatMap { id in
                     ResourceCalculator.availableResources(character: character, content: content)
-                        .first { $0.definition.id == def.id }
+                        .first { $0.definition.id == id }
                 }
                 let badge = resolvedResource.map { "\($0.current) / \($0.max)" }
-                let isExhausted = resolvedResource?.isExhausted ?? false
+                let isExhausted: Bool = {
+                    guard let pool = resolvedResource, let cost else { return false }
+                    return pool.current < cost.amount
+                }()
 
                 // Toggleable triggered-effect features (Rage) get a bespoke
                 // row whose tap flips the effect on/off via toggleEffect, not
@@ -508,8 +516,8 @@ enum CharacterActionDeriver {
         _ recipe: ActionRecipe, _ type: DamageType?
     ) -> ActionRecipe {
         guard let type,
-              case .scaledDamage(let dieKind, let count, nil, let label) = recipe else { return recipe }
-        return .scaledDamage(dieKind: dieKind, count: count, damageType: type, label: label)
+              case .scaledDamage(let dieKind, let count, nil, let addAbility, let label) = recipe else { return recipe }
+        return .scaledDamage(dieKind: dieKind, count: count, damageType: type, addAbility: addAbility, label: label)
     }
 
     private static func featureButtonLabel(

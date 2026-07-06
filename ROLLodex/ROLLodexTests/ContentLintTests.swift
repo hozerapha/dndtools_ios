@@ -155,12 +155,17 @@ struct ContentLintTests {
                 for dice in diceStrings(in: trait.actionRecipes) {
                     assertParses(dice, context: "species/\(species.id)/\(trait.id)")
                 }
-                // Scaled-damage recipes (Breath Weapon) carry a die size + a
-                // level→count table instead of a parseable dice string.
+                // Scaled-damage recipes (Breath Weapon, Martial Arts) carry a
+                // die size (flat or level-scaled) + a level→count table
+                // instead of a parseable dice string. Every size the scaling
+                // can produce must be a real die.
                 for recipe in trait.actionRecipes {
-                    if case .scaledDamage(let dieKind, _, _, _) = recipe {
-                        #expect(DieKind(rawValue: dieKind) != nil,
-                                "invalid dieKind \(dieKind) in species/\(species.id)/\(trait.id)")
+                    if case .scaledDamage(let dieKind, _, _, _, _) = recipe {
+                        for level in 1...20 {
+                            let sides = dieKind.value(classLevel: level, characterLevel: level)
+                            #expect(DieKind(rawValue: sides) != nil,
+                                    "invalid dieKind \(sides) at L\(level) in species/\(species.id)/\(trait.id)")
+                        }
                     }
                 }
                 // Every granted spell (flat + per-lineage-option) must resolve

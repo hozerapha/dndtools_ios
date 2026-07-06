@@ -20,19 +20,26 @@ enum ActionRecipe: Codable, Equatable {
     /// caster's spellcasting ability is resolved at interpret time, not stored
     /// here, so this same recipe works for any caster.
     case spellAttack(label: String)
-    /// Damage whose die COUNT scales with character level (Dragonborn Breath
-    /// Weapon: 1d10 → 2d10 → 3d10 → 4d10). `count` resolves against character
-    /// level at interpret time, so the roll grows automatically. `damageType`
-    /// is optional because some scaling damage (Breath Weapon) takes its type
-    /// from a separate choice (Draconic Ancestry) — left nil, the roll is
-    /// untyped and the type lives in the trait's description.
-    case scaledDamage(dieKind: Int, count: LevelScaledValue, damageType: DamageType?, label: String)
+    /// Damage whose die COUNT and/or die SIZE scale with level. Count scaling:
+    /// Dragonborn Breath Weapon (1d10 → 4d10). Die-size scaling: Monk Martial
+    /// Arts (1d6 → 1d8 → 1d10 → 1d12) — `dieKind` is a `LevelScaledValue`
+    /// whose values are die SIDES; bare-int JSON (`"dieKind": 10`) still
+    /// decodes as a flat size. `damageType` optional (Breath Weapon takes its
+    /// type from the Draconic Ancestry choice). `addAbility` adds that
+    /// ability's modifier to the roll (Monk unarmed strike = die + DEX).
+    case scaledDamage(dieKind: LevelScaledValue, count: LevelScaledValue, damageType: DamageType?, addAbility: Ability?, label: String)
     /// A flat dice roll plus a specific ability's modifier — Goliath Stone's
     /// Endurance (1d12 + Constitution). Distinct from `abilityCheck` (which is
     /// always a d20) and from `heal` (which adds level / spellcasting mod): the
-    /// modifier is a fixed ability the recipe names. Untyped (it's often a
-    /// reduction or utility roll, not damage).
-    case abilityRoll(dice: String, ability: Ability, label: String)
+    /// modifier is a fixed ability the recipe names. `addLevel` also adds the
+    /// character level (Monk Deflect Attacks = 1d10 + DEX + monk level).
+    /// Untyped (it's often a reduction or utility roll, not damage).
+    case abilityRoll(dice: String, ability: Ability, addLevel: Bool, label: String)
+
+    /// Pre-Monk shape without the level term.
+    static func abilityRoll(dice: String, ability: Ability, label: String) -> ActionRecipe {
+        .abilityRoll(dice: dice, ability: ability, addLevel: false, label: label)
+    }
 
     /// Factory overloads preserving the pre-`addSpellcastingMod` call shape —
     /// existing Swift construction sites (tests, fixtures) keep compiling and
@@ -43,6 +50,11 @@ enum ActionRecipe: Codable, Equatable {
 
     static func rawDamage(dice: String, damageType: DamageType, label: String) -> ActionRecipe {
         .rawDamage(dice: dice, damageType: damageType, addSpellcastingMod: false, label: label)
+    }
+
+    /// Pre-Monk shape: flat die size, no ability modifier.
+    static func scaledDamage(dieKind: Int, count: LevelScaledValue, damageType: DamageType?, label: String) -> ActionRecipe {
+        .scaledDamage(dieKind: .flat(dieKind), count: count, damageType: damageType, addAbility: nil, label: label)
     }
 }
 
@@ -104,17 +116,22 @@ extension ActionRecipe {
             self = .spellAttack(label: label)
 
         case "scaledDamage":
-            let dieKind = try container.decode(Int.self, forKey: .dieKind)
+            // LevelScaledValue decodes a bare int as `.flat`, so existing
+            // `"dieKind": 10` content keeps working while Monk's Martial Arts
+            // can write a byClassLevel table of die sizes.
+            let dieKind = try container.decode(LevelScaledValue.self, forKey: .dieKind)
             let count = try container.decode(LevelScaledValue.self, forKey: .count)
             let damageType = try container.decodeIfPresent(DamageType.self, forKey: .damageType)
+            let addAbility = try container.decodeIfPresent(Ability.self, forKey: .addAbility)
             let label = try container.decodeIfPresent(String.self, forKey: .label) ?? "Damage"
-            self = .scaledDamage(dieKind: dieKind, count: count, damageType: damageType, label: label)
+            self = .scaledDamage(dieKind: dieKind, count: count, damageType: damageType, addAbility: addAbility, label: label)
 
         case "abilityRoll":
             let dice = try container.decode(String.self, forKey: .dice)
             let ability = try container.decode(Ability.self, forKey: .ability)
+            let addLevel = try container.decodeIfPresent(Bool.self, forKey: .addLevel) ?? false
             let label = try container.decodeIfPresent(String.self, forKey: .label) ?? "Roll"
-            self = .abilityRoll(dice: dice, ability: ability, label: label)
+            self = .abilityRoll(dice: dice, ability: ability, addLevel: addLevel, label: label)
 
         default:
             throw DecodingError.dataCorruptedError(
@@ -176,17 +193,19 @@ extension ActionRecipe {
             try container.encode("spellAttack", forKey: .type)
             try container.encode(label, forKey: .label)
 
-        case .scaledDamage(let dieKind, let count, let damageType, let label):
+        case .scaledDamage(let dieKind, let count, let damageType, let addAbility, let label):
             try container.encode("scaledDamage", forKey: .type)
             try container.encode(dieKind, forKey: .dieKind)
             try container.encode(count, forKey: .count)
             try container.encodeIfPresent(damageType, forKey: .damageType)
+            try container.encodeIfPresent(addAbility, forKey: .addAbility)
             try container.encode(label, forKey: .label)
 
-        case .abilityRoll(let dice, let ability, let label):
+        case .abilityRoll(let dice, let ability, let addLevel, let label):
             try container.encode("abilityRoll", forKey: .type)
             try container.encode(dice, forKey: .dice)
             try container.encode(ability, forKey: .ability)
+            if addLevel { try container.encode(addLevel, forKey: .addLevel) }
             try container.encode(label, forKey: .label)
         }
     }

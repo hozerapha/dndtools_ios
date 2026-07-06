@@ -18,10 +18,13 @@ not surfacing at creation), which is why this list exists.
   for cases whose behavior changed. Claude does not check boxes — verification
   is yours.
 
-> **Recently changed — needs verification:** the **Warlock** class + Fiend
-> Patron (2026-07-02, new — see "Warlock" under Classes; first pact-magic
-> caster + Eldritch Blast) and the **subclass backfill** — Path of the
-> Berserker, Oath of Devotion, Evoker (2026-07-02, new — see "Subclass
+> **Recently changed — needs verification:** the **Monk** class + Warrior of
+> the Open Hand (2026-07-06, new — see "Monk" under Classes; shared Focus
+> pool, scaling Martial Arts die, unarmored speed bonus, and an
+> unarmed-strike proficiency fix that affects every class); the **Warlock**
+> class + Fiend Patron (2026-07-02, new — see "Warlock" under Classes; first
+> pact-magic caster + Eldritch Blast) and the **subclass backfill** — Path of
+> the Berserker, Oath of Devotion, Evoker (2026-07-02, new — see "Subclass
 > backfill" under Classes); the **Settings page + Natural 20
 > crit styles** (2026-06-27, new — see "Settings & critical-hit styles"); the
 > **QA P0 quick batch**
@@ -483,6 +486,37 @@ Mostly unit-tested; two have an in-app surface worth a quick check:
 - [ ] _Known simplifications:_ Frenzy's Rage/Reckless gate, Sacred Weapon's
   +CHA attack bonus, Mindless Rage's condition immunity, and the Sculpt
   Spells / Potent Cantrip / Overchannel math are all manual.
+
+### Monk (new 2026-07-06)
+- [ ] **Create a Monk.** DEX/WIS class, d8 HP, **no** armor proficiencies,
+  STR & DEX saves; class skills step offers 2 of 6 (Acrobatics, Athletics,
+  History, Insight, Religion, Stealth); no Spells step appears (non-caster).
+  The sheet's unarmored AC is **10 + DEX + WIS**.
+- [ ] **Unarmed Strike.** The Actions tab shows a Martial Arts / Unarmed
+  Strike row: the attack rolls **d20 + DEX + PB**, and the damage rolls
+  **1d6 + DEX** at L1 — level up and re-check: **1d8** at L5, **1d10** at
+  L11, **1d12** at L17.
+- [ ] **Focus points (L2).** A **"Focus Points"** pool (2/2) appears in the
+  resources card and refills on a **Short Rest**. Flurry of Blows / Patient
+  Defense / Step of the Wind rows all show the **same shared pool badge**,
+  and tapping each debits that one pool by 1.
+- [ ] **Unarmored Movement.** At L2 the Speed chip gains **+10 ft** (30 → 40
+  for a human); equipping any armor or a shield removes the bonus; at L6
+  it's +15.
+- [ ] **Deflect Attacks (L3).** A **Reaction** row that rolls
+  **1d10 + DEX + monk level**.
+- [ ] **Stunning Strike (L5).** Tapping it shows a **Wisdom-based save DC**
+  and spends **1 Focus point**.
+- [ ] **Superior Defense (L18).** The row greys out when fewer than **3**
+  Focus points remain.
+- [ ] **Warrior of the Open Hand at L3.** The subclass picker offers it;
+  **Wholeness of Body** (L6) rolls the Martial Arts die + WIS with a
+  WIS-mod / Long Rest pool; **Quivering Palm** (L17) rolls **10d12 force**
+  and costs **4 Focus** (deferred to the roll).
+- [ ] _Known simplifications:_ Flurry's second/third strike = tap Unarmed
+  Strike again; Extra Attack, Open Hand Technique's rider saves, Heightened
+  Focus upgrades, Deflect Attacks' redirect, and Disciplined Survivor's
+  reroll are all manual.
 
 ---
 

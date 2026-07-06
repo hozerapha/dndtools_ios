@@ -941,7 +941,13 @@ struct CharacterSheetView: View {
 
     private var speedFt: Int {
         let base = content.speciesDefinition(id: character.speciesID)?.speed ?? 30
-        return base + CharacterCalculator.spellSpeedBonus(character: character, content: content)
+        // Unarmored Movement (Monk) / Fast Movement (Barbarian) apply only
+        // with no body armor and no shield.
+        let featureBonus = CharacterCalculator.featureSpeedBonus(
+            character: character, content: content,
+            unarmored: equippedArmor == nil && !hasShield
+        )
+        return base + featureBonus + CharacterCalculator.spellSpeedBonus(character: character, content: content)
     }
 
     private var armorClass: Int {
