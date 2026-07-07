@@ -30,9 +30,10 @@ struct SpellTests {
         #expect(spell.level == 1)
         #expect(spell.school == .evocation)
         #expect(spell.actionRecipes.count == 1)
-        if case .extraDicePerLevel(let index, let dice)? = spell.upcastEffect {
+        if case .extraDicePerLevel(let index, let dice, let interval)? = spell.upcastEffect {
             #expect(index == 0)
             #expect(dice == "1d4+1")
+            #expect(interval == 1)  // default when JSON omits levelsPerBonus
         } else {
             Issue.record("Expected extraDicePerLevel upcastEffect")
         }
@@ -193,6 +194,52 @@ struct SpellTests {
         #expect(formula?.groups.first?.kind == .d4)
         #expect(formula?.groups.first?.count == 5)
         #expect(formula?.modifier == 5)
+    }
+
+    @Test func upcastEveryTwoLevelsHoldsAtIntermediateSlots() {
+        // Flame Blade / Spiritual Weapon shape: +1d6 every two slot levels
+        // above base. L2 = 3d6, L3 = 3d6 (no bonus yet), L4 = 4d6, L5 = 4d6,
+        // L6 = 5d6, L8 = 6d6. Integer-divided extras.
+        let spell = SpellDefinition(
+            id: "flame_blade_fixture",
+            name: "Flame Blade",
+            level: 2,
+            school: .evocation,
+            castingTime: .action,
+            range: .targetSelf,
+            components: SpellComponents(verbal: true, somatic: true),
+            duration: .instantaneous,
+            description: "",
+            actionRecipes: [.rawDamage(dice: "3d6", damageType: .fire, label: "Flame Blade")],
+            upcastEffect: .extraDicePerLevel(recipeIndex: 0, dice: "1d6", levelsPerBonus: 2)
+        )
+        func d6Count(atLevel level: Int) -> Int? {
+            let recipes = spell.recipes(castAtLevel: level)
+            guard case .rawDamage(let dice, _, _, _) = recipes[0],
+                  let formula = try? DiceFormulaParser().parse(dice) else { return nil }
+            return formula.groups.reduce(0) { $0 + ($1.kind == .d6 ? $1.count : 0) }
+        }
+        #expect(d6Count(atLevel: 2) == 3)  // base
+        #expect(d6Count(atLevel: 3) == 3)  // holds — only 1 extra level
+        #expect(d6Count(atLevel: 4) == 4)  // +1d6 (2 extra levels ÷ 2 = 1)
+        #expect(d6Count(atLevel: 5) == 4)  // holds
+        #expect(d6Count(atLevel: 6) == 5)  // +2d6
+        #expect(d6Count(atLevel: 8) == 6)  // +3d6
+    }
+
+    @Test func bundledEveryTwoLevelsSpellsUseLevelsPerBonusTwo() {
+        // Guardrail: Flame Blade + Spiritual Weapon are the only bundled
+        // spells with per-two-levels scaling; both should ship with the new
+        // levelsPerBonus field. If a future author adds another such spell
+        // without the field, its damage will over-scale by 2×.
+        let store = ContentStore()
+        for id in ["flame_blade", "spiritual_weapon"] {
+            let spell = store.spellDefinition(id: id)
+            guard case .extraDicePerLevel(_, _, let interval)? = spell?.upcastEffect else {
+                Issue.record("\(id) missing extraDicePerLevel upcast"); continue
+            }
+            #expect(interval == 2, "\(id) should scale every 2 levels")
+        }
     }
 
     @Test func upcastIsNoOpForSpellsWithoutEffect() {

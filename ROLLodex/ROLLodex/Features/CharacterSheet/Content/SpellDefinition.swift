@@ -115,10 +115,16 @@ struct SpellDefinition: Codable, Identifiable, Equatable {
         let extraLevels = max(0, castLevel - level)
         guard let effect = upcastEffect, extraLevels > 0 else { return actionRecipes }
         switch effect {
-        case .extraDicePerLevel(let index, let dice):
+        case .extraDicePerLevel(let index, let dice, let levelsPerBonus):
             guard actionRecipes.indices.contains(index) else { return actionRecipes }
+            // Integer division does the flooring for free: 3 extra levels
+            // ÷ 2 = 1 bonus application; 4 ÷ 2 = 2; 5 ÷ 2 = 2. Guarded against
+            // zero above via the decoder, but max(1,…) here too so a bad-data
+            // fall-through doesn't divide by zero.
+            let times = extraLevels / max(1, levelsPerBonus)
+            guard times > 0 else { return actionRecipes }
             var copy = actionRecipes
-            copy[index] = Self.scaledRecipe(copy[index], extraDice: dice, times: extraLevels)
+            copy[index] = Self.scaledRecipe(copy[index], extraDice: dice, times: times)
             return copy
         case .extraTargetsPerLevel:
             return actionRecipes

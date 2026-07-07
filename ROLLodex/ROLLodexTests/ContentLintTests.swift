@@ -226,8 +226,10 @@ struct ContentLintTests {
         for spell in content.spells.values {
             guard let upcast = spell.upcastEffect else { continue }
             switch upcast {
-            case .extraDicePerLevel(let index, let dice):
+            case .extraDicePerLevel(let index, let dice, let levelsPerBonus):
                 assertParses(dice, context: "spell/\(spell.id) upcast dice")
+                #expect(levelsPerBonus >= 1,
+                        "spell/\(spell.id) upcast levelsPerBonus must be ≥ 1 (got \(levelsPerBonus))")
                 let inBounds = spell.actionRecipes.indices.contains(index)
                 #expect(inBounds,
                         "spell/\(spell.id) upcast recipeIndex \(index) is out of bounds (\(spell.actionRecipes.count) recipes) — upcasting silently no-ops")

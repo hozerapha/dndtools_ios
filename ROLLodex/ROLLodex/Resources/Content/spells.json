@@ -3013,7 +3013,13 @@
         "damageType": "fire",
         "label": "Flame Blade Damage"
       }
-    ]
+    ],
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 1,
+      "dice": "1d6",
+      "levelsPerBonus": 2
+    }
   },
   {
     "id": "flaming_sphere",
@@ -3661,7 +3667,13 @@
         "addSpellcastingMod": true,
         "label": "Spiritual Weapon Damage"
       }
-    ]
+    ],
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 1,
+      "dice": "1d8",
+      "levelsPerBonus": 2
+    }
   },
   {
     "id": "suggestion",
