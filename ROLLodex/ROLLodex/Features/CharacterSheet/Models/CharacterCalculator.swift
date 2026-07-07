@@ -309,6 +309,21 @@ enum CharacterCalculator {
         content.classDefinition(id: classID)?.spellcasting?.spellsKnown != nil
     }
 
+    /// Highest spell-slot LEVEL the character has any pool for — across the
+    /// class's own slots, the merged multiclass pools, and pact-magic slots.
+    /// Cantrips (level 0) are always castable regardless. Drives the spell
+    /// picker's per-level filter so a L4 bard doesn't see 3rd/4th/5th-level
+    /// spells they literally can't cast yet.
+    @MainActor
+    static func maxSpellSlotLevel(character: Character, content: ContentStore) -> Int? {
+        let levels = ResourceCalculator.availableResources(character: character, content: content)
+            .compactMap { resolved -> Int? in
+                guard case .spellSlot(let level) = resolved.definition.displayHint else { return nil }
+                return level
+            }
+        return levels.max()
+    }
+
     /// Whole-character convenience: the FIRST prepared-caster class's cap.
     /// Single-class callers (the common case) keep working; multiclass UIs
     /// should use the per-class variant.

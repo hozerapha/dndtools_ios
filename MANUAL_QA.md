@@ -18,14 +18,18 @@ not surfacing at creation), which is why this list exists.
   for cases whose behavior changed. Claude does not check boxes — verification
   is yours.
 
-> **Recently changed — needs verification:** the **Monk** class + Warrior of
-> the Open Hand (2026-07-06, new — see "Monk" under Classes; shared Focus
-> pool, scaling Martial Arts die, unarmored speed bonus, and an
-> unarmed-strike proficiency fix that affects every class); the **Warlock**
-> class + Fiend Patron (2026-07-02, new — see "Warlock" under Classes; first
-> pact-magic caster + Eldritch Blast) and the **subclass backfill** — Path of
-> the Berserker, Oath of Devotion, Evoker (2026-07-02, new — see "Subclass
-> backfill" under Classes); the **Settings page + Natural 20
+> **Recently changed — needs verification:** the **Ranger** class + Hunter
+> (2026-07-06, new — see "Ranger" under Classes) — **the class catalog is
+> now complete (12/12 classes, 12/12 subclasses)** and this pass also shipped
+> a prep-cap fix so Bard/Sorcerer/Ranger are gated by their `spellsKnown`
+> table instead of ability mod; the **Monk** class + Warrior of the Open Hand
+> (2026-07-06, new — see "Monk" under Classes; shared Focus pool, scaling
+> Martial Arts die, unarmored speed bonus, and an unarmed-strike proficiency
+> fix that affects every class); the **Warlock** class + Fiend Patron
+> (2026-07-02, new — see "Warlock" under Classes; first pact-magic caster +
+> Eldritch Blast) and the **subclass backfill** — Path of the Berserker, Oath
+> of Devotion, Evoker (2026-07-02, new — see "Subclass backfill" under
+> Classes); the **Settings page + Natural 20
 > crit styles** (2026-06-27, new — see "Settings & critical-hit styles"); the
 > **QA P0 quick batch**
 > (2026-06-27, mostly covered by unit tests — see "QA fixes" below); the
@@ -517,6 +521,50 @@ Mostly unit-tested; two have an in-app surface worth a quick check:
   Strike again; Extra Attack, Open Hand Technique's rider saves, Heightened
   Focus upgrades, Deflect Attacks' redirect, and Disciplined Survivor's
   reroll are all manual.
+
+### Ranger (new 2026-07-06 — class catalog complete)
+- [ ] **Create a Ranger.** Wisdom caster, d10 HP, Light + Medium armor +
+  Shield + Simple/Martial weapons, STR & DEX saves; class skills step offers
+  **3 of 8** (Animal Handling, Athletics, Insight, Investigation, Nature,
+  Perception, Stealth, Survival); no cantrips (the creation Spells step
+  shows only a Level 1 section). Even a WIS 8 Ranger shows the prep budget
+  as **2 / 2** at L1 (the `spellsKnown` table caps prep, not ability mod).
+- [ ] **Half-caster slots.** L1 shows **NO** spell slots (SRD half-caster
+  starts at L2). L2 = **2 × L1** slots. L5 = **4 × L1 + 2 × L2** (identical
+  to a Paladin at the same level).
+- [ ] **Hunter's Mark always prepared.** From L1, **Hunter's Mark** appears
+  in the Granted section of the Spells tab; casting it applies the on-damage
+  rider chip to weapon attacks (existing Hunter's Mark plumbing). The
+  Resources card shows a **"Hunter's Mark (free)"** pool = **2** at L1,
+  growing to **3 / 4 / 5** at levels 5 / 13 / 17; casting from that pool
+  doesn't spend a slot.
+- [ ] **Fighting Style at L2.** The Features picker offers **Archery,
+  Defense, Dueling, Two-Weapon Fighting** — **no** Great Weapon Fighting.
+  Archery adds +2 to ranged attack rolls; the others behave as before.
+- [ ] **Weapon Mastery at L1.** Picker for **2** weapons; at **L9** the same
+  picker reopens for a **3rd** choice.
+- [ ] **Expertise at L2 and L9.** Two independent skill pickers (Deft
+  Explorer at L2, Expertise at L9); a chosen skill's dot upgrades to the
+  yellow expertise star.
+- [ ] **Roving at L5.** Speed chip **+10 ft** while unarmored (30 → 40 for a
+  human); equipping any heavy armor removes it. (Known simplification: the
+  SRD's "not wearing Heavy armor" is honored as app-level "unarmored" —
+  swap heavy armor manually if you're testing light/medium.)
+- [ ] **Multiclass caster level.** A Druid 3 / Ranger 4 shows merged
+  multiclass slot pools at combined caster level **5** (druid 3 + ranger
+  4 ÷ 2), not the ranger's own pools.
+- [ ] **Hunter at L3.** Subclass picker offers Hunter; picking it exposes
+  **Colossus Slayer** as an opt-in toggle chip on weapon attacks adding
+  **1d8 weapon-typed damage**, greying out after use until **Start New
+  Turn**.
+- [ ] **Hunter L7 / L11 / L15 features.** Escape the Horde (L7), Evasion
+  (L11), and Superior Hunter's Prey (L15) appear as text-only features on
+  the Features tab.
+- [ ] _Known simplifications:_ Hunter's Prey / Defensive Tactics / Superior
+  Hunter's Defense each have 3 SRD options — only one authored per tier
+  (swap manually); Foe Slayer +1d10, Precise Hunter advantage, Relentless
+  Hunter concentration protection, Feral Senses blindsight, and Superior
+  Prey's d10 bump are all text — apply manually.
 
 ---
 

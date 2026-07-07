@@ -34,7 +34,13 @@ struct CharacterSheetView: View {
     /// level grew any spell budget; consumed on its dismissal to present the
     /// spell picker so the player is prompted to learn/prepare new spells.
     @State private var promptSpellsAfterLevelUp = false
-    @State private var showSpellPicker = false
+    /// Spell-picker sheet trigger. Non-nil presents; the value chooses the
+    /// picker's presentation (level-up "Learn" vs post-rest "Prepare").
+    @State private var spellPickerPresentation: PickerPresentation?
+    /// Confirmation dialog after a Long Rest for unlimited-prep casters (the
+    /// natural moment to rebuild the prep list). Not shown for fixed-table /
+    /// pact classes — they can only swap on level-up.
+    @State private var showPrepareAfterRest = false
     /// Which sub-tab of the character sheet is showing. The header (badges,
     /// HP bar, stat pills) stays fixed above the picker so every tab can see
     /// "who am I and how am I doing right now".
@@ -190,6 +196,16 @@ struct CharacterSheetView: View {
             } message: { save in
                 Text("\(save.ability.rawValue.capitalized) saving throws automatically fail while \(save.conditionName). No roll needed.")
             }
+            .confirmationDialog(
+                "Long Rest complete",
+                isPresented: $showPrepareAfterRest,
+                titleVisibility: .visible
+            ) {
+                Button("Prepare Spells") { spellPickerPresentation = .dailyPrepare }
+                Button("Skip", role: .cancel) {}
+            } message: {
+                Text("Would you like to rebuild your prepared spells now?")
+            }
     }
 
     private func withSheetsAndOverlay(_ content: some View) -> some View {
@@ -230,7 +246,7 @@ struct CharacterSheetView: View {
                 // the player is prompted to learn/prepare their new spells.
                 if promptSpellsAfterLevelUp {
                     promptSpellsAfterLevelUp = false
-                    showSpellPicker = true
+                    spellPickerPresentation = .learnOnLevelUp
                 }
             }) {
                 LevelUpSheet(
@@ -239,8 +255,11 @@ struct CharacterSheetView: View {
                 )
                 .presentationDetents([.large])
             }
-            .sheet(isPresented: $showSpellPicker) {
-                AddSpellSheet(character: $character)
+            .sheet(item: $spellPickerPresentation) { presentation in
+                // Level-up-triggered picker → "Learn Spells"; post-long-rest
+                // prompt → "Prepare Spells". The regular Spells card button
+                // opens its OWN sheet (with class-derived title).
+                AddSpellSheet(character: $character, presentation: presentation)
                     .presentationDetents([.medium, .large])
             }
             .overlay {
@@ -599,11 +618,31 @@ struct CharacterSheetView: View {
     }
 
     /// Apply the rest, then either show the refresh-resolution sheet (if any
-    /// pools refresh by dice roll) or just commit silently.
+    /// pools refresh by dice roll) or just commit silently. After a Long Rest,
+    /// unlimited-prep casters (cleric/druid/paladin/wizard) get prompted to
+    /// rebuild their prep list — the natural moment for it. Fixed-table /
+    /// pact casters aren't asked (they only swap on level-up).
     private func takeRest(_ kind: RestKind) {
         let pending = ResourceCalculator.applyRest(kind, to: &character, content: content)
         if !pending.isEmpty {
             pendingRefreshes = pending
+        }
+        if kind == .long && hasUnlimitedPrepCaster {
+            showPrepareAfterRest = true
+        }
+    }
+
+    /// Any of the character's classes rebuild their prep list from scratch
+    /// (cleric/druid/paladin from the whole class list, wizard from spellbook).
+    /// Fixed-table classes (bard/sorcerer/ranger/warlock) are excluded — they
+    /// swap on level-up, so a long-rest prompt would misinform.
+    private var hasUnlimitedPrepCaster: Bool {
+        character.classEntries.contains { entry in
+            guard let block = content.classDefinition(id: entry.classID)?.spellcasting
+            else { return false }
+            let isPrep = block.preparedRule == .preparedFromAll
+                || block.preparedRule == .preparedFromBook
+            return isPrep && block.spellsKnown == nil
         }
     }
 

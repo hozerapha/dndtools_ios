@@ -4229,5 +4229,474 @@
         }
       }
     ]
+  },
+  {
+    "id": "ranger",
+    "multiclassProficiencies": ["armor_light", "armor_medium", "armor_shield", "weapon_simple", "weapon_martial"],
+    "name": "Ranger",
+    "hitDie": 10,
+    "primaryAbility": "dexterity",
+    "savingThrows": ["strength", "dexterity"],
+    "armorProficiencies": ["light", "medium", "shield"],
+    "weaponProficiencies": ["simple", "martial"],
+    "subclassLevel": 3,
+    "spellcasting": {
+      "ability": "wisdom",
+      "preparedRule": "preparedFromAll",
+      "casterLevelDivisor": 2,
+      "cantripsKnown": {
+        "byClassLevel": { "1": 0 }
+      },
+      "spellsKnown": { "byClassLevel": { "1": 2, "2": 3, "3": 4, "4": 5, "5": 6, "7": 7, "9": 9, "11": 10, "13": 11, "15": 12, "17": 13, "19": 14 } },
+      "slotTable": {
+        "kind": "fullCaster",
+        "table": {
+          "2": { "1": 2 },
+          "3": { "1": 3 },
+          "5": { "1": 4, "2": 2 },
+          "7": { "1": 4, "2": 3 },
+          "9": { "1": 4, "2": 3, "3": 2 },
+          "11": { "1": 4, "2": 3, "3": 3 },
+          "13": { "1": 4, "2": 3, "3": 3, "4": 1 },
+          "15": { "1": 4, "2": 3, "3": 3, "4": 2 },
+          "17": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 1 },
+          "19": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2 }
+        }
+      },
+      "ritualCasting": false,
+      "spellcastingFocus": true
+    },
+    "levelFeatures": {
+      "1": [
+        {
+          "id": "ranger_class_skills",
+          "name": "Skill Proficiencies",
+          "description": "Choose 3 skills from your Ranger list.",
+          "kind": "selection",
+          "selection": {
+            "id": "ranger_class_skills",
+            "prompt": "Choose 3 skills",
+            "count": 3,
+            "optionsSource": {
+              "type": "skillsFrom",
+              "skills": [
+                "animal_handling",
+                "athletics",
+                "insight",
+                "investigation",
+                "nature",
+                "perception",
+                "stealth",
+                "survival"
+              ]
+            }
+          }
+        },
+        {
+          "id": "favored_enemy",
+          "name": "Favored Enemy",
+          "description": "You always have the **Hunter's Mark** spell prepared (it doesn't count against your prepared count). You can cast it a number of times per Long Rest without a spell slot; those free casts also don't require Concentration to be started until you spend a slot.",
+          "kind": "passive",
+          "surfacesAsAction": false,
+          "resource": {
+            "id": "ranger_hunters_mark_free",
+            "name": "Hunter's Mark (free)",
+            "max": {
+              "byClassLevel": { "1": 2, "5": 3, "13": 4, "17": 5 }
+            },
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          },
+          "grantsSpells": [
+            {
+              "spellID": "hunters_mark",
+              "minCharacterLevel": 1
+            }
+          ]
+        },
+        {
+          "id": "weapon_mastery_ranger",
+          "name": "Weapon Mastery",
+          "description": "Your training with weapons lets you exploit each weapon's unique properties. You gain the Mastery property of two Simple or Martial weapons of your choice with which you have proficiency, growing to three at Ranger level 9. Whenever you finish a Long Rest, you can practice with different weapons and change one of those weapon choices.",
+          "kind": "selection",
+          "selection": {
+            "id": "weapon_mastery",
+            "prompt": "Choose 2 weapons whose Mastery property you can use",
+            "count": {
+              "byClassLevel": { "1": 2, "9": 3 }
+            },
+            "optionsSource": {
+              "type": "weapons",
+              "proficientOnly": true
+            }
+          }
+        }
+      ],
+      "2": [
+        {
+          "id": "deft_explorer",
+          "name": "Deft Explorer",
+          "description": "You have expertise in one skill you're proficient in — chosen at creation via the Features tab. You also gain a second language of your choice and can use a shortcut through wilderness (track those manually).",
+          "kind": "selection",
+          "selection": {
+            "id": "ranger_deft_explorer_expertise",
+            "prompt": "Choose a skill for Expertise",
+            "count": 1,
+            "optionsSource": {
+              "type": "skills",
+              "proficientOnly": true
+            }
+          }
+        },
+        {
+          "id": "fighting_style_ranger",
+          "name": "Fighting Style",
+          "description": "You gain a Fighting Style feat of your choice. The chosen style modifies your attack rolls, damage, or AC depending on the option.",
+          "kind": "selection",
+          "selection": {
+            "id": "fighting_style",
+            "prompt": "Choose a Fighting Style",
+            "count": 1,
+            "optionsSource": {
+              "type": "fixedOptions",
+              "options": [
+                {
+                  "id": "archery",
+                  "name": "Archery",
+                  "description": "You gain a +2 bonus to attack rolls you make with ranged weapons."
+                },
+                {
+                  "id": "defense",
+                  "name": "Defense",
+                  "description": "While you are wearing armor, you gain a +1 bonus to AC."
+                },
+                {
+                  "id": "dueling",
+                  "name": "Dueling",
+                  "description": "When you are wielding a melee weapon in one hand and no other weapons, you gain a +2 bonus to damage rolls with that weapon."
+                },
+                {
+                  "id": "two_weapon_fighting",
+                  "name": "Two-Weapon Fighting",
+                  "description": "When you engage in two-weapon fighting, you can add your ability modifier to the damage of the second attack."
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "3": [
+        {
+          "id": "ranger_subclass",
+          "name": "Ranger Subclass",
+          "description": "Choose a Ranger subclass (a Ranger Conclave); you gain its features of your Ranger level or lower.",
+          "selection": {
+            "id": "ranger_subclass",
+            "prompt": "Choose your Ranger Conclave",
+            "count": 1,
+            "optionsSource": {
+              "type": "subclasses",
+              "parentClassID": "ranger"
+            }
+          }
+        },
+        {
+          "id": "primal_awareness",
+          "name": "Primal Awareness",
+          "description": "You gain the ability to communicate with beasts in limited fashion. Whenever you finish a Long Rest, you gain 1 use of Speak with Animals which you can cast without a slot; you have Speak with Animals always prepared.",
+          "kind": "passive",
+          "resource": {
+            "id": "ranger_primal_awareness_free",
+            "name": "Primal Awareness (free)",
+            "max": 1,
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          },
+          "grantsSpells": [
+            {
+              "spellID": "speak_with_animals",
+              "minCharacterLevel": 3
+            }
+          ]
+        }
+      ],
+      "4": [
+        {
+          "id": "ranger_asi_4",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "ranger_asi_4",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "5": [
+        {
+          "id": "extra_attack_ranger",
+          "name": "Extra Attack",
+          "description": "You can attack twice, instead of once, whenever you take the Attack action on your turn.",
+          "kind": "passive"
+        },
+        {
+          "id": "roving",
+          "name": "Roving",
+          "description": "Your Speed increases by 10 feet while you aren't wearing Heavy armor. You also gain a Climb Speed and Swim Speed equal to your Speed.",
+          "kind": "passive",
+          "speedBonus": {
+            "byClassLevel": { "5": 10 }
+          }
+        }
+      ],
+      "6": [
+        {
+          "id": "nature_shield",
+          "name": "Nature's Shield",
+          "description": "When a creature you can see hits you with an attack, use your Reaction to become invisible until the start of your next turn or until you attack, deal damage, or force a save.",
+          "kind": "active",
+          "actionCost": "reaction",
+          "resource": {
+            "id": "ranger_nature_shield",
+            "name": "Nature's Shield",
+            "max": 1,
+            "maxAbilityModifier": "wisdom",
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          }
+        }
+      ],
+      "7": [
+        {
+          "id": "ranger_subclass_feature_7",
+          "name": "Subclass Feature",
+          "description": "You gain a subclass feature at level 7 (see your subclass's L7 entry).",
+          "kind": "passive"
+        }
+      ],
+      "8": [
+        {
+          "id": "ranger_asi_8",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "ranger_asi_8",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "9": [
+        {
+          "id": "expertise_2",
+          "name": "Expertise",
+          "description": "Choose a second skill you're proficient in to gain Expertise (your proficiency bonus is doubled on ability checks with it).",
+          "kind": "selection",
+          "selection": {
+            "id": "ranger_expertise_9",
+            "prompt": "Choose a second skill for Expertise",
+            "count": 1,
+            "optionsSource": {
+              "type": "skills",
+              "proficientOnly": true
+            }
+          }
+        }
+      ],
+      "10": [
+        {
+          "id": "tireless",
+          "name": "Tireless",
+          "description": "As a Magic action, you or a creature you touch gains Temp HP equal to 1d8 + your Wisdom modifier. Uses = your Wisdom modifier (min 1) per Long Rest. You also reduce your Exhaustion by 1 whenever you finish a Short Rest.",
+          "kind": "active",
+          "actionCost": "action",
+          "resource": {
+            "id": "ranger_tireless_temphp",
+            "name": "Tireless (Temp HP)",
+            "max": 1,
+            "maxAbilityModifier": "wisdom",
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          },
+          "actionRecipes": [
+            {
+              "type": "abilityRoll",
+              "dice": "1d8",
+              "ability": "wisdom",
+              "label": "Tireless Temp HP"
+            }
+          ]
+        }
+      ],
+      "11": [
+        {
+          "id": "ranger_subclass_feature_11",
+          "name": "Subclass Feature",
+          "description": "You gain a subclass feature at level 11.",
+          "kind": "passive"
+        }
+      ],
+      "12": [
+        {
+          "id": "ranger_asi_12",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "ranger_asi_12",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "13": [
+        {
+          "id": "relentless_hunter",
+          "name": "Relentless Hunter",
+          "description": "Taking damage doesn't break your Concentration on Hunter's Mark.",
+          "kind": "passive"
+        }
+      ],
+      "14": [
+        {
+          "id": "nature_veil",
+          "name": "Nature's Veil",
+          "description": "As a Bonus Action, magically become Invisible until the start of your next turn. Uses = your Wisdom modifier (min 1) per Long Rest.",
+          "kind": "active",
+          "actionCost": "bonusAction",
+          "resource": {
+            "id": "ranger_nature_veil",
+            "name": "Nature's Veil",
+            "max": 1,
+            "maxAbilityModifier": "wisdom",
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          }
+        }
+      ],
+      "15": [
+        {
+          "id": "ranger_subclass_feature_15",
+          "name": "Subclass Feature",
+          "description": "You gain a subclass feature at level 15.",
+          "kind": "passive"
+        }
+      ],
+      "16": [
+        {
+          "id": "ranger_asi_16",
+          "name": "Ability Score Improvement",
+          "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
+          "selection": {
+            "id": "ranger_asi_16",
+            "prompt": "Distribute 2 ability points",
+            "count": 2,
+            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+          }
+        }
+      ],
+      "17": [
+        {
+          "id": "precise_hunter",
+          "name": "Precise Hunter",
+          "description": "You have Advantage on attack rolls against a creature you've cursed with Hunter's Mark.",
+          "kind": "passive"
+        }
+      ],
+      "18": [
+        {
+          "id": "feral_senses",
+          "name": "Feral Senses",
+          "description": "You have Blindsight to 30 feet.",
+          "kind": "passive"
+        }
+      ],
+      "19": [
+        {
+          "id": "ranger_epic_boon",
+          "name": "Epic Boon",
+          "description": "You gain an Epic Boon feat of your choice (Boon of Dimensional Travel recommended).",
+          "kind": "passive"
+        }
+      ],
+      "20": [
+        {
+          "id": "foe_slayer",
+          "name": "Foe Slayer",
+          "description": "Whenever you deal damage to your Hunter's-Marked target, add 1d10 to that damage roll (add manually to the total).",
+          "kind": "passive"
+        }
+      ]
+    },
+    "masteryCount": 2,
+    "masteryRestrictions": [],
+    "subclasses": [
+      {
+        "id": "hunter",
+        "name": "Hunter",
+        "description": "A stalker of monstrous prey who studies their weaknesses and strikes them down before they can spread destruction.",
+        "levelFeatures": {
+          "3": [
+            {
+              "id": "hunters_lore",
+              "name": "Hunter's Lore",
+              "description": "You learn key details about creatures you can see or have Hunter's Mark on — their damage vulnerabilities, resistances, immunities, and any condition immunities (the DM narrates).",
+              "kind": "passive"
+            },
+            {
+              "id": "hunters_prey_colossus_slayer",
+              "name": "Hunter's Prey: Colossus Slayer",
+              "description": "When you hit a creature that's below its Hit Point maximum, deal an extra 1d8 damage (once per turn). This is your Hunter's Prey choice from the SRD's three; Horde Breaker and Giant Killer aren't authored yet — treat as text and swap manually.",
+              "triggeredEffect": {
+                "id": "colossus_slayer",
+                "name": "Colossus Slayer",
+                "trigger": {
+                  "type": "onAttackHit"
+                },
+                "effect": {
+                  "type": "addDamageDice",
+                  "dice": "1d8",
+                  "damageType": "$weapon"
+                },
+                "lifecycle": {
+                  "type": "oneShot"
+                },
+                "activation": "optIn",
+                "cost": {
+                  "type": "oncePerTurn",
+                  "flagID": "colossus_slayer"
+                }
+              }
+            }
+          ],
+          "7": [
+            {
+              "id": "defensive_tactics_escape_the_horde",
+              "name": "Defensive Tactics: Escape the Horde",
+              "description": "Opportunity Attacks against you have Disadvantage. This is your SRD Defensive Tactics choice from three — Multiattack Defense and Steel Will aren't authored, swap manually.",
+              "kind": "passive"
+            }
+          ],
+          "11": [
+            {
+              "id": "superior_hunters_defense_evasion",
+              "name": "Superior Hunter's Defense: Evasion",
+              "description": "When you're subjected to a Dexterity save for half damage, you take no damage on a success and half on a failure. This is your Superior Hunter's Defense from three SRD options (Stand Against the Tide, Uncanny Dodge not authored).",
+              "kind": "passive"
+            }
+          ],
+          "15": [
+            {
+              "id": "superior_hunters_prey",
+              "name": "Superior Hunter's Prey",
+              "description": "Your Hunter's Prey damage die becomes 1d10 (bump the Colossus Slayer chip's damage manually until we scale it in a future pass).",
+              "kind": "passive"
+            }
+          ]
+        }
+      }
+    ]
   }
 ]

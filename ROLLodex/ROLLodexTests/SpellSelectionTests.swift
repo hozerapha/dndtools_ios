@@ -81,6 +81,28 @@ struct SpellSelectionTests {
             character: wisDruid, content: store, forClassID: "druid") == 5)
     }
 
+    // MARK: - Picker level filter (a L4 bard shouldn't see L3+ spells)
+
+    @Test func maxSpellSlotLevelReflectsClassSlotTable() {
+        let store = ContentStore()
+        // L4 bard: full caster, slot table maxes at level 2 → no L3+ picker
+        // rows. This is the exact bug the user hit — the picker was showing
+        // Fear (3rd), Charm Monster (4th), Legend Lore (5th) to a L4 bard.
+        let l4bard = makeCaster(classID: "bard", level: 4)
+        #expect(CharacterCalculator.maxSpellSlotLevel(character: l4bard, content: store) == 2)
+        // L9 bard: full-caster table reaches L5 slots.
+        let l9bard = makeCaster(classID: "bard", level: 9)
+        #expect(CharacterCalculator.maxSpellSlotLevel(character: l9bard, content: store) == 5)
+    }
+
+    @Test func rangerHasNoSlotLevelAtLevelOne() {
+        // Half-caster edge: L1 ranger has NO slots yet, so max slot level is
+        // nil (picker falls back to cantrips + L1 with a defensive default).
+        let store = ContentStore()
+        let ranger = makeCaster(classID: "ranger", level: 1)
+        #expect(CharacterCalculator.maxSpellSlotLevel(character: ranger, content: store) == nil)
+    }
+
     @Test func fixedTableFlagIdentifiesTheRightClasses() {
         let store = ContentStore()
         #expect(CharacterCalculator.hasFixedSpellsTable(classID: "bard", content: store))
@@ -92,6 +114,30 @@ struct SpellSelectionTests {
     }
 
     // MARK: - Creation draft picks
+
+    // MARK: - Picker presentation (title label unification)
+
+    @Test func learnCastersShareOneRegimeRegardlessOfPreparedRule() {
+        // What matters for the picker's day-to-day title is whether the class
+        // has a fixed spellsKnown table. Bard/Sorcerer/Ranger use
+        // preparedFromAll + table, Warlock uses pactMagic + table — they all
+        // fall into the same customization regime (Manage), so the sheet's
+        // button label ends up the same string for all four.
+        let store = ContentStore()
+        for classID in ["bard", "sorcerer", "ranger", "warlock"] {
+            #expect(
+                store.classDefinition(id: classID)?.spellcasting?.spellsKnown != nil,
+                "\(classID) should have a fixed spellsKnown table"
+            )
+        }
+        // Unlimited-prep classes have NO fixed table.
+        for classID in ["cleric", "druid", "paladin"] {
+            #expect(
+                store.classDefinition(id: classID)?.spellcasting?.spellsKnown == nil,
+                "\(classID) should NOT have a spellsKnown table (unlimited prep)"
+            )
+        }
+    }
 
     @Test func draftCarriesChosenSpells() {
         var draft = CharacterDraft()

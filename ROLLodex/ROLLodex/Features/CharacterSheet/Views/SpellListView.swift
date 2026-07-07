@@ -113,18 +113,22 @@ struct SpellListView: View {
         CharacterCalculator.isPreparedCaster(character: character, content: content)
     }
 
-    /// Button label matches the picker's mode for the primary casting class:
-    /// prepared casters manage a daily list, known casters learn spells, the
-    /// wizard (and multi-mode multiclassers) get the generic label.
+    /// Button label matches the picker's presentation for the primary casting
+    /// class. Unlimited-prep casters ("Prepare Spells" — daily rebuild);
+    /// learn-style casters, i.e. anyone with a fixed spellsKnown table
+    /// ("Manage Spells" — cap-relaxed customization escape hatch); wizard
+    /// ("Add Spell", until spellbook UI ships); mixed multiclass ("Manage").
     private var spellButtonLabel: String {
-        let rules = character.classEntries.compactMap {
-            content.classDefinition(id: $0.classID)?.spellcasting?.preparedRule
+        let casters = character.classEntries.compactMap {
+            content.classDefinition(id: $0.classID)?.spellcasting
         }
-        if rules.count > 1 { return "Manage Spells" }
-        switch rules.first {
-        case .preparedFromAll:        return "Prepare Spells"
-        case .knownList, .pactMagic:  return "Learn Spells"
-        case .preparedFromBook, .none: return "Add Spell"
+        if casters.count > 1 { return "Manage Spells" }
+        guard let block = casters.first else { return "Add Spell" }
+        if block.spellsKnown != nil { return "Manage Spells" }
+        switch block.preparedRule {
+        case .preparedFromAll:  return "Prepare Spells"
+        case .preparedFromBook: return "Add Spell"
+        case .knownList, .pactMagic: return "Manage Spells"
         }
     }
 
@@ -378,26 +382,54 @@ private struct SpellRow: View {
     }
 }
 
-/// Spell picker, grouped by level. Three modes, per the SELECTED class's rule:
-/// - **Prepare mode** (`preparedFromAll` — cleric / druid / paladin): toggle
-///   spells in/out of today's per-class prepared bucket, cap-enforced. Models
-///   "change your prepared spells after a long rest".
-/// - **Learn mode** (`knownList` / `pactMagic` — bard / sorcerer / warlock):
-///   toggle spells in/out of the known list, gated by the class's
-///   `spellsKnown` table. RAW you swap on level-up; edits aren't time-gated.
-/// - **Add mode** (`preparedFromBook` — wizard): reconciles into every list
-///   until spellbook management lands.
+/// Spell picker, grouped by level. TWO axes independently drive behavior:
 ///
-/// The pool is always the selected class's spell list
-/// (`CharacterCalculator.spellList(forClassID:)`; full catalog only for
-/// classes with no tagged spells). Multiclass casters get a segment picker.
+/// 1. **`PickerPresentation`** (title + cap enforcement + copy). Overridden
+///    only from the level-up flow, which forces `.learnOnLevelUp`; otherwise
+///    derived from the class regime:
+///    - Learn casters (any class with a `spellsKnown` fixed table:
+///      bard/sorcerer/ranger/warlock): `.manage` — "Manage Spells", **cap
+///      relaxed** (DM-approved boons / negotiations / homebrew — customization
+///      isn't gatekept).
+///    - Unlimited-prep casters (cleric/druid/paladin): `.dailyPrepare` —
+///      "Prepare Spells", cap enforced (rebuild each Long Rest).
+///    - Wizard (preparedFromBook): `.dailyPrepare` too (their prep still has
+///      a cap; the spellbook is a separate list).
+///    - Level-up context: **all casters** see `.learnOnLevelUp` — "Learn
+///      Spells", cap enforced, universal terminology when acquiring.
+///
+/// 2. **`PickMode`** (which bucket the row writes to). Fixed per class:
+///    - `.prepare`: writes to `character.spells.preparedByClass[classID]`
+///      (bard/sorcerer/ranger, cleric/druid/paladin).
+///    - `.learn`: writes to `character.spells.knownIDs` (warlock).
+///    - `.add`: reconciles into every list (wizard, until spellbook UI ships).
+///
+/// The pool is always the selected class's spell list, capped by the highest
+/// slot level the character has — a L4 bard doesn't see L3+ spells they
+/// literally can't cast. Multiclass casters get a segment picker.
+enum PickerPresentation: Identifiable {
+    case dailyPrepare      // "Prepare Spells" — daily rebuild context (long rest / sheet button)
+    case learnOnLevelUp    // "Learn Spells"  — level-up moment, any caster
+    case manage            // "Manage Spells" — learn casters' day-to-day (swap/tweak, cap enforced)
+    var id: Self { self }
+}
+
 struct AddSpellSheet: View {
     @Binding var character: Character
+    /// Overrides the derived presentation. Level-up flow passes
+    /// `.learnOnLevelUp` so every caster reads "Learn Spells" at level-up
+    /// regardless of their day-to-day regime. Omit elsewhere.
+    let presentationOverride: PickerPresentation?
     @Environment(ContentStore.self) private var content
     @Environment(\.dismiss) private var dismiss
     /// The casting class being edited. Defaults to the first; a segment picker
     /// appears for multiclass casters (each class picks separately, per 5e).
     @State private var selectedClassID: String?
+
+    init(character: Binding<Character>, presentation: PickerPresentation? = nil) {
+        self._character = character
+        self.presentationOverride = presentation
+    }
 
     private enum PickMode { case prepare, learn, add }
 
@@ -420,6 +452,18 @@ struct AddSpellSheet: View {
         case .knownList, .pactMagic:    return .learn
         case .preparedFromBook, .none:  return .add
         }
+    }
+
+    /// UI regime for this open. Explicit override wins (level-up); else
+    /// derived from whether the active class has a fixed spellsKnown table.
+    /// Every presentation currently enforces the class cap — Manage is a
+    /// terminology fix (learn-caster button label + footer), not a bypass.
+    /// A future "DM-approved override" toggle could opt into a cap-relaxed
+    /// variant; the mechanism is deliberately still one branch.
+    private var presentation: PickerPresentation {
+        if let override = presentationOverride { return override }
+        guard let ac = activeClass else { return .dailyPrepare }
+        return ac.block.spellsKnown != nil ? .manage : .dailyPrepare
     }
 
     /// Leveled-spell budget for the active class: prep cap (prepare mode) or
@@ -486,28 +530,26 @@ struct AddSpellSheet: View {
     }
 
     private var navigationTitle: String {
-        switch mode {
-        case .prepare: return "Prepare Spells"
-        case .learn:   return "Learn Spells"
-        case .add:     return "Add Spell"
+        // Wizard (add mode) is unique — keep its own label until spellbook UI ships.
+        if mode == .add { return "Add Spell" }
+        switch presentation {
+        case .dailyPrepare:   return "Prepare Spells"
+        case .learnOnLevelUp: return "Learn Spells"
+        case .manage:         return "Manage Spells"
         }
     }
 
-    /// Rule-accurate copy for the footer. Prepare mode splits based on
-    /// whether the class has a fixed `spellsKnown` table: those (2024
-    /// Bard/Sorcerer) swap on level-up, others re-pick each long rest.
     private var footerText: String {
-        switch mode {
-        case .prepare:
-            if let ac = activeClass,
-               CharacterCalculator.hasFixedSpellsTable(classID: ac.classID, content: content) {
-                return "Your prepared list is fixed by the class table. RAW you swap one spell when you gain a level (edits aren't time-gated here — the app trusts you)."
-            }
-            return "Tap to prepare or unprepare. You can re-pick after a long rest."
-        case .learn:
-            return "Tap to learn or forget. RAW you learn new spells on level-up and may swap one."
-        case .add:
+        if mode == .add {
             return "Wizard spellbook management is coming — added spells land in the book and prepared list."
+        }
+        switch presentation {
+        case .dailyPrepare:
+            return "Tap to prepare or unprepare. You can re-pick after a long rest."
+        case .learnOnLevelUp:
+            return "Your budget grew. Pick a new spell (or swap one) to fill it — this is the RAW learn-on-level-up moment."
+        case .manage:
+            return "Rearrange your prepared list within your class cap. RAW you swap on level-up — the app trusts you if you tweak between."
         }
     }
 
@@ -680,7 +722,14 @@ struct AddSpellSheet: View {
     }
 
     private var spellsByLevel: [(level: Int, spells: [SpellDefinition])] {
-        Dictionary(grouping: spellPool, by: \.level)
+        // Filter to spells the caster can actually cast: cantrips are always
+        // in; leveled spells cap at the highest slot level the character has
+        // any pool for (a L4 bard has only L1/L2 slots → no L3+ spells shown).
+        // A caster with no leveled slots (a slotless first-level half-caster)
+        // sees cantrips only.
+        let maxLevel = CharacterCalculator.maxSpellSlotLevel(character: character, content: content) ?? 0
+        let castable = spellPool.filter { $0.isCantrip || $0.level <= maxLevel }
+        return Dictionary(grouping: castable, by: \.level)
             .map { (level: $0.key, spells: $0.value.sorted { $0.name < $1.name }) }
             .sorted { $0.level < $1.level }
     }
