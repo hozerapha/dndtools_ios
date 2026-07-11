@@ -102,3 +102,25 @@ entry ships with the affected mechanic in the `description` /
   damage roll (`10d10` necrotic) is expressed as a recipe; the other
   7 modes are text-only. Same shape as Prismatic Spray's ray table
   and Chaos Bolt's damage table. *Files:* `symbol`.
+- **Upcast changes duration (not dice)** — Dominate Monster's 9th-slot
+  upcast extends concentration from 1 hour to 8 hours, no damage
+  scaling. `UpcastEffect` only expresses `extraDicePerLevel` /
+  `extraTargetsPerLevel`; no "swap duration at slot X" shape.
+  Text-only in `higherLevel`. *Files:* `dominate_monster`.
+- **Recurring-then-decaying wall damage** — Tsunami's wall does 6d10
+  bludgeoning on cast, then 5d10 to any Huge-or-smaller creature it
+  enters on subsequent turns, with the damage decreasing by 1d10 per
+  round (5d10 → 4d10 → 3d10 → ... → 1d10 → 0). Same underlying
+  "persistent wall damage" gap plus a novel decay shape. *Files:*
+  `tsunami`.
+- **Retry-save cadence in days** — Feeblemind lets the target repeat
+  the Int save every 30 days. No structured way to encode "retry
+  every N days" on a condition. Text-only. *Files:* `feeblemind`.
+- **Unlimited / same-plane range** — Telepathy works at unlimited
+  range as long as caster and target share a plane. Flattened to a
+  large `feet` value (2,640,000) as a placeholder. Need a
+  `SpellRange.samePlane` or `.unlimited` case. *Files:* `telepathy`.
+- **Line-of-sight range** — Tsunami's SRD range is "sight" (up to the
+  DM's discretion). Flattened to `feet 10000` as a stand-in. Need a
+  `SpellRange.sight` case that defers to DM adjudication. *Files:*
+  `tsunami`.
