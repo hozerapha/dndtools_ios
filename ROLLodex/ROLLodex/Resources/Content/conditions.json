@@ -135,5 +135,11 @@
       { "type": "attacksAgainstHaveAdvantage" },
       { "type": "autoCritOnHit" }
     ]
+  },
+  {
+    "id": "exhaustion",
+    "name": "Exhaustion",
+    "description": "This condition is cumulative; each time you receive it, you gain 1 Exhaustion level (max 6, at which you die). D20 Tests are reduced by 2 × your Exhaustion level. Your Speed is reduced by a number of feet equal to 5 × your Exhaustion level. Finishing a Long Rest removes 1 Exhaustion level; when your Exhaustion level reaches 0, the condition ends.",
+    "effects": []
   }
 ]

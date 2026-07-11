@@ -1,0 +1,23 @@
+{
+  "sourceDoc": "SRD_CC_v5.2.1.pdf",
+  "extractedAt": "2026-07-11",
+  "feats": [
+    { "canonicalName": "Alert", "category": "origin", "prerequisite": "", "abilityScoreImprovement": [] },
+    { "canonicalName": "Magic Initiate", "category": "origin", "prerequisite": "", "abilityScoreImprovement": [] },
+    { "canonicalName": "Savage Attacker", "category": "origin", "prerequisite": "", "abilityScoreImprovement": [] },
+    { "canonicalName": "Skilled", "category": "origin", "prerequisite": "", "abilityScoreImprovement": [] },
+    { "canonicalName": "Ability Score Improvement", "category": "general", "prerequisite": "Level 4+", "abilityScoreImprovement": ["Any"] },
+    { "canonicalName": "Grappler", "category": "general", "prerequisite": "Level 4+, Strength or Dexterity 13+", "abilityScoreImprovement": ["Strength", "Dexterity"] },
+    { "canonicalName": "Archery", "category": "fighting_style", "prerequisite": "Fighting Style Feature", "abilityScoreImprovement": [] },
+    { "canonicalName": "Defense", "category": "fighting_style", "prerequisite": "Fighting Style Feature", "abilityScoreImprovement": [] },
+    { "canonicalName": "Great Weapon Fighting", "category": "fighting_style", "prerequisite": "Fighting Style Feature", "abilityScoreImprovement": [] },
+    { "canonicalName": "Two-Weapon Fighting", "category": "fighting_style", "prerequisite": "Fighting Style Feature", "abilityScoreImprovement": [] },
+    { "canonicalName": "Boon of Combat Prowess", "category": "epic_boon", "prerequisite": "Level 19+", "abilityScoreImprovement": ["Any"] },
+    { "canonicalName": "Boon of Dimensional Travel", "category": "epic_boon", "prerequisite": "Level 19+", "abilityScoreImprovement": ["Any"] },
+    { "canonicalName": "Boon of Fate", "category": "epic_boon", "prerequisite": "Level 19+", "abilityScoreImprovement": ["Any"] },
+    { "canonicalName": "Boon of Irresistible Offense", "category": "epic_boon", "prerequisite": "Level 19+", "abilityScoreImprovement": ["Strength", "Dexterity"] },
+    { "canonicalName": "Boon of Spell Recall", "category": "epic_boon", "prerequisite": "Level 19+, Spellcasting Feature", "abilityScoreImprovement": ["Intelligence", "Wisdom", "Charisma"] },
+    { "canonicalName": "Boon of the Night Spirit", "category": "epic_boon", "prerequisite": "Level 19+", "abilityScoreImprovement": ["Any"] },
+    { "canonicalName": "Boon of Truesight", "category": "epic_boon", "prerequisite": "Level 19+", "abilityScoreImprovement": ["Any"] }
+  ]
+}

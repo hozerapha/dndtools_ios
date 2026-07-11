@@ -1,0 +1,84 @@
+{
+  "sourceDoc": "SRD_CC_v5.2.1.pdf",
+  "extractedAt": "2026-07-11",
+  "species": [
+    {
+      "canonicalName": "Dragonborn",
+      "traits": [
+        { "name": "Draconic Ancestry", "summary": "Choose a dragon (from the Draconic Ancestors table) that determines your Breath Weapon damage type and Damage Resistance trait." },
+        { "name": "Breath Weapon", "summary": "Replace one Attack-action attack with an exhalation in a 15-ft Cone or 30-ft Line (DC 8 + Con mod + Prof) dealing 1d10 damage of your ancestry's type, half on save; damage die increases at levels 5/11/17. Uses = Proficiency Bonus, regain on Long Rest." },
+        { "name": "Damage Resistance", "summary": "Resistance to the damage type determined by your Draconic Ancestry trait." },
+        { "name": "Darkvision", "summary": "Darkvision with a range of 60 feet." },
+        { "name": "Draconic Flight", "summary": "Starting at level 5, Bonus Action to sprout spectral wings for 10 minutes granting a Fly Speed equal to your Speed; once per Long Rest." }
+      ]
+    },
+    {
+      "canonicalName": "Dwarf",
+      "traits": [
+        { "name": "Darkvision", "summary": "Darkvision with a range of 120 feet." },
+        { "name": "Dwarven Resilience", "summary": "Resistance to Poison damage; Advantage on saving throws to avoid or end the Poisoned condition." },
+        { "name": "Dwarven Toughness", "summary": "Hit Point maximum increases by 1, and again by 1 every time you gain a level." },
+        { "name": "Stonecunning", "summary": "Bonus Action to gain Tremorsense with a range of 60 feet for 10 minutes while on or touching stone; uses = Proficiency Bonus, regain on Long Rest." }
+      ]
+    },
+    {
+      "canonicalName": "Elf",
+      "traits": [
+        { "name": "Darkvision", "summary": "Darkvision with a range of 60 feet." },
+        { "name": "Elven Lineage", "summary": "Choose a lineage (Drow, High Elf, or Wood Elf) from the Elven Lineages table, granting a level 1 benefit plus higher-level spells at character levels 3 and 5." },
+        { "name": "Fey Ancestry", "summary": "Advantage on saving throws to avoid or end the Charmed condition." },
+        { "name": "Keen Senses", "summary": "Proficiency in the Insight, Perception, or Survival skill." },
+        { "name": "Trance", "summary": "Don't need to sleep; can finish a Long Rest in 4 hours by meditating in a trance while retaining consciousness." }
+      ]
+    },
+    {
+      "canonicalName": "Gnome",
+      "traits": [
+        { "name": "Darkvision", "summary": "Darkvision with a range of 60 feet." },
+        { "name": "Gnomish Cunning", "summary": "Advantage on Intelligence, Wisdom, and Charisma saving throws." },
+        { "name": "Gnomish Lineage", "summary": "Choose Forest Gnome (Minor Illusion cantrip, prepared Speak with Animals spell) or Rock Gnome (Mending and Prestidigitation cantrips, plus Prestidigitation used to craft a Tiny clockwork device)." }
+      ]
+    },
+    {
+      "canonicalName": "Goliath",
+      "traits": [
+        { "name": "Giant Ancestry", "summary": "Choose one Giant ancestry benefit (Cloud's Jaunt, Fire's Burn, Frost's Chill, Hill's Tumble, Stone's Endurance, or Storm's Thunder); uses = Proficiency Bonus, regain on Long Rest." },
+        { "name": "Large Form", "summary": "Starting at level 5, Bonus Action to become Large for 10 minutes (Advantage on Strength checks, Speed +10 ft); once per Long Rest." },
+        { "name": "Powerful Build", "summary": "Advantage on ability checks to end the Grappled condition; counts as one size larger for carrying capacity." }
+      ]
+    },
+    {
+      "canonicalName": "Halfling",
+      "traits": [
+        { "name": "Brave", "summary": "Advantage on saving throws to avoid or end the Frightened condition." },
+        { "name": "Halfling Nimbleness", "summary": "Can move through the space of any creature that is a size larger than you, but can't stop there." },
+        { "name": "Luck", "summary": "When you roll a 1 on the d20 of a D20 Test, you can reroll the die and must use the new roll." },
+        { "name": "Naturally Stealthy", "summary": "Can take the Hide action when obscured only by a creature at least one size larger than you." }
+      ]
+    },
+    {
+      "canonicalName": "Human",
+      "traits": [
+        { "name": "Resourceful", "summary": "Gain Heroic Inspiration whenever you finish a Long Rest." },
+        { "name": "Skillful", "summary": "Proficiency in one skill of your choice." },
+        { "name": "Versatile", "summary": "Gain an Origin feat of your choice (Skilled is recommended)." }
+      ]
+    },
+    {
+      "canonicalName": "Orc",
+      "traits": [
+        { "name": "Adrenaline Rush", "summary": "Bonus Action Dash that grants Temporary Hit Points equal to your Proficiency Bonus; uses = Proficiency Bonus, regain on Short or Long Rest." },
+        { "name": "Darkvision", "summary": "Darkvision with a range of 120 feet." },
+        { "name": "Relentless Endurance", "summary": "When reduced to 0 Hit Points but not killed outright, drop to 1 Hit Point instead; once per Long Rest." }
+      ]
+    },
+    {
+      "canonicalName": "Tiefling",
+      "traits": [
+        { "name": "Darkvision", "summary": "Darkvision with a range of 60 feet." },
+        { "name": "Fiendish Legacy", "summary": "Choose a legacy (Abyssal, Chthonic, or Infernal) from the Fiendish Legacies table, granting a level 1 benefit plus higher-level spells at character levels 3 and 5." },
+        { "name": "Otherworldly Presence", "summary": "Know the Thaumaturgy cantrip, cast with the spellcasting ability chosen for your Fiendish Legacy trait." }
+      ]
+    }
+  ]
+}

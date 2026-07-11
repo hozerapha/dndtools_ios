@@ -17,7 +17,7 @@
   },
   {
     "id": "rope",
-    "name": "Rope, Hempen (50 feet)",
+    "name": "Rope",
     "description": "Strong hemp rope.",
     "cost": 100,
     "weight": 10,
@@ -33,7 +33,7 @@
   },
   {
     "id": "rations",
-    "name": "Rations (1 day)",
+    "name": "Rations",
     "description": "Dried food suitable for travel.",
     "cost": 50,
     "weight": 2,

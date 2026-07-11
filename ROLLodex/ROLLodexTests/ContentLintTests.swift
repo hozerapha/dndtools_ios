@@ -86,6 +86,111 @@ struct ContentLintTests {
                 "SRD 5.2.1 manifest compliance failures:\n" + violations.joined(separator: "\n"))
     }
 
+    // Shared manifest-loading helper. Every SRD-content manifest lives at
+    // `Docs/SRD_5.2.1_manifest/<name>.json` in the repo (kept out of the app
+    // bundle to save 40KB of dev-facing metadata).
+    private func loadManifestData(_ name: String) throws -> Data {
+        let manifestURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Docs/SRD_5.2.1_manifest/\(name).json")
+        return try Data(contentsOf: manifestURL)
+    }
+
+    // Compare a bundled entity list to a manifest by canonical name. Strict mode
+    // fails on either direction (bundle-only OR manifest-only); subset mode fails
+    // only when the bundle has entries NOT in the manifest (compliance) but
+    // allows the manifest to be broader (a legitimate subset like weapons/gear).
+    private enum ManifestMode { case strict, subset }
+
+    private func expectManifestCoverage(
+        bundledNames: [String],
+        manifestNames: [String],
+        contentType: String,
+        mode: ManifestMode
+    ) {
+        let bundleSet = Set(bundledNames.map { $0.lowercased() })
+        let manifestSet = Set(manifestNames.map { $0.lowercased() })
+        let extraInBundle = bundleSet.subtracting(manifestSet)
+        #expect(extraInBundle.isEmpty,
+                "\(contentType) not in SRD 5.2.1: \(extraInBundle.sorted())")
+        if mode == .strict {
+            let missingFromBundle = manifestSet.subtracting(bundleSet)
+            #expect(missingFromBundle.isEmpty,
+                    "\(contentType) missing from bundle (manifest says they must ship): \(missingFromBundle.sorted())")
+        }
+    }
+
+    private struct NameOnly: Decodable { let canonicalName: String }
+    private struct NamedManifest: Decodable {
+        let species:     [NameOnly]?
+        let backgrounds: [NameOnly]?
+        let conditions:  [NameOnly]?
+        let weapons:     [NameOnly]?
+        let armor:       [NameOnly]?
+        let gear:        [NameOnly]?
+        let feats:       [NameOnly]?
+    }
+
+    private func manifestNames(_ file: String, key: KeyPath<NamedManifest, [NameOnly]?>) throws -> [String] {
+        let data = try loadManifestData(file)
+        let decoded = try JSONDecoder().decode(NamedManifest.self, from: data)
+        guard let entries = decoded[keyPath: key] else {
+            Issue.record("manifest \(file).json has no matching key")
+            return []
+        }
+        return entries.map(\.canonicalName)
+    }
+
+    @Test func speciesMatchSRDManifest() throws {
+        let content = ContentStore()
+        let bundled = content.species.values.map(\.name)
+        let manifest = try manifestNames("species", key: \.species)
+        expectManifestCoverage(bundledNames: bundled, manifestNames: manifest,
+                               contentType: "species", mode: .strict)
+    }
+
+    @Test func backgroundsMatchSRDManifest() throws {
+        let content = ContentStore()
+        let bundled = content.backgrounds.values.map(\.name)
+        let manifest = try manifestNames("backgrounds", key: \.backgrounds)
+        expectManifestCoverage(bundledNames: bundled, manifestNames: manifest,
+                               contentType: "backgrounds", mode: .strict)
+    }
+
+    @Test func conditionsMatchSRDManifest() throws {
+        let content = ContentStore()
+        let bundled = content.allConditions.map(\.name)
+        let manifest = try manifestNames("conditions", key: \.conditions)
+        expectManifestCoverage(bundledNames: bundled, manifestNames: manifest,
+                               contentType: "conditions", mode: .strict)
+    }
+
+    @Test func weaponsAreInSRDManifest() throws {
+        let content = ContentStore()
+        let bundled = content.weapons.values.map(\.name)
+        let manifest = try manifestNames("weapons", key: \.weapons)
+        expectManifestCoverage(bundledNames: bundled, manifestNames: manifest,
+                               contentType: "weapons", mode: .subset)
+    }
+
+    @Test func armorIsInSRDManifest() throws {
+        let content = ContentStore()
+        let bundled = content.armor.values.map(\.name)
+        let manifest = try manifestNames("armor", key: \.armor)
+        expectManifestCoverage(bundledNames: bundled, manifestNames: manifest,
+                               contentType: "armor", mode: .subset)
+    }
+
+    @Test func gearIsInSRDManifest() throws {
+        let content = ContentStore()
+        let bundled = content.gear.values.map(\.name)
+        let manifest = try manifestNames("gear", key: \.gear)
+        expectManifestCoverage(bundledNames: bundled, manifestNames: manifest,
+                               contentType: "gear", mode: .subset)
+    }
+
     // MARK: - Id uniqueness
 
     @Test func idsAreUniqueWithinEachFile() throws {

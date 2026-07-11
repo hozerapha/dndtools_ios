@@ -1,0 +1,86 @@
+
+=== Fighter
+  L2: MISSING from bundle: ['Tactical Mind']
+  L5: MISSING from bundle: ['Extra Attack', 'Tactical Shift']
+  L6: MISSING from bundle: ['Ability Score Improvement']
+  L8: MISSING from bundle: ['Ability Score Improvement']
+  L9: MISSING from bundle: ['Indomitable', 'Tactical Master']
+  L11: MISSING from bundle: ['Two Extra Attacks']
+  L12: MISSING from bundle: ['Ability Score Improvement']
+  L13: MISSING from bundle: ['Indomitable', 'Studied Attacks']
+  L14: MISSING from bundle: ['Ability Score Improvement']
+  L16: MISSING from bundle: ['Ability Score Improvement']
+  L17: MISSING from bundle: ['Action Surge', 'Indomitable']
+  L19: MISSING from bundle: ['Epic Boon']
+  L20: MISSING from bundle: ['Three Extra Attacks']
+
+=== Wizard
+  L1: MISSING from bundle: ['Ritual Adept']
+  L2: MISSING from bundle: ['Scholar']
+  L4: MISSING from bundle: ['Ability Score Improvement']
+  L5: MISSING from bundle: ['Memorize Spell']
+  L8: MISSING from bundle: ['Ability Score Improvement']
+  L12: MISSING from bundle: ['Ability Score Improvement']
+  L16: MISSING from bundle: ['Ability Score Improvement']
+  L18: MISSING from bundle: ['Spell Mastery']
+  L19: MISSING from bundle: ['Epic Boon']
+  L20: MISSING from bundle: ['Signature Spells']
+
+=== Rogue
+
+=== Barbarian
+  L1: MISSING from bundle: ['Weapon Mastery']
+  L2: MISSING from bundle: ['Danger Sense', 'Reckless Attack']
+  L3: MISSING from bundle: ['Primal Knowledge']
+  L4: MISSING from bundle: ['Ability Score Improvement']
+  L5: MISSING from bundle: ['Extra Attack', 'Fast Movement']
+  L7: MISSING from bundle: ['Feral Instinct', 'Instinctive Pounce']
+  L8: MISSING from bundle: ['Ability Score Improvement']
+  L9: MISSING from bundle: ['Brutal Strike']
+  L11: MISSING from bundle: ['Relentless Rage']
+  L12: MISSING from bundle: ['Ability Score Improvement']
+  L13: MISSING from bundle: ['Improved Brutal Strike']
+  L15: MISSING from bundle: ['Persistent Rage']
+  L16: MISSING from bundle: ['Ability Score Improvement']
+  L17: MISSING from bundle: ['Improved Brutal Strike']
+  L18: MISSING from bundle: ['Indomitable Might']
+  L19: MISSING from bundle: ['Epic Boon']
+  L20: MISSING from bundle: ['Primal Champion']
+
+=== Paladin
+  L9: MISSING from bundle: ['Abjure Foes']
+
+=== Cleric
+
+=== Bard
+
+=== Sorcerer
+
+=== Druid
+  L5: MISSING from bundle: ['Wild Resurgence']
+  L7: MISSING from bundle: ['Elemental Fury']
+  L15: MISSING from bundle: ['Improved Elemental Fury']
+
+=== Warlock
+  L11: MISSING from bundle: ['Mystic Arcanum']
+  L11: EXTRA in bundle (not in SRD): ['Mystic Arcanum (6th)']
+  L13: MISSING from bundle: ['Mystic Arcanum']
+  L13: EXTRA in bundle (not in SRD): ['Mystic Arcanum (7th)']
+  L15: MISSING from bundle: ['Mystic Arcanum']
+  L15: EXTRA in bundle (not in SRD): ['Mystic Arcanum (8th)']
+  L17: MISSING from bundle: ['Mystic Arcanum']
+  L17: EXTRA in bundle (not in SRD): ['Mystic Arcanum (9th)']
+
+=== Monk
+  L2: MISSING from bundle: ['Uncanny Metabolism']
+  L2: EXTRA in bundle (not in SRD): ['Flurry of Blows', 'Patient Defense', 'Step of the Wind']
+
+=== Ranger
+  L1: MISSING from bundle: ['Spellcasting']
+  L3: EXTRA in bundle (not in SRD): ['Primal Awareness']
+  L5: EXTRA in bundle (not in SRD): ['Roving']
+  L6: MISSING from bundle: ['Roving']
+  L6: EXTRA in bundle (not in SRD): ["Nature's Shield"]
+  L7: EXTRA in bundle (not in SRD): ['Subclass Feature']
+  L11: EXTRA in bundle (not in SRD): ['Subclass Feature']
+  L15: EXTRA in bundle (not in SRD): ['Subclass Feature']

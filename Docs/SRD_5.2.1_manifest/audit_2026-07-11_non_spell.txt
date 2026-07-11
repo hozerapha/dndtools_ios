@@ -1,0 +1,31 @@
+=== SPECIES
+  bundle: 9, manifest: 9
+  missing from bundle: []
+  extra in bundle (not in SRD): []
+
+=== BACKGROUNDS
+  bundle: 4, manifest: 4
+  missing from bundle: []
+  extra in bundle: []
+
+=== CONDITIONS
+  bundle: 14, manifest: 15
+  missing from bundle: ['Exhaustion']
+  extra in bundle: []
+
+=== WEAPONS (bundle=subset OK)
+  bundle: 10, manifest: 38
+  extra in bundle (not in SRD): []
+  --- property/stat drift on bundled entries:
+
+=== ARMOR (bundle=subset OK)
+  bundle: 8, manifest: 13
+  extra in bundle: []
+
+=== GEAR (bundle=subset OK)
+  bundle: 8, manifest: 390
+  extra in bundle: ['Rations (1 day)', 'Rope, Hempen (50 feet)']
+
+=== FEATS (bundle=subset OK)
+  manifest: 17
+  (bundle has no feats.json yet; when authored, must intersect with manifest)

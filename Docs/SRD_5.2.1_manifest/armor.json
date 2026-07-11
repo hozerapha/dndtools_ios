@@ -1,0 +1,19 @@
+{
+  "sourceDoc": "SRD_CC_v5.2.1.pdf",
+  "extractedAt": "2026-07-11",
+  "armor": [
+    { "canonicalName": "Padded Armor", "category": "light", "baseAC": 11, "dexMod": "full", "strengthRequirement": null, "stealthDisadvantage": true },
+    { "canonicalName": "Leather Armor", "category": "light", "baseAC": 11, "dexMod": "full", "strengthRequirement": null, "stealthDisadvantage": false },
+    { "canonicalName": "Studded Leather Armor", "category": "light", "baseAC": 12, "dexMod": "full", "strengthRequirement": null, "stealthDisadvantage": false },
+    { "canonicalName": "Hide Armor", "category": "medium", "baseAC": 12, "dexMod": "capped:2", "strengthRequirement": null, "stealthDisadvantage": false },
+    { "canonicalName": "Chain Shirt", "category": "medium", "baseAC": 13, "dexMod": "capped:2", "strengthRequirement": null, "stealthDisadvantage": false },
+    { "canonicalName": "Scale Mail", "category": "medium", "baseAC": 14, "dexMod": "capped:2", "strengthRequirement": null, "stealthDisadvantage": true },
+    { "canonicalName": "Breastplate", "category": "medium", "baseAC": 14, "dexMod": "capped:2", "strengthRequirement": null, "stealthDisadvantage": false },
+    { "canonicalName": "Half Plate Armor", "category": "medium", "baseAC": 15, "dexMod": "capped:2", "strengthRequirement": null, "stealthDisadvantage": true },
+    { "canonicalName": "Ring Mail", "category": "heavy", "baseAC": 14, "dexMod": "none", "strengthRequirement": null, "stealthDisadvantage": true },
+    { "canonicalName": "Chain Mail", "category": "heavy", "baseAC": 16, "dexMod": "none", "strengthRequirement": 13, "stealthDisadvantage": true },
+    { "canonicalName": "Splint Armor", "category": "heavy", "baseAC": 17, "dexMod": "none", "strengthRequirement": 15, "stealthDisadvantage": true },
+    { "canonicalName": "Plate Armor", "category": "heavy", "baseAC": 18, "dexMod": "none", "strengthRequirement": 15, "stealthDisadvantage": true },
+    { "canonicalName": "Shield", "category": "shield", "baseAC": 2, "dexMod": "none", "strengthRequirement": null, "stealthDisadvantage": false }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "sourceDoc": "SRD_CC_v5.2.1.pdf",
+  "extractedAt": "2026-07-11",
+  "subclasses": [
+    {
+      "canonicalName": "Path of the Berserker",
+      "parentClass": "Barbarian",
+      "features": [
+        { "level": 3, "canonicalName": "Frenzy" },
+        { "level": 6, "canonicalName": "Mindless Rage" },
+        { "level": 10, "canonicalName": "Retaliation" },
+        { "level": 14, "canonicalName": "Intimidating Presence" }
+      ]
+    },
+    {
+      "canonicalName": "College of Lore",
+      "parentClass": "Bard",
+      "features": [
+        { "level": 3, "canonicalName": "Bonus Proficiencies" },
+        { "level": 3, "canonicalName": "Cutting Words" },
+        { "level": 6, "canonicalName": "Magical Discoveries" },
+        { "level": 14, "canonicalName": "Peerless Skill" }
+      ]
+    },
+    {
+      "canonicalName": "Life Domain",
+      "parentClass": "Cleric",
+      "features": [
+        { "level": 3, "canonicalName": "Disciple of Life" },
+        { "level": 3, "canonicalName": "Life Domain Spells" },
+        { "level": 6, "canonicalName": "Blessed Healer" },
+        { "level": 17, "canonicalName": "Supreme Healing" }
+      ]
+    },
+    {
+      "canonicalName": "Circle of the Land",
+      "parentClass": "Druid",
+      "features": [
+        { "level": 3, "canonicalName": "Circle of the Land Spells" },
+        { "level": 3, "canonicalName": "Land's Aid" },
+        { "level": 6, "canonicalName": "Natural Recovery" },
+        { "level": 10, "canonicalName": "Nature's Ward" },
+        { "level": 14, "canonicalName": "Nature's Sanctuary" }
+      ]
+    },
+    {
+      "canonicalName": "Champion",
+      "parentClass": "Fighter",
+      "features": [
+        { "level": 3, "canonicalName": "Improved Critical" },
+        { "level": 3, "canonicalName": "Remarkable Athlete" },
+        { "level": 7, "canonicalName": "Additional Fighting Style" },
+        { "level": 10, "canonicalName": "Heroic Warrior" },
+        { "level": 15, "canonicalName": "Superior Critical" },
+        { "level": 18, "canonicalName": "Survivor" }
+      ]
+    },
+    {
+      "canonicalName": "Warrior of the Open Hand",
+      "parentClass": "Monk",
+      "features": [
+        { "level": 3, "canonicalName": "Open Hand Technique" },
+        { "level": 6, "canonicalName": "Wholeness of Body" },
+        { "level": 11, "canonicalName": "Fleet Step" },
+        { "level": 17, "canonicalName": "Quivering Palm" }
+      ]
+    },
+    {
+      "canonicalName": "Oath of Devotion",
+      "parentClass": "Paladin",
+      "features": [
+        { "level": 3, "canonicalName": "Oath of Devotion Spells" },
+        { "level": 3, "canonicalName": "Sacred Weapon" },
+        { "level": 7, "canonicalName": "Aura of Devotion" },
+        { "level": 15, "canonicalName": "Smite of Protection" },
+        { "level": 20, "canonicalName": "Holy Nimbus" }
+      ]
+    },
+    {
+      "canonicalName": "Hunter",
+      "parentClass": "Ranger",
+      "features": [
+        { "level": 3, "canonicalName": "Hunter's Lore" },
+        { "level": 3, "canonicalName": "Hunter's Prey" },
+        { "level": 7, "canonicalName": "Defensive Tactics" },
+        { "level": 11, "canonicalName": "Superior Hunter's Prey" },
+        { "level": 15, "canonicalName": "Superior Hunter's Defense" }
+      ]
+    },
+    {
+      "canonicalName": "Thief",
+      "parentClass": "Rogue",
+      "features": [
+        { "level": 3, "canonicalName": "Fast Hands" },
+        { "level": 3, "canonicalName": "Second-Story Work" },
+        { "level": 9, "canonicalName": "Supreme Sneak" },
+        { "level": 13, "canonicalName": "Use Magic Device" },
+        { "level": 17, "canonicalName": "Thief's Reflexes" }
+      ]
+    },
+    {
+      "canonicalName": "Draconic Sorcery",
+      "parentClass": "Sorcerer",
+      "features": [
+        { "level": 3, "canonicalName": "Draconic Resilience" },
+        { "level": 3, "canonicalName": "Draconic Spells" },
+        { "level": 6, "canonicalName": "Elemental Affinity" },
+        { "level": 14, "canonicalName": "Dragon Wings" },
+        { "level": 18, "canonicalName": "Dragon Companion" }
+      ]
+    },
+    {
+      "canonicalName": "Fiend Patron",
+      "parentClass": "Warlock",
+      "features": [
+        { "level": 3, "canonicalName": "Dark One's Blessing" },
+        { "level": 3, "canonicalName": "Fiend Spells" },
+        { "level": 6, "canonicalName": "Dark One's Own Luck" },
+        { "level": 10, "canonicalName": "Fiendish Resilience" },
+        { "level": 14, "canonicalName": "Hurl Through Hell" }
+      ]
+    },
+    {
+      "canonicalName": "Evoker",
+      "parentClass": "Wizard",
+      "features": [
+        { "level": 3, "canonicalName": "Evocation Savant" },
+        { "level": 3, "canonicalName": "Potent Cantrip" },
+        { "level": 6, "canonicalName": "Sculpt Spells" },
+        { "level": 10, "canonicalName": "Empowered Evocation" },
+        { "level": 14, "canonicalName": "Overchannel" }
+      ]
+    }
+  ]
+}

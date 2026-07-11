@@ -128,6 +128,16 @@ not surfacing at creation), which is why this list exists.
   picker for at least three of the newly authored spells: **Hideous Laughter**
   (L1, bard/warlock/wizard), **Blink** (L3, sorcerer/wizard), **Vitriolic
   Sphere** (L4, sorcerer/wizard), **Power Word Heal** (L9, bard/cleric).
+- [ ] **SRD 5.2.1 conditions — Exhaustion added (2026-07-11).** Open Conditions
+  from a character sheet. The list now has 15 conditions (was 14) — verify
+  **Exhaustion** appears in the picker with the "cumulative levels; 6 kills you"
+  description. Applying it should show up on the sheet like other conditions
+  (the specific mechanical scaling — Speed/roll penalties per level — is
+  honor-system for now, not automatically applied).
+- [ ] **SRD 5.2.1 gear renames (2026-07-11).** In the inventory/equipment
+  picker, confirm the entries formerly labelled "Rations (1 day)" and
+  "Rope, Hempen (50 feet)" now display as **Rations** and **Rope**
+  respectively (the SRD 5.2.1 canonical names).
 - [ ] **SRD 5.2.1 compliance — spell schools shifted (2026-07-11).** In the
   spell picker or a spell's detail view, verify: **Cure Wounds** → Abjuration,
   **Poison Spray** → Necromancy, **Acid Splash** → Evocation, **Mass Heal** →

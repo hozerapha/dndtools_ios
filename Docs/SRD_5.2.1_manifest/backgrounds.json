@@ -1,0 +1,42 @@
+{
+  "sourceDoc": "SRD_CC_v5.2.1.pdf",
+  "extractedAt": "2026-07-11",
+  "backgrounds": [
+    {
+      "canonicalName": "Acolyte",
+      "abilityScoreOptions": ["Intelligence", "Wisdom", "Charisma"],
+      "skillProficiencies": ["Insight", "Religion"],
+      "toolProficiencies": ["Calligrapher's Supplies"],
+      "feat": "Magic Initiate (Cleric)",
+      "equipmentA": ["Calligrapher's Supplies", "Book (prayers)", "Holy Symbol", "Parchment (10 sheets)", "Robe", "8 GP"],
+      "equipmentB": 50
+    },
+    {
+      "canonicalName": "Criminal",
+      "abilityScoreOptions": ["Dexterity", "Constitution", "Intelligence"],
+      "skillProficiencies": ["Sleight of Hand", "Stealth"],
+      "toolProficiencies": ["Thieves' Tools"],
+      "feat": "Alert",
+      "equipmentA": ["2 Daggers", "Thieves' Tools", "Crowbar", "2 Pouches", "Traveler's Clothes", "16 GP"],
+      "equipmentB": 50
+    },
+    {
+      "canonicalName": "Sage",
+      "abilityScoreOptions": ["Constitution", "Intelligence", "Wisdom"],
+      "skillProficiencies": ["Arcana", "History"],
+      "toolProficiencies": ["Calligrapher's Supplies"],
+      "feat": "Magic Initiate (Wizard)",
+      "equipmentA": ["Quarterstaff", "Calligrapher's Supplies", "Book (history)", "Parchment (8 sheets)", "Robe", "8 GP"],
+      "equipmentB": 50
+    },
+    {
+      "canonicalName": "Soldier",
+      "abilityScoreOptions": ["Strength", "Dexterity", "Constitution"],
+      "skillProficiencies": ["Athletics", "Intimidation"],
+      "toolProficiencies": ["Choose one kind of Gaming Set"],
+      "feat": "Savage Attacker",
+      "equipmentA": ["Spear", "Shortbow", "20 Arrows", "Gaming Set (same as tool proficiency)", "Healer's Kit", "Quiver", "Traveler's Clothes", "14 GP"],
+      "equipmentB": 50
+    }
+  ]
+}
