@@ -111,12 +111,23 @@ not surfacing at creation), which is why this list exists.
   Druid. Open **Add Spell** at cantrip level. Confirm **Thorn Whip** and
   **Thunderclap** are NO LONGER in the picker (they were 2014-PHB, not SRD).
   Confirm **Message** now appears in the Druid list. Confirm **Elementalism**
-  and **Sorcerous Burst** appear at L0 (they're new SRD 5.2.1 cantrips —
-  currently missing pending phase 3 authoring, will re-check).
+  appears at L0 for druid/sorcerer/wizard. For a Sorcerer specifically,
+  confirm **Sorcerous Burst** appears at L0.
 - [ ] **SRD 5.2.1 compliance — smites (2026-07-11).** Create a Paladin. Open
   Add Spell. Confirm Thunderous / Wrathful / Branding / Blinding Smite are
   NO LONGER available (5.2.1 folded them into a single Divine Smite spell +
-  Divine Smite class feature). Divine Smite spell will appear after phase 3.
+  Divine Smite class feature). Confirm **Divine Smite** (the spell) is now
+  available for the Paladin at L1 with `+1d8 radiant per slot level` scaling.
+- [ ] **SRD 5.2.1 compliance — L6 renames (2026-07-11).** Confirm **Otto's
+  Irresistible Dance** is no longer available; **Irresistible Dance** (the
+  5.2.1 canonical name) is available at L6 for bard/wizard.
+- [ ] **SRD 5.2.1 compliance — Feeblemind replaced (2026-07-11).** At L8,
+  confirm **Feeblemind** is gone; **Befuddlement** (its SRD 5.2.1 successor)
+  is available for bard/druid/warlock/wizard.
+- [ ] **SRD 5.2.1 compliance — new adds (2026-07-11).** Spot-check the spell
+  picker for at least three of the newly authored spells: **Hideous Laughter**
+  (L1, bard/warlock/wizard), **Blink** (L3, sorcerer/wizard), **Vitriolic
+  Sphere** (L4, sorcerer/wizard), **Power Word Heal** (L9, bard/cleric).
 - [ ] **SRD 5.2.1 compliance — spell schools shifted (2026-07-11).** In the
   spell picker or a spell's detail view, verify: **Cure Wounds** → Abjuration,
   **Poison Spray** → Necromancy, **Acid Splash** → Evocation, **Mass Heal** →

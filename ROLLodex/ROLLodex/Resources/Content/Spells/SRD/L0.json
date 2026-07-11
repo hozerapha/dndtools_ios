@@ -163,6 +163,33 @@
     ]
   },
   {
+    "id": "elementalism",
+    "classes": [
+      "druid",
+      "sorcerer",
+      "wizard"
+    ],
+    "name": "Elementalism",
+    "level": 0,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You exert control over the elements, creating one of the following effects within range. Beckon Air: you create a breeze strong enough to ripple cloth, stir dust, rustle leaves, and close open doors and shutters, all in a 5-foot Cube. Doors and shutters being held open by someone or something aren't affected. Beckon Earth: you create a thin shroud of dust or sand that covers surfaces in a 5-foot-square area, or you cause a single word to appear in your handwriting in a patch of dirt or sand. Beckon Fire: you create a thin cloud of harmless embers and colored, scented smoke in a 5-foot Cube; you choose the color and scent, and the embers can light candles, torches, or lamps in that area, and the smoke's scent lingers for 1 minute. Beckon Water: you create a spray of cool mist that lightly dampens creatures and objects in a 5-foot Cube, or you create 1 cup of clean water either in an open container or on a surface, and the water evaporates in 1 minute. Sculpt Element: you cause dirt, sand, fire, smoke, mist, or water that can fit in a 1-foot Cube to assume a crude shape (such as that of a creature) for 1 hour.",
+    "actionRecipes": []
+  },
+  {
     "id": "fire_bolt",
     "classes": [
       "sorcerer",
@@ -637,6 +664,52 @@
         "damageType": "lightning",
         "label": "Shocking Grasp Damage"
       }
+    ]
+  },
+  {
+    "id": "sorcerous_burst",
+    "classes": [
+      "sorcerer"
+    ],
+    "name": "Sorcerous Burst",
+    "level": 0,
+    "school": "evocation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 120
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You cast sorcerous energy at one creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d8 damage of a type you choose: Acid, Cold, Fire, Lightning, Poison, Psychic, or Thunder. If you roll an 8 on a d8 for this spell, you can roll another d8, and add it to the damage. When you cast this spell, the maximum number of these d8s you can add to the spell's damage equals your spellcasting ability modifier.",
+    "higherLevel": "Cantrip Upgrade. The damage increases by 1d8 when you reach levels 5 (2d8), 11 (3d8), and 17 (4d8).",
+    "actionRecipes": [
+      {
+        "type": "spellAttack",
+        "label": "Sorcerous Burst Attack"
+      },
+      {
+        "type": "rawDamage",
+        "dice": "1d8",
+        "damageType": "fire",
+        "label": "Sorcerous Burst Damage (choose type)"
+      }
+    ],
+    "damageTypeChoices": [
+      "acid",
+      "cold",
+      "fire",
+      "lightning",
+      "poison",
+      "psychic",
+      "thunder"
     ]
   },
   {

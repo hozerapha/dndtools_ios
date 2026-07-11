@@ -548,6 +548,65 @@
     "actionRecipes": []
   },
   {
+    "id": "instant_summons",
+    "classes": [
+      "wizard"
+    ],
+    "name": "Instant Summons",
+    "level": 6,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "ritual",
+      "base": {
+        "type": "action"
+      }
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a sapphire worth 1,000+ GP"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You touch the sapphire used in the casting and an object weighing 10 pounds or less whose longest dimension is 6 feet or less. The spell leaves an Invisible mark on that object and invisibly inscribes the object's name on the sapphire. Each time you cast this spell, you must use a different sapphire. Thereafter, you can take a Magic action to speak the object's name and crush the sapphire. The object instantly appears in your hand regardless of physical or planar distances, and the spell ends. If another creature is holding or carrying the object, crushing the sapphire doesn't transport it, but instead you learn who that creature is and where that creature is currently located. This connection lasts until dispelled or until you use it to summon the object.",
+    "actionRecipes": []
+  },
+  {
+    "id": "irresistible_dance",
+    "classes": [
+      "bard",
+      "wizard"
+    ],
+    "name": "Irresistible Dance",
+    "level": 6,
+    "school": "enchantment",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "One creature that you can see within range must make a Wisdom saving throw. On a successful save, the target dances comically until the end of its next turn, during which it must spend all its movement to dance in place. On a failed save, the target has the Charmed condition for the duration. While Charmed, the target dances comically, must use all its movement to dance in place, and has Disadvantage on Dexterity saving throws and attack rolls, and other creatures have Advantage on attack rolls against it. On each of its turns, the target can take an action to collect itself and repeat the save, ending the spell on itself on a success.",
+    "actionRecipes": [
+      {
+        "type": "saveDC",
+        "ability": "wisdom"
+      }
+    ]
+  },
+  {
     "id": "magic_jar",
     "classes": [
       "wizard"
@@ -719,6 +778,32 @@
     ]
   },
   {
+    "id": "transport_via_plants",
+    "classes": [
+      "druid"
+    ],
+    "name": "Transport via Plants",
+    "level": 6,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 10
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "minutes",
+      "value": 1
+    },
+    "description": "This spell creates a magical link between a Large or larger inanimate plant within range and another plant, at any distance, on the same plane of existence. You must have seen or touched the destination plant at least once before. For the duration, any creature can step into the target plant and exit from the destination plant by using 5 feet of movement.",
+    "actionRecipes": []
+  },
+  {
     "id": "true_seeing",
     "classes": [
       "bard",
@@ -833,6 +918,33 @@
       "recipeIndex": 0,
       "dice": "1d8"
     }
+  },
+  {
+    "id": "wind_walk",
+    "classes": [
+      "druid"
+    ],
+    "name": "Wind Walk",
+    "level": 6,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a candle"
+    },
+    "duration": {
+      "type": "hours",
+      "value": 8
+    },
+    "description": "The casting takes 1 minute. You and up to ten willing creatures of your choice within range assume gaseous forms for the duration, appearing as wisps of cloud. While in this cloud form, a target has a Fly Speed of 300 feet and can hover; it has Immunity to the Prone condition; and it has Resistance to Bludgeoning, Piercing, and Slashing damage. The only actions a target can take in this form are the Dash action or a Magic action to begin reverting to its normal form. Reverting takes 1 minute, during which the target has the Stunned condition. Until the spell ends, the target can revert to cloud form, which also requires a Magic action followed by a 1-minute transformation. If a target is in cloud form and flying when the effect ends, the target descends 60 feet per round for 1 minute until it lands, which it does safely. If it can't land after 1 minute, it falls the remaining distance.",
+    "actionRecipes": []
   },
   {
     "id": "word_of_recall",

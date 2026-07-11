@@ -524,6 +524,43 @@
     "actionRecipes": []
   },
   {
+    "id": "dissonant_whispers",
+    "classes": [
+      "bard"
+    ],
+    "name": "Dissonant Whispers",
+    "level": 1,
+    "school": "enchantment",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "One creature of your choice that you can see within range hears a discordant melody in its mind. The target makes a Wisdom saving throw. On a failed save, it takes 3d6 Psychic damage and must immediately use its Reaction, if available, to move as far away from you as it can, using the safest route. On a successful save, the target takes half as much damage only.",
+    "higherLevel": "The damage increases by 1d6 for each spell slot level above 1.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "3d6",
+        "damageType": "psychic",
+        "label": "Dissonant Whispers"
+      }
+    ],
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "1d6"
+    }
+  },
+  {
     "id": "divine_favor",
     "classes": [
       "paladin"
@@ -564,6 +601,79 @@
           "type": "concentrationEnds"
         }
       }
+    }
+  },
+  {
+    "id": "divine_smite",
+    "classes": [
+      "paladin"
+    ],
+    "name": "Divine Smite",
+    "level": 1,
+    "school": "evocation",
+    "castingTime": {
+      "type": "bonusAction"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You take this Bonus Action immediately after hitting a target with a Melee weapon or an Unarmed Strike. The target takes an extra 2d8 Radiant damage from the attack. The damage increases by 1d8 if the target is a Fiend or an Undead.",
+    "higherLevel": "The damage increases by 1d8 for each spell slot level above 1.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "2d8",
+        "damageType": "radiant",
+        "label": "Divine Smite"
+      }
+    ],
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "1d8"
+    }
+  },
+  {
+    "id": "ensnaring_strike",
+    "classes": [
+      "ranger"
+    ],
+    "name": "Ensnaring Strike",
+    "level": 1,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "bonusAction"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "You take this Bonus Action immediately after hitting a creature with a weapon. As you hit the target, grasping vines appear on it, and it makes a Strength saving throw. A Large or larger creature has Advantage on this save. On a failed save, the target has the Restrained condition until the spell ends. On a successful save, the vines shrivel away, and the spell ends. While Restrained, the target takes 1d6 Piercing damage at the start of each of its turns. The target or a creature within reach of it can take an action to make a Strength (Athletics) check against your spell save DC. On a success, the spell ends.",
+    "higherLevel": "The damage increases by 1d6 for each spell slot level above 1.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "1d6",
+        "damageType": "piercing",
+        "label": "Ensnaring Strike (per turn)"
+      }
+    ],
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "1d6"
     }
   },
   {
@@ -735,6 +845,36 @@
       "type": "instantaneous"
     },
     "description": "You gain the service of a familiar — a spirit that takes an animal form you choose (Bat, Cat, Crab, Frog, Hawk, Lizard, Octopus, Owl, Poisonous Snake, Fish, Rat, Raven, Seahorse, Spider, or Weasel). The familiar has the statistics of the chosen form, though it is a Celestial, Fey, or Fiend (your choice) instead of a Beast. Your familiar acts independently of you but always obeys your commands. The casting takes 1 hour.",
+    "actionRecipes": []
+  },
+  {
+    "id": "floating_disk",
+    "classes": [
+      "wizard"
+    ],
+    "name": "Floating Disk",
+    "level": 1,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "ritual",
+      "base": {
+        "type": "action"
+      }
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a drop of mercury"
+    },
+    "duration": {
+      "type": "hours",
+      "value": 1
+    },
+    "description": "This spell creates a circular, horizontal plane of force, 3 feet in diameter and 1 inch thick, that floats 3 feet above the ground in an unoccupied space of your choice that you can see within range. The disk remains for the duration and can hold up to 500 pounds. If more weight is placed on it, the spell ends, and everything on the disk falls to the ground. The disk is immobile while you are within 20 feet of it. If you move more than 20 feet away from it, the disk follows you so that it remains within 20 feet of you. It can move across uneven terrain, up or down stairs, slopes and the like, but it can't cross an elevation change of 10 feet or more. If you move more than 100 feet from the disk (typically because it can't move around an obstacle to follow you), the spell ends.",
     "actionRecipes": []
   },
   {
@@ -1012,6 +1152,41 @@
     }
   },
   {
+    "id": "hideous_laughter",
+    "classes": [
+      "bard",
+      "warlock",
+      "wizard"
+    ],
+    "name": "Hideous Laughter",
+    "level": 1,
+    "school": "enchantment",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a tart and a feather"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "One creature of your choice that you can see within range makes a Wisdom saving throw. On a failed save, it has the Prone and Incapacitated conditions for the duration. During that time, it laughs uncontrollably if it's capable of laughter, and it can't end the Prone condition on itself. At the end of each of its turns and each time it takes damage, it makes another Wisdom saving throw. The target has Advantage on the save if the save is triggered by damage. On a successful save, the spell ends.",
+    "higherLevel": "You can target one additional creature for each spell slot level above 1.",
+    "actionRecipes": [
+      {
+        "type": "saveDC",
+        "ability": "wisdom"
+      }
+    ]
+  },
+  {
     "id": "hunters_mark",
     "classes": [
       "ranger"
@@ -1056,6 +1231,56 @@
     }
   },
   {
+    "id": "ice_knife",
+    "classes": [
+      "druid",
+      "sorcerer",
+      "wizard"
+    ],
+    "name": "Ice Knife",
+    "level": 1,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "somatic": true,
+      "material": "a drop of water or a piece of ice"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You create a shard of ice and fling it at one creature within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 Piercing damage. Hit or miss, the shard then explodes. The target and each creature within 5 feet of it must succeed on a Dexterity saving throw or take 2d6 Cold damage.",
+    "higherLevel": "The Cold damage increases by 1d6 for each spell slot level above 1.",
+    "actionRecipes": [
+      {
+        "type": "spellAttack",
+        "label": "Ice Knife Attack"
+      },
+      {
+        "type": "rawDamage",
+        "dice": "1d10",
+        "damageType": "piercing",
+        "label": "Ice Knife (Piercing)"
+      },
+      {
+        "type": "rawDamage",
+        "dice": "2d6",
+        "damageType": "cold",
+        "label": "Ice Knife (Explosion)"
+      }
+    ],
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 2,
+      "dice": "1d6"
+    }
+  },
+  {
     "id": "identify",
     "classes": [
       "bard",
@@ -1082,6 +1307,36 @@
       "type": "instantaneous"
     },
     "description": "You choose one object that you must touch throughout the casting of the spell. If it is a magic item or some other magic-imbued object, you learn its properties, how to use them, whether it requires attunement, and how many charges it has (if any). You learn whether any ongoing spells are affecting the item and what those spells are. If the item was created by a spell, you learn which spell created it. If you instead touch a creature throughout the casting, you learn what spells, if any, are currently affecting it.",
+    "actionRecipes": []
+  },
+  {
+    "id": "illusory_script",
+    "classes": [
+      "bard",
+      "warlock",
+      "wizard"
+    ],
+    "name": "Illusory Script",
+    "level": 1,
+    "school": "illusion",
+    "castingTime": {
+      "type": "ritual",
+      "base": {
+        "type": "action"
+      }
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "somatic": true,
+      "material": "ink worth 10+ GP, which the spell consumes"
+    },
+    "duration": {
+      "type": "hours",
+      "value": 240
+    },
+    "description": "You write on parchment, paper, or another suitable material and imbue it with an illusion that lasts for the duration. To you and any creatures you designate when you cast the spell, the writing appears normal, seems to be written in your hand, and conveys whatever meaning you intended when you wrote the text. To all others, the writing appears as if it were written in an unknown or magical script that is unintelligible. Alternatively, the illusion can alter the meaning, handwriting, and language of the text, though the language must be one you know. If the spell is dispelled, the original script and the illusion both disappear. A creature that has Truesight can read the hidden message.",
     "actionRecipes": []
   },
   {
@@ -1401,6 +1656,49 @@
         "ability": "wisdom"
       }
     ]
+  },
+  {
+    "id": "searing_smite",
+    "classes": [
+      "paladin"
+    ],
+    "name": "Searing Smite",
+    "level": 1,
+    "school": "evocation",
+    "castingTime": {
+      "type": "bonusAction"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "minutes",
+      "value": 1
+    },
+    "description": "You take this Bonus Action immediately after hitting a creature with a Melee weapon or an Unarmed Strike. As you hit the target, it takes an extra 1d6 Fire damage from the attack. At the start of each of its turns until the spell ends, the target takes 1d6 Fire damage and then makes a Constitution saving throw. On a failed save, the spell continues. On a successful save, the spell ends.",
+    "higherLevel": "All the damage increases by 1d6 for each spell slot level above 1.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "1d6",
+        "damageType": "fire",
+        "label": "Searing Smite (Initial)"
+      },
+      {
+        "type": "rawDamage",
+        "dice": "1d6",
+        "damageType": "fire",
+        "label": "Searing Smite (Ongoing)"
+      }
+    ],
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "1d6"
+    }
   },
   {
     "id": "shield",

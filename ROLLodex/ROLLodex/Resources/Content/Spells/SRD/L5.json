@@ -29,6 +29,32 @@
     "actionRecipes": []
   },
   {
+    "id": "antilife_shell",
+    "classes": [
+      "druid"
+    ],
+    "name": "Antilife Shell",
+    "level": 5,
+    "school": "abjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "selfEmits",
+      "area": "10-foot Emanation"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 60
+    },
+    "description": "An aura extends from you in a 10-foot Emanation for the duration. The aura prevents creatures other than Constructs and Undead from passing or reaching through it. An affected creature can cast spells or make attacks with Ranged or Reach weapons through the barrier. If you move so that an affected creature is forced to pass through the barrier, the spell ends.",
+    "actionRecipes": []
+  },
+  {
     "id": "arcane_hand",
     "classes": [
       "sorcerer",
@@ -1004,6 +1030,37 @@
       "value": 10
     },
     "description": "You gain the ability to move or manipulate creatures or objects by thought. When you cast the spell, and as your action each round for the duration, you can exert your will on one creature or object that you can see within range, causing the appropriate effect below. Creature: attempt telekinetic combat by moving the creature up to 30 feet in any direction; the creature makes a Strength check contested by your spellcasting ability check. Object: interact with an object weighing up to 1000 pounds — move, manipulate, or hurl it.",
+    "actionRecipes": []
+  },
+  {
+    "id": "telepathic_bond",
+    "classes": [
+      "bard",
+      "wizard"
+    ],
+    "name": "Telepathic Bond",
+    "level": 5,
+    "school": "divination",
+    "castingTime": {
+      "type": "ritual",
+      "base": {
+        "type": "action"
+      }
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "two eggs"
+    },
+    "duration": {
+      "type": "hours",
+      "value": 1
+    },
+    "description": "You forge a telepathic link among up to eight willing creatures of your choice within range, psychically linking each creature to all the others for the duration. Creatures that can't communicate in any languages aren't affected by this spell. Until the spell ends, the targets can communicate telepathically through the bond whether or not they share a language. The communication is possible over any distance, though it can't extend to other planes of existence.",
     "actionRecipes": []
   },
   {

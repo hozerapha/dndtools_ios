@@ -852,6 +852,34 @@
     "actionRecipes": []
   },
   {
+    "id": "private_sanctum",
+    "classes": [
+      "wizard"
+    ],
+    "name": "Private Sanctum",
+    "level": 4,
+    "school": "abjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 120
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a thin sheet of lead"
+    },
+    "duration": {
+      "type": "hours",
+      "value": 24
+    },
+    "description": "The casting takes 10 minutes. You make an area within range magically secure. The area is a Cube that can be as small as 5 feet to as large as 100 feet on each side. The spell lasts for the duration. When you cast the spell, you decide what sort of security the spell provides, choosing any of the following properties: sound can't pass through the barrier at the edge of the warded area; the barrier of the warded area appears dark and foggy, preventing vision (including Darkvision) through it; sensors created by Divination spells can't appear inside the protected area or pass through the barrier at its perimeter; creatures in the area can't be targeted by Divination spells; nothing can teleport into or out of the warded area; planar travel is blocked within the warded area. Casting this spell on the same spot every day for 365 days makes the spell last until dispelled.",
+    "higherLevel": "You can increase the size of the Cube by 100 feet for each spell slot level above 4.",
+    "actionRecipes": []
+  },
+  {
     "id": "resilient_sphere",
     "classes": [
       "wizard"
@@ -958,6 +986,52 @@
     },
     "description": "This spell turns the flesh of a willing creature you touch as hard as stone. Until the spell ends, the target has Resistance to Bludgeoning, Piercing, and Slashing damage from nonmagical attacks.",
     "actionRecipes": []
+  },
+  {
+    "id": "vitriolic_sphere",
+    "classes": [
+      "sorcerer",
+      "wizard"
+    ],
+    "name": "Vitriolic Sphere",
+    "level": 4,
+    "school": "evocation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 150
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a drop of bile"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You point at a location within range, and a glowing, 1-foot-diameter ball of acid streaks there and explodes in a 20-foot-radius Sphere. Each creature in that area makes a Dexterity saving throw. On a failed save, a creature takes 10d4 Acid damage and another 5d4 Acid damage at the end of its next turn. On a successful save, a creature takes half the initial damage only.",
+    "higherLevel": "The initial damage increases by 2d4 for each spell slot level above 4.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "10d4",
+        "damageType": "acid",
+        "label": "Vitriolic Sphere (Initial)"
+      },
+      {
+        "type": "rawDamage",
+        "dice": "5d4",
+        "damageType": "acid",
+        "label": "Vitriolic Sphere (Delayed)"
+      }
+    ],
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "2d4"
+    }
   },
   {
     "id": "wall_of_fire",

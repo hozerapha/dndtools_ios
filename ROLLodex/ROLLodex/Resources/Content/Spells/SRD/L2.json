@@ -162,6 +162,32 @@
     "actionRecipes": []
   },
   {
+    "id": "arcanists_magic_aura",
+    "classes": [
+      "wizard"
+    ],
+    "name": "Arcanist's Magic Aura",
+    "level": 2,
+    "school": "illusion",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a small square of silk"
+    },
+    "duration": {
+      "type": "hours",
+      "value": 24
+    },
+    "description": "With a touch, you place an illusion on a willing creature or an object that isn't being worn or carried. A creature gains the Mask effect below, and an object gains the False Aura effect below. The effect lasts for the duration. If you cast the spell on the same target every day for 30 days, the illusion lasts until dispelled. Mask (Creature): choose a creature type other than the target's actual type — spells and other magical effects treat the target as if it were a creature of the chosen type. False Aura (Object): you change the way the target appears to spells and magical effects that detect magical auras, such as Detect Magic — you can make a nonmagical object appear magical, make a magic item appear nonmagical, or change the object's aura so that it appears to belong to a school of magic you choose.",
+    "actionRecipes": []
+  },
+  {
     "id": "augury",
     "classes": [
       "cleric",
@@ -360,6 +386,35 @@
     "actionRecipes": []
   },
   {
+    "id": "darkvision",
+    "classes": [
+      "druid",
+      "ranger",
+      "sorcerer",
+      "wizard"
+    ],
+    "name": "Darkvision",
+    "level": 2,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a dried carrot"
+    },
+    "duration": {
+      "type": "hours",
+      "value": 8
+    },
+    "description": "For the duration, a willing creature you touch has Darkvision with a range of 150 feet.",
+    "actionRecipes": []
+  },
+  {
     "id": "detect_thoughts",
     "classes": [
       "bard",
@@ -490,6 +545,38 @@
     },
     "description": "You cause a creature or an object you can see within range to grow larger or smaller for the duration. Choose an unattended object or a creature that you can see; if the target is a creature, it can make a Constitution save to negate. Enlarge: the target's size becomes one larger; weapon damage increases by 1d4; advantage on Strength checks and saves. Reduce: size becomes one smaller; weapon damage decreases by 1d4 (min 1); disadvantage on Strength checks and saves.",
     "actionRecipes": []
+  },
+  {
+    "id": "enthrall",
+    "classes": [
+      "bard",
+      "warlock"
+    ],
+    "name": "Enthrall",
+    "level": 2,
+    "school": "enchantment",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "You weave a distracting string of words, causing creatures of your choice that you can see within range to make a Wisdom saving throw. Any creature you or your companions are fighting automatically succeeds on this save. On a failed save, a target has a −10 penalty to Wisdom (Perception) checks and Passive Perception until the spell ends.",
+    "actionRecipes": [
+      {
+        "type": "saveDC",
+        "ability": "wisdom"
+      }
+    ]
   },
   {
     "id": "find_steed",
@@ -1010,6 +1097,46 @@
     "actionRecipes": []
   },
   {
+    "id": "mind_spike",
+    "classes": [
+      "sorcerer",
+      "warlock",
+      "wizard"
+    ],
+    "name": "Mind Spike",
+    "level": 2,
+    "school": "divination",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 120
+    },
+    "components": {
+      "somatic": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 60
+    },
+    "description": "You drive a spike of psionic energy into the mind of one creature you can see within range. The target makes a Wisdom saving throw, taking 3d8 Psychic damage on a failed save or half as much damage on a successful one. On a failed save, you also always know the target's location until the spell ends, but only while the two of you are on the same plane of existence. While you have this knowledge, the target can't become hidden from you, and if it has the Invisible condition, it gains no benefit from that condition against you.",
+    "higherLevel": "The damage increases by 1d8 for each spell slot level above 2.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "3d8",
+        "damageType": "psychic",
+        "label": "Mind Spike"
+      }
+    ],
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "1d8"
+    }
+  },
+  {
     "id": "mirror_image",
     "classes": [
       "bard",
@@ -1128,6 +1255,42 @@
     },
     "description": "You radiate a concealing aura in a 30-foot Emanation for the duration. While in the aura, you and each creature you choose have a +10 bonus to Dexterity (Stealth) checks and leave no tracks.",
     "actionRecipes": []
+  },
+  {
+    "id": "phantasmal_force",
+    "classes": [
+      "bard",
+      "sorcerer",
+      "wizard"
+    ],
+    "name": "Phantasmal Force",
+    "level": 2,
+    "school": "illusion",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a bit of fleece"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "You attempt to craft an illusion in the mind of a creature you can see within range. The target makes an Intelligence saving throw. On a failed save, you create a phantasmal object, creature, or other phenomenon that is no larger than a 10-foot Cube and that is perceivable only to the target for the duration. The phantasm includes sound, temperature, and other stimuli. The target can take a Study action to examine the phantasm with an Intelligence (Investigation) check against your spell save DC; if the check succeeds, the target realizes that the phantasm is an illusion, and the spell ends. While affected by the spell, the target treats the phantasm as if it were real and rationalizes any illogical outcomes from interacting with it. An affected target can even take damage from the illusion if the phantasm represents a dangerous creature or hazard: on each of your turns, such a phantasm can deal 2d8 Psychic damage to the target if it is in the phantasm's area or within 5 feet of the phantasm. The target perceives the damage as a type appropriate to the illusion.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "2d8",
+        "damageType": "psychic",
+        "label": "Phantasmal Force (per turn)"
+      }
+    ]
   },
   {
     "id": "prayer_of_healing",
@@ -1314,6 +1477,84 @@
     },
     "description": "For the duration, you see creatures and objects that have the Invisible condition as if they were visible, and you can see into the Ethereal Plane. Ethereal creatures and objects appear ghostly and translucent.",
     "actionRecipes": []
+  },
+  {
+    "id": "shatter",
+    "classes": [
+      "bard",
+      "sorcerer",
+      "wizard"
+    ],
+    "name": "Shatter",
+    "level": 2,
+    "school": "evocation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a chip of mica"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "A loud noise erupts from a point of your choice within range. Each creature in a 10-foot-radius Sphere centered there makes a Constitution saving throw, taking 3d8 Thunder damage on a failed save or half as much damage on a successful one. A Construct has Disadvantage on the save. A nonmagical object that isn't being worn or carried also takes the damage if it's in the spell's area.",
+    "higherLevel": "The damage increases by 1d8 for each spell slot level above 2.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "3d8",
+        "damageType": "thunder",
+        "label": "Shatter"
+      }
+    ],
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "1d8"
+    }
+  },
+  {
+    "id": "shining_smite",
+    "classes": [
+      "paladin"
+    ],
+    "name": "Shining Smite",
+    "level": 2,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "bonusAction"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "You take this Bonus Action immediately after hitting a creature with a Melee weapon or an Unarmed Strike. The target hit by the strike takes an extra 2d6 Radiant damage from the attack. Until the spell ends, the target sheds Bright Light in a 5-foot radius, attack rolls against it have Advantage, and it can't benefit from the Invisible condition.",
+    "higherLevel": "The damage increases by 1d6 for each spell slot level above 2.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "2d6",
+        "damageType": "radiant",
+        "label": "Shining Smite"
+      }
+    ],
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "1d6"
+    }
   },
   {
     "id": "silence",

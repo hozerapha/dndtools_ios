@@ -82,6 +82,42 @@
     "actionRecipes": []
   },
   {
+    "id": "befuddlement",
+    "classes": [
+      "bard",
+      "druid",
+      "warlock",
+      "wizard"
+    ],
+    "name": "Befuddlement",
+    "level": 8,
+    "school": "enchantment",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 150
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a key ring with no keys"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You blast the mind of a creature that you can see within range. The target makes an Intelligence saving throw. On a failed save, the target takes 10d12 Psychic damage and can't cast spells or take the Magic action. At the end of every 30 days, the target repeats the save, ending the effect on a success. The effect can also be ended by the Greater Restoration, Heal, or Wish spell. On a successful save, the target takes half as much damage only.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "10d12",
+        "damageType": "psychic",
+        "label": "Befuddlement"
+      }
+    ]
+  },
+  {
     "id": "clone",
     "classes": [
       "wizard"

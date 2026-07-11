@@ -7,11 +7,14 @@ entry ships with the affected mechanic in the `description` /
 
 ## Already known before catalog completion
 
-- **Smite riders** (Blinding Smite +1d8/level, Branding Smite +1d6/level,
-  Wrathful Smite text). `grantsTriggeredEffect` has no upcast hook —
-  the rider's dice stay flat. Fix: add optional
-  `dicePerSlotLevel`/`levelsPerBonus` on `AddDamageDice`, and remember
-  the cast slot on `ActiveEffect` so the resolver can scale.
+- ~~**Smite riders**~~: NOT a live gap — the 2024 SRD 5.2.1 removed the
+  individual smite spells (Blinding / Branding / Wrathful / Thunderous)
+  and folded that mechanic into a single **Divine Smite** spell + a
+  Paladin class feature of the same name. Divine Smite (spell) is now
+  in the catalog with `extraDicePerLevel` upcast. The class-feature
+  side still needs wiring (a `castSpell(divine_smite)` grantedAction
+  that consumes a slot); track that in `PLAN_CharacterSheet.md`, not
+  here.
 - ~~**SpellRange.miles**~~: NOT a gap — `.miles(Int)` exists on
   `SpellRange` (SpellMetadata.swift). Old spec used
   `{"type":"feet","value":5280}` as a workaround; Clairvoyance /
@@ -26,15 +29,13 @@ entry ships with the affected mechanic in the `description` /
   `rawDamage`, but the per-turn re-entry damage (Sleet Storm,
   Stinking Cloud, Wall of Fire, Cloudkill, Wall of Ice) is text-only.
   Would need a "recurring effect" mechanic tied to a battlefield zone.
-- **Aura-adjacent riders**: Crusader's Mantle (+1d4 radiant to weapon
-  attacks from allies in a 30-ft aura), Aura of Purity, Aura of Life.
-  `selfBuff` on `SpellEffect` doesn't cover "grant a weapon-damage
-  rider to allies within range" — leave as text.
-- **Elemental Weapon** (+1 attack/+1d4 element, upgraded at 5th/7th).
-  `selfBuff` doesn't cover attack-bonus + element rider on a specific
-  weapon; text-only.
-- **Magic Weapon** (+1/+2/+3 by slot). Same story — no rider slot for
-  "give this weapon +N attack/damage".
+- ~~**Aura-adjacent riders**~~: Crusader's Mantle / Aura of Purity /
+  Elemental Weapon are all NOT in SRD 5.2.1 (removed). Aura of Life is
+  still in-catalog and remains an open gap for "grant a rider to allies
+  within range" — but it's a status buff (max HP floor + regen), not a
+  damage rider, so lower priority. Magic Weapon: still in the SRD (L2
+  Transmutation) and still an engine gap — "give this weapon +N
+  attack/damage" has no `selfBuff` shape yet.
 
 ## Discovered during L4-L9 catalog completion
 
@@ -115,9 +116,11 @@ entry ships with the affected mechanic in the `description` /
   round (5d10 → 4d10 → 3d10 → ... → 1d10 → 0). Same underlying
   "persistent wall damage" gap plus a novel decay shape. *Files:*
   `tsunami`.
-- **Retry-save cadence in days** — Feeblemind lets the target repeat
-  the Int save every 30 days. No structured way to encode "retry
-  every N days" on a condition. Text-only. *Files:* `feeblemind`.
+- ~~**Retry-save cadence in days**~~: Feeblemind removed from SRD 5.2.1.
+  The 8th-level replacement is **Befuddlement** (int/cha reduced to 1,
+  cannot cast/understand language, retries every 30 days). Same shape
+  gap as before — "retry every N days" still not encodable — but under
+  a different name. *Files:* `befuddlement`.
 - ~~**Unlimited / same-plane range**~~: NOT a gap for unlimited —
   `.unlimited` exists on `SpellRange`. Telepathy/Sending/Dream now
   use `{"type":"unlimited"}`. A dedicated `.samePlane` case is still
