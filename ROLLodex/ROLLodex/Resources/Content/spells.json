@@ -8880,5 +8880,402 @@
         "label": "Tsunami (initial)"
       }
     ]
+  },
+  {
+    "id": "astral_projection",
+    "classes": ["cleric", "warlock", "wizard"],
+    "name": "Astral Projection",
+    "level": 9,
+    "school": "necromancy",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "for each creature you affect with this spell, you must provide one jacinth worth 1000+ GP and one ornately carved bar of silver worth 100+ GP, all of which the spell consumes"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "The casting takes 1 hour. You and up to eight willing creatures within range project your astral bodies into the Astral Plane. Each subject's material body falls into a state of suspended animation. In this form, you retain your game statistics. Anything you're wearing or carrying stays behind in the Material Plane. Your astral body resembles your mortal form in nearly every way. A silvery cord connects your astral body to your material body, allowing you to return. The spell ends for you and your companions when you use your action to dismiss it. When the spell ends, the affected creature returns to its material body.",
+    "actionRecipes": []
+  },
+  {
+    "id": "foresight",
+    "classes": ["bard", "cleric", "druid", "wizard"],
+    "name": "Foresight",
+    "level": 9,
+    "school": "divination",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a hummingbird feather"
+    },
+    "duration": {
+      "type": "hours",
+      "value": 8
+    },
+    "description": "The casting takes 1 minute. You touch a willing creature and bestow a limited ability to see into the immediate future. For the duration, the target can't be Surprised and has Advantage on attack rolls, ability checks, and saving throws. Additionally, other creatures have Disadvantage on attack rolls against the target for the duration.",
+    "actionRecipes": []
+  },
+  {
+    "id": "gate",
+    "classes": ["cleric", "sorcerer", "wizard"],
+    "name": "Gate",
+    "level": 9,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a diamond worth 5000+ GP"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "You conjure a portal linking an unoccupied space you can see within range to a precise location on a different plane of existence. The portal is a circular opening 5 to 20 feet in diameter. You can orient the portal in any direction you choose. The portal lasts for the duration. The portal has a front and a back on each plane where it appears. Travel through the portal is possible only by moving through its front. Anything that does so is instantly transported to the other plane, appearing in the unoccupied space nearest to the portal. If you use this portal to open a portal to the plane of a specific being that you name, that being is drawn toward the portal and can pass through it to see you. You gain no ability to control the being.",
+    "actionRecipes": []
+  },
+  {
+    "id": "imprisonment",
+    "classes": ["warlock", "wizard"],
+    "name": "Imprisonment",
+    "level": 9,
+    "school": "abjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a vellum depiction or a carved statuette in the likeness of the target and special components that vary according to the version of the spell, together worth 500+ GP per HD of the target"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "The casting takes 1 minute. You create a magical restraint to hold a creature that you can see within range. The target must succeed on a Wisdom saving throw or be bound by the spell; if it succeeds, it is immune to this spell if you cast it again. While bound by this spell, the creature doesn't need to breathe, eat, or drink, and it doesn't age. Divination spells can't locate or perceive the target. You choose one of six forms of imprisonment: Burial, Chaining, Hedged Prison, Minimus Containment, Slumber, or Wall of Force. The spell ends if the caster dies or voluntarily ends the spell, or if a specific triggering condition set by the caster occurs.",
+    "actionRecipes": [
+      {
+        "type": "saveDC",
+        "ability": "wisdom"
+      }
+    ]
+  },
+  {
+    "id": "mass_heal",
+    "classes": ["cleric"],
+    "name": "Mass Heal",
+    "level": 9,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "A flood of healing energy flows from you into creatures around you. You restore up to 700 Hit Points, divided as you choose among any number of creatures that you can see within range. Creatures healed by this spell are also cured of all diseases and any effect making them Blinded or Deafened. This spell has no effect on Undead or Constructs.",
+    "actionRecipes": [
+      {
+        "type": "heal",
+        "dice": "700d1",
+        "addLevel": false,
+        "addSpellcastingMod": false,
+        "label": "Mass Heal (pool)"
+      }
+    ]
+  },
+  {
+    "id": "meteor_swarm",
+    "classes": ["sorcerer", "wizard"],
+    "name": "Meteor Swarm",
+    "level": 9,
+    "school": "evocation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 5280
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "Blazing orbs of fire plummet to the ground at four different points you can see within range. Each creature in a 40-foot-radius Sphere centered on each point must make a Dexterity saving throw. The Sphere spreads around corners. A creature takes 20d6 Fire damage and 20d6 Bludgeoning damage on a failed save, or half as much on a successful one. A creature in the area of more than one fiery burst is affected only once. The spell damages objects in the area and ignites flammable objects that aren't being worn or carried.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "20d6",
+        "damageType": "fire",
+        "label": "Meteor Swarm (fire)"
+      },
+      {
+        "type": "rawDamage",
+        "dice": "20d6",
+        "damageType": "bludgeoning",
+        "label": "Meteor Swarm (bludgeoning)"
+      }
+    ]
+  },
+  {
+    "id": "power_word_kill",
+    "classes": ["bard", "sorcerer", "warlock", "wizard"],
+    "name": "Power Word Kill",
+    "level": 9,
+    "school": "enchantment",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You utter a word of power that can compel one creature you can see within range to die instantly. If the creature you choose has 100 HP or fewer, it dies. Otherwise, the spell has no effect.",
+    "actionRecipes": []
+  },
+  {
+    "id": "prismatic_wall",
+    "classes": ["bard", "wizard"],
+    "name": "Prismatic Wall",
+    "level": 9,
+    "school": "abjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "minutes",
+      "value": 10
+    },
+    "description": "A shimmering, multicolored plane of light forms a vertical opaque wall - up to 90 feet long, 30 feet high, and 1 inch thick - centered on a point you can see within range. Alternatively, you can shape the wall into a Sphere with a 30-foot radius. The wall sheds Bright Light out to a range of 100 feet and Dim Light for an additional 100 feet. Any creature that is in the wall's area when the spell is cast must make a Constitution saving throw, taking 10d6 Radiant damage on a failed save, or half as much on a successful one. The wall consists of seven layers, each with a different color. Passing through the wall requires disabling each layer in order. Each layer can be dispelled or destroyed by a specific effect (e.g., Red: Cold damage; Orange: Strong wind; Yellow: Force damage; etc.).",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "10d6",
+        "damageType": "radiant",
+        "label": "Prismatic Wall (initial)"
+      }
+    ]
+  },
+  {
+    "id": "shapechange",
+    "classes": ["druid", "wizard"],
+    "name": "Shapechange",
+    "level": 9,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a jade circlet worth 1500+ GP, which you must place on your head before you cast the spell"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 60
+    },
+    "description": "You assume the form of a different creature for the duration. The new form can be of any creature with a challenge rating equal to your level or lower. The creature can't be a Construct or an Undead, and you must have seen the sort of creature before. You transform into an average example of that creature, one without class levels or the Spellcasting trait. Your game statistics are replaced by those of the chosen creature, but you retain your alignment and Intelligence, Wisdom, and Charisma scores. You also retain all of your skill and saving throw proficiencies. You can end the spell early by using an action on your turn to dismiss it. You can also change into a different creature as an action.",
+    "actionRecipes": []
+  },
+  {
+    "id": "storm_of_vengeance",
+    "classes": ["druid"],
+    "name": "Storm of Vengeance",
+    "level": 9,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 10000
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "A churning storm cloud forms, centered on a point you can see and spreading to form a 360-foot-radius cylinder 10 feet high. The following effects manifest while the storm cloud lasts: Round 1 - thunderclap deals 2d6 Thunder damage (Constitution save; failure is Deafened for 5 minutes). Round 2 - acid rain deals 1d6 Acid damage. Round 3 - six bolts of lightning strike, each dealing 10d6 Lightning damage (Dexterity save for half). Round 4 - hailstones deal 2d6 Bludgeoning damage. Rounds 5-10 - gusts and freezing rain make the area Difficult Terrain and Heavily Obscured, and each Ranged attack roll is made with Disadvantage.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "10d6",
+        "damageType": "lightning",
+        "label": "Storm of Vengeance (lightning, round 3)"
+      }
+    ]
+  },
+  {
+    "id": "time_stop",
+    "classes": ["sorcerer", "wizard"],
+    "name": "Time Stop",
+    "level": 9,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You briefly stop the flow of time for everyone but yourself. No time passes for other creatures, while you take 1d4 + 1 turns in a row, during which you can use actions and move as normal. This spell ends if one of the actions you use during this period, or any effects that you create during this period, affects a creature other than you or an object being worn or carried by someone other than you. In addition, the spell ends if you move to a place more than 1000 feet from the location where you cast it.",
+    "actionRecipes": []
+  },
+  {
+    "id": "true_polymorph",
+    "classes": ["bard", "warlock", "wizard"],
+    "name": "True Polymorph",
+    "level": 9,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a drop of mercury, a dollop of gum arabic, and a wisp of smoke"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 60
+    },
+    "description": "Choose one creature or nonmagical object that you can see within range. You transform the creature into a different creature, the creature into a nonmagical object, or the object into a creature (the object must be neither worn nor carried by another creature). The transformation lasts for the duration, or until the target drops to 0 HP or dies. If you concentrate on this spell for the full duration, the transformation becomes permanent. Shapechanges are limited to creatures whose challenge rating is equal to or less than the target's level (or CR).",
+    "actionRecipes": []
+  },
+  {
+    "id": "true_resurrection",
+    "classes": ["cleric", "druid"],
+    "name": "True Resurrection",
+    "level": 9,
+    "school": "necromancy",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a sprinkle of holy water and diamonds worth 25000+ GP, which the spell consumes"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "The casting takes 1 hour. You touch a creature that has been dead for no longer than 200 years and that died for any reason except old age. If the creature's soul is free and willing, the creature is restored to life with all its Hit Points. This spell closes all wounds, neutralizes any poison, cures all diseases, and lifts any curses affecting the creature when it died. The spell replaces damaged or missing organs and limbs. If the creature was Undead, it is restored to its non-Undead form. The spell can even provide a new body if the original no longer exists, in which case you must speak the creature's name.",
+    "actionRecipes": []
+  },
+  {
+    "id": "weird",
+    "classes": ["wizard"],
+    "name": "Weird",
+    "level": 9,
+    "school": "illusion",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 120
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "Drawing on the deepest fears of a group of creatures, you create illusory creatures in their minds, visible only to them. Each creature in a 30-foot-radius Sphere centered on a point you choose within range must make a Wisdom saving throw. On a failed save, a creature takes 10d10 Psychic damage and has the Frightened condition for the duration. On a successful save, a creature takes half as much damage only. While Frightened by this spell, a creature must make a Wisdom saving throw at the end of each of its turns. If it fails the save by 5 or more, it drops to 0 HP. Otherwise, a failed save deals 5d10 Psychic damage.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "10d10",
+        "damageType": "psychic",
+        "label": "Weird"
+      }
+    ]
+  },
+  {
+    "id": "wish",
+    "classes": ["sorcerer", "wizard"],
+    "name": "Wish",
+    "level": 9,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "Wish is the mightiest spell a mortal creature can cast. By simply speaking aloud, you can alter the very foundations of reality in accord with your desires. The basic use of this spell is to duplicate any other spell of 8th level or lower. You don't need to meet any requirements in that spell, including costly components. The spell simply takes effect. Alternatively, you can create one of the following effects of your choice: create an object of up to 25000 GP in value, allow up to twenty creatures you can see to regain all Hit Points and end all effects on them, grant up to ten creatures you can see resistance to a damage type of your choice for 8 hours, grant up to ten creatures immunity to a single spell for 8 hours, or undo a single recent event by forcing a reroll of any roll made within the last round. You might be able to achieve something beyond the scope of the above examples. The DM has discretion in determining what happens. The stress of casting this spell to produce any effect other than duplicating another spell weakens you. You take 1d10 Necrotic damage per level of the spell you duplicated. Additionally, after enduring that stress, each time you cast a spell until you finish a Long Rest, you take 1d10 Necrotic damage per level of the spell. If you take this damage, you have Disadvantage on all attack rolls and ability checks until you finish a Long Rest. There is a 33 percent chance that you are unable to cast Wish ever again if you suffer this stress.",
+    "actionRecipes": []
   }
 ]

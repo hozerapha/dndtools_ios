@@ -123,4 +123,42 @@ entry ships with the affected mechanic in the `description` /
 - **Line-of-sight range** — Tsunami's SRD range is "sight" (up to the
   DM's discretion). Flattened to `feet 10000` as a stand-in. Need a
   `SpellRange.sight` case that defers to DM adjudication. *Files:*
-  `tsunami`.
+  `tsunami`, `storm_of_vengeance`.
+- **Multi-round scripted timeline** — Storm of Vengeance runs a
+  10-round choreography: R1 thunderclap (2d6), R2 acid rain (1d6),
+  R3 six lightning bolts (10d6 each), R4 hailstones (2d6), R5-10
+  wind/rain effects. Shipped with the R3 lightning as the headline
+  recipe; the other rounds are text-only. Would need a
+  "round-scheduled effect" mechanic that fires different recipes on
+  specific rounds of the spell's concentration. *Files:*
+  `storm_of_vengeance`.
+- **Concentration converts to permanent** — True Polymorph and
+  Antipathy/Sympathy both work as concentration for the full duration
+  and then become permanent (unlimited). No way to express "if the
+  caster concentrates for the entire duration, the effect stops
+  needing concentration". Text-only. *Files:* `true_polymorph`,
+  `antipathy_sympathy`.
+- **Extra caster-only turns** — Time Stop grants the caster 1d4+1
+  additional consecutive turns. No structured way to grant
+  "self-only extra turns". Text-only. *Files:* `time_stop`.
+- **Spell-of-lower-level duplication** — Wish's primary use is to
+  duplicate any spell of 8th level or lower without meeting
+  requirements. No structured way to express "cast another spell as
+  part of this one". Text-only, DM-adjudicated. *Files:* `wish`.
+- **Per-cast escalating stress damage** — Wish's non-duplicate use
+  imposes 1d10 necrotic per level of the (implied) duplicated spell,
+  then 1d10 per level per subsequent spell cast until Long Rest, plus
+  a 33% chance of losing Wish forever. No structured way to encode
+  "recurring self-damage rider tied to spellcasting". Text-only.
+  *Files:* `wish`.
+- **Mode-selection with mode-specific counters** — Imprisonment's 6
+  modes (Burial, Chaining, Hedged Prison, Minimus Containment,
+  Slumber, Wall of Force) each have their own end-condition. Same
+  underlying "roll a table of effects" gap as Symbol / Prismatic
+  Spray, but on the *caster's* choice at cast time rather than a d8
+  roll. *Files:* `imprisonment`.
+- **Layered wall counter-conditions** — Prismatic Wall's 7 layers
+  each require a specific effect to disable (Red = cold, Orange =
+  strong wind, Yellow = force damage, etc.). Same shape gap as
+  Prismatic Spray's ray table, but persistent and sequential.
+  *Files:* `prismatic_wall`.
