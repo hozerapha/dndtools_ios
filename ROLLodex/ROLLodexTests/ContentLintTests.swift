@@ -191,6 +191,136 @@ struct ContentLintTests {
                                contentType: "gear", mode: .subset)
     }
 
+    // MARK: - Classes / subclasses manifest compliance
+
+    private struct ManifestClassFeature: Decodable {
+        let level: Int
+        let canonicalName: String
+    }
+    private struct ManifestClass: Decodable {
+        let canonicalName: String
+        let hitDie: Int
+        let subclassLevel: Int?
+        let features: [ManifestClassFeature]
+    }
+    private struct ClassManifest: Decodable { let classes: [ManifestClass] }
+
+    private struct ManifestSubclass: Decodable {
+        let canonicalName: String
+        let parentClass: String
+        let features: [ManifestClassFeature]
+    }
+    private struct SubclassManifest: Decodable { let subclasses: [ManifestSubclass] }
+
+    /// Bundled feature NAMES the manifest doesn't list at that level but which
+    /// legitimately exist as implementation details of another SRD-canonical
+    /// feature. Each entry is `(className, level, featureName)`. Keep this
+    /// short — most drift is real drift, not exemption territory.
+    private static let allowedBundledClassExtras: Set<String> = [
+        // Monk L2: the SRD lists these three activities under the umbrella
+        // "Monk's Focus" feature (which IS in the bundle). Bundled catalog
+        // splits them as separate Bonus-Action features so each can carry its
+        // own resourceCost / actionCost / recipe.
+        "monk/2/flurry of blows",
+        "monk/2/patient defense",
+        "monk/2/step of the wind",
+        // Ranger: Nature's Shield at L6 is a Hunter-flavored feature the
+        // bundle added at the base-class level. Left in place pending a
+        // subclass-vs-base call.
+        "ranger/6/nature's shield",
+        // Ranger L7/11/15: informational placeholders that tell the level-up
+        // sheet "your Ranger subclass unlocks a feature here" — the actual
+        // features live on the subclass definition (Hunter).
+        "ranger/7/subclass feature",
+        "ranger/11/subclass feature",
+        "ranger/15/subclass feature",
+    ]
+
+    /// Bundled feature NAMES that represent app-internal picker scaffolding,
+    /// not SRD-canonical features. Skipped in both directions.
+    private static let scaffoldingFeatureNames: Set<String> = [
+        "skill proficiencies", "equipment",
+    ]
+
+    /// Bundled features whose name is a per-class subclass-picker label; the
+    /// SRD calls this the class's "<Primal Path>" / "<Divine Domain>" etc.
+    /// Map generic bundle name -> SRD canonical name.
+    private static let subclassPickerNameMap: [String: String] = [
+        "Barbarian Subclass": "Primal Path",
+        "Bard Subclass":      "Bard College",
+        "Cleric Subclass":    "Divine Domain",
+        "Druid Subclass":     "Druid Circle",
+        "Fighter Subclass":   "Martial Archetype",
+        "Monk Subclass":      "Monastic Tradition",
+        "Paladin Subclass":   "Sacred Oath",
+        "Ranger Subclass":    "Ranger Archetype",
+        "Rogue Subclass":     "Roguish Origin",
+        "Sorcerer Subclass":  "Sorcerous Origin",
+        "Warlock Subclass":   "Otherworldly Patron",
+        "Wizard Subclass":    "Wizard Subclass",
+    ]
+
+    private func canonicalFeatureName(_ raw: String) -> String {
+        Self.subclassPickerNameMap[raw] ?? raw
+    }
+
+    @Test func classesMatchSRDManifest() throws {
+        let data = try loadManifestData("classes")
+        let manifest = try JSONDecoder().decode(ClassManifest.self, from: data)
+        let byName = Dictionary(uniqueKeysWithValues: manifest.classes.map { ($0.canonicalName, $0) })
+        let content = ContentStore()
+
+        var violations: [String] = []
+        for cls in content.classes.values.sorted(by: { $0.name < $1.name }) {
+            guard let entry = byName[cls.name] else {
+                violations.append("class \"\(cls.name)\" is not in SRD 5.2.1")
+                continue
+            }
+            if entry.hitDie != cls.hitDie {
+                violations.append("\(cls.name): hitDie \(cls.hitDie) but SRD says d\(entry.hitDie)")
+            }
+            // Per-level feature name compliance
+            let manifestByLevel = Dictionary(grouping: entry.features, by: \.level)
+                .mapValues { $0.map(\.canonicalName) }
+            for (levelStr, feats) in cls.levelFeatures {
+                guard let level = Int(levelStr) else { continue }
+                let sanctioned = Set((manifestByLevel[level] ?? []).map { $0.lowercased() })
+                for feat in feats {
+                    let raw = feat.name
+                    if Self.scaffoldingFeatureNames.contains(raw.lowercased()) { continue }
+                    let canonical = canonicalFeatureName(raw).lowercased()
+                    if sanctioned.contains(canonical) { continue }
+                    // Check allowlist
+                    let allowKey = "\(cls.id)/\(level)/\(raw.lowercased())"
+                    if Self.allowedBundledClassExtras.contains(allowKey) { continue }
+                    violations.append("\(cls.name) L\(level): \"\(raw)\" is not in SRD 5.2.1 (allowlist key: \(allowKey))")
+                }
+            }
+        }
+        #expect(violations.isEmpty,
+                "class manifest compliance failures:\n" + violations.joined(separator: "\n"))
+    }
+
+    @Test func subclassesMatchSRDManifest() throws {
+        let data = try loadManifestData("subclasses")
+        let manifest = try JSONDecoder().decode(SubclassManifest.self, from: data)
+        let manifestNamesByParent = Dictionary(grouping: manifest.subclasses, by: \.parentClass)
+            .mapValues { $0.map(\.canonicalName) }
+        let content = ContentStore()
+
+        var violations: [String] = []
+        for cls in content.classes.values.sorted(by: { $0.name < $1.name }) {
+            let bundledSubs = Set(cls.subclasses.map(\.name))
+            let sanctioned = Set(manifestNamesByParent[cls.name] ?? [])
+            let extra = bundledSubs.subtracting(sanctioned)
+            if !extra.isEmpty {
+                violations.append("\(cls.name) has non-SRD subclasses: \(extra.sorted())")
+            }
+        }
+        #expect(violations.isEmpty,
+                "subclass manifest compliance failures:\n" + violations.joined(separator: "\n"))
+    }
+
     // MARK: - Id uniqueness
 
     @Test func idsAreUniqueWithinEachFile() throws {

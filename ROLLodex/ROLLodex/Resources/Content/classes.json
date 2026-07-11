@@ -1,7 +1,13 @@
 [
   {
     "id": "fighter",
-    "multiclassProficiencies": ["armor_light", "armor_medium", "armor_shield", "weapon_simple", "weapon_martial"],
+    "multiclassProficiencies": [
+      "armor_light",
+      "armor_medium",
+      "armor_shield",
+      "weapon_simple",
+      "weapon_martial"
+    ],
     "name": "Fighter",
     "hitDie": 10,
     "primaryAbility": "strength",
@@ -154,6 +160,11 @@
             "refreshOn": "shortRest",
             "refreshAmount": "all"
           }
+        },
+        {
+          "id": "tactical_mind",
+          "name": "Tactical Mind",
+          "description": "You have a mind for tactics on and off the battlefield. When you fail an ability check, you can expend a use of your Second Wind to push yourself toward success. Rather than regaining Hit Points, you roll 1d10 and add the number rolled to the ability check, potentially turning it into a success. If the check still fails, this use of Second Wind isn't expended."
         }
       ],
       "3": [
@@ -188,6 +199,110 @@
               "perAbilityMax": 2
             }
           }
+        }
+      ],
+      "5": [
+        {
+          "id": "extra_attack",
+          "name": "Extra Attack",
+          "description": "You can attack twice instead of once whenever you take the Attack action on your turn."
+        },
+        {
+          "id": "tactical_shift",
+          "name": "Tactical Shift",
+          "description": "Whenever you activate your Second Wind with a Bonus Action, you can move up to half your Speed without provoking Opportunity Attacks."
+        }
+      ],
+      "6": [
+        {
+          "id": "ability_score_improvement_l6",
+          "name": "Ability Score Improvement",
+          "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+        }
+      ],
+      "8": [
+        {
+          "id": "ability_score_improvement_l8",
+          "name": "Ability Score Improvement",
+          "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+        }
+      ],
+      "9": [
+        {
+          "id": "indomitable_l9",
+          "name": "Indomitable",
+          "description": "If you fail a saving throw, you can reroll it with a bonus equal to your Fighter level. You must use the new roll, and you can't use this feature again until you finish a Long Rest. You can use this feature twice before a Long Rest starting at level 13 and three times before a Long Rest starting at level 17."
+        },
+        {
+          "id": "tactical_master",
+          "name": "Tactical Master",
+          "description": "When you attack with a weapon whose mastery property you can use, you can replace that property with the Push, Sap, or Slow property for that attack."
+        }
+      ],
+      "11": [
+        {
+          "id": "two_extra_attacks",
+          "name": "Two Extra Attacks",
+          "description": "You can attack three times instead of once whenever you take the Attack action on your turn."
+        }
+      ],
+      "12": [
+        {
+          "id": "ability_score_improvement_l12",
+          "name": "Ability Score Improvement",
+          "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+        }
+      ],
+      "13": [
+        {
+          "id": "indomitable_l13",
+          "name": "Indomitable",
+          "description": "Starting at level 13, you can use your Indomitable feature twice before finishing a Long Rest, rerolling a failed saving throw with a bonus equal to your Fighter level each time you use it."
+        },
+        {
+          "id": "studied_attacks",
+          "name": "Studied Attacks",
+          "description": "You study your opponents and learn from each attack you make. If you make an attack roll against a creature and miss, you have Advantage on your next attack roll against that creature before the end of your next turn."
+        }
+      ],
+      "14": [
+        {
+          "id": "ability_score_improvement_l14",
+          "name": "Ability Score Improvement",
+          "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+        }
+      ],
+      "16": [
+        {
+          "id": "ability_score_improvement_l16",
+          "name": "Ability Score Improvement",
+          "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+        }
+      ],
+      "17": [
+        {
+          "id": "action_surge_l17",
+          "name": "Action Surge",
+          "description": "Starting at level 17, you can use your Action Surge feature twice before a rest, but only once on the same turn."
+        },
+        {
+          "id": "indomitable_l17",
+          "name": "Indomitable",
+          "description": "Starting at level 17, you can use your Indomitable feature three times before finishing a Long Rest, rerolling a failed saving throw with a bonus equal to your Fighter level each time you use it."
+        }
+      ],
+      "19": [
+        {
+          "id": "epic_boon",
+          "name": "Epic Boon",
+          "description": "You gain an Epic Boon feat of your choice."
+        }
+      ],
+      "20": [
+        {
+          "id": "three_extra_attacks",
+          "name": "Three Extra Attacks",
+          "description": "You can attack four times instead of once whenever you take the Attack action on your turn."
         }
       ]
     },
@@ -324,6 +439,18 @@
           "name": "Arcane Recovery",
           "description": "Once per day after a Short Rest, recover expended spell slots up to half your Wizard level.",
           "actionRecipes": []
+        },
+        {
+          "id": "ritual_adept",
+          "name": "Ritual Adept",
+          "description": "You can cast any spell as a Ritual if that spell has the Ritual tag and the spell is in your spellbook. You needn't have the spell prepared, but you must read from the book to cast a spell in this way."
+        }
+      ],
+      "2": [
+        {
+          "id": "scholar",
+          "name": "Scholar",
+          "description": "While studying magic, you also specialized in another field of study. Choose one of the following skills in which you have proficiency: Arcana, History, Investigation, Medicine, Nature, or Religion. You have Expertise in the chosen skill."
         }
       ],
       "3": [
@@ -340,6 +467,62 @@
               "parentClassID": "wizard"
             }
           }
+        }
+      ],
+      "4": [
+        {
+          "id": "ability_score_improvement_l4",
+          "name": "Ability Score Improvement",
+          "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+        }
+      ],
+      "5": [
+        {
+          "id": "memorize_spell",
+          "name": "Memorize Spell",
+          "description": "Whenever you finish a Short Rest, you can study your spellbook and replace one of the level 1+ Wizard spells you have prepared for your Spellcasting feature with another level 1+ spell from the book."
+        }
+      ],
+      "8": [
+        {
+          "id": "ability_score_improvement_l8",
+          "name": "Ability Score Improvement",
+          "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+        }
+      ],
+      "12": [
+        {
+          "id": "ability_score_improvement_l12",
+          "name": "Ability Score Improvement",
+          "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+        }
+      ],
+      "16": [
+        {
+          "id": "ability_score_improvement_l16",
+          "name": "Ability Score Improvement",
+          "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+        }
+      ],
+      "18": [
+        {
+          "id": "spell_mastery",
+          "name": "Spell Mastery",
+          "description": "You have achieved such mastery over certain spells that you can cast them at will. Choose a level 1 and a level 2 spell in your spellbook that have a casting time of an action. You always have those spells prepared, and you can cast them at their lowest level without expending a spell slot. To cast either spell at a higher level, you must expend a spell slot. Whenever you finish a Long Rest, you can study your spellbook and replace one of those spells with an eligible spell of the same level from the book."
+        }
+      ],
+      "19": [
+        {
+          "id": "epic_boon",
+          "name": "Epic Boon",
+          "description": "You gain an Epic Boon feat of your choice."
+        }
+      ],
+      "20": [
+        {
+          "id": "signature_spells",
+          "name": "Signature Spells",
+          "description": "Choose two level 3 spells in your spellbook as your signature spells. You always have these spells prepared, and you can cast each of them once at level 3 without expending a spell slot. When you do so, you can't cast them in this way again until you finish a Short or Long Rest. To cast either spell at a higher level, you must expend a spell slot."
         }
       ]
     },
@@ -535,7 +718,9 @@
   },
   {
     "id": "rogue",
-    "multiclassProficiencies": ["armor_light"],
+    "multiclassProficiencies": [
+      "armor_light"
+    ],
     "name": "Rogue",
     "hitDie": 8,
     "primaryAbility": "dexterity",
@@ -990,7 +1175,11 @@
   },
   {
     "id": "barbarian",
-    "multiclassProficiencies": ["armor_shield", "weapon_simple", "weapon_martial"],
+    "multiclassProficiencies": [
+      "armor_shield",
+      "weapon_simple",
+      "weapon_martial"
+    ],
     "name": "Barbarian",
     "hitDie": 12,
     "primaryAbility": "strength",
@@ -1091,6 +1280,23 @@
           "description": "While you aren't wearing armor, your AC equals 10 + your Dexterity modifier + your Constitution modifier. You can use a Shield and still gain this benefit.",
           "kind": "passive",
           "unarmoredDefenseAbility": "constitution"
+        },
+        {
+          "id": "weapon_mastery",
+          "name": "Weapon Mastery",
+          "description": "Your training with weapons allows you to use the mastery properties of two kinds of Simple or Martial Melee weapons of your choice, such as Greataxes and Handaxes. Whenever you finish a Long Rest, you can practice weapon drills and change one of those weapon choices. When you reach certain Barbarian levels, you gain the ability to use the mastery properties of more kinds of weapons, as shown in the Weapon Mastery column of the Barbarian Features table."
+        }
+      ],
+      "2": [
+        {
+          "id": "danger_sense",
+          "name": "Danger Sense",
+          "description": "You gain an uncanny sense of when things aren't as they should be, giving you an edge when you dodge perils. You have Advantage on Dexterity saving throws unless you have the Incapacitated condition."
+        },
+        {
+          "id": "reckless_attack",
+          "name": "Reckless Attack",
+          "description": "You can throw aside all concern for defense to attack with increased ferocity. When you make your first attack roll on your turn, you can decide to attack recklessly. Doing so gives you Advantage on attack rolls using Strength until the start of your next turn, but attack rolls against you have Advantage during that time."
         }
       ],
       "3": [
@@ -1107,6 +1313,119 @@
               "parentClassID": "barbarian"
             }
           }
+        },
+        {
+          "id": "primal_knowledge",
+          "name": "Primal Knowledge",
+          "description": "You gain proficiency in another skill of your choice from the skill list available to Barbarians at level 1. In addition, while your Rage is active, you can channel primal power when you attempt certain tasks; whenever you make an ability check using one of the following skills, you can make it as a Strength check even if it normally uses a different ability: Acrobatics, Intimidation, Perception, Stealth, or Survival."
+        }
+      ],
+      "4": [
+        {
+          "id": "ability_score_improvement_l4",
+          "name": "Ability Score Improvement",
+          "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+        }
+      ],
+      "5": [
+        {
+          "id": "extra_attack",
+          "name": "Extra Attack",
+          "description": "You can attack twice instead of once whenever you take the Attack action on your turn."
+        },
+        {
+          "id": "fast_movement",
+          "name": "Fast Movement",
+          "description": "Your speed increases by 10 feet while you aren't wearing Heavy armor."
+        }
+      ],
+      "7": [
+        {
+          "id": "feral_instinct",
+          "name": "Feral Instinct",
+          "description": "Your instincts are so honed that you have Advantage on Initiative rolls."
+        },
+        {
+          "id": "instinctive_pounce",
+          "name": "Instinctive Pounce",
+          "description": "As part of the Bonus Action you take to enter your Rage, you can move up to half your Speed."
+        }
+      ],
+      "8": [
+        {
+          "id": "ability_score_improvement_l8",
+          "name": "Ability Score Improvement",
+          "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+        }
+      ],
+      "9": [
+        {
+          "id": "brutal_strike",
+          "name": "Brutal Strike",
+          "description": "If you use Reckless Attack, you can forgo any Advantage on one Strength-based attack roll of your choice on your turn (the chosen attack roll mustn't have Disadvantage). If the chosen attack roll hits, the target takes an extra 1d10 damage of the same type dealt by the weapon or Unarmed Strike, and you can cause one Brutal Strike effect of your choice: Forceful Blow (the target is pushed 15 feet away and you can move up to half your Speed toward it without provoking Opportunity Attacks) or Hamstring Blow (the target's Speed is reduced by 15 feet until the start of your next turn)."
+        }
+      ],
+      "11": [
+        {
+          "id": "relentless_rage",
+          "name": "Relentless Rage",
+          "description": "Your Rage can keep you fighting despite grievous wounds. If you drop to 0 Hit Points while your Rage is active and don't die outright, you can make a DC 10 Constitution saving throw; if you succeed, your Hit Points instead change to a number equal to twice your Barbarian level. Each time you use this feature after the first, the DC increases by 5, until you finish a Short or Long Rest, when the DC resets to 10."
+        }
+      ],
+      "12": [
+        {
+          "id": "ability_score_improvement_l12",
+          "name": "Ability Score Improvement",
+          "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+        }
+      ],
+      "13": [
+        {
+          "id": "improved_brutal_strike_l13",
+          "name": "Improved Brutal Strike",
+          "description": "You have honed new ways to attack furiously. The following effects are now among your Brutal Strike options: Staggering Blow (the target has Disadvantage on its next saving throw and can't make Opportunity Attacks until the start of your next turn) and Sundering Blow (before the start of your next turn, the next attack roll made by another creature against the target gains a +5 bonus; an attack roll can gain only one Sundering Blow bonus)."
+        }
+      ],
+      "15": [
+        {
+          "id": "persistent_rage",
+          "name": "Persistent Rage",
+          "description": "When you roll Initiative, you can regain all expended uses of Rage; you can't do so again until you finish a Long Rest. In addition, your Rage is now so fierce that it lasts for 10 minutes without you needing to do anything to extend it from round to round. Your Rage ends early if you have the Unconscious condition (not just the Incapacitated condition) or don Heavy armor."
+        }
+      ],
+      "16": [
+        {
+          "id": "ability_score_improvement_l16",
+          "name": "Ability Score Improvement",
+          "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+        }
+      ],
+      "17": [
+        {
+          "id": "improved_brutal_strike_l17",
+          "name": "Improved Brutal Strike",
+          "description": "The extra damage of your Brutal Strike increases to 2d10. In addition, you can use two different Brutal Strike effects whenever you use your Brutal Strike feature."
+        }
+      ],
+      "18": [
+        {
+          "id": "indomitable_might",
+          "name": "Indomitable Might",
+          "description": "If your total for a Strength check or Strength saving throw is less than your Strength score, you can use that score in place of the total."
+        }
+      ],
+      "19": [
+        {
+          "id": "epic_boon",
+          "name": "Epic Boon",
+          "description": "You gain an Epic Boon feat of your choice."
+        }
+      ],
+      "20": [
+        {
+          "id": "primal_champion",
+          "name": "Primal Champion",
+          "description": "You embody primal power. Your Strength and Constitution scores increase by 4, to a maximum of 25."
         }
       ]
     },
@@ -1195,7 +1514,13 @@
   },
   {
     "id": "paladin",
-    "multiclassProficiencies": ["armor_light", "armor_medium", "armor_shield", "weapon_simple", "weapon_martial"],
+    "multiclassProficiencies": [
+      "armor_light",
+      "armor_medium",
+      "armor_shield",
+      "weapon_simple",
+      "weapon_martial"
+    ],
     "name": "Paladin",
     "hitDie": 10,
     "primaryAbility": "strength",
@@ -1524,6 +1849,13 @@
           }
         }
       ],
+      "9": [
+        {
+          "id": "abjure_foes",
+          "name": "Abjure Foes",
+          "description": "As a Magic action, you can expend one use of this class's Channel Divinity to overwhelm foes with awe. As you present your Holy Symbol or weapon, you can target a number of creatures equal to your Charisma modifier (minimum of one creature) that you can see within 60 feet of yourself. Each target must succeed on a Wisdom saving throw or have the Frightened condition for 1 minute or until it takes any damage. While Frightened in this way, a target can do only one of the following on its turns: move, take an action, or take a Bonus Action."
+        }
+      ],
       "10": [
         {
           "id": "aura_of_courage",
@@ -1663,7 +1995,10 @@
   },
   {
     "id": "cleric",
-    "multiclassProficiencies": ["armor_light", "armor_shield"],
+    "multiclassProficiencies": [
+      "armor_light",
+      "armor_shield"
+    ],
     "name": "Cleric",
     "hitDie": 8,
     "primaryAbility": "wisdom",
@@ -2123,7 +2458,9 @@
   },
   {
     "id": "bard",
-    "multiclassProficiencies": ["armor_light"],
+    "multiclassProficiencies": [
+      "armor_light"
+    ],
     "name": "Bard",
     "hitDie": 8,
     "primaryAbility": "charisma",
@@ -2141,7 +2478,27 @@
     "spellcasting": {
       "ability": "charisma",
       "preparedRule": "preparedFromAll",
-      "spellsKnown": { "byClassLevel": { "1": 4, "2": 5, "3": 6, "4": 7, "5": 9, "6": 10, "7": 11, "8": 12, "9": 14, "10": 15, "11": 16, "13": 17, "15": 18, "17": 19, "18": 20, "19": 21, "20": 22 } },
+      "spellsKnown": {
+        "byClassLevel": {
+          "1": 4,
+          "2": 5,
+          "3": 6,
+          "4": 7,
+          "5": 9,
+          "6": 10,
+          "7": 11,
+          "8": 12,
+          "9": 14,
+          "10": 15,
+          "11": 16,
+          "13": 17,
+          "15": 18,
+          "17": 19,
+          "18": 20,
+          "19": 21,
+          "20": 22
+        }
+      },
       "cantripsKnown": {
         "byClassLevel": {
           "1": 2,
@@ -2604,7 +2961,27 @@
     "spellcasting": {
       "ability": "charisma",
       "preparedRule": "preparedFromAll",
-      "spellsKnown": { "byClassLevel": { "1": 2, "2": 4, "3": 6, "4": 7, "5": 9, "6": 10, "7": 11, "8": 12, "9": 14, "10": 15, "11": 16, "13": 17, "15": 18, "17": 19, "18": 20, "19": 21, "20": 22 } },
+      "spellsKnown": {
+        "byClassLevel": {
+          "1": 2,
+          "2": 4,
+          "3": 6,
+          "4": 7,
+          "5": 9,
+          "6": 10,
+          "7": 11,
+          "8": 12,
+          "9": 14,
+          "10": 15,
+          "11": 16,
+          "13": 17,
+          "15": 18,
+          "17": 19,
+          "18": 20,
+          "19": 21,
+          "20": 22
+        }
+      },
       "cantripsKnown": {
         "byClassLevel": {
           "1": 4,
@@ -3195,41 +3572,160 @@
   },
   {
     "id": "druid",
-    "multiclassProficiencies": ["armor_light", "armor_shield"],
+    "multiclassProficiencies": [
+      "armor_light",
+      "armor_shield"
+    ],
     "name": "Druid",
     "hitDie": 8,
     "primaryAbility": "wisdom",
-    "savingThrows": ["intelligence", "wisdom"],
-    "armorProficiencies": ["light", "shield"],
-    "weaponProficiencies": ["simple"],
+    "savingThrows": [
+      "intelligence",
+      "wisdom"
+    ],
+    "armorProficiencies": [
+      "light",
+      "shield"
+    ],
+    "weaponProficiencies": [
+      "simple"
+    ],
     "subclassLevel": 3,
     "spellcasting": {
       "ability": "wisdom",
       "preparedRule": "preparedFromAll",
       "cantripsKnown": {
-        "byClassLevel": { "1": 2, "4": 3, "10": 4 }
+        "byClassLevel": {
+          "1": 2,
+          "4": 3,
+          "10": 4
+        }
       },
       "spellsKnown": null,
       "slotTable": {
         "kind": "fullCaster",
         "table": {
-          "1": { "1": 2 },
-          "2": { "1": 3 },
-          "3": { "1": 4, "2": 2 },
-          "4": { "1": 4, "2": 3 },
-          "5": { "1": 4, "2": 3, "3": 2 },
-          "6": { "1": 4, "2": 3, "3": 3 },
-          "7": { "1": 4, "2": 3, "3": 3, "4": 1 },
-          "8": { "1": 4, "2": 3, "3": 3, "4": 2 },
-          "9": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 1 },
-          "10": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2 },
-          "11": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1 },
-          "13": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1 },
-          "15": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1, "8": 1 },
-          "17": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1, "7": 1, "8": 1, "9": 1 },
-          "18": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 1, "7": 1, "8": 1, "9": 1 },
-          "19": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 2, "7": 1, "8": 1, "9": 1 },
-          "20": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 3, "6": 2, "7": 2, "8": 1, "9": 1 }
+          "1": {
+            "1": 2
+          },
+          "2": {
+            "1": 3
+          },
+          "3": {
+            "1": 4,
+            "2": 2
+          },
+          "4": {
+            "1": 4,
+            "2": 3
+          },
+          "5": {
+            "1": 4,
+            "2": 3,
+            "3": 2
+          },
+          "6": {
+            "1": 4,
+            "2": 3,
+            "3": 3
+          },
+          "7": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 1
+          },
+          "8": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 2
+          },
+          "9": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 1
+          },
+          "10": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2
+          },
+          "11": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1
+          },
+          "13": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1
+          },
+          "15": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1,
+            "8": 1
+          },
+          "17": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "18": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "19": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 2,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          },
+          "20": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 3,
+            "6": 2,
+            "7": 2,
+            "8": 1,
+            "9": 1
+          }
         }
       },
       "ritualCasting": true,
@@ -3310,10 +3806,16 @@
             "id": "druid_wild_shape",
             "name": "Wild Shape Uses",
             "max": {
-              "byClassLevel": { "2": 2, "6": 3, "17": 4 }
+              "byClassLevel": {
+                "2": 2,
+                "6": 3,
+                "17": 4
+              }
             },
             "refreshOn": "shortRest",
-            "refreshAmount": { "fixed": 1 }
+            "refreshAmount": {
+              "fixed": 1
+            }
           }
         },
         {
@@ -3348,8 +3850,25 @@
             "id": "druid_asi_4",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
+        }
+      ],
+      "5": [
+        {
+          "id": "wild_resurgence",
+          "name": "Wild Resurgence",
+          "description": "Once on each of your turns, if you have no uses of Wild Shape left, you can give yourself one use by expending a spell slot (no action required). In addition, you can expend one use of Wild Shape (no action required) to give yourself a level 1 spell slot, but you can't do so again until you finish a Long Rest."
+        }
+      ],
+      "7": [
+        {
+          "id": "elemental_fury",
+          "name": "Elemental Fury",
+          "description": "The might of the elements flows through you. You gain one of the following options of your choice: Potent Spellcasting (add your Wisdom modifier to the damage you deal with any Druid cantrip) or Primal Strike (once on each of your turns when you hit a creature with an attack roll using a weapon or a Beast form's attack in Wild Shape, you can cause the target to take an extra 1d8 Cold, Fire, Lightning, or Thunder damage, chosen when you hit)."
         }
       ],
       "8": [
@@ -3361,7 +3880,10 @@
             "id": "druid_asi_8",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -3374,8 +3896,18 @@
             "id": "druid_asi_12",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
+        }
+      ],
+      "15": [
+        {
+          "id": "improved_elemental_fury",
+          "name": "Improved Elemental Fury",
+          "description": "The option you chose for Elemental Fury grows more powerful: if you chose Potent Spellcasting, when you cast a Druid cantrip with a range of 10 feet or greater, the spell's range increases by 300 feet; if you chose Primal Strike, the extra damage of your Primal Strike increases to 2d8."
         }
       ],
       "16": [
@@ -3387,7 +3919,10 @@
             "id": "druid_asi_16",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -3435,10 +3970,26 @@
                 "optionsSource": {
                   "type": "fixedOptions",
                   "options": [
-                    { "id": "arid", "name": "Arid", "description": "Deserts and savannahs — fire and lightning magic." },
-                    { "id": "polar", "name": "Polar", "description": "Frozen lands — cold and control magic." },
-                    { "id": "temperate", "name": "Temperate", "description": "Forests and grasslands — lightning and movement magic." },
-                    { "id": "tropical", "name": "Tropical", "description": "Jungles and swamps — poison, acid, and illusion magic." }
+                    {
+                      "id": "arid",
+                      "name": "Arid",
+                      "description": "Deserts and savannahs — fire and lightning magic."
+                    },
+                    {
+                      "id": "polar",
+                      "name": "Polar",
+                      "description": "Frozen lands — cold and control magic."
+                    },
+                    {
+                      "id": "temperate",
+                      "name": "Temperate",
+                      "description": "Forests and grasslands — lightning and movement magic."
+                    },
+                    {
+                      "id": "tropical",
+                      "name": "Tropical",
+                      "description": "Jungles and swamps — poison, acid, and illusion magic."
+                    }
                   ]
                 }
               }
@@ -3480,32 +4031,87 @@
   },
   {
     "id": "warlock",
-    "multiclassProficiencies": ["armor_light", "weapon_simple"],
+    "multiclassProficiencies": [
+      "armor_light",
+      "weapon_simple"
+    ],
     "name": "Warlock",
     "hitDie": 8,
     "primaryAbility": "charisma",
-    "savingThrows": ["wisdom", "charisma"],
-    "armorProficiencies": ["light"],
-    "weaponProficiencies": ["simple"],
+    "savingThrows": [
+      "wisdom",
+      "charisma"
+    ],
+    "armorProficiencies": [
+      "light"
+    ],
+    "weaponProficiencies": [
+      "simple"
+    ],
     "subclassLevel": 3,
     "spellcasting": {
       "ability": "charisma",
       "preparedRule": "pactMagic",
       "cantripsKnown": {
-        "byClassLevel": { "1": 2, "4": 3, "10": 4 }
+        "byClassLevel": {
+          "1": 2,
+          "4": 3,
+          "10": 4
+        }
       },
-      "spellsKnown": { "byClassLevel": { "1": 2, "2": 3, "3": 4, "4": 5, "5": 6, "6": 7, "7": 8, "8": 9, "9": 10, "11": 11, "13": 12, "15": 13, "17": 14, "19": 15 } },
+      "spellsKnown": {
+        "byClassLevel": {
+          "1": 2,
+          "2": 3,
+          "3": 4,
+          "4": 5,
+          "5": 6,
+          "6": 7,
+          "7": 8,
+          "8": 9,
+          "9": 10,
+          "11": 11,
+          "13": 12,
+          "15": 13,
+          "17": 14,
+          "19": 15
+        }
+      },
       "slotTable": {
         "kind": "pactMagic",
         "table": {
-          "1": { "slotLevel": 1, "count": 1 },
-          "2": { "slotLevel": 1, "count": 2 },
-          "3": { "slotLevel": 2, "count": 2 },
-          "5": { "slotLevel": 3, "count": 2 },
-          "7": { "slotLevel": 4, "count": 2 },
-          "9": { "slotLevel": 5, "count": 2 },
-          "11": { "slotLevel": 5, "count": 3 },
-          "17": { "slotLevel": 5, "count": 4 }
+          "1": {
+            "slotLevel": 1,
+            "count": 1
+          },
+          "2": {
+            "slotLevel": 1,
+            "count": 2
+          },
+          "3": {
+            "slotLevel": 2,
+            "count": 2
+          },
+          "5": {
+            "slotLevel": 3,
+            "count": 2
+          },
+          "7": {
+            "slotLevel": 4,
+            "count": 2
+          },
+          "9": {
+            "slotLevel": 5,
+            "count": 2
+          },
+          "11": {
+            "slotLevel": 5,
+            "count": 3
+          },
+          "17": {
+            "slotLevel": 5,
+            "count": 4
+          }
         }
       },
       "ritualCasting": false,
@@ -3551,24 +4157,85 @@
             "id": "eldritch_invocations",
             "prompt": "Choose your Eldritch Invocations",
             "count": {
-              "byClassLevel": { "1": 1, "2": 3, "5": 5, "7": 6, "9": 7, "12": 8, "15": 9, "18": 10 }
+              "byClassLevel": {
+                "1": 1,
+                "2": 3,
+                "5": 5,
+                "7": 6,
+                "9": 7,
+                "12": 8,
+                "15": 9,
+                "18": 10
+              }
             },
             "optionsSource": {
               "type": "fixedOptions",
               "options": [
-                { "id": "agonizing_blast", "name": "Agonizing Blast", "description": "When you cast Eldritch Blast, add your Charisma modifier to each beam's damage." },
-                { "id": "armor_of_shadows", "name": "Armor of Shadows", "description": "You can cast Mage Armor on yourself at will, without a spell slot." },
-                { "id": "devils_sight", "name": "Devil's Sight", "description": "You can see normally in dim light, darkness, and magical darkness to 120 feet." },
-                { "id": "eldritch_spear", "name": "Eldritch Spear", "description": "Your Eldritch Blast range increases to 300 feet." },
-                { "id": "fiendish_vigor", "name": "Fiendish Vigor", "description": "You can cast False Life on yourself at will as a level-1 spell, without a spell slot." },
-                { "id": "mask_of_many_faces", "name": "Mask of Many Faces", "description": "You can cast Disguise Self at will, without a spell slot." },
-                { "id": "misty_visions", "name": "Misty Visions", "description": "You can cast Silent Image at will, without a spell slot." },
-                { "id": "one_with_shadows", "name": "One with Shadows", "description": "In dim light or darkness you can become Invisible as a Magic action; it ends when you move or act." },
-                { "id": "otherworldly_leap", "name": "Otherworldly Leap", "description": "You can cast Jump on yourself at will, without a spell slot." },
-                { "id": "repelling_blast", "name": "Repelling Blast", "description": "When you hit a Large-or-smaller creature with Eldritch Blast, you can push it 10 feet away." },
-                { "id": "pact_of_the_blade", "name": "Pact of the Blade", "description": "Conjure a pact weapon as a Bonus Action; you can attack with your Charisma modifier and its damage is magical." },
-                { "id": "pact_of_the_chain", "name": "Pact of the Chain", "description": "You learn Find Familiar and can take special familiar forms (imp, sprite, etc.)." },
-                { "id": "pact_of_the_tome", "name": "Pact of the Tome", "description": "Your Book of Shadows grants three extra cantrips from any class list and two level-1 ritual spells." }
+                {
+                  "id": "agonizing_blast",
+                  "name": "Agonizing Blast",
+                  "description": "When you cast Eldritch Blast, add your Charisma modifier to each beam's damage."
+                },
+                {
+                  "id": "armor_of_shadows",
+                  "name": "Armor of Shadows",
+                  "description": "You can cast Mage Armor on yourself at will, without a spell slot."
+                },
+                {
+                  "id": "devils_sight",
+                  "name": "Devil's Sight",
+                  "description": "You can see normally in dim light, darkness, and magical darkness to 120 feet."
+                },
+                {
+                  "id": "eldritch_spear",
+                  "name": "Eldritch Spear",
+                  "description": "Your Eldritch Blast range increases to 300 feet."
+                },
+                {
+                  "id": "fiendish_vigor",
+                  "name": "Fiendish Vigor",
+                  "description": "You can cast False Life on yourself at will as a level-1 spell, without a spell slot."
+                },
+                {
+                  "id": "mask_of_many_faces",
+                  "name": "Mask of Many Faces",
+                  "description": "You can cast Disguise Self at will, without a spell slot."
+                },
+                {
+                  "id": "misty_visions",
+                  "name": "Misty Visions",
+                  "description": "You can cast Silent Image at will, without a spell slot."
+                },
+                {
+                  "id": "one_with_shadows",
+                  "name": "One with Shadows",
+                  "description": "In dim light or darkness you can become Invisible as a Magic action; it ends when you move or act."
+                },
+                {
+                  "id": "otherworldly_leap",
+                  "name": "Otherworldly Leap",
+                  "description": "You can cast Jump on yourself at will, without a spell slot."
+                },
+                {
+                  "id": "repelling_blast",
+                  "name": "Repelling Blast",
+                  "description": "When you hit a Large-or-smaller creature with Eldritch Blast, you can push it 10 feet away."
+                },
+                {
+                  "id": "pact_of_the_blade",
+                  "name": "Pact of the Blade",
+                  "description": "Conjure a pact weapon as a Bonus Action; you can attack with your Charisma modifier and its damage is magical."
+                },
+                {
+                  "id": "pact_of_the_chain",
+                  "name": "Pact of the Chain",
+                  "description": "You learn Find Familiar and can take special familiar forms (imp, sprite, etc.)."
+                },
+                {
+                  "id": "pact_of_the_tome",
+                  "name": "Pact of the Tome",
+                  "description": "Your Book of Shadows grants three extra cantrips from any class list and two level-1 ritual spells."
+                }
               ]
             }
           }
@@ -3614,7 +4281,10 @@
             "id": "warlock_asi_4",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -3627,7 +4297,10 @@
             "id": "warlock_asi_8",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -3641,17 +4314,9 @@
       ],
       "11": [
         {
-          "id": "mystic_arcanum_6",
-          "name": "Mystic Arcanum (6th)",
-          "description": "Choose one level-6 Warlock spell as an arcanum; you can cast it once per Long Rest without a spell slot. (Pick and track the spell manually — level-6+ spells aren't bundled yet.)",
-          "kind": "active",
-          "resource": {
-            "id": "warlock_arcanum_6",
-            "name": "Mystic Arcanum (6th)",
-            "max": 1,
-            "refreshOn": "longRest",
-            "refreshAmount": "all"
-          }
+          "id": "mystic_arcanum_l11",
+          "name": "Mystic Arcanum",
+          "description": "Your patron grants you a magical secret called an arcanum. Choose one level 6 Warlock spell as this arcanum. You can cast your arcanum spell once without expending a spell slot, and you must finish a Long Rest before you can cast it in this way again."
         }
       ],
       "12": [
@@ -3663,38 +4328,25 @@
             "id": "warlock_asi_12",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
       "13": [
         {
-          "id": "mystic_arcanum_7",
-          "name": "Mystic Arcanum (7th)",
-          "description": "Choose one level-7 Warlock spell as an arcanum; you can cast it once per Long Rest without a spell slot. (Pick and track the spell manually — level-6+ spells aren't bundled yet.)",
-          "kind": "active",
-          "resource": {
-            "id": "warlock_arcanum_7",
-            "name": "Mystic Arcanum (7th)",
-            "max": 1,
-            "refreshOn": "longRest",
-            "refreshAmount": "all"
-          }
+          "id": "mystic_arcanum_l13",
+          "name": "Mystic Arcanum",
+          "description": "As shown in the Warlock Features table, you gain another Warlock spell of your choice that can be cast in this way: choose one level 7 Warlock spell as an additional arcanum. You can cast it once without expending a spell slot, and you regain the use when you finish a Long Rest."
         }
       ],
       "15": [
         {
-          "id": "mystic_arcanum_8",
-          "name": "Mystic Arcanum (8th)",
-          "description": "Choose one level-8 Warlock spell as an arcanum; you can cast it once per Long Rest without a spell slot. (Pick and track the spell manually — level-6+ spells aren't bundled yet.)",
-          "kind": "active",
-          "resource": {
-            "id": "warlock_arcanum_8",
-            "name": "Mystic Arcanum (8th)",
-            "max": 1,
-            "refreshOn": "longRest",
-            "refreshAmount": "all"
-          }
+          "id": "mystic_arcanum_l15",
+          "name": "Mystic Arcanum",
+          "description": "As shown in the Warlock Features table, you gain another Warlock spell of your choice that can be cast in this way: choose one level 8 Warlock spell as an additional arcanum. You can cast it once without expending a spell slot, and you regain the use when you finish a Long Rest."
         }
       ],
       "16": [
@@ -3706,23 +4358,18 @@
             "id": "warlock_asi_16",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
       "17": [
         {
-          "id": "mystic_arcanum_9",
-          "name": "Mystic Arcanum (9th)",
-          "description": "Choose one level-9 Warlock spell as an arcanum; you can cast it once per Long Rest without a spell slot. (Pick and track the spell manually — level-6+ spells aren't bundled yet.)",
-          "kind": "active",
-          "resource": {
-            "id": "warlock_arcanum_9",
-            "name": "Mystic Arcanum (9th)",
-            "max": 1,
-            "refreshOn": "longRest",
-            "refreshAmount": "all"
-          }
+          "id": "mystic_arcanum_l17",
+          "name": "Mystic Arcanum",
+          "description": "As shown in the Warlock Features table, you gain another Warlock spell of your choice that can be cast in this way: choose one level 9 Warlock spell as an additional arcanum. You can cast it once without expending a spell slot, and you regain the use when you finish a Long Rest."
         }
       ],
       "19": [
@@ -3823,13 +4470,20 @@
   },
   {
     "id": "monk",
-    "multiclassProficiencies": ["weapon_simple"],
+    "multiclassProficiencies": [
+      "weapon_simple"
+    ],
     "name": "Monk",
     "hitDie": 8,
     "primaryAbility": "dexterity",
-    "savingThrows": ["strength", "dexterity"],
+    "savingThrows": [
+      "strength",
+      "dexterity"
+    ],
     "armorProficiencies": [],
-    "weaponProficiencies": ["simple"],
+    "weaponProficiencies": [
+      "simple"
+    ],
     "subclassLevel": 3,
     "levelFeatures": {
       "1": [
@@ -3869,7 +4523,12 @@
             {
               "type": "scaledDamage",
               "dieKind": {
-                "byClassLevel": { "1": 6, "5": 8, "11": 10, "17": 12 }
+                "byClassLevel": {
+                  "1": 6,
+                  "5": 8,
+                  "11": 10,
+                  "17": 12
+                }
               },
               "count": 1,
               "damageType": "bludgeoning",
@@ -3897,7 +4556,27 @@
             "id": "monk_focus",
             "name": "Focus Points",
             "max": {
-              "byClassLevel": { "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "10": 10, "11": 11, "12": 12, "13": 13, "14": 14, "15": 15, "16": 16, "17": 17, "18": 18, "19": 19, "20": 20 }
+              "byClassLevel": {
+                "2": 2,
+                "3": 3,
+                "4": 4,
+                "5": 5,
+                "6": 6,
+                "7": 7,
+                "8": 8,
+                "9": 9,
+                "10": 10,
+                "11": 11,
+                "12": 12,
+                "13": 13,
+                "14": 14,
+                "15": 15,
+                "16": 16,
+                "17": 17,
+                "18": 18,
+                "19": 19,
+                "20": 20
+              }
             },
             "refreshOn": "shortRest",
             "refreshAmount": "all"
@@ -3942,8 +4621,19 @@
           "description": "Your speed increases while you wear no armor and wield no Shield (+10 ft, growing to +30 ft at level 18; already folded into the Speed chip).",
           "kind": "passive",
           "speedBonus": {
-            "byClassLevel": { "2": 10, "6": 15, "10": 20, "14": 25, "18": 30 }
+            "byClassLevel": {
+              "2": 10,
+              "6": 15,
+              "10": 20,
+              "14": 25,
+              "18": 30
+            }
           }
+        },
+        {
+          "id": "uncanny_metabolism",
+          "name": "Uncanny Metabolism",
+          "description": "When you roll Initiative, you can regain all expended Focus Points. When you do so, roll your Martial Arts die, and regain a number of Hit Points equal to your Monk level plus the number rolled. Once you use this feature, you can't use it again until you finish a Long Rest."
         }
       ],
       "3": [
@@ -3987,7 +4677,10 @@
             "id": "monk_asi_4",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         },
         {
@@ -4046,7 +4739,10 @@
             "id": "monk_asi_8",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -4081,7 +4777,10 @@
             "id": "monk_asi_12",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -4121,7 +4820,10 @@
             "id": "monk_asi_16",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -4188,7 +4890,12 @@
                 {
                   "type": "scaledDamage",
                   "dieKind": {
-                    "byClassLevel": { "1": 6, "5": 8, "11": 10, "17": 12 }
+                    "byClassLevel": {
+                      "1": 6,
+                      "5": 8,
+                      "11": 10,
+                      "17": 12
+                    }
                   },
                   "count": 1,
                   "addAbility": "wisdom",
@@ -4232,35 +4939,108 @@
   },
   {
     "id": "ranger",
-    "multiclassProficiencies": ["armor_light", "armor_medium", "armor_shield", "weapon_simple", "weapon_martial"],
+    "multiclassProficiencies": [
+      "armor_light",
+      "armor_medium",
+      "armor_shield",
+      "weapon_simple",
+      "weapon_martial"
+    ],
     "name": "Ranger",
     "hitDie": 10,
     "primaryAbility": "dexterity",
-    "savingThrows": ["strength", "dexterity"],
-    "armorProficiencies": ["light", "medium", "shield"],
-    "weaponProficiencies": ["simple", "martial"],
+    "savingThrows": [
+      "strength",
+      "dexterity"
+    ],
+    "armorProficiencies": [
+      "light",
+      "medium",
+      "shield"
+    ],
+    "weaponProficiencies": [
+      "simple",
+      "martial"
+    ],
     "subclassLevel": 3,
     "spellcasting": {
       "ability": "wisdom",
       "preparedRule": "preparedFromAll",
       "casterLevelDivisor": 2,
       "cantripsKnown": {
-        "byClassLevel": { "1": 0 }
+        "byClassLevel": {
+          "1": 0
+        }
       },
-      "spellsKnown": { "byClassLevel": { "1": 2, "2": 3, "3": 4, "4": 5, "5": 6, "7": 7, "9": 9, "11": 10, "13": 11, "15": 12, "17": 13, "19": 14 } },
+      "spellsKnown": {
+        "byClassLevel": {
+          "1": 2,
+          "2": 3,
+          "3": 4,
+          "4": 5,
+          "5": 6,
+          "7": 7,
+          "9": 9,
+          "11": 10,
+          "13": 11,
+          "15": 12,
+          "17": 13,
+          "19": 14
+        }
+      },
       "slotTable": {
         "kind": "fullCaster",
         "table": {
-          "2": { "1": 2 },
-          "3": { "1": 3 },
-          "5": { "1": 4, "2": 2 },
-          "7": { "1": 4, "2": 3 },
-          "9": { "1": 4, "2": 3, "3": 2 },
-          "11": { "1": 4, "2": 3, "3": 3 },
-          "13": { "1": 4, "2": 3, "3": 3, "4": 1 },
-          "15": { "1": 4, "2": 3, "3": 3, "4": 2 },
-          "17": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 1 },
-          "19": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2 }
+          "2": {
+            "1": 2
+          },
+          "3": {
+            "1": 3
+          },
+          "5": {
+            "1": 4,
+            "2": 2
+          },
+          "7": {
+            "1": 4,
+            "2": 3
+          },
+          "9": {
+            "1": 4,
+            "2": 3,
+            "3": 2
+          },
+          "11": {
+            "1": 4,
+            "2": 3,
+            "3": 3
+          },
+          "13": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 1
+          },
+          "15": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 2
+          },
+          "17": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 1
+          },
+          "19": {
+            "1": 4,
+            "2": 3,
+            "3": 3,
+            "4": 3,
+            "5": 2
+          }
         }
       },
       "ritualCasting": false,
@@ -4302,7 +5082,12 @@
             "id": "ranger_hunters_mark_free",
             "name": "Hunter's Mark (free)",
             "max": {
-              "byClassLevel": { "1": 2, "5": 3, "13": 4, "17": 5 }
+              "byClassLevel": {
+                "1": 2,
+                "5": 3,
+                "13": 4,
+                "17": 5
+              }
             },
             "refreshOn": "longRest",
             "refreshAmount": "all"
@@ -4323,13 +5108,21 @@
             "id": "weapon_mastery",
             "prompt": "Choose 2 weapons whose Mastery property you can use",
             "count": {
-              "byClassLevel": { "1": 2, "9": 3 }
+              "byClassLevel": {
+                "1": 2,
+                "9": 3
+              }
             },
             "optionsSource": {
               "type": "weapons",
               "proficientOnly": true
             }
           }
+        },
+        {
+          "id": "spellcasting",
+          "name": "Spellcasting",
+          "description": "You have learned to channel the magical essence of nature to cast spells. Wisdom is your spellcasting ability for your Ranger spells, and you can use a Druidic Focus as a Spellcasting Focus for them. The Ranger Features table shows how many spell slots you have to cast your level 1+ spells, and you regain all expended slots when you finish a Long Rest."
         }
       ],
       "2": [
@@ -4399,25 +5192,6 @@
               "parentClassID": "ranger"
             }
           }
-        },
-        {
-          "id": "primal_awareness",
-          "name": "Primal Awareness",
-          "description": "You gain the ability to communicate with beasts in limited fashion. Whenever you finish a Long Rest, you gain 1 use of Speak with Animals which you can cast without a slot; you have Speak with Animals always prepared.",
-          "kind": "passive",
-          "resource": {
-            "id": "ranger_primal_awareness_free",
-            "name": "Primal Awareness (free)",
-            "max": 1,
-            "refreshOn": "longRest",
-            "refreshAmount": "all"
-          },
-          "grantsSpells": [
-            {
-              "spellID": "speak_with_animals",
-              "minCharacterLevel": 3
-            }
-          ]
         }
       ],
       "4": [
@@ -4429,7 +5203,10 @@
             "id": "ranger_asi_4",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -4439,15 +5216,6 @@
           "name": "Extra Attack",
           "description": "You can attack twice, instead of once, whenever you take the Attack action on your turn.",
           "kind": "passive"
-        },
-        {
-          "id": "roving",
-          "name": "Roving",
-          "description": "Your Speed increases by 10 feet while you aren't wearing Heavy armor. You also gain a Climb Speed and Swim Speed equal to your Speed.",
-          "kind": "passive",
-          "speedBonus": {
-            "byClassLevel": { "5": 10 }
-          }
         }
       ],
       "6": [
@@ -4465,6 +5233,11 @@
             "refreshOn": "longRest",
             "refreshAmount": "all"
           }
+        },
+        {
+          "id": "roving",
+          "name": "Roving",
+          "description": "Your Speed increases by 10 feet while you aren't wearing Heavy armor. You also have a Climb Speed and a Swim Speed equal to your Speed."
         }
       ],
       "7": [
@@ -4484,7 +5257,10 @@
             "id": "ranger_asi_8",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -4547,7 +5323,10 @@
             "id": "ranger_asi_12",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],
@@ -4593,7 +5372,10 @@
             "id": "ranger_asi_16",
             "prompt": "Distribute 2 ability points",
             "count": 2,
-            "optionsSource": { "type": "abilityScoreIncrease", "perAbilityMax": 2 }
+            "optionsSource": {
+              "type": "abilityScoreIncrease",
+              "perAbilityMax": 2
+            }
           }
         }
       ],

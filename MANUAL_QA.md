@@ -138,6 +138,31 @@ not surfacing at creation), which is why this list exists.
   picker, confirm the entries formerly labelled "Rations (1 day)" and
   "Rope, Hempen (50 feet)" now display as **Rations** and **Rope**
   respectively (the SRD 5.2.1 canonical names).
+- [ ] **SRD 5.2.1 class feature backfill (2026-07-11).** For each class,
+  level up (or create at a specific level) and confirm the newly authored
+  features appear in the Features tab and on level-up preview:
+  - **Barbarian**: Danger Sense + Reckless Attack at L2; Primal Knowledge
+    at L3; Fast Movement at L5; Feral Instinct + Instinctive Pounce at L7;
+    Brutal Strike at L9; Relentless Rage at L11; Persistent Rage at L15;
+    Indomitable Might at L18; Primal Champion at L20.
+  - **Fighter**: Tactical Mind at L2; Tactical Shift at L5; Indomitable
+    at L9/13/17; Tactical Master at L9; Two Extra Attacks at L11;
+    Studied Attacks at L13; Three Extra Attacks at L20.
+  - **Wizard**: Ritual Adept at L1; Scholar at L2; Memorize Spell at L5;
+    Spell Mastery at L18; Signature Spells at L20.
+  - **Druid**: Wild Resurgence at L5; Elemental Fury at L7; Improved
+    Elemental Fury at L15.
+  - **Warlock**: L11/13/15/17 Mystic Arcanum entries now display as
+    plain **Mystic Arcanum** (not "Mystic Arcanum (6th)/(7th)/…").
+  - **Ranger**: L1 Spellcasting now surfaced as a feature; L6 Roving
+    replaces the old L5 placement; L3 no longer shows Primal Awareness
+    (2014 leftover, removed).
+  - **Paladin**: Abjure Foes at L9.
+  - **Monk**: Uncanny Metabolism at L2 (alongside Monk's Focus + Flurry
+    of Blows / Patient Defense / Step of the Wind).
+  - **All classes**: **Ability Score Improvement** entries at L4/8/12/16
+    (Fighter also 6/14; Rogue also 10) and **Epic Boon** at L19 now show
+    up as their own features.
 - [ ] **SRD 5.2.1 compliance — spell schools shifted (2026-07-11).** In the
   spell picker or a spell's detail view, verify: **Cure Wounds** → Abjuration,
   **Poison Spray** → Necromancy, **Acid Splash** → Evocation, **Mass Heal** →

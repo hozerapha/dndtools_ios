@@ -1,0 +1,412 @@
+{
+  "sourceDoc": "SRD_CC_v5.2.1.pdf",
+  "extractedAt": "2026-07-11",
+  "features": [
+    {
+      "class": "Barbarian",
+      "level": 1,
+      "name": "Weapon Mastery",
+      "id": "weapon_mastery",
+      "description": "Your training with weapons allows you to use the mastery properties of two kinds of Simple or Martial Melee weapons of your choice, such as Greataxes and Handaxes. Whenever you finish a Long Rest, you can practice weapon drills and change one of those weapon choices. When you reach certain Barbarian levels, you gain the ability to use the mastery properties of more kinds of weapons, as shown in the Weapon Mastery column of the Barbarian Features table."
+    },
+    {
+      "class": "Barbarian",
+      "level": 2,
+      "name": "Danger Sense",
+      "id": "danger_sense",
+      "description": "You gain an uncanny sense of when things aren't as they should be, giving you an edge when you dodge perils. You have Advantage on Dexterity saving throws unless you have the Incapacitated condition."
+    },
+    {
+      "class": "Barbarian",
+      "level": 2,
+      "name": "Reckless Attack",
+      "id": "reckless_attack",
+      "description": "You can throw aside all concern for defense to attack with increased ferocity. When you make your first attack roll on your turn, you can decide to attack recklessly. Doing so gives you Advantage on attack rolls using Strength until the start of your next turn, but attack rolls against you have Advantage during that time."
+    },
+    {
+      "class": "Barbarian",
+      "level": 3,
+      "name": "Primal Knowledge",
+      "id": "primal_knowledge",
+      "description": "You gain proficiency in another skill of your choice from the skill list available to Barbarians at level 1. In addition, while your Rage is active, you can channel primal power when you attempt certain tasks; whenever you make an ability check using one of the following skills, you can make it as a Strength check even if it normally uses a different ability: Acrobatics, Intimidation, Perception, Stealth, or Survival."
+    },
+    {
+      "class": "Barbarian",
+      "level": 4,
+      "name": "Ability Score Improvement",
+      "id": "ability_score_improvement_l4",
+      "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+    },
+    {
+      "class": "Barbarian",
+      "level": 5,
+      "name": "Extra Attack",
+      "id": "extra_attack",
+      "description": "You can attack twice instead of once whenever you take the Attack action on your turn."
+    },
+    {
+      "class": "Barbarian",
+      "level": 5,
+      "name": "Fast Movement",
+      "id": "fast_movement",
+      "description": "Your speed increases by 10 feet while you aren't wearing Heavy armor."
+    },
+    {
+      "class": "Barbarian",
+      "level": 7,
+      "name": "Feral Instinct",
+      "id": "feral_instinct",
+      "description": "Your instincts are so honed that you have Advantage on Initiative rolls."
+    },
+    {
+      "class": "Barbarian",
+      "level": 7,
+      "name": "Instinctive Pounce",
+      "id": "instinctive_pounce",
+      "description": "As part of the Bonus Action you take to enter your Rage, you can move up to half your Speed."
+    },
+    {
+      "class": "Barbarian",
+      "level": 8,
+      "name": "Ability Score Improvement",
+      "id": "ability_score_improvement_l8",
+      "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+    },
+    {
+      "class": "Barbarian",
+      "level": 9,
+      "name": "Brutal Strike",
+      "id": "brutal_strike",
+      "description": "If you use Reckless Attack, you can forgo any Advantage on one Strength-based attack roll of your choice on your turn (the chosen attack roll mustn't have Disadvantage). If the chosen attack roll hits, the target takes an extra 1d10 damage of the same type dealt by the weapon or Unarmed Strike, and you can cause one Brutal Strike effect of your choice: Forceful Blow (the target is pushed 15 feet away and you can move up to half your Speed toward it without provoking Opportunity Attacks) or Hamstring Blow (the target's Speed is reduced by 15 feet until the start of your next turn)."
+    },
+    {
+      "class": "Barbarian",
+      "level": 11,
+      "name": "Relentless Rage",
+      "id": "relentless_rage",
+      "description": "Your Rage can keep you fighting despite grievous wounds. If you drop to 0 Hit Points while your Rage is active and don't die outright, you can make a DC 10 Constitution saving throw; if you succeed, your Hit Points instead change to a number equal to twice your Barbarian level. Each time you use this feature after the first, the DC increases by 5, until you finish a Short or Long Rest, when the DC resets to 10."
+    },
+    {
+      "class": "Barbarian",
+      "level": 12,
+      "name": "Ability Score Improvement",
+      "id": "ability_score_improvement_l12",
+      "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+    },
+    {
+      "class": "Barbarian",
+      "level": 13,
+      "name": "Improved Brutal Strike",
+      "id": "improved_brutal_strike_l13",
+      "description": "You have honed new ways to attack furiously. The following effects are now among your Brutal Strike options: Staggering Blow (the target has Disadvantage on its next saving throw and can't make Opportunity Attacks until the start of your next turn) and Sundering Blow (before the start of your next turn, the next attack roll made by another creature against the target gains a +5 bonus; an attack roll can gain only one Sundering Blow bonus)."
+    },
+    {
+      "class": "Barbarian",
+      "level": 15,
+      "name": "Persistent Rage",
+      "id": "persistent_rage",
+      "description": "When you roll Initiative, you can regain all expended uses of Rage; you can't do so again until you finish a Long Rest. In addition, your Rage is now so fierce that it lasts for 10 minutes without you needing to do anything to extend it from round to round. Your Rage ends early if you have the Unconscious condition (not just the Incapacitated condition) or don Heavy armor."
+    },
+    {
+      "class": "Barbarian",
+      "level": 16,
+      "name": "Ability Score Improvement",
+      "id": "ability_score_improvement_l16",
+      "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+    },
+    {
+      "class": "Barbarian",
+      "level": 17,
+      "name": "Improved Brutal Strike",
+      "id": "improved_brutal_strike_l17",
+      "description": "The extra damage of your Brutal Strike increases to 2d10. In addition, you can use two different Brutal Strike effects whenever you use your Brutal Strike feature."
+    },
+    {
+      "class": "Barbarian",
+      "level": 18,
+      "name": "Indomitable Might",
+      "id": "indomitable_might",
+      "description": "If your total for a Strength check or Strength saving throw is less than your Strength score, you can use that score in place of the total."
+    },
+    {
+      "class": "Barbarian",
+      "level": 19,
+      "name": "Epic Boon",
+      "id": "epic_boon",
+      "description": "You gain an Epic Boon feat of your choice."
+    },
+    {
+      "class": "Barbarian",
+      "level": 20,
+      "name": "Primal Champion",
+      "id": "primal_champion",
+      "description": "You embody primal power. Your Strength and Constitution scores increase by 4, to a maximum of 25."
+    },
+    {
+      "class": "Druid",
+      "level": 5,
+      "name": "Wild Resurgence",
+      "id": "wild_resurgence",
+      "description": "Once on each of your turns, if you have no uses of Wild Shape left, you can give yourself one use by expending a spell slot (no action required). In addition, you can expend one use of Wild Shape (no action required) to give yourself a level 1 spell slot, but you can't do so again until you finish a Long Rest."
+    },
+    {
+      "class": "Druid",
+      "level": 7,
+      "name": "Elemental Fury",
+      "id": "elemental_fury",
+      "description": "The might of the elements flows through you. You gain one of the following options of your choice: Potent Spellcasting (add your Wisdom modifier to the damage you deal with any Druid cantrip) or Primal Strike (once on each of your turns when you hit a creature with an attack roll using a weapon or a Beast form's attack in Wild Shape, you can cause the target to take an extra 1d8 Cold, Fire, Lightning, or Thunder damage, chosen when you hit)."
+    },
+    {
+      "class": "Druid",
+      "level": 15,
+      "name": "Improved Elemental Fury",
+      "id": "improved_elemental_fury",
+      "description": "The option you chose for Elemental Fury grows more powerful: if you chose Potent Spellcasting, when you cast a Druid cantrip with a range of 10 feet or greater, the spell's range increases by 300 feet; if you chose Primal Strike, the extra damage of your Primal Strike increases to 2d8."
+    },
+    {
+      "class": "Fighter",
+      "level": 2,
+      "name": "Tactical Mind",
+      "id": "tactical_mind",
+      "description": "You have a mind for tactics on and off the battlefield. When you fail an ability check, you can expend a use of your Second Wind to push yourself toward success. Rather than regaining Hit Points, you roll 1d10 and add the number rolled to the ability check, potentially turning it into a success. If the check still fails, this use of Second Wind isn't expended."
+    },
+    {
+      "class": "Fighter",
+      "level": 5,
+      "name": "Extra Attack",
+      "id": "extra_attack",
+      "description": "You can attack twice instead of once whenever you take the Attack action on your turn."
+    },
+    {
+      "class": "Fighter",
+      "level": 5,
+      "name": "Tactical Shift",
+      "id": "tactical_shift",
+      "description": "Whenever you activate your Second Wind with a Bonus Action, you can move up to half your Speed without provoking Opportunity Attacks."
+    },
+    {
+      "class": "Fighter",
+      "level": 6,
+      "name": "Ability Score Improvement",
+      "id": "ability_score_improvement_l6",
+      "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+    },
+    {
+      "class": "Fighter",
+      "level": 8,
+      "name": "Ability Score Improvement",
+      "id": "ability_score_improvement_l8",
+      "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+    },
+    {
+      "class": "Fighter",
+      "level": 9,
+      "name": "Indomitable",
+      "id": "indomitable_l9",
+      "description": "If you fail a saving throw, you can reroll it with a bonus equal to your Fighter level. You must use the new roll, and you can't use this feature again until you finish a Long Rest. You can use this feature twice before a Long Rest starting at level 13 and three times before a Long Rest starting at level 17."
+    },
+    {
+      "class": "Fighter",
+      "level": 9,
+      "name": "Tactical Master",
+      "id": "tactical_master",
+      "description": "When you attack with a weapon whose mastery property you can use, you can replace that property with the Push, Sap, or Slow property for that attack."
+    },
+    {
+      "class": "Fighter",
+      "level": 11,
+      "name": "Two Extra Attacks",
+      "id": "two_extra_attacks",
+      "description": "You can attack three times instead of once whenever you take the Attack action on your turn."
+    },
+    {
+      "class": "Fighter",
+      "level": 12,
+      "name": "Ability Score Improvement",
+      "id": "ability_score_improvement_l12",
+      "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+    },
+    {
+      "class": "Fighter",
+      "level": 13,
+      "name": "Indomitable",
+      "id": "indomitable_l13",
+      "description": "Starting at level 13, you can use your Indomitable feature twice before finishing a Long Rest, rerolling a failed saving throw with a bonus equal to your Fighter level each time you use it."
+    },
+    {
+      "class": "Fighter",
+      "level": 13,
+      "name": "Studied Attacks",
+      "id": "studied_attacks",
+      "description": "You study your opponents and learn from each attack you make. If you make an attack roll against a creature and miss, you have Advantage on your next attack roll against that creature before the end of your next turn."
+    },
+    {
+      "class": "Fighter",
+      "level": 14,
+      "name": "Ability Score Improvement",
+      "id": "ability_score_improvement_l14",
+      "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+    },
+    {
+      "class": "Fighter",
+      "level": 16,
+      "name": "Ability Score Improvement",
+      "id": "ability_score_improvement_l16",
+      "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+    },
+    {
+      "class": "Fighter",
+      "level": 17,
+      "name": "Action Surge",
+      "id": "action_surge_l17",
+      "description": "Starting at level 17, you can use your Action Surge feature twice before a rest, but only once on the same turn."
+    },
+    {
+      "class": "Fighter",
+      "level": 17,
+      "name": "Indomitable",
+      "id": "indomitable_l17",
+      "description": "Starting at level 17, you can use your Indomitable feature three times before finishing a Long Rest, rerolling a failed saving throw with a bonus equal to your Fighter level each time you use it."
+    },
+    {
+      "class": "Fighter",
+      "level": 19,
+      "name": "Epic Boon",
+      "id": "epic_boon",
+      "description": "You gain an Epic Boon feat of your choice."
+    },
+    {
+      "class": "Fighter",
+      "level": 20,
+      "name": "Three Extra Attacks",
+      "id": "three_extra_attacks",
+      "description": "You can attack four times instead of once whenever you take the Attack action on your turn."
+    },
+    {
+      "class": "Monk",
+      "level": 2,
+      "name": "Uncanny Metabolism",
+      "id": "uncanny_metabolism",
+      "description": "When you roll Initiative, you can regain all expended Focus Points. When you do so, roll your Martial Arts die, and regain a number of Hit Points equal to your Monk level plus the number rolled. Once you use this feature, you can't use it again until you finish a Long Rest."
+    },
+    {
+      "class": "Paladin",
+      "level": 9,
+      "name": "Abjure Foes",
+      "id": "abjure_foes",
+      "description": "As a Magic action, you can expend one use of this class's Channel Divinity to overwhelm foes with awe. As you present your Holy Symbol or weapon, you can target a number of creatures equal to your Charisma modifier (minimum of one creature) that you can see within 60 feet of yourself. Each target must succeed on a Wisdom saving throw or have the Frightened condition for 1 minute or until it takes any damage. While Frightened in this way, a target can do only one of the following on its turns: move, take an action, or take a Bonus Action."
+    },
+    {
+      "class": "Ranger",
+      "level": 1,
+      "name": "Spellcasting",
+      "id": "spellcasting",
+      "description": "You have learned to channel the magical essence of nature to cast spells. Wisdom is your spellcasting ability for your Ranger spells, and you can use a Druidic Focus as a Spellcasting Focus for them. The Ranger Features table shows how many spell slots you have to cast your level 1+ spells, and you regain all expended slots when you finish a Long Rest."
+    },
+    {
+      "class": "Ranger",
+      "level": 6,
+      "name": "Roving",
+      "id": "roving",
+      "description": "Your Speed increases by 10 feet while you aren't wearing Heavy armor. You also have a Climb Speed and a Swim Speed equal to your Speed."
+    },
+    {
+      "class": "Warlock",
+      "level": 11,
+      "name": "Mystic Arcanum",
+      "id": "mystic_arcanum_l11",
+      "description": "Your patron grants you a magical secret called an arcanum. Choose one level 6 Warlock spell as this arcanum. You can cast your arcanum spell once without expending a spell slot, and you must finish a Long Rest before you can cast it in this way again."
+    },
+    {
+      "class": "Warlock",
+      "level": 13,
+      "name": "Mystic Arcanum",
+      "id": "mystic_arcanum_l13",
+      "description": "As shown in the Warlock Features table, you gain another Warlock spell of your choice that can be cast in this way: choose one level 7 Warlock spell as an additional arcanum. You can cast it once without expending a spell slot, and you regain the use when you finish a Long Rest."
+    },
+    {
+      "class": "Warlock",
+      "level": 15,
+      "name": "Mystic Arcanum",
+      "id": "mystic_arcanum_l15",
+      "description": "As shown in the Warlock Features table, you gain another Warlock spell of your choice that can be cast in this way: choose one level 8 Warlock spell as an additional arcanum. You can cast it once without expending a spell slot, and you regain the use when you finish a Long Rest."
+    },
+    {
+      "class": "Warlock",
+      "level": 17,
+      "name": "Mystic Arcanum",
+      "id": "mystic_arcanum_l17",
+      "description": "As shown in the Warlock Features table, you gain another Warlock spell of your choice that can be cast in this way: choose one level 9 Warlock spell as an additional arcanum. You can cast it once without expending a spell slot, and you regain the use when you finish a Long Rest."
+    },
+    {
+      "class": "Wizard",
+      "level": 1,
+      "name": "Ritual Adept",
+      "id": "ritual_adept",
+      "description": "You can cast any spell as a Ritual if that spell has the Ritual tag and the spell is in your spellbook. You needn't have the spell prepared, but you must read from the book to cast a spell in this way."
+    },
+    {
+      "class": "Wizard",
+      "level": 2,
+      "name": "Scholar",
+      "id": "scholar",
+      "description": "While studying magic, you also specialized in another field of study. Choose one of the following skills in which you have proficiency: Arcana, History, Investigation, Medicine, Nature, or Religion. You have Expertise in the chosen skill."
+    },
+    {
+      "class": "Wizard",
+      "level": 4,
+      "name": "Ability Score Improvement",
+      "id": "ability_score_improvement_l4",
+      "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+    },
+    {
+      "class": "Wizard",
+      "level": 5,
+      "name": "Memorize Spell",
+      "id": "memorize_spell",
+      "description": "Whenever you finish a Short Rest, you can study your spellbook and replace one of the level 1+ Wizard spells you have prepared for your Spellcasting feature with another level 1+ spell from the book."
+    },
+    {
+      "class": "Wizard",
+      "level": 8,
+      "name": "Ability Score Improvement",
+      "id": "ability_score_improvement_l8",
+      "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+    },
+    {
+      "class": "Wizard",
+      "level": 12,
+      "name": "Ability Score Improvement",
+      "id": "ability_score_improvement_l12",
+      "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+    },
+    {
+      "class": "Wizard",
+      "level": 16,
+      "name": "Ability Score Improvement",
+      "id": "ability_score_improvement_l16",
+      "description": "You can increase one ability score by 2, or two ability scores by 1 each. You can't increase a score above 20. Alternatively, you can forgo the increase and take a feat."
+    },
+    {
+      "class": "Wizard",
+      "level": 18,
+      "name": "Spell Mastery",
+      "id": "spell_mastery",
+      "description": "You have achieved such mastery over certain spells that you can cast them at will. Choose a level 1 and a level 2 spell in your spellbook that have a casting time of an action. You always have those spells prepared, and you can cast them at their lowest level without expending a spell slot. To cast either spell at a higher level, you must expend a spell slot. Whenever you finish a Long Rest, you can study your spellbook and replace one of those spells with an eligible spell of the same level from the book."
+    },
+    {
+      "class": "Wizard",
+      "level": 19,
+      "name": "Epic Boon",
+      "id": "epic_boon",
+      "description": "You gain an Epic Boon feat of your choice."
+    },
+    {
+      "class": "Wizard",
+      "level": 20,
+      "name": "Signature Spells",
+      "id": "signature_spells",
+      "description": "Choose two level 3 spells in your spellbook as your signature spells. You always have these spells prepared, and you can cast each of them once at level 3 without expending a spell slot. When you do so, you can't cast them in this way again until you finish a Short or Long Rest. To cast either spell at a higher level, you must expend a spell slot."
+    }
+  ]
+}
