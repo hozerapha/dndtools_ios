@@ -70,3 +70,35 @@ entry ships with the affected mechanic in the `description` /
 - **Concentration in days** — Find the Path is concentration up to 1
   day, encoded as `concentration 1440` minutes. Same shape gap as the
   earlier `hours` durations. *Files:* `find_the_path`.
+- **Multi-mode ray tables** — Prismatic Spray fires 8 rays; player
+  rolls d8 per target to pick color. Damage rays (Red/Orange/Yellow/
+  Green/Blue) ship as a single `rawDamage` recipe with
+  `damageTypeChoices` for the 5 elements; the Indigo (Restrained →
+  Petrified), Violet (Blinded → planar banishment), and White (reroll
+  two) rays aren't modeled at all — text-only. Same underlying "roll
+  a table of effects" mechanic could recur for Chaos Bolt-style spells.
+  *Files:* `prismatic_spray`.
+- **HP-threshold effects** — Divine Word applies different conditions
+  based on the target's current HP (≤50 Deafened, ≤40 +Blinded, ≤30
+  +Stunned, ≤20 death; planar banish for outsiders). No structured
+  way to express "outcome branches on target's remaining HP" —
+  text-only. *Files:* `divine_word`.
+- **Recurring per-turn attack** — Arcane Sword's initial attack ships
+  as `[spellAttack, rawDamage]`, but the "each subsequent turn, use
+  your Bonus Action to move the sword and attack again" is text —
+  we don't model a persistent conjured entity that repeats an attack
+  action. Same shape would apply if we ever added the Bigby's Hand
+  attack modes as recurring actions. *Files:* `arcane_sword`.
+- **Long-range in miles** — Project Image's 500-mile range flattens
+  to `feet 2640000`. Same underlying `SpellRange.miles` gap as
+  Clairvoyance. *Files:* `project_image`.
+- **Multi-day durations** — Mirage Arcane's 10-day duration flattens
+  to `hours 240`; Simulacrum, Sequester, and Symbol ship as
+  `instantaneous` with "until dispelled" in prose. Same underlying
+  `SpellDuration.days` / `.untilDispelled` gap. *Files:*
+  `mirage_arcane`, `simulacrum`, `sequester`, `symbol`.
+- **Rune / glyph tables** — Symbol has 8 rune modes (Death, Discord,
+  Fear, Hopelessness, Insanity, Pain, Sleep, Stunning). Only Death's
+  damage roll (`10d10` necrotic) is expressed as a recipe; the other
+  7 modes are text-only. Same shape as Prismatic Spray's ray table
+  and Chaos Bolt's damage table. *Files:* `symbol`.
