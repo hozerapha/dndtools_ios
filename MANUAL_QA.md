@@ -163,6 +163,22 @@ not surfacing at creation), which is why this list exists.
   - **All classes**: **Ability Score Improvement** entries at L4/8/12/16
     (Fighter also 6/14; Rogue also 10) and **Epic Boon** at L19 now show
     up as their own features.
+- [ ] **Barbarian Fast Movement wires speed (2026-07-11).** Create a
+  Barbarian at L5 in light or no armor. Speed chip should show base speed
+  + **10** ft. Equip Chain Mail (heavy) → speed drops back to base. Match
+  the Unarmored Movement pattern for Monk.
+- [ ] **Barbarian Brutal Strike opt-in rider (2026-07-11).** Create a
+  Barbarian at L9. On a weapon attack that hits, the damage tab shows a
+  toggleable **Brutal Strike +1d10 force** chip. Toggling it in adds 1d10
+  to the roll. It's disabled after use until start of next turn (once
+  per turn — matches Sneak Attack pattern). The target-side effect
+  (Forceful Blow shove / Hamstring Blow speed reduction) is honor-system
+  and mentioned in the feature description.
+- [ ] **Fighter Indomitable resource pool (2026-07-11).** Create a Fighter
+  at L9. Features tab / Resources card shows **Indomitable Uses: 1/1**.
+  Level up to L13 → pool grows to 2/2; L17 → 3/3. Refreshes on Long Rest.
+  Rerolling a failed save is honor-system (mention "spend a use here"
+  in the description).
 - [ ] **SRD 5.2.1 compliance — spell schools shifted (2026-07-11).** In the
   spell picker or a spell's detail view, verify: **Cure Wounds** → Abjuration,
   **Poison Spray** → Necromancy, **Acid Splash** → Evocation, **Mass Heal** →

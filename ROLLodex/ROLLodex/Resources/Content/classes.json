@@ -231,7 +231,21 @@
         {
           "id": "indomitable_l9",
           "name": "Indomitable",
-          "description": "If you fail a saving throw, you can reroll it with a bonus equal to your Fighter level. You must use the new roll, and you can't use this feature again until you finish a Long Rest. You can use this feature twice before a Long Rest starting at level 13 and three times before a Long Rest starting at level 17."
+          "description": "You can reroll a saving throw that you fail; if you do so, you must use the new roll and can't use this feature again until you finish a Long Rest. Uses per Long Rest: 1 at L9, 2 at L13, 3 at L17. Spend a use here when you retry the save.",
+          "actionCost": "free",
+          "resource": {
+            "id": "fighter_indomitable",
+            "name": "Indomitable Uses",
+            "max": {
+              "byClassLevel": {
+                "9": 1,
+                "13": 2,
+                "17": 3
+              }
+            },
+            "refreshOn": "longRest",
+            "refreshAmount": "all"
+          }
         },
         {
           "id": "tactical_master",
@@ -257,7 +271,7 @@
         {
           "id": "indomitable_l13",
           "name": "Indomitable",
-          "description": "Starting at level 13, you can use your Indomitable feature twice before finishing a Long Rest, rerolling a failed saving throw with a bonus equal to your Fighter level each time you use it."
+          "description": "Your Indomitable pool grows to 2 uses per Long Rest. (The pool is shared with the base Indomitable feature — no separate uses to track.)"
         },
         {
           "id": "studied_attacks",
@@ -288,7 +302,7 @@
         {
           "id": "indomitable_l17",
           "name": "Indomitable",
-          "description": "Starting at level 17, you can use your Indomitable feature three times before finishing a Long Rest, rerolling a failed saving throw with a bonus equal to your Fighter level each time you use it."
+          "description": "Your Indomitable pool grows to 3 uses per Long Rest. (The pool is shared with the base Indomitable feature — no separate uses to track.)"
         }
       ],
       "19": [
@@ -1336,7 +1350,13 @@
         {
           "id": "fast_movement",
           "name": "Fast Movement",
-          "description": "Your speed increases by 10 feet while you aren't wearing Heavy armor."
+          "description": "Your speed increases by 10 feet while you aren't wearing Heavy armor. (Folded into the Speed chip.)",
+          "kind": "passive",
+          "speedBonus": {
+            "byClassLevel": {
+              "5": 10
+            }
+          }
         }
       ],
       "7": [
@@ -1362,7 +1382,30 @@
         {
           "id": "brutal_strike",
           "name": "Brutal Strike",
-          "description": "If you use Reckless Attack, you can forgo any Advantage on one Strength-based attack roll of your choice on your turn (the chosen attack roll mustn't have Disadvantage). If the chosen attack roll hits, the target takes an extra 1d10 damage of the same type dealt by the weapon or Unarmed Strike, and you can cause one Brutal Strike effect of your choice: Forceful Blow (the target is pushed 15 feet away and you can move up to half your Speed toward it without provoking Opportunity Attacks) or Hamstring Blow (the target's Speed is reduced by 15 feet until the start of your next turn)."
+          "description": "When you make an attack roll on your turn, you can forgo Reckless Attack's Advantage to deal an extra 1d10 Force damage on hit. Choose one Brutal Strike effect (Forceful Blow: shove the target 15 ft; Hamstring Blow: reduce target speed by 15 ft) — the extra damage is auto-added as an opt-in rider chip on the damage tab; the target-side rider effect is honor-system. At Barbarian 13, you can apply two Brutal Strike effects per attack; at 17, three.",
+          "triggeredEffect": {
+            "id": "brutal_strike_rider",
+            "name": "Brutal Strike",
+            "trigger": {
+              "type": "onAttackHit",
+              "filter": {
+                "type": "always"
+              }
+            },
+            "effect": {
+              "type": "addDamageDice",
+              "dice": "1d10",
+              "damageType": "force"
+            },
+            "lifecycle": {
+              "type": "oneShot"
+            },
+            "activation": "optIn",
+            "cost": {
+              "type": "oncePerTurn",
+              "flagID": "brutal_strike"
+            }
+          }
         }
       ],
       "11": [
