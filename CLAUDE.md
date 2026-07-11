@@ -63,6 +63,21 @@ Don't create folders before there's something to put in them.
 - Don't generate or modify the `.xcodeproj` by hand — the user creates and manages it via Xcode.
 - Don't write code that requires a paid Apple Developer account (push notifications, certain capabilities) without flagging it.
 
+## SRD-only content — non-negotiable
+
+Anything under `ROLLodex/ROLLodex/Resources/Content/` (spells, classes, subclasses, species, backgrounds, feats, magic items, monsters, conditions, etc.) MUST be present in the **CC-BY SRD 5.2.1** manifest at `Docs/SRD_5.2.1_manifest/`. Non-SRD entries (2014 SRD carryovers, Xanathar/Tasha, 2024 PHB, or invented) are forbidden regardless of how well-known they are, because the shipped app is distributed under CC-BY 4.0 attribution to the SRD.
+
+**Before authoring any content batch (yourself or via a subagent):**
+
+1. Read the relevant manifest file for the content type (e.g. `Docs/SRD_5.2.1_manifest/spells.txt` for spells) — it's the authoritative list.
+2. Every entry in your spec must match a manifest entry by canonical name.
+3. Class/subclass tags, spell lists, feature grants, and any cross-reference (spell IDs on a class feature, item IDs on a background) must also point at manifest entries.
+4. If the manifest is missing something a source you trust says is in SRD 5.2.1, update the manifest first with a source citation — do NOT ship the content without a manifest entry.
+
+**The `ContentLintTests.spellsAreInSRDManifest` test** and its siblings enforce this at ⌘U. A failing manifest check is a compliance issue, not a nit — fix the content, don't loosen the test.
+
+**Do not trust model memory for "is this in the SRD?"** The 5.2.1 CC-BY curated list differs from 5.1, from the PHB, and from what community wikis show. Grep the manifest; when in doubt, ask the user for a source URL rather than guessing.
+
 ## Building & running
 
 The user builds and runs through Xcode (⌘R) on the iOS Simulator. There is no CLI build step assumed. If you need to verify a build, ask the user to run it and report errors back rather than invoking `xcodebuild` yourself.

@@ -7,7 +7,7 @@
     ],
     "name": "Acid Splash",
     "level": 0,
-    "school": "conjuration",
+    "school": "evocation",
     "castingTime": {
       "type": "action"
     },
@@ -32,34 +32,6 @@
         "label": "Acid Splash"
       }
     ]
-  },
-  {
-    "id": "blade_ward",
-    "classes": [
-      "bard",
-      "sorcerer",
-      "warlock",
-      "wizard"
-    ],
-    "name": "Blade Ward",
-    "level": 0,
-    "school": "abjuration",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "targetSelf"
-    },
-    "components": {
-      "verbal": true,
-      "somatic": true
-    },
-    "duration": {
-      "type": "rounds",
-      "value": 1
-    },
-    "description": "You extend your hand and trace a sigil of warding in the air. Until the end of your next turn, you have Resistance against Bludgeoning, Piercing, and Slashing damage dealt by weapon attacks.",
-    "actionRecipes": []
   },
   {
     "id": "chill_touch",
@@ -229,34 +201,6 @@
     ]
   },
   {
-    "id": "friends",
-    "classes": [
-      "bard",
-      "sorcerer",
-      "warlock",
-      "wizard"
-    ],
-    "name": "Friends",
-    "level": 0,
-    "school": "enchantment",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "targetSelf"
-    },
-    "components": {
-      "somatic": true,
-      "material": "a small amount of makeup applied to the face as this spell is cast"
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 1
-    },
-    "description": "For the duration, you have Advantage on all Charisma checks directed at one creature of your choice that isn't hostile to you. When the spell ends, the creature realizes you used magic to influence its mood and can become hostile toward you.",
-    "actionRecipes": []
-  },
-  {
     "id": "guidance",
     "classes": [
       "cleric",
@@ -373,6 +317,7 @@
     "id": "message",
     "classes": [
       "bard",
+      "druid",
       "sorcerer",
       "wizard"
     ],
@@ -499,9 +444,7 @@
   {
     "id": "produce_flame",
     "classes": [
-      "druid",
-      "sorcerer",
-      "wizard"
+      "druid"
     ],
     "name": "Produce Flame",
     "level": 0,
@@ -786,114 +729,6 @@
     "actionRecipes": []
   },
   {
-    "id": "thorn_whip",
-    "classes": [
-      "druid"
-    ],
-    "name": "Thorn Whip",
-    "level": 0,
-    "school": "transmutation",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "feet",
-      "value": 30
-    },
-    "components": {
-      "verbal": true,
-      "somatic": true,
-      "material": "the stem of a plant with thorns"
-    },
-    "duration": {
-      "type": "instantaneous"
-    },
-    "description": "You create a long, vine-like whip covered in thorns that lashes out at your command toward a creature in range. Make a melee spell attack against the target (range 30 feet). On a hit, the target takes 1d6 Piercing damage, and if it is Large or smaller, you can pull it up to 10 feet closer to you.",
-    "higherLevel": "This spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).",
-    "actionRecipes": [
-      {
-        "type": "spellAttack",
-        "label": "Thorn Whip Attack"
-      },
-      {
-        "type": "rawDamage",
-        "dice": "1d6",
-        "damageType": "piercing",
-        "label": "Thorn Whip Damage"
-      }
-    ]
-  },
-  {
-    "id": "thunderclap",
-    "classes": [
-      "bard",
-      "druid",
-      "sorcerer",
-      "wizard"
-    ],
-    "name": "Thunderclap",
-    "level": 0,
-    "school": "evocation",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "selfEmits",
-      "area": "5-foot Emanation"
-    },
-    "components": {
-      "somatic": true
-    },
-    "duration": {
-      "type": "instantaneous"
-    },
-    "description": "You create a burst of thunderous sound audible within 100 feet. Each creature within 5 feet of you (other than you) must succeed on a Constitution saving throw or take 1d6 Thunder damage.",
-    "higherLevel": "This spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).",
-    "actionRecipes": [
-      {
-        "type": "rawDamage",
-        "dice": "1d6",
-        "damageType": "thunder",
-        "label": "Thunderclap"
-      }
-    ]
-  },
-  {
-    "id": "toll_the_dead",
-    "classes": [
-      "cleric",
-      "warlock",
-      "wizard"
-    ],
-    "name": "Toll the Dead",
-    "level": 0,
-    "school": "necromancy",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "feet",
-      "value": 60
-    },
-    "components": {
-      "verbal": true,
-      "somatic": true
-    },
-    "duration": {
-      "type": "instantaneous"
-    },
-    "description": "You point at a creature within range and the sound of a dolorous bell fills the air around it. The target must succeed on a Wisdom saving throw or take 1d8 Necrotic damage. If the target is missing any of its Hit Points, it instead takes 1d12 Necrotic damage.",
-    "higherLevel": "This spell's damage increases by one die when you reach 5th level (2 dice), 11th level (3 dice), and 17th level (4 dice).",
-    "actionRecipes": [
-      {
-        "type": "rawDamage",
-        "dice": "1d8",
-        "damageType": "necrotic",
-        "label": "Toll the Dead"
-      }
-    ]
-  },
-  {
     "id": "true_strike",
     "classes": [
       "bard",
@@ -951,39 +786,6 @@
         "dice": "1d6",
         "damageType": "psychic",
         "label": "Vicious Mockery"
-      }
-    ]
-  },
-  {
-    "id": "word_of_radiance",
-    "classes": [
-      "cleric"
-    ],
-    "name": "Word of Radiance",
-    "level": 0,
-    "school": "evocation",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "selfEmits",
-      "area": "5-foot Emanation"
-    },
-    "components": {
-      "verbal": true,
-      "material": "a holy symbol"
-    },
-    "duration": {
-      "type": "instantaneous"
-    },
-    "description": "You utter a divine word and burning radiance erupts from you. Each creature of your choice you can see within 5 feet of you must succeed on a Constitution saving throw or take 1d6 Radiant damage.",
-    "higherLevel": "This spell's damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).",
-    "actionRecipes": [
-      {
-        "type": "rawDamage",
-        "dice": "1d6",
-        "damageType": "radiant",
-        "label": "Word of Radiance"
       }
     ]
   }

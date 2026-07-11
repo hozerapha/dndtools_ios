@@ -55,6 +55,7 @@
   {
     "id": "antipathy_sympathy",
     "classes": [
+      "bard",
       "druid",
       "wizard"
     ],
@@ -110,7 +111,6 @@
     "classes": [
       "cleric",
       "druid",
-      "sorcerer",
       "wizard"
     ],
     "name": "Control Weather",
@@ -137,7 +137,6 @@
   {
     "id": "demiplane",
     "classes": [
-      "bard",
       "sorcerer",
       "warlock",
       "wizard"
@@ -206,7 +205,7 @@
     ],
     "name": "Earthquake",
     "level": 8,
-    "school": "evocation",
+    "school": "transmutation",
     "castingTime": {
       "type": "action"
     },
@@ -234,42 +233,6 @@
     ]
   },
   {
-    "id": "feeblemind",
-    "classes": [
-      "bard",
-      "druid",
-      "warlock",
-      "wizard"
-    ],
-    "name": "Feeblemind",
-    "level": 8,
-    "school": "enchantment",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "feet",
-      "value": 150
-    },
-    "components": {
-      "verbal": true,
-      "somatic": true,
-      "material": "a handful of clay, crystal, glass, or mineral spheres"
-    },
-    "duration": {
-      "type": "instantaneous"
-    },
-    "description": "You blast the mind of a creature that you can see within range, attempting to shatter its intellect and personality. The target takes 4d6 Psychic damage and must make an Intelligence saving throw. On a failed save, the creature's Intelligence and Charisma scores become 1. The creature can't cast spells, activate magic items, understand language, or communicate in any intelligible way. The creature can, however, identify its friends, follow them, and even protect them. At the end of every 30 days, the creature can repeat its saving throw. On a success, the spell ends.",
-    "actionRecipes": [
-      {
-        "type": "rawDamage",
-        "dice": "4d6",
-        "damageType": "psychic",
-        "label": "Feeblemind"
-      }
-    ]
-  },
-  {
     "id": "glibness",
     "classes": [
       "bard",
@@ -277,7 +240,7 @@
     ],
     "name": "Glibness",
     "level": 8,
-    "school": "transmutation",
+    "school": "enchantment",
     "castingTime": {
       "type": "action"
     },
@@ -437,6 +400,7 @@
   {
     "id": "sunburst",
     "classes": [
+      "cleric",
       "druid",
       "sorcerer",
       "wizard"
@@ -468,61 +432,6 @@
         "label": "Sunburst"
       }
     ]
-  },
-  {
-    "id": "telepathy",
-    "classes": [
-      "bard",
-      "sorcerer",
-      "wizard"
-    ],
-    "name": "Telepathy",
-    "level": 8,
-    "school": "enchantment",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "unlimited"
-    },
-    "components": {
-      "verbal": true,
-      "somatic": true,
-      "material": "a pair of linked silver rings"
-    },
-    "duration": {
-      "type": "hours",
-      "value": 24
-    },
-    "description": "You create a telepathic link between yourself and a willing creature with which you are familiar. The creature can be anywhere on the same plane of existence as you. The spell ends if you or the target are no longer on the same plane. Until the spell ends, you and the target can instantaneously share words, images, sounds, and other sensory messages with each other through the link, and the target recognizes you as the creature it is communicating with. The spell enables a creature with an Intelligence score of at least 1 to understand the meaning of your words and take in the scope of any sensory messages you send to it.",
-    "actionRecipes": []
-  },
-  {
-    "id": "trap_the_soul",
-    "classes": [
-      "warlock",
-      "wizard"
-    ],
-    "name": "Trap the Soul",
-    "level": 8,
-    "school": "conjuration",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "feet",
-      "value": 60
-    },
-    "components": {
-      "verbal": true,
-      "somatic": true,
-      "material": "a corked bottle worth 1000+ GP containing a diamond of the same value; both are consumed by the spell"
-    },
-    "duration": {
-      "type": "instantaneous"
-    },
-    "description": "You attempt to draw a creature's essence into a receptacle, imprisoning it there. The creature must be able to see you and must make a Charisma saving throw. On a failed save, the target's body vanishes, its soul is trapped in the receptacle, and its equipment falls in a heap where it stood. The receptacle magically holds the soul until the receptacle is broken or the spell is dispelled. Attacking and breaking the receptacle frees the creature. When freed, the creature appears in the space where it disappeared or the nearest unoccupied space.",
-    "actionRecipes": []
   },
   {
     "id": "tsunami",

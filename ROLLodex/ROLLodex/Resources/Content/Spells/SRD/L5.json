@@ -31,6 +31,7 @@
   {
     "id": "arcane_hand",
     "classes": [
+      "sorcerer",
       "wizard"
     ],
     "name": "Arcane Hand",
@@ -360,47 +361,6 @@
     "actionRecipes": []
   },
   {
-    "id": "destructive_wave",
-    "classes": [
-      "cleric",
-      "paladin"
-    ],
-    "name": "Destructive Wave",
-    "level": 5,
-    "school": "evocation",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "targetSelf"
-    },
-    "components": {
-      "verbal": true
-    },
-    "duration": {
-      "type": "instantaneous"
-    },
-    "description": "You strike the ground, creating a burst of divine energy that ripples outward from you. Each creature you choose within 30 feet of you must succeed on a Constitution saving throw or take 5d6 Thunder damage and 5d6 Radiant (or Necrotic, your choice at cast time) damage and be knocked Prone. A creature that succeeds on the save takes half as much damage and isn't knocked Prone.",
-    "actionRecipes": [
-      {
-        "type": "rawDamage",
-        "dice": "5d6",
-        "damageType": "thunder",
-        "label": "Destructive Wave (thunder)"
-      },
-      {
-        "type": "rawDamage",
-        "dice": "5d6",
-        "damageType": "radiant",
-        "label": "Destructive Wave (radiant/necrotic)"
-      }
-    ],
-    "damageTypeChoices": [
-      "radiant",
-      "necrotic"
-    ]
-  },
-  {
     "id": "dispel_evil_and_good",
     "classes": [
       "cleric",
@@ -432,7 +392,6 @@
     "classes": [
       "bard",
       "sorcerer",
-      "warlock",
       "wizard"
     ],
     "name": "Dominate Person",
@@ -572,7 +531,9 @@
     "classes": [
       "bard",
       "cleric",
-      "druid"
+      "druid",
+      "paladin",
+      "ranger"
     ],
     "name": "Greater Restoration",
     "level": 5,
@@ -765,6 +726,7 @@
     "id": "mislead",
     "classes": [
       "bard",
+      "warlock",
       "wizard"
     ],
     "name": "Mislead",
@@ -853,6 +815,7 @@
       "bard",
       "cleric",
       "druid",
+      "warlock",
       "wizard"
     ],
     "name": "Planar Binding",
@@ -1048,6 +1011,7 @@
     "classes": [
       "bard",
       "sorcerer",
+      "warlock",
       "wizard"
     ],
     "name": "Teleportation Circle",

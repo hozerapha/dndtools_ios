@@ -82,53 +82,13 @@
     "actionRecipes": []
   },
   {
-    "id": "blinding_smite",
-    "classes": [
-      "paladin"
-    ],
-    "name": "Blinding Smite",
-    "level": 3,
-    "school": "evocation",
-    "castingTime": {
-      "type": "bonusAction"
-    },
-    "range": {
-      "type": "targetSelf"
-    },
-    "components": {
-      "verbal": true
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 1
-    },
-    "description": "The next time you hit a creature with a melee weapon attack during the spell's duration, your weapon flares with radiance. The attack deals an extra 3d8 Radiant damage, and the target must succeed on a Constitution saving throw or have the Blinded condition until the spell ends. A Blinded creature can repeat the save at the end of each of its turns.",
-    "higherLevel": "The extra damage increases by 1d8 for each spell slot level above 3.",
-    "actionRecipes": [],
-    "grantsTriggeredEffect": {
-      "id": "blinding_smite_rider",
-      "name": "Blinding Smite",
-      "trigger": {
-        "type": "onDamageRoll"
-      },
-      "effect": {
-        "type": "addDamageDice",
-        "dice": "3d8",
-        "damageType": "radiant"
-      },
-      "lifecycle": {
-        "type": "oneShot"
-      }
-    }
-  },
-  {
     "id": "call_lightning",
     "classes": [
       "druid"
     ],
     "name": "Call Lightning",
     "level": 3,
-    "school": "evocation",
+    "school": "conjuration",
     "castingTime": {
       "type": "action"
     },
@@ -245,38 +205,13 @@
     "actionRecipes": []
   },
   {
-    "id": "crusaders_mantle",
-    "classes": [
-      "paladin"
-    ],
-    "name": "Crusader's Mantle",
-    "level": 3,
-    "school": "evocation",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "targetSelf"
-    },
-    "components": {
-      "verbal": true
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 1
-    },
-    "description": "Holy power radiates from you in a 30-foot Emanation. Until the spell ends, the aura moves with you. Each non-hostile creature in the aura (including you) deals an extra 1d4 Radiant damage when it hits with a weapon attack.",
-    "actionRecipes": []
-  },
-  {
     "id": "daylight",
     "classes": [
       "cleric",
       "druid",
       "paladin",
       "ranger",
-      "sorcerer",
-      "wizard"
+      "sorcerer"
     ],
     "name": "Daylight",
     "level": 3,
@@ -306,6 +241,7 @@
       "cleric",
       "druid",
       "paladin",
+      "ranger",
       "sorcerer",
       "warlock",
       "wizard"
@@ -329,32 +265,6 @@
     },
     "description": "Choose one creature, object, or magical effect within range. Any spell of level 3 or lower on the target ends. For each spell of level 4 or higher on the target, make an ability check using your spellcasting ability; the DC equals 10 + that spell's level. On a successful check, the spell ends.",
     "higherLevel": "You automatically end a spell on the target if the spell's level is equal to or less than the level of the spell slot you used.",
-    "actionRecipes": []
-  },
-  {
-    "id": "elemental_weapon",
-    "classes": [
-      "paladin"
-    ],
-    "name": "Elemental Weapon",
-    "level": 3,
-    "school": "transmutation",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "touch"
-    },
-    "components": {
-      "verbal": true,
-      "somatic": true
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 60
-    },
-    "description": "A nonmagical weapon you touch becomes a magic weapon. Choose one of the following damage types: Acid, Cold, Fire, Lightning, or Thunder. For the duration, the weapon has a +1 bonus to attack rolls and deals an extra 1d4 damage of the chosen type on a hit.",
-    "higherLevel": "The attack bonus and extra damage each increase by 1 (so +2 attack and +2d4 damage at 5th–6th, and +3 attack and +3d4 damage at 7th or higher).",
     "actionRecipes": []
   },
   {
@@ -603,32 +513,6 @@
     "actionRecipes": []
   },
   {
-    "id": "life_transference",
-    "classes": [
-      "cleric",
-      "wizard"
-    ],
-    "name": "Life Transference",
-    "level": 3,
-    "school": "necromancy",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "touch"
-    },
-    "components": {
-      "verbal": true,
-      "somatic": true
-    },
-    "duration": {
-      "type": "instantaneous"
-    },
-    "description": "You sacrifice some of your health to mend another creature's injuries. You take 4d8 Necrotic damage that can't be reduced in any way, and one creature of your choice that you can see within range regains a number of Hit Points equal to twice the Necrotic damage you take.",
-    "higherLevel": "The Necrotic damage taken increases by 1d8 for each spell slot level above 3.",
-    "actionRecipes": []
-  },
-  {
     "id": "lightning_bolt",
     "classes": [
       "sorcerer",
@@ -773,7 +657,8 @@
     "id": "meld_into_stone",
     "classes": [
       "cleric",
-      "druid"
+      "druid",
+      "ranger"
     ],
     "name": "Meld into Stone",
     "level": 3,
@@ -913,7 +798,9 @@
     "id": "revivify",
     "classes": [
       "cleric",
-      "paladin"
+      "druid",
+      "paladin",
+      "ranger"
     ],
     "name": "Revivify",
     "level": 3,
@@ -944,7 +831,7 @@
     ],
     "name": "Sending",
     "level": 3,
-    "school": "evocation",
+    "school": "divination",
     "castingTime": {
       "type": "action"
     },
@@ -995,6 +882,7 @@
   {
     "id": "slow",
     "classes": [
+      "bard",
       "sorcerer",
       "wizard"
     ],
@@ -1024,7 +912,8 @@
     "id": "speak_with_dead",
     "classes": [
       "bard",
-      "cleric"
+      "cleric",
+      "wizard"
     ],
     "name": "Speak with Dead",
     "level": 3,
@@ -1148,37 +1037,6 @@
     "actionRecipes": []
   },
   {
-    "id": "summon_fey",
-    "classes": [
-      "druid",
-      "ranger",
-      "warlock",
-      "wizard"
-    ],
-    "name": "Summon Fey",
-    "level": 3,
-    "school": "conjuration",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "feet",
-      "value": 90
-    },
-    "components": {
-      "verbal": true,
-      "somatic": true,
-      "material": "a gilded flower worth 300+ GP"
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 60
-    },
-    "description": "You call forth a Fey spirit. It manifests in an unoccupied space that you can see within range. This corporeal form uses the Fey Spirit stat block (Bewitcher, Fuming, or Mirthful). When you cast the spell, choose the creature's mood: Bewitcher, Fuming, or Mirthful; this choice determines the specific features of the stat block. The creature is an ally to you and your allies. In combat, it shares your Initiative count and it acts immediately after you. It obeys your verbal commands (no action required by you); if you don't issue any, it takes the Dodge action and uses its move to avoid danger.",
-    "higherLevel": "Use a spell slot of 4th level or higher; the creature's statistics scale by slot level (proficiency bonus increases, hit points and attack damage scale accordingly).",
-    "actionRecipes": []
-  },
-  {
     "id": "tiny_hut",
     "classes": [
       "bard",
@@ -1240,6 +1098,7 @@
   {
     "id": "vampiric_touch",
     "classes": [
+      "sorcerer",
       "warlock",
       "wizard"
     ],
@@ -1350,9 +1209,7 @@
     "id": "wind_wall",
     "classes": [
       "druid",
-      "ranger",
-      "sorcerer",
-      "wizard"
+      "ranger"
     ],
     "name": "Wind Wall",
     "level": 3,

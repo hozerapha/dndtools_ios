@@ -30,8 +30,8 @@
     "id": "foresight",
     "classes": [
       "bard",
-      "cleric",
       "druid",
+      "warlock",
       "wizard"
     ],
     "name": "Foresight",
@@ -60,6 +60,7 @@
     "classes": [
       "cleric",
       "sorcerer",
+      "warlock",
       "wizard"
     ],
     "name": "Gate",
@@ -123,7 +124,7 @@
     ],
     "name": "Mass Heal",
     "level": 9,
-    "school": "conjuration",
+    "school": "abjuration",
     "castingTime": {
       "type": "action"
     },
@@ -391,6 +392,7 @@
   {
     "id": "weird",
     "classes": [
+      "warlock",
       "wizard"
     ],
     "name": "Weird",

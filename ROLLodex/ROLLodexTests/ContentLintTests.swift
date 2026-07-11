@@ -28,6 +28,64 @@ struct ContentLintTests {
         "thieves_tools", "crowbar", "pouch", "travelers_clothes",
     ]
 
+    // MARK: - SRD 5.2.1 manifest compliance
+    //
+    // The bundle ships as SRD 5.2.1 under CC-BY. `Docs/SRD_5.2.1_manifest/spells.json`
+    // is the canonical spell list extracted from `SRD_CC_v5.2.1.pdf`. Anything in
+    // the bundled catalog that isn't in the manifest is a compliance failure — either
+    // remove it or update the manifest with a source citation first.
+
+    private struct ManifestSpell: Decodable {
+        let canonicalName: String
+        let level: Int
+        let school: String
+        let classes: [String]
+    }
+    private struct SpellManifest: Decodable { let spells: [ManifestSpell] }
+
+    private func loadSRDSpellManifest() throws -> SpellManifest {
+        // Source-relative path — the manifest lives in Docs/, not in the app bundle,
+        // to keep 40KB of author-facing metadata out of the shipped binary.
+        let manifestURL = URL(fileURLWithPath: #filePath)   // this file
+            .deletingLastPathComponent()                    // ROLLodexTests/
+            .deletingLastPathComponent()                    // ROLLodex/
+            .deletingLastPathComponent()                    // repo root
+            .appendingPathComponent("Docs/SRD_5.2.1_manifest/spells.json")
+        let data = try Data(contentsOf: manifestURL)
+        return try JSONDecoder().decode(SpellManifest.self, from: data)
+    }
+
+    @Test func everyBundledSpellIsInSRDManifest() throws {
+        let manifest = try loadSRDSpellManifest()
+        let manifestByName = Dictionary(uniqueKeysWithValues:
+            manifest.spells.map { ($0.canonicalName.lowercased(), $0) })
+        let content = ContentStore()
+        var violations: [String] = []
+        for spell in content.spells.values.sorted(by: { $0.name < $1.name }) {
+            guard let entry = manifestByName[spell.name.lowercased()] else {
+                violations.append("\(spell.id) (\"\(spell.name)\") is not in SRD 5.2.1")
+                continue
+            }
+            if entry.level != spell.level {
+                violations.append("\(spell.id): level \(spell.level) but SRD says L\(entry.level)")
+            }
+            if entry.school != spell.school.rawValue {
+                violations.append("\(spell.id): school \(spell.school.rawValue) but SRD says \(entry.school)")
+            }
+            // Class tag membership: every catalog class must be sanctioned by the
+            // manifest. Missing tags are a warning, not a failure — a tag can be
+            // legitimately narrower than what SRD sanctions (e.g. we're only
+            // supporting a subset for a phase). But UNSANCTIONED tags are compliance.
+            let sanctioned = Set(entry.classes)
+            let unsanctioned = Set(spell.classes).subtracting(sanctioned)
+            if !unsanctioned.isEmpty {
+                violations.append("\(spell.id): unsanctioned class tags \(unsanctioned.sorted()) — SRD sanctions \(entry.classes.sorted())")
+            }
+        }
+        #expect(violations.isEmpty,
+                "SRD 5.2.1 manifest compliance failures:\n" + violations.joined(separator: "\n"))
+    }
+
     // MARK: - Id uniqueness
 
     @Test func idsAreUniqueWithinEachFile() throws {

@@ -2,8 +2,6 @@
   {
     "id": "alarm",
     "classes": [
-      "bard",
-      "druid",
       "ranger",
       "wizard"
     ],
@@ -66,7 +64,8 @@
     "id": "bane",
     "classes": [
       "bard",
-      "cleric"
+      "cleric",
+      "warlock"
     ],
     "name": "Bane",
     "level": 1,
@@ -248,6 +247,7 @@
   {
     "id": "color_spray",
     "classes": [
+      "bard",
       "sorcerer",
       "wizard"
     ],
@@ -438,6 +438,7 @@
       "paladin",
       "ranger",
       "sorcerer",
+      "warlock",
       "wizard"
     ],
     "name": "Detect Magic",
@@ -529,7 +530,7 @@
     ],
     "name": "Divine Favor",
     "level": 1,
-    "school": "evocation",
+    "school": "transmutation",
     "castingTime": {
       "type": "bonusAction"
     },
@@ -568,7 +569,8 @@
   {
     "id": "entangle",
     "classes": [
-      "druid"
+      "druid",
+      "ranger"
     ],
     "name": "Entangle",
     "level": 1,
@@ -794,6 +796,7 @@
   {
     "id": "grease",
     "classes": [
+      "sorcerer",
       "wizard"
     ],
     "name": "Grease",
@@ -1267,6 +1270,7 @@
     "id": "protection_from_evil_and_good",
     "classes": [
       "cleric",
+      "druid",
       "paladin",
       "warlock",
       "wizard"
@@ -1561,45 +1565,6 @@
     "actionRecipes": []
   },
   {
-    "id": "thunderous_smite",
-    "classes": [
-      "paladin"
-    ],
-    "name": "Thunderous Smite",
-    "level": 1,
-    "school": "evocation",
-    "castingTime": {
-      "type": "bonusAction"
-    },
-    "range": {
-      "type": "targetSelf"
-    },
-    "components": {
-      "verbal": true
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 1
-    },
-    "description": "The next time you hit a creature with a melee weapon attack before the spell ends, the attack deals an extra 2d6 Thunder damage, and the target must succeed on a Strength saving throw or be pushed 10 feet away and knocked Prone.",
-    "actionRecipes": [],
-    "grantsTriggeredEffect": {
-      "id": "thunderous_smite_rider",
-      "name": "Thunderous Smite",
-      "trigger": {
-        "type": "onDamageRoll"
-      },
-      "effect": {
-        "type": "addDamageDice",
-        "dice": "2d6",
-        "damageType": "thunder"
-      },
-      "lifecycle": {
-        "type": "oneShot"
-      }
-    }
-  },
-  {
     "id": "thunderwave",
     "classes": [
       "bard",
@@ -1671,44 +1636,5 @@
     },
     "description": "This spell creates an invisible, mindless, shapeless, Medium force that performs simple tasks at your command until the spell ends. The servant springs into existence in an unoccupied space on the ground within range. It has AC 10, 1 Hit Point, and Strength 2 (it can't attack). If it drops to 0 HP, the spell ends.",
     "actionRecipes": []
-  },
-  {
-    "id": "wrathful_smite",
-    "classes": [
-      "paladin"
-    ],
-    "name": "Wrathful Smite",
-    "level": 1,
-    "school": "evocation",
-    "castingTime": {
-      "type": "bonusAction"
-    },
-    "range": {
-      "type": "targetSelf"
-    },
-    "components": {
-      "verbal": true
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 1
-    },
-    "description": "The next time you hit with a melee weapon attack during this spell's duration, your attack deals an extra 1d6 Psychic damage, and the target must succeed on a Wisdom saving throw or have the Frightened condition until the spell ends. As a Magic action, the creature can make another Wisdom save to end the effect on itself.",
-    "actionRecipes": [],
-    "grantsTriggeredEffect": {
-      "id": "wrathful_smite_rider",
-      "name": "Wrathful Smite",
-      "trigger": {
-        "type": "onDamageRoll"
-      },
-      "effect": {
-        "type": "addDamageDice",
-        "dice": "1d6",
-        "damageType": "psychic"
-      },
-      "lifecycle": {
-        "type": "oneShot"
-      }
-    }
   }
 ]

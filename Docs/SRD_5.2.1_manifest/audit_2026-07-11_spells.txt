@@ -1,0 +1,129 @@
+=== AUDIT: catalog 335 spells vs manifest 339 spells
+
+--- REMOVE (not in SRD 5.2.1): 26
+  L0: Blade Ward (id=blade_ward, classes=['bard', 'sorcerer', 'warlock', 'wizard'])
+  L0: Friends (id=friends, classes=['bard', 'sorcerer', 'warlock', 'wizard'])
+  L0: Thorn Whip (id=thorn_whip, classes=['druid'])
+  L0: Thunderclap (id=thunderclap, classes=['bard', 'druid', 'sorcerer', 'wizard'])
+  L0: Toll the Dead (id=toll_the_dead, classes=['cleric', 'warlock', 'wizard'])
+  L0: Word of Radiance (id=word_of_radiance, classes=['cleric'])
+  L1: Thunderous Smite (id=thunderous_smite, classes=['paladin'])
+  L1: Wrathful Smite (id=wrathful_smite, classes=['paladin'])
+  L2: Branding Smite (id=branding_smite, classes=['paladin'])
+  L3: Blinding Smite (id=blinding_smite, classes=['paladin'])
+  L3: Crusader's Mantle (id=crusaders_mantle, classes=['paladin'])
+  L3: Elemental Weapon (id=elemental_weapon, classes=['paladin'])
+  L3: Life Transference (id=life_transference, classes=['cleric', 'wizard'])
+  L3: Summon Fey (id=summon_fey, classes=['druid', 'ranger', 'warlock', 'wizard'])
+  L4: Aura of Purity (id=aura_of_purity, classes=['paladin'])
+  L4: Grasping Vine (id=grasping_vine, classes=['druid', 'ranger'])
+  L5: Destructive Wave (id=destructive_wave, classes=['cleric', 'paladin'])
+  L6: Arcane Gate (id=arcane_gate, classes=['sorcerer', 'warlock', 'wizard'])
+  L6: Investiture of Flame (id=investiture_of_flame, classes=['druid', 'sorcerer', 'warlock', 'wizard'])
+  L6: Investiture of Ice (id=investiture_of_ice, classes=['druid', 'sorcerer', 'warlock', 'wizard'])
+  L6: Investiture of Stone (id=investiture_of_stone, classes=['druid', 'sorcerer', 'warlock', 'wizard'])
+  L6: Investiture of Wind (id=investiture_of_wind, classes=['druid', 'sorcerer', 'warlock', 'wizard'])
+  L6: Otto's Irresistible Dance (id=otto_irresistible_dance, classes=['bard', 'wizard'])
+  L8: Feeblemind (id=feeblemind, classes=['bard', 'druid', 'warlock', 'wizard'])
+  L8: Telepathy (id=telepathy, classes=['bard', 'sorcerer', 'wizard'])
+  L8: Trap the Soul (id=trap_the_soul, classes=['warlock', 'wizard'])
+
+--- ADD (missing from catalog): 30
+  L0: Elementalism (transmutation, classes=['druid', 'sorcerer', 'wizard'])
+  L0: Sorcerous Burst (evocation, classes=['sorcerer'])
+  L1: Dissonant Whispers (enchantment, classes=['bard'])
+  L1: Divine Smite (evocation, classes=['paladin'])
+  L1: Ensnaring Strike (conjuration, classes=['ranger'])
+  L1: Floating Disk (conjuration, classes=['wizard'])
+  L1: Hideous Laughter (enchantment, classes=['bard', 'warlock', 'wizard'])
+  L1: Ice Knife (conjuration, classes=['druid', 'sorcerer', 'wizard'])
+  L1: Illusory Script (illusion, classes=['bard', 'warlock', 'wizard'])
+  L1: Searing Smite (evocation, classes=['paladin'])
+  L2: Arcanist's Magic Aura (illusion, classes=['wizard'])
+  L2: Darkvision (transmutation, classes=['druid', 'ranger', 'sorcerer', 'wizard'])
+  L2: Enthrall (enchantment, classes=['bard', 'warlock'])
+  L2: Mind Spike (divination, classes=['sorcerer', 'warlock', 'wizard'])
+  L2: Phantasmal Force (illusion, classes=['bard', 'sorcerer', 'wizard'])
+  L2: Shatter (evocation, classes=['bard', 'sorcerer', 'wizard'])
+  L2: Shining Smite (transmutation, classes=['paladin'])
+  L3: Blink (transmutation, classes=['sorcerer', 'wizard'])
+  L3: Conjure Animals (conjuration, classes=['druid', 'ranger'])
+  L3: Phantom Steed (illusion, classes=['wizard'])
+  L4: Private Sanctum (abjuration, classes=['wizard'])
+  L4: Vitriolic Sphere (evocation, classes=['sorcerer', 'wizard'])
+  L5: Antilife Shell (abjuration, classes=['druid'])
+  L5: Telepathic Bond (divination, classes=['bard', 'wizard'])
+  L6: Instant Summons (conjuration, classes=['wizard'])
+  L6: Irresistible Dance (enchantment, classes=['bard', 'wizard'])
+  L6: Transport via Plants (conjuration, classes=['druid'])
+  L6: Wind Walk (transmutation, classes=['druid'])
+  L8: Befuddlement (enchantment, classes=['bard', 'druid', 'warlock', 'wizard'])
+  L9: Power Word Heal (enchantment, classes=['bard', 'cleric'])
+
+--- CLASS-TAG DRIFT: 53
+  L0 Message: MISSING ['druid']
+  L0 Produce Flame: EXTRA ['sorcerer', 'wizard']
+  L1 Alarm: EXTRA ['bard', 'druid']
+  L1 Bane: MISSING ['warlock']
+  L1 Color Spray: MISSING ['bard']
+  L1 Detect Magic: MISSING ['warlock']
+  L1 Entangle: MISSING ['ranger']
+  L1 Grease: MISSING ['sorcerer']
+  L1 Protection from Evil and Good: MISSING ['druid']
+  L2 Aid: MISSING ['bard', 'druid', 'ranger']
+  L2 Augury: MISSING ['druid', 'wizard']
+  L2 Enhance Ability: MISSING ['ranger', 'wizard']
+  L2 Enlarge/Reduce: MISSING ['druid']
+  L2 Flame Blade: MISSING ['sorcerer']
+  L2 Flaming Sphere: MISSING ['sorcerer']
+  L2 Gentle Repose: MISSING ['paladin']
+  L2 Gust of Wind: MISSING ['ranger']
+  L2 Magic Weapon: MISSING ['ranger']
+  L2 Mirror Image: MISSING ['bard']
+  L2 Spider Climb: EXTRA ['druid']
+  L2 Warding Bond: MISSING ['paladin']
+  L3 Daylight: EXTRA ['wizard']
+  L3 Dispel Magic: MISSING ['ranger']
+  L3 Meld into Stone: MISSING ['ranger']
+  L3 Revivify: MISSING ['druid', 'ranger']
+  L3 Slow: MISSING ['bard']
+  L3 Speak with Dead: MISSING ['wizard']
+  L3 Vampiric Touch: MISSING ['sorcerer']
+  L3 Wind Wall: EXTRA ['sorcerer', 'wizard']
+  L4 Aura of Life: MISSING ['cleric']
+  L4 Divination: MISSING ['druid', 'wizard']
+  L4 Dominate Beast: MISSING ['ranger']
+  L4 Fire Shield: MISSING ['druid', 'sorcerer']
+  L4 Phantasmal Killer: MISSING ['bard']
+  L5 Arcane Hand: MISSING ['sorcerer']
+  L5 Dominate Person: EXTRA ['warlock']
+  L5 Greater Restoration: MISSING ['paladin', 'ranger']
+  L5 Mislead: MISSING ['warlock']
+  L5 Planar Binding: MISSING ['warlock']
+  L5 Teleportation Circle: MISSING ['warlock']
+  L6 Conjure Fey: EXTRA ['warlock']
+  L6 Flesh to Stone: MISSING ['druid', 'sorcerer'] | EXTRA ['warlock']
+  L6 Freezing Sphere: MISSING ['sorcerer']
+  L6 Mass Suggestion: EXTRA ['warlock']
+  L6 Sunbeam: MISSING ['cleric']
+  L7 Symbol: MISSING ['druid']
+  L8 Antipathy/Sympathy: MISSING ['bard']
+  L8 Control Weather: EXTRA ['sorcerer']
+  L8 Demiplane: EXTRA ['bard']
+  L8 Sunburst: MISSING ['cleric']
+  L9 Foresight: MISSING ['warlock'] | EXTRA ['cleric']
+  L9 Gate: MISSING ['warlock']
+  L9 Weird: MISSING ['warlock']
+
+--- SCHOOL DRIFT: 11
+  L0 Acid Splash: conjuration -> evocation
+  L1 Divine Favor: evocation -> transmutation
+  L3 Call Lightning: evocation -> conjuration
+  L3 Sending: evocation -> divination
+  L4 Giant Insect: transmutation -> conjuration
+  L4 Resilient Sphere: evocation -> abjuration
+  L6 Contingency: evocation -> abjuration
+  L7 Etherealness: transmutation -> conjuration
+  L8 Earthquake: evocation -> transmutation
+  L8 Glibness: transmutation -> enchantment
+  L9 Mass Heal: conjuration -> abjuration

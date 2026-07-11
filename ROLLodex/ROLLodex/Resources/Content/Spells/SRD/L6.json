@@ -1,32 +1,5 @@
 [
   {
-    "id": "arcane_gate",
-    "classes": [
-      "sorcerer",
-      "warlock",
-      "wizard"
-    ],
-    "name": "Arcane Gate",
-    "level": 6,
-    "school": "conjuration",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "feet",
-      "value": 500
-    },
-    "components": {
-      "verbal": true
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 10
-    },
-    "description": "You create linked teleportation portals between two spots on the ground within range. Choose two points on the ground that you can see, one within 10 feet of you and the other within range. A circular portal, 10 feet in diameter, opens over each point. If the portal would open in a space occupied by a creature, the spell fails. Any creature or object entering one portal exits from the other as if the two were adjacent to each other; passage through the portals is only one-way. As a Bonus Action on your turn, you can rotate the portals to face a new direction.",
-    "actionRecipes": []
-  },
-  {
     "id": "blade_barrier",
     "classes": [
       "cleric"
@@ -137,8 +110,7 @@
   {
     "id": "conjure_fey",
     "classes": [
-      "druid",
-      "warlock"
+      "druid"
     ],
     "name": "Conjure Fey",
     "level": 6,
@@ -169,7 +141,7 @@
     ],
     "name": "Contingency",
     "level": 6,
-    "school": "evocation",
+    "school": "abjuration",
     "castingTime": {
       "type": "action"
     },
@@ -316,7 +288,8 @@
   {
     "id": "flesh_to_stone",
     "classes": [
-      "warlock",
+      "druid",
+      "sorcerer",
       "wizard"
     ],
     "name": "Flesh to Stone",
@@ -384,6 +357,7 @@
   {
     "id": "freezing_sphere",
     "classes": [
+      "sorcerer",
       "wizard"
     ],
     "name": "Freezing Sphere",
@@ -574,146 +548,6 @@
     "actionRecipes": []
   },
   {
-    "id": "investiture_of_flame",
-    "classes": [
-      "druid",
-      "sorcerer",
-      "warlock",
-      "wizard"
-    ],
-    "name": "Investiture of Flame",
-    "level": 6,
-    "school": "transmutation",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "targetSelf"
-    },
-    "components": {
-      "verbal": true
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 10
-    },
-    "description": "Flames wreathe your body for the duration, which doesn't harm you. You gain the following benefits: You have Immunity to Fire damage and Resistance to Cold damage; you can end the Immunity or Resistance as an action. You can end the spell's effects as an action to cause the flames to erupt outward from you: each creature within 30 feet must make a Dexterity save, taking 4d8 Fire damage on a failed save or half as much on a success. As a Magic action, you can hurl a fiery ray toward a target within 90 feet — make a ranged spell attack. On a hit, the target takes 4d8 Fire damage.",
-    "actionRecipes": [
-      {
-        "type": "spellAttack",
-        "label": "Investiture of Flame Ray"
-      },
-      {
-        "type": "rawDamage",
-        "dice": "4d8",
-        "damageType": "fire",
-        "label": "Investiture of Flame Damage"
-      }
-    ]
-  },
-  {
-    "id": "investiture_of_ice",
-    "classes": [
-      "druid",
-      "sorcerer",
-      "warlock",
-      "wizard"
-    ],
-    "name": "Investiture of Ice",
-    "level": 6,
-    "school": "transmutation",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "targetSelf"
-    },
-    "components": {
-      "verbal": true
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 10
-    },
-    "description": "Icy armor wreathes your body for the duration. You gain the following benefits: You have Immunity to Cold damage and Resistance to Fire damage. You can move across icy or slick surfaces without a check. The ground in a 10-foot radius around you is Difficult Terrain for all creatures other than you. You can take a Magic action to unleash a 15-foot Cone of freezing wind — each creature in that area must succeed on a Constitution save or take 4d6 Cold damage and have its Speed reduced to 0 until the start of your next turn.",
-    "actionRecipes": [
-      {
-        "type": "rawDamage",
-        "dice": "4d6",
-        "damageType": "cold",
-        "label": "Investiture of Ice"
-      }
-    ]
-  },
-  {
-    "id": "investiture_of_stone",
-    "classes": [
-      "druid",
-      "sorcerer",
-      "warlock",
-      "wizard"
-    ],
-    "name": "Investiture of Stone",
-    "level": 6,
-    "school": "transmutation",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "targetSelf"
-    },
-    "components": {
-      "verbal": true
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 10
-    },
-    "description": "Bits of rock swirl in the air around you for the duration. You gain the following benefits: You have Resistance to Bludgeoning, Piercing, and Slashing damage from nonmagical attacks. You can move across natural rocky terrain without penalty. As a Magic action, you can cause the stones to explode outward, creating a shower of rocks: each creature within 15 feet of you must succeed on a Dexterity save or take 3d6 Bludgeoning damage. You can also cause the stones to fly to a point within 15 feet of you and slam into a target — make a melee spell attack. On a hit, the target takes 3d6 Bludgeoning damage.",
-    "actionRecipes": [
-      {
-        "type": "rawDamage",
-        "dice": "3d6",
-        "damageType": "bludgeoning",
-        "label": "Investiture of Stone"
-      }
-    ]
-  },
-  {
-    "id": "investiture_of_wind",
-    "classes": [
-      "druid",
-      "sorcerer",
-      "warlock",
-      "wizard"
-    ],
-    "name": "Investiture of Wind",
-    "level": 6,
-    "school": "transmutation",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "targetSelf"
-    },
-    "components": {
-      "verbal": true
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 10
-    },
-    "description": "Until the spell ends, wind whirls around you, and you gain the following benefits: Ranged attack rolls against you have Disadvantage. You have a Fly Speed of 60 feet. You can hover. You can take a Magic action to create a 15-foot Cube of swirling wind — each creature in that area must succeed on a Constitution save or take 2d10 Bludgeoning damage and be pushed 10 feet away from you.",
-    "actionRecipes": [
-      {
-        "type": "rawDamage",
-        "dice": "2d10",
-        "damageType": "bludgeoning",
-        "label": "Investiture of Wind"
-      }
-    ]
-  },
-  {
     "id": "magic_jar",
     "classes": [
       "wizard"
@@ -743,7 +577,6 @@
     "classes": [
       "bard",
       "sorcerer",
-      "warlock",
       "wizard"
     ],
     "name": "Mass Suggestion",
@@ -795,32 +628,6 @@
       "value": 120
     },
     "description": "The casting takes 10 minutes. Choose an area of terrain no larger than 40 feet on a side within range. You can reshape dirt, sand, or clay in the area in any manner you choose for the duration. You can raise or lower the area's elevation, create or fill in a trench, erect or flatten a wall, or form a pillar. The extent of any such changes can't exceed half the area's largest dimension. So, if you affect a 40-foot Square, you can create a pillar up to 20 feet high, raise or lower the square's elevation by up to 20 feet, dig a trench up to 20 feet deep, and so on. It takes 10 minutes for these changes to complete. At the end of every 10 minutes you spend concentrating on the spell, you can choose a new area of terrain to affect.",
-    "actionRecipes": []
-  },
-  {
-    "id": "otto_irresistible_dance",
-    "classes": [
-      "bard",
-      "wizard"
-    ],
-    "name": "Otto's Irresistible Dance",
-    "level": 6,
-    "school": "enchantment",
-    "castingTime": {
-      "type": "action"
-    },
-    "range": {
-      "type": "feet",
-      "value": 30
-    },
-    "components": {
-      "verbal": true
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 1
-    },
-    "description": "Choose one creature that you can see within range. The target begins a comic dance in place: shuffling, tapping its feet, and capering for the duration. Creatures that can't be Charmed are immune to this spell. A dancing creature must use all its movement to dance without leaving its space and has Disadvantage on Dexterity saving throws and attack rolls. While the target is affected by this spell, other creatures have Advantage on attack rolls against it. As an action, a dancing creature makes a Wisdom saving throw to regain control of itself. On a successful save, the spell ends.",
     "actionRecipes": []
   },
   {
@@ -878,6 +685,7 @@
   {
     "id": "sunbeam",
     "classes": [
+      "cleric",
       "druid",
       "sorcerer",
       "wizard"

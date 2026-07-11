@@ -107,6 +107,20 @@ not surfacing at creation), which is why this list exists.
   L9). Settings → Content shows no "Missing bundled content" or "Duplicate id"
   errors. Bundle now loads spells from `Content/Spells/SRD/L*.json` (10 files)
   instead of a single `spells.json`.
+- [ ] **SRD 5.2.1 compliance audit — cantrip picker (2026-07-11).** Create a
+  Druid. Open **Add Spell** at cantrip level. Confirm **Thorn Whip** and
+  **Thunderclap** are NO LONGER in the picker (they were 2014-PHB, not SRD).
+  Confirm **Message** now appears in the Druid list. Confirm **Elementalism**
+  and **Sorcerous Burst** appear at L0 (they're new SRD 5.2.1 cantrips —
+  currently missing pending phase 3 authoring, will re-check).
+- [ ] **SRD 5.2.1 compliance — smites (2026-07-11).** Create a Paladin. Open
+  Add Spell. Confirm Thunderous / Wrathful / Branding / Blinding Smite are
+  NO LONGER available (5.2.1 folded them into a single Divine Smite spell +
+  Divine Smite class feature). Divine Smite spell will appear after phase 3.
+- [ ] **SRD 5.2.1 compliance — spell schools shifted (2026-07-11).** In the
+  spell picker or a spell's detail view, verify: **Cure Wounds** → Abjuration,
+  **Poison Spray** → Necromancy, **Acid Splash** → Evocation, **Mass Heal** →
+  Abjuration. Older lists had these under different schools.
 
 ## Actions & combat — Giant Ancestry (Goliath)
 

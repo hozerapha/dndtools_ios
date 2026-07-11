@@ -51,8 +51,11 @@
   {
     "id": "aid",
     "classes": [
+      "bard",
       "cleric",
-      "paladin"
+      "druid",
+      "paladin",
+      "ranger"
     ],
     "name": "Aid",
     "level": 2,
@@ -161,7 +164,9 @@
   {
     "id": "augury",
     "classes": [
-      "cleric"
+      "cleric",
+      "druid",
+      "wizard"
     ],
     "name": "Augury",
     "level": 2,
@@ -271,46 +276,6 @@
     },
     "description": "Your body becomes blurred, shifting and wavering to all who can see you. For the duration, any creature has Disadvantage on attack rolls against you. An attacker is immune to this effect if it doesn't rely on sight, such as with Blindsight, or can see through illusions, such as with Truesight.",
     "actionRecipes": []
-  },
-  {
-    "id": "branding_smite",
-    "classes": [
-      "paladin"
-    ],
-    "name": "Branding Smite",
-    "level": 2,
-    "school": "evocation",
-    "castingTime": {
-      "type": "bonusAction"
-    },
-    "range": {
-      "type": "targetSelf"
-    },
-    "components": {
-      "verbal": true
-    },
-    "duration": {
-      "type": "concentration",
-      "value": 1
-    },
-    "description": "The next time you hit a creature with a weapon attack before this spell ends, your weapon flares with radiance as it strikes. The attack deals an extra 2d6 Radiant damage, and the target sheds Dim Light in a 5-foot radius and can't benefit from the Invisible condition until the spell ends.",
-    "higherLevel": "The extra damage increases by 1d6 for each spell slot level above 2.",
-    "actionRecipes": [],
-    "grantsTriggeredEffect": {
-      "id": "branding_smite_rider",
-      "name": "Branding Smite",
-      "trigger": {
-        "type": "onDamageRoll"
-      },
-      "effect": {
-        "type": "addDamageDice",
-        "dice": "2d6",
-        "damageType": "radiant"
-      },
-      "lifecycle": {
-        "type": "oneShot"
-      }
-    }
   },
   {
     "id": "calm_emotions",
@@ -470,7 +435,9 @@
       "bard",
       "cleric",
       "druid",
-      "sorcerer"
+      "ranger",
+      "sorcerer",
+      "wizard"
     ],
     "name": "Enhance Ability",
     "level": 2,
@@ -498,6 +465,7 @@
     "id": "enlarge_reduce",
     "classes": [
       "bard",
+      "druid",
       "sorcerer",
       "wizard"
     ],
@@ -578,7 +546,8 @@
   {
     "id": "flame_blade",
     "classes": [
-      "druid"
+      "druid",
+      "sorcerer"
     ],
     "name": "Flame Blade",
     "level": 2,
@@ -623,6 +592,7 @@
     "id": "flaming_sphere",
     "classes": [
       "druid",
+      "sorcerer",
       "wizard"
     ],
     "name": "Flaming Sphere",
@@ -664,6 +634,7 @@
     "id": "gentle_repose",
     "classes": [
       "cleric",
+      "paladin",
       "wizard"
     ],
     "name": "Gentle Repose",
@@ -694,6 +665,7 @@
     "id": "gust_of_wind",
     "classes": [
       "druid",
+      "ranger",
       "sorcerer",
       "wizard"
     ],
@@ -1012,6 +984,7 @@
     "id": "magic_weapon",
     "classes": [
       "paladin",
+      "ranger",
       "sorcerer",
       "wizard"
     ],
@@ -1039,6 +1012,7 @@
   {
     "id": "mirror_image",
     "classes": [
+      "bard",
       "sorcerer",
       "warlock",
       "wizard"
@@ -1375,7 +1349,6 @@
   {
     "id": "spider_climb",
     "classes": [
-      "druid",
       "sorcerer",
       "warlock",
       "wizard"
@@ -1513,7 +1486,8 @@
   {
     "id": "warding_bond",
     "classes": [
-      "cleric"
+      "cleric",
+      "paladin"
     ],
     "name": "Warding Bond",
     "level": 2,

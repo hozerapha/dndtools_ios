@@ -141,7 +141,7 @@
     ],
     "name": "Etherealness",
     "level": 7,
-    "school": "transmutation",
+    "school": "conjuration",
     "castingTime": {
       "type": "action"
     },
@@ -560,6 +560,7 @@
     "classes": [
       "bard",
       "cleric",
+      "druid",
       "wizard"
     ],
     "name": "Symbol",
