@@ -12,8 +12,11 @@ entry ships with the affected mechanic in the `description` /
   the rider's dice stay flat. Fix: add optional
   `dicePerSlotLevel`/`levelsPerBonus` on `AddDamageDice`, and remember
   the cast slot on `ActiveEffect` so the resolver can scale.
-- **SpellRange.miles**: Clairvoyance's 1-mile range flattens to `feet:
-  5280`. Add a `miles` case to `SpellRange`.
+- ~~**SpellRange.miles**~~: NOT a gap — `.miles(Int)` exists on
+  `SpellRange` (SpellMetadata.swift). Old spec used
+  `{"type":"feet","value":5280}` as a workaround; Clairvoyance /
+  Project Image / Meteor Swarm now correctly use
+  `{"type":"miles","value":N}`.
 - **SpellDuration.days**: Gentle Repose's 10 days flattens to `hours:
   240`. Same story with Nondetection, Magic Circle at high slot levels.
 - **Extra-ray upcast**: Scorching Ray gains 1 ray per slot level, not
@@ -89,9 +92,8 @@ entry ships with the affected mechanic in the `description` /
   we don't model a persistent conjured entity that repeats an attack
   action. Same shape would apply if we ever added the Bigby's Hand
   attack modes as recurring actions. *Files:* `arcane_sword`.
-- **Long-range in miles** — Project Image's 500-mile range flattens
-  to `feet 2640000`. Same underlying `SpellRange.miles` gap as
-  Clairvoyance. *Files:* `project_image`.
+- ~~**Long-range in miles**~~: NOT a gap — see the miles retraction
+  above. Project Image now uses `{"type":"miles","value":500}`.
 - **Multi-day durations** — Mirage Arcane's 10-day duration flattens
   to `hours 240`; Simulacrum, Sequester, and Symbol ship as
   `instantaneous` with "until dispelled" in prose. Same underlying
@@ -116,10 +118,11 @@ entry ships with the affected mechanic in the `description` /
 - **Retry-save cadence in days** — Feeblemind lets the target repeat
   the Int save every 30 days. No structured way to encode "retry
   every N days" on a condition. Text-only. *Files:* `feeblemind`.
-- **Unlimited / same-plane range** — Telepathy works at unlimited
-  range as long as caster and target share a plane. Flattened to a
-  large `feet` value (2,640,000) as a placeholder. Need a
-  `SpellRange.samePlane` or `.unlimited` case. *Files:* `telepathy`.
+- ~~**Unlimited / same-plane range**~~: NOT a gap for unlimited —
+  `.unlimited` exists on `SpellRange`. Telepathy/Sending/Dream now
+  use `{"type":"unlimited"}`. A dedicated `.samePlane` case is still
+  wanted for the semantic ("works within the same plane, not across
+  planes"), but the current `.unlimited` displays correctly.
 - **Line-of-sight range** — Tsunami's SRD range is "sight" (up to the
   DM's discretion). Flattened to `feet 10000` as a stand-in. Need a
   `SpellRange.sight` case that defers to DM adjudication. *Files:*

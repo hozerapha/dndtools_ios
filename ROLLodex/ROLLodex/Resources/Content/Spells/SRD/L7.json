@@ -1,0 +1,618 @@
+[
+  {
+    "id": "arcane_sword",
+    "classes": [
+      "bard",
+      "wizard"
+    ],
+    "name": "Arcane Sword",
+    "level": 7,
+    "school": "evocation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a miniature platinum sword with a grip and pommel of copper and zinc, worth 250+ GP"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "You create a sword-shaped plane of force that hovers within range. It lasts for the duration. When the sword appears, you can make a melee spell attack against a target of your choice within 5 feet of it. On a hit, the target takes 3d10 Force damage. Until the spell ends, you can take a Bonus Action on each of your turns to move the sword up to 20 feet and make an attack against a creature within 5 feet of it.",
+    "actionRecipes": [
+      {
+        "type": "spellAttack",
+        "label": "Arcane Sword Attack"
+      },
+      {
+        "type": "rawDamage",
+        "dice": "3d10",
+        "damageType": "force",
+        "label": "Arcane Sword Damage"
+      }
+    ]
+  },
+  {
+    "id": "conjure_celestial",
+    "classes": [
+      "cleric"
+    ],
+    "name": "Conjure Celestial",
+    "level": 7,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 90
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 60
+    },
+    "description": "The casting takes 1 minute. You summon a Celestial of challenge rating 4 or lower, which appears in an unoccupied space that you can see within range. The Celestial disappears when it drops to 0 HP or when the spell ends. The Celestial is friendly to you and your companions for the duration and obeys your verbal commands (no action required).",
+    "higherLevel": "The Celestial's challenge rating increases by 1 for each spell slot level above 7.",
+    "actionRecipes": []
+  },
+  {
+    "id": "delayed_blast_fireball",
+    "classes": [
+      "sorcerer",
+      "wizard"
+    ],
+    "name": "Delayed Blast Fireball",
+    "level": 7,
+    "school": "evocation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 150
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a tiny ball of bat guano and sulfur"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "A beam of yellow light flashes from your pointing finger, then condenses to linger at a chosen point within range as a glowing bead for the duration. When the spell ends, the bead blossoms into an explosion of flame that spreads around corners. Each creature in a 20-foot-radius Sphere centered on that point must make a Dexterity saving throw, taking 12d6 Fire damage on a failed save or half as much on a success. If at the end of your turn the bead has not yet detonated, the damage increases by 1d6.",
+    "higherLevel": "The base damage increases by 1d6 for each spell slot level above 7.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "12d6",
+        "damageType": "fire",
+        "label": "Delayed Blast Fireball"
+      }
+    ],
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "1d6"
+    }
+  },
+  {
+    "id": "divine_word",
+    "classes": [
+      "cleric"
+    ],
+    "name": "Divine Word",
+    "level": 7,
+    "school": "evocation",
+    "castingTime": {
+      "type": "bonusAction"
+    },
+    "range": {
+      "type": "feet",
+      "value": 30
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You utter a divine word imbued with the power that shaped the world at the dawn of creation. Choose any number of creatures you can see within range. Each creature that can hear you must make a Charisma saving throw. On a failed save, a creature suffers an effect based on its current HP: 50 HP or fewer, Deafened for 1 minute; 40 HP or fewer, Deafened and Blinded for 10 minutes; 30 HP or fewer, Blinded, Deafened, and Stunned for 1 hour; 20 HP or fewer, killed instantly. Regardless of its current HP, a Celestial, an Elemental, a Fey, or a Fiend that fails its save is forced back to its plane of origin and can't return for 24 hours.",
+    "actionRecipes": []
+  },
+  {
+    "id": "etherealness",
+    "classes": [
+      "bard",
+      "cleric",
+      "sorcerer",
+      "warlock",
+      "wizard"
+    ],
+    "name": "Etherealness",
+    "level": 7,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "hours",
+      "value": 8
+    },
+    "description": "You step into the border regions of the Ethereal Plane. You remain in the Border Ethereal for the duration or until you use your action to dismiss the spell. During this time, you can move in any direction. If you move up or down, every foot of movement costs an extra foot. You can see and hear the plane you originated from, but everything looks gray, and you can't see anything more than 60 feet away. While on the Ethereal Plane, you can only affect and be affected by other creatures on that plane.",
+    "higherLevel": "You can target up to three willing creatures within 10 feet of you (including yourself) at 8th level or higher.",
+    "actionRecipes": []
+  },
+  {
+    "id": "finger_of_death",
+    "classes": [
+      "sorcerer",
+      "warlock",
+      "wizard"
+    ],
+    "name": "Finger of Death",
+    "level": 7,
+    "school": "necromancy",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 60
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You send negative energy coursing through a creature that you can see within range, causing it searing pain. The target must make a Constitution saving throw. It takes 7d8 + 30 Necrotic damage on a failed save, or half as much on a successful one. A Humanoid killed by this spell rises at the start of your next turn as a Zombie permanently under your command.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "7d8+30",
+        "damageType": "necrotic",
+        "label": "Finger of Death"
+      }
+    ]
+  },
+  {
+    "id": "fire_storm",
+    "classes": [
+      "cleric",
+      "druid",
+      "sorcerer"
+    ],
+    "name": "Fire Storm",
+    "level": 7,
+    "school": "evocation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 150
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "A storm of fire appears at a location you choose within range. The area of the storm consists of up to ten 10-foot Cubes, which you can arrange as you wish. Each creature in the area must make a Dexterity saving throw. A creature takes 7d10 Fire damage on a failed save, or half as much on a successful one. The fire damages objects in the area and ignites flammable objects that aren't being worn or carried.",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "7d10",
+        "damageType": "fire",
+        "label": "Fire Storm"
+      }
+    ]
+  },
+  {
+    "id": "forcecage",
+    "classes": [
+      "bard",
+      "warlock",
+      "wizard"
+    ],
+    "name": "Forcecage",
+    "level": 7,
+    "school": "evocation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 100
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "ruby dust worth 1500+ GP, which the spell consumes"
+    },
+    "duration": {
+      "type": "hours",
+      "value": 1
+    },
+    "description": "An immobile, invisible, cube-shaped prison composed of magical force springs into existence around an area you choose within range. The prison can be a cage or a solid box. A cage can be up to 20 feet on a side, made from 1/2-inch-diameter bars spaced 1/2 inch apart. A box can be up to 10 feet on a side, forming a solid barrier. Any creature completely inside the cage's area when you cast the spell is trapped. If the creature tries to use teleportation or planar travel to leave, it must first succeed on a Charisma saving throw. The cage extends into the Ethereal Plane and can't be dispelled by Dispel Magic.",
+    "actionRecipes": []
+  },
+  {
+    "id": "magnificent_mansion",
+    "classes": [
+      "bard",
+      "wizard"
+    ],
+    "name": "Magnificent Mansion",
+    "level": 7,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 300
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a miniature portal carved from ivory, a small piece of polished marble, and a tiny silver spoon, each item worth 5+ GP"
+    },
+    "duration": {
+      "type": "hours",
+      "value": 24
+    },
+    "description": "The casting takes 1 minute. You conjure an extradimensional dwelling in range that lasts for the duration. You choose where its one entrance is located. The entrance shimmers faintly and is 5 feet wide and 10 feet tall. You and any creature you designate can enter the extradimensional dwelling as long as the portal remains open. The space is up to 50 cubes of 10 feet on a side, furnished and decorated as you choose. It contains sufficient food for a nine-course banquet for up to 100 people. A staff of 100 near-transparent servants attends all who enter.",
+    "actionRecipes": []
+  },
+  {
+    "id": "mirage_arcane",
+    "classes": [
+      "bard",
+      "druid",
+      "wizard"
+    ],
+    "name": "Mirage Arcane",
+    "level": 7,
+    "school": "illusion",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "targetSelf"
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "hours",
+      "value": 240
+    },
+    "description": "The casting takes 10 minutes. You make natural terrain in a 1-mile square area look, sound, smell, and even feel like some other sort of natural terrain. Manufactured structures, equipment, and creatures within the area aren't changed in appearance. The tactile characteristics of the terrain are changed so that walking, climbing, and generally moving about the area feel like they would in the sort of terrain the area is made to resemble. A creature with True Sight can see through the illusion to the terrain's true form.",
+    "actionRecipes": []
+  },
+  {
+    "id": "plane_shift",
+    "classes": [
+      "cleric",
+      "druid",
+      "sorcerer",
+      "warlock",
+      "wizard"
+    ],
+    "name": "Plane Shift",
+    "level": 7,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a forked, metal rod worth 250+ GP, attuned to a particular plane of existence"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "You and up to eight willing creatures who link hands in a circle are transported to a different plane of existence. You can specify a target destination in general terms, and you appear in or near that destination. You can use this spell to banish an unwilling creature to another plane: choose a creature within your reach and make a melee spell attack against it. On a hit, the creature must make a Charisma saving throw. If the creature fails, it is transported to a random location on the plane you specify.",
+    "actionRecipes": [
+      {
+        "type": "spellAttack",
+        "label": "Plane Shift (Banish)"
+      }
+    ]
+  },
+  {
+    "id": "prismatic_spray",
+    "classes": [
+      "bard",
+      "sorcerer",
+      "wizard"
+    ],
+    "name": "Prismatic Spray",
+    "level": 7,
+    "school": "evocation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "selfEmits",
+      "area": "60-foot Cone"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "Eight multicolored rays of light flash from your hand. Each creature in a 60-foot Cone must make a Dexterity saving throw. For each target, roll a d8 to determine which color ray affects it: Red (10d6 fire), Orange (10d6 acid), Yellow (10d6 lightning), Green (10d6 poison), Blue (10d6 cold), Indigo (Restrained; failed CON save at end of next turn = Petrified), Violet (Blinded; failed WIS save = transported to another plane), White or multi-color (reroll two rays).",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "10d6",
+        "damageType": "fire",
+        "label": "Prismatic Spray (roll for color)"
+      }
+    ],
+    "damageTypeChoices": [
+      "fire",
+      "acid",
+      "lightning",
+      "poison",
+      "cold"
+    ]
+  },
+  {
+    "id": "project_image",
+    "classes": [
+      "bard",
+      "wizard"
+    ],
+    "name": "Project Image",
+    "level": 7,
+    "school": "illusion",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "miles",
+      "value": 500
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a small replica of you made from materials worth 5+ GP"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1440
+    },
+    "description": "You create an illusory copy of yourself that lasts for the duration. The copy can appear at any location within range that you have seen before. The illusion looks and sounds like you but is intangible. If the illusion takes any damage, it disappears and the spell ends. You can use your action to move it up to twice your Speed and make it gesture, speak, and behave in whatever way you choose. You can see through its eyes and hear through its ears. While using its senses, you are Blinded and Deafened in regard to your own surroundings.",
+    "actionRecipes": []
+  },
+  {
+    "id": "regenerate",
+    "classes": [
+      "bard",
+      "cleric",
+      "druid"
+    ],
+    "name": "Regenerate",
+    "level": 7,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a prayer wheel and holy water"
+    },
+    "duration": {
+      "type": "hours",
+      "value": 1
+    },
+    "description": "The casting takes 1 minute. You touch a creature and stimulate its natural healing ability. The target regains 4d8 + 15 Hit Points. For the duration, the target regains 1 HP at the start of each of its turns (10 HP each minute). The target's severed body members, if any, are restored after 2 minutes.",
+    "actionRecipes": [
+      {
+        "type": "heal",
+        "dice": "4d8+15",
+        "addLevel": false,
+        "addSpellcastingMod": false,
+        "label": "Regenerate"
+      }
+    ]
+  },
+  {
+    "id": "resurrection",
+    "classes": [
+      "bard",
+      "cleric"
+    ],
+    "name": "Resurrection",
+    "level": 7,
+    "school": "necromancy",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a diamond worth 1000+ GP, which the spell consumes"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "The casting takes 1 hour. You touch a dead creature that has been dead for no more than a century, that didn't die of old age, and that isn't Undead. If its soul is free and willing, the target is restored to life with all its Hit Points. This spell neutralizes any poisons and cures nonmagical diseases. Coming back from the dead is an ordeal — the target takes a -4 penalty to all attack rolls, saving throws, and ability checks, reducing by 1 per Long Rest. Casting this spell on a creature dead a year or longer taxes you: until your next Long Rest, you can't cast spells and have Disadvantage on all rolls.",
+    "actionRecipes": []
+  },
+  {
+    "id": "reverse_gravity",
+    "classes": [
+      "druid",
+      "sorcerer",
+      "wizard"
+    ],
+    "name": "Reverse Gravity",
+    "level": 7,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 100
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a lodestone and iron filings"
+    },
+    "duration": {
+      "type": "concentration",
+      "value": 1
+    },
+    "description": "This spell reverses gravity in a 50-foot-radius, 100-foot-high Cylinder centered on a point within range. All creatures and objects that aren't anchored to the ground in the area fall upward and reach the top of the area when you cast this spell. A creature can make a Dexterity saving throw to grab onto a fixed object it can reach. If some solid object is encountered in this fall, falling objects and creatures strike it as they would during a normal downward fall.",
+    "actionRecipes": []
+  },
+  {
+    "id": "sequester",
+    "classes": [
+      "wizard"
+    ],
+    "name": "Sequester",
+    "level": 7,
+    "school": "transmutation",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "a powder composed of diamond, emerald, ruby, and sapphire dust worth 5000+ GP, which the spell consumes"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "A willing creature or an object can be hidden away, safe from detection. When you cast the spell and touch the target, it becomes Invisible and can't be targeted by divination spells or perceived through scrying sensors. If the target is a creature, it falls into suspended animation. Time ceases to flow for it. You can set a condition for the spell to end early. The spell also ends if the target takes any damage.",
+    "actionRecipes": []
+  },
+  {
+    "id": "simulacrum",
+    "classes": [
+      "wizard"
+    ],
+    "name": "Simulacrum",
+    "level": 7,
+    "school": "illusion",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "snow or ice in quantities sufficient to make a life-size copy of the duplicated creature, plus powdered ruby worth 1500+ GP, sprinkled over the duplicate and consumed by the spell"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "The casting takes 12 hours. You shape an illusory duplicate of one Beast or Humanoid within range for the entire casting time. The duplicate has half the creature's Hit Point maximum and is formed without equipment. It uses the creature's statistics and is friendly to you. It obeys your spoken commands. The simulacrum lacks the ability to learn or become more powerful, and can't regain expended spell slots. If damaged, you can repair it in an alchemical laboratory (100 GP per HP regained). It lasts until it drops to 0 HP, then reverts to snow and melts.",
+    "actionRecipes": []
+  },
+  {
+    "id": "symbol",
+    "classes": [
+      "bard",
+      "cleric",
+      "wizard"
+    ],
+    "name": "Symbol",
+    "level": 7,
+    "school": "abjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "touch"
+    },
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": "mercury, phosphorus, and powdered diamond and opal with a total value of 1000+ GP, which the spell consumes"
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "When you cast this spell, you inscribe a harmful glyph on a surface or within an object. You decide what triggers the glyph. When triggered, the glyph produces one of several effects: Death (CON save; fail 10d10 Necrotic damage in 60-ft radius), Discord (Charmed target argues), Fear (Frightened), Hopelessness (creatures can't attack for 1 min), Insanity (target Confused), Pain (Incapacitated with pain), Sleep (Unconscious), Stunning (Stunned).",
+    "actionRecipes": [
+      {
+        "type": "rawDamage",
+        "dice": "10d10",
+        "damageType": "necrotic",
+        "label": "Symbol (Death rune)"
+      }
+    ]
+  },
+  {
+    "id": "teleport",
+    "classes": [
+      "bard",
+      "sorcerer",
+      "wizard"
+    ],
+    "name": "Teleport",
+    "level": 7,
+    "school": "conjuration",
+    "castingTime": {
+      "type": "action"
+    },
+    "range": {
+      "type": "feet",
+      "value": 10
+    },
+    "components": {
+      "verbal": true
+    },
+    "duration": {
+      "type": "instantaneous"
+    },
+    "description": "This spell instantly transports you and up to eight willing creatures of your choice within range, or a single object, to a destination you select. The destination must be known to you and on the same plane of existence. Your familiarity with the destination determines whether you arrive successfully: the DM rolls d100 and consults the table (Very familiar/Seen casually/Viewed once/Description/Associated object/False destination), which determines whether you arrive on target, off target, land in a similar area, or suffer a mishap.",
+    "actionRecipes": []
+  }
+]

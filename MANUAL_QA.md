@@ -100,6 +100,13 @@ not surfacing at creation), which is why this list exists.
   Rest refills it.
 - [ ] **Caster + grants coexist.** A Tiefling Wizard shows both their prepared
   list and the Granted section without duplication.
+- [ ] **Split-catalog spell load (2026-07-10 refactor).** Cold-launch the app
+  (kill from app switcher first). Create a Wizard. Open **Add Spell**. The
+  picker shows spells for **every** level 0–9 (spot-check: Fire Bolt at L0,
+  Magic Missile at L1, Fireball at L3, Wall of Fire at L4, Meteor Swarm at
+  L9). Settings → Content shows no "Missing bundled content" or "Duplicate id"
+  errors. Bundle now loads spells from `Content/Spells/SRD/L*.json` (10 files)
+  instead of a single `spells.json`.
 
 ## Actions & combat — Giant Ancestry (Goliath)
 

@@ -29,7 +29,8 @@ character-sheet plan's Phase N and the action engine):
 **Known dead code (deletion candidates — confirmed zero references; remove via Xcode when convenient, per the never-delete rule):**
 `DiceRoller/Views/DiceTrayView.swift` (2D fallback tray, superseded by 3D),
 `DiceRoller/Views/DieTokenView.swift` (only used by DiceTrayView),
-`DiceRoller/Views/Dice3DPlaygroundView.swift` (unreachable sandbox; prod controller lives in `DiceSceneController.swift`).
+`DiceRoller/Views/Dice3DPlaygroundView.swift` (unreachable sandbox; prod controller lives in `DiceSceneController.swift`),
+`Resources/Content/spells.json` (superseded by per-level split at `Resources/Content/Spells/SRD/L0.json`…`L9.json`; `ContentStore` no longer reads it, but it still ships in the bundle until removed via Xcode).
 
 ---
 

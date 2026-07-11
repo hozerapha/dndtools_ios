@@ -31,11 +31,16 @@ struct ContentLintTests {
     // MARK: - Id uniqueness
 
     @Test func idsAreUniqueWithinEachFile() throws {
-        for file in ["classes", "species", "backgrounds", "weapons", "armor", "gear", "spells", "conditions"] {
+        for file in ["classes", "species", "backgrounds", "weapons", "armor", "gear", "conditions"] {
             let ids = try rawIDs(file)
             let dupes = Dictionary(grouping: ids, by: { $0 }).filter { $1.count > 1 }.keys
             #expect(dupes.isEmpty, "\(file).json has duplicate ids: \(dupes.sorted())")
         }
+        // Spells now live one file per level under Content/Spells/SRD; duplicate
+        // ids are only a problem if they collide across the whole directory.
+        let spellIDs = try rawSpellIDs()
+        let dupes = Dictionary(grouping: spellIDs, by: { $0 }).filter { $1.count > 1 }.keys
+        #expect(dupes.isEmpty, "Content/Spells/SRD has duplicate spell ids across files: \(dupes.sorted())")
     }
 
     @Test func itemIDsAreUniqueAcrossItemFiles() throws {
@@ -297,6 +302,28 @@ struct ContentLintTests {
                                "missing bundled \(filename).json")
         let data = try Data(contentsOf: url)
         return try JSONDecoder().decode([IDOnly].self, from: data).map(\.id)
+    }
+
+    /// Collect every id from every SRD spell file — mirrors what
+    /// `ContentStore.loadDictionaryFromFilenamePattern` sees at runtime.
+    /// Xcode's synced folder flattens the `Content/Spells/SRD/` nesting to
+    /// the bundle root, so we discover by filename convention (`L0.json`…).
+    private func rawSpellIDs() throws -> [String] {
+        let bundleURL = Bundle.main.bundleURL
+        let allEntries = (try? FileManager.default.contentsOfDirectory(
+            at: bundleURL,
+            includingPropertiesForKeys: nil
+        )) ?? []
+        let matching = allEntries.filter {
+            $0.pathExtension.lowercased() == "json" && ContentStore.isSRDSpellFilename($0.lastPathComponent)
+        }
+        try #require(!matching.isEmpty, "no bundled SRD spell JSONs (L0.json…L9.json) found")
+        var ids: [String] = []
+        for url in matching.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+            let data = try Data(contentsOf: url)
+            ids += try JSONDecoder().decode([IDOnly].self, from: data).map(\.id)
+        }
+        return ids
     }
 
     private struct FeatureEntry {

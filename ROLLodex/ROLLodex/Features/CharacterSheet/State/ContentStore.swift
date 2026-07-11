@@ -121,7 +121,7 @@ final class ContentStore {
         weapons     = merged(loadDictionary(from: "weapons", decode: [WeaponDefinition].self), packs.compactMap(\.weapons))
         armor       = merged(loadDictionary(from: "armor", decode: [ArmorDefinition].self), packs.compactMap(\.armor))
         gear        = merged(loadDictionary(from: "gear", decode: [ItemDefinition].self), packs.compactMap(\.gear))
-        spells      = merged(loadDictionary(from: "spells", decode: [SpellDefinition].self), packs.compactMap(\.spells))
+        spells      = merged(loadDictionaryFromFilenamePattern(matches: { Self.isSRDSpellFilename($0) }, decode: [SpellDefinition].self), packs.compactMap(\.spells))
         conditions  = merged(loadDictionary(from: "conditions", decode: [ConditionDefinition].self), packs.compactMap(\.conditions))
     }
 
@@ -161,6 +161,68 @@ final class ContentStore {
             loadErrors.append("Couldn't read \(filename).json: \(error.localizedDescription)")
             return [:]
         }
+    }
+
+    /// Xcode's synced-folder bundling flattens `Resources/Content/**/*.json`
+    /// to the app bundle root — the on-disk nesting under `Content/Spells/SRD/`
+    /// is only there for git-review tidiness, so at runtime we discover files
+    /// by filename pattern, not by path. Matches the naming convention `L0.json`
+    /// … `L9.json` (or `L10.json`+ if we ever ship epic-tier content).
+    static func isSRDSpellFilename(_ name: String) -> Bool {
+        guard name.hasPrefix("L"), name.hasSuffix(".json") else { return false }
+        let middle = name.dropFirst().dropLast(".json".count)
+        return !middle.isEmpty && middle.allSatisfy(\.isNumber)
+    }
+
+    /// Load and merge every bundled `.json` whose filename passes `matches`.
+    /// Files are read in filename order; a duplicate id across files is logged
+    /// to `loadErrors` and last-file-wins (the lint tests catch this at ⌘U).
+    /// Used for content that has grown too large to review as a single JSON
+    /// blob — imported packs still ship as one file per pack via `ContentPack`.
+    private func loadDictionaryFromFilenamePattern<T: Codable & Identifiable>(
+        matches predicate: (String) -> Bool,
+        decode type: [T].Type
+    ) -> [String: T] where T.ID == String {
+        // `Bundle.main.urls(forResourcesWithExtension:subdirectory:)` with
+        // `subdirectory: nil` is documented to search top-level nonlocalized
+        // resources, but empirically returns an empty array here (Xcode 26 /
+        // iOS 18 sim). FileManager on the bundle URL has no such surprises.
+        let bundleURL = Bundle.main.bundleURL
+        let allEntries = (try? FileManager.default.contentsOfDirectory(
+            at: bundleURL,
+            includingPropertiesForKeys: nil
+        )) ?? []
+        let matching = allEntries.filter {
+            $0.pathExtension.lowercased() == "json" && predicate($0.lastPathComponent)
+        }
+        guard !matching.isEmpty else {
+            loadErrors.append("No bundled JSON matched the split-catalog naming pattern (scanned \(allEntries.count) bundle entries)")
+            return [:]
+        }
+        var dict: [String: T] = [:]
+        for url in matching.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+            do {
+                let data = try Data(contentsOf: url)
+                let items = try JSONDecoder().decode(type, from: data)
+                for item in items {
+                    if dict[item.id] != nil {
+                        loadErrors.append("Duplicate id \"\(item.id)\" in \(url.lastPathComponent)")
+                    }
+                    dict[item.id] = item
+                }
+            } catch let DecodingError.keyNotFound(key, ctx) {
+                loadErrors.append("\(url.lastPathComponent): missing key \"\(key.stringValue)\" at [\(ctx.codingPath.map(\.stringValue).joined(separator: "."))]")
+            } catch let DecodingError.typeMismatch(_, ctx) {
+                loadErrors.append("\(url.lastPathComponent): type mismatch at [\(ctx.codingPath.map(\.stringValue).joined(separator: "."))] — \(ctx.debugDescription)")
+            } catch let DecodingError.valueNotFound(_, ctx) {
+                loadErrors.append("\(url.lastPathComponent): value missing at [\(ctx.codingPath.map(\.stringValue).joined(separator: "."))]")
+            } catch let DecodingError.dataCorrupted(ctx) {
+                loadErrors.append("\(url.lastPathComponent): corrupted at [\(ctx.codingPath.map(\.stringValue).joined(separator: "."))] — \(ctx.debugDescription)")
+            } catch {
+                loadErrors.append("\(url.lastPathComponent): \(error.localizedDescription)")
+            }
+        }
+        return dict
     }
 
     // MARK: - Imported packs (Phase H)
