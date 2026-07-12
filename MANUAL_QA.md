@@ -179,6 +179,24 @@ not surfacing at creation), which is why this list exists.
   Level up to L13 → pool grows to 2/2; L17 → 3/3. Refreshes on Long Rest.
   Rerolling a failed save is honor-system (mention "spend a use here"
   in the description).
+- [ ] **Barbarian Reckless Attack toggle (2026-07-11).** Create a Barbarian
+  at L2+. Open Features tab. Reckless Attack should show as a toggleable
+  active feature (Free action). Toggle it on — an active-effect chip appears
+  on the sheet. Perform a weapon attack from the Actions/Attacks tab. The
+  attack should roll with **Advantage** (2d20 keep highest) and the label
+  should include "(Advantage)". Toggle Reckless Attack off; the next attack
+  should roll normally.
+- [ ] **Barbarian Feral Instinct — Init chip (2026-07-11).** Level a
+  Barbarian to L7. The Init stat chip should now display the modifier
+  followed by "(Adv)" (e.g. "+2 (Adv)"). Compare to a Barbarian at L6:
+  no suffix. Non-barbarians never show the suffix.
+- [ ] **Barbarian Indomitable Might — d20 floor on STR (2026-07-11).**
+  Level a Barbarian with STR 18 to L18. Roll a Strength check from the
+  Abilities tab. Even if the d20 lands 5, the resulting roll should
+  display "1d20+STR (+4) — d20 floor 14" and the effective d20 should
+  be clamped to 14 (total 18 = STR). Same behavior on a STR save. Rolling
+  an Athletics check (STR-based skill) should ALSO get the floor. DEX/CON
+  checks/saves get no floor. Bumping STR to 20 changes the floor to 15.
 - [ ] **SRD 5.2.1 compliance — spell schools shifted (2026-07-11).** In the
   spell picker or a spell's detail view, verify: **Cure Wounds** → Abjuration,
   **Poison Spray** → Necromancy, **Acid Splash** → Evocation, **Mass Heal** →

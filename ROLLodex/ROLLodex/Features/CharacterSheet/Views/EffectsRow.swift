@@ -233,6 +233,8 @@ struct EffectsRow: View {
         case .spellcastingBuff(let dc, let adv):
             if dc != 0 { parts.append("Spell save DC \(dc >= 0 ? "+" : "")\(dc)") }
             if adv { parts.append("Advantage on spell attacks") }
+        case .recklessAttack:
+            parts.append("Advantage on weapon attacks (attackers gain Advantage vs you)")
         }
         switch effect.lifecycle {
         case .persistent(.concentrationEnds):

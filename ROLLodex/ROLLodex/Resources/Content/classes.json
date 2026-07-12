@@ -1310,7 +1310,27 @@
         {
           "id": "reckless_attack",
           "name": "Reckless Attack",
-          "description": "You can throw aside all concern for defense to attack with increased ferocity. When you make your first attack roll on your turn, you can decide to attack recklessly. Doing so gives you Advantage on attack rolls using Strength until the start of your next turn, but attack rolls against you have Advantage during that time."
+          "description": "Toggle on at the start of your turn to gain Advantage on your Strength-based melee weapon attack rolls this turn — in the app this grants Advantage on all your weapon attacks (the SRD scope is honor-system for ranged/finesse). The downside — attackers gain Advantage on attack rolls against you until your next turn — is not automatically applied (no enemy sheet).",
+          "kind": "active",
+          "actionCost": "free",
+          "triggeredEffect": {
+            "id": "reckless_attack_toggle",
+            "name": "Reckless Attack",
+            "trigger": {
+              "type": "whileActive"
+            },
+            "effect": {
+              "type": "recklessAttack"
+            },
+            "lifecycle": {
+              "type": "persistent",
+              "until": {
+                "type": "rounds",
+                "count": 1
+              }
+            },
+            "activation": "toggle"
+          }
         }
       ],
       "3": [
@@ -1363,7 +1383,9 @@
         {
           "id": "feral_instinct",
           "name": "Feral Instinct",
-          "description": "Your instincts are so honed that you have Advantage on Initiative rolls."
+          "description": "You have Advantage on Initiative rolls. In addition, when you roll Initiative and are Surprised, you can act normally on your first turn (honor-system, mention at the table). The Init chip on the sheet shows '(Adv)' while this feature is granted.",
+          "kind": "passive",
+          "initiativeAdvantage": true
         },
         {
           "id": "instinctive_pounce",
@@ -1454,7 +1476,12 @@
         {
           "id": "indomitable_might",
           "name": "Indomitable Might",
-          "description": "If your total for a Strength check or Strength saving throw is less than your Strength score, you can use that score in place of the total."
+          "description": "If your total for a Strength check or Strength saving throw is less than your Strength score, you can use that score in place of the total. In the app: the d20 for STR checks / STR saves / STR-based skill checks (Athletics) is pre-floored so `d20 + STR mod` is always at least your STR score.",
+          "kind": "passive",
+          "abilityCheckFloor": {
+            "ability": "strength",
+            "floorFromAbilityScore": true
+          }
         }
       ],
       "19": [

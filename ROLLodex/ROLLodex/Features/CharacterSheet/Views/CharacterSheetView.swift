@@ -533,9 +533,14 @@ struct CharacterSheetView: View {
         // Conditions can force advantage/disadvantage on the attack (Poisoned,
         // Blinded → disadvantage; Invisible → advantage). Weapon attacks have no
         // adv/dis chips, so apply it here.
-        let (adv, dis) = CharacterCalculator.conditionRollMode(
+        let (conditionAdv, dis) = CharacterCalculator.conditionRollMode(
             character: character, content: content, context: .attack
         )
+        // Reckless Attack (Barbarian L2): while active, grant Advantage on
+        // weapon attacks. Downside ("attackers gain Advantage against you") is
+        // honor-system since the app has no enemy sheet.
+        let recklessAdv = CharacterCalculator.recklessAttackActive(character: character, content: content)
+        let adv = conditionAdv || recklessAdv
         let attackMode = CharacterCalculator.combineRollMode(.normal, advantage: adv, disadvantage: dis)
         // Bless adds 1d4 to attack rolls. Fold it (and any adv/dis) into a
         // single resolved attack so the dice tab rolls it all at once.
@@ -732,6 +737,21 @@ struct CharacterSheetView: View {
             autoFailedSave = AutoFailedSave(ability: ability, conditionName: condition)
             return
         }
+        // Indomitable Might: pre-flooring the d20 so `d20 + mod ≥ ability
+        // score` holds. Applies to ability checks, STR/DEX/… saves, and
+        // ability-scoped skill checks (Athletics under STR floor).
+        let abilityFloor: Int? = {
+            switch recipe {
+            case .abilityCheck(let a):
+                return CharacterCalculator.abilityCheckFloor(character: character, content: content, ability: a)
+            case .savingThrow(let a):
+                return CharacterCalculator.abilityCheckFloor(character: character, content: content, ability: a)
+            case .skillCheck(let s):
+                return CharacterCalculator.abilityCheckFloor(character: character, content: content, ability: s.ability)
+            default:
+                return nil
+            }
+        }()
         let resolved = ActionInterpreter.resolve(
             recipe: recipe,
             character: character,
@@ -739,7 +759,8 @@ struct CharacterSheetView: View {
             // Reliable Talent et al. — feature-derived skill-check floor.
             skillCheckFloor: CharacterCalculator.skillCheckFloor(character: character, content: content),
             // Bard's Jack of All Trades — half PB on non-proficient checks.
-            jackOfAllTrades: CharacterCalculator.hasJackOfAllTrades(character: character, content: content)
+            jackOfAllTrades: CharacterCalculator.hasJackOfAllTrades(character: character, content: content),
+            abilityCheckFloor: abilityFloor
         )
         // Fold the character's conditions into the roll mode (Poisoned →
         // disadvantage on attacks/checks, Restrained → DEX-save disadvantage,
@@ -921,8 +942,18 @@ struct CharacterSheetView: View {
         HStack(spacing: 10) {
             StatChip(label: "AC", value: "\(armorClass)", systemImage: "shield.fill", tint: .blue)
             StatChip(label: "Speed", value: "\(speedFt) ft", systemImage: "figure.run", tint: .orange)
-            StatChip(label: "Init", value: initiativeBonus.formattedModifier, systemImage: "bolt.fill", tint: .yellow)
+            StatChip(label: "Init", value: initiativeLabel, systemImage: "bolt.fill", tint: .yellow)
         }
+    }
+
+    /// Init modifier with an "(Adv)" suffix when the character has a feature
+    /// granting Initiative Advantage (Barbarian Feral Instinct at L7). No
+    /// tappable roll yet — the chip stays informational.
+    private var initiativeLabel: String {
+        let base = initiativeBonus.formattedModifier
+        return CharacterCalculator.hasInitiativeAdvantage(character: character, content: content)
+            ? "\(base) (Adv)"
+            : base
     }
 
     // MARK: - Senses

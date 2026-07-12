@@ -5,11 +5,11 @@ import Foundation
 @MainActor
 struct PresetStoreTests {
 
-    private func withSuite(_ test: (UserDefaults) -> Void) {
+    private func withSuite(_ test: (UserDefaults) throws -> Void) rethrows {
         let name = "rollodex.tests.presets.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: name)!
-        test(defaults)
-        UserDefaults.standard.removePersistentDomain(forName: name)
+        defer { UserDefaults.standard.removePersistentDomain(forName: name) }
+        try test(defaults)
     }
 
     private func sampleFormula() -> DiceFormula {
@@ -100,7 +100,7 @@ struct PresetStoreTests {
     }
 
     @Test func presetRoundTripsThroughEncoder() throws {
-        withSuite { defaults in
+        try withSuite { defaults in
             let store = PresetStore(storage: defaults)
             var formula = DiceFormula()
             formula.groups.append(DiceGroup(kind: .d8, count: 1, damageType: .fire))

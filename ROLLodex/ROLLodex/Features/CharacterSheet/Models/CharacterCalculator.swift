@@ -626,6 +626,85 @@ enum CharacterCalculator {
         return abilityModifier(score: dexScore)
     }
 
+    /// True when any class/subclass feature the character has grants Advantage
+    /// on Initiative rolls (Barbarian Feral Instinct at L7). The Init chip
+    /// surfaces the flag as an "(Adv)" suffix; there's no automatic dice-tab
+    /// dispatch for initiative (no chip is tappable yet), so the advantage is
+    /// currently informational.
+    @MainActor
+    static func hasInitiativeAdvantage(character: Character, content: ContentStore) -> Bool {
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID)
+            where resolved.feature.initiativeAdvantage {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// The effective d20 floor an `abilityCheckFloor`-carrying feature imposes
+    /// on ability checks and saves for `ability` — computed as
+    /// `abilityScore − abilityMod` so `d20 + mod ≥ abilityScore` after the
+    /// roll (Barbarian Indomitable Might at L18 → STR). Returns nil when no
+    /// feature applies. Only weakens rolls when the character rolls below
+    /// their own ability score; higher rolls survive unchanged.
+    @MainActor
+    static func abilityCheckFloor(
+        character: Character, content: ContentStore, ability: Ability
+    ) -> Int? {
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
+                guard let floor = resolved.feature.abilityCheckFloor,
+                      floor.ability == ability,
+                      floor.floorFromAbilityScore else { continue }
+                let score = character.abilityScores[ability] ?? 10
+                let mod = abilityModifier(score: score)
+                // d20 floor = score - mod, so d20 + mod >= score after the
+                // roll. Clamp to [1, 20] — a floor above 20 is useless (the
+                // ability score gate itself is what matters).
+                return max(1, min(20, score - mod))
+            }
+        }
+        return nil
+    }
+
+    /// True when a Reckless Attack `triggeredEffect` is currently toggled on
+    /// via `activeEffects`. Used by the weapon-attack dispatch to fold
+    /// Advantage into the roll mode. The SRD says only STR-based melee
+    /// attacks qualify; we grant on ALL weapon attacks because the check
+    /// happens before the ability/melee resolution and gating it there would
+    /// require a bigger refactor — call out the SRD scope in the feature
+    /// description so a player using a ranged weapon knows they're
+    /// overriding the RAW.
+    @MainActor
+    static func recklessAttackActive(character: Character, content: ContentStore) -> Bool {
+        for active in character.activeEffects {
+            guard case .feature(let featureID) = active.source else { continue }
+            for entry in character.classEntries {
+                guard let cls = content.classDefinition(id: entry.classID) else { continue }
+                let subclassID = character.featureSelections[
+                    ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+                ]?.first
+                for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
+                    guard resolved.feature.id == featureID,
+                          let effect = resolved.feature.triggeredEffect,
+                          effect.id == active.effectID,
+                          case .recklessAttack = effect.effect else { continue }
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
     static func passivePerception(character: Character) -> Int {
         10 + skillModifier(character: character, skill: .perception)
     }

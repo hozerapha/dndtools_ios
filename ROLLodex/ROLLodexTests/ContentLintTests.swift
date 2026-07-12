@@ -82,8 +82,8 @@ struct ContentLintTests {
                 violations.append("\(spell.id): unsanctioned class tags \(unsanctioned.sorted()) — SRD sanctions \(entry.classes.sorted())")
             }
         }
-        #expect(violations.isEmpty,
-                "SRD 5.2.1 manifest compliance failures:\n" + violations.joined(separator: "\n"))
+        let details = violations.joined(separator: "\n")
+        #expect(violations.isEmpty, "SRD 5.2.1 manifest compliance failures:\n\(details)")
     }
 
     // Shared manifest-loading helper. Every SRD-content manifest lives at
@@ -276,14 +276,13 @@ struct ContentLintTests {
                 violations.append("class \"\(cls.name)\" is not in SRD 5.2.1")
                 continue
             }
-            if entry.hitDie != cls.hitDie {
-                violations.append("\(cls.name): hitDie \(cls.hitDie) but SRD says d\(entry.hitDie)")
+            if entry.hitDie != cls.hitDie.rawValue {
+                violations.append("\(cls.name): hitDie \(cls.hitDie.rawValue) but SRD says d\(entry.hitDie)")
             }
             // Per-level feature name compliance
             let manifestByLevel = Dictionary(grouping: entry.features, by: \.level)
                 .mapValues { $0.map(\.canonicalName) }
-            for (levelStr, feats) in cls.levelFeatures {
-                guard let level = Int(levelStr) else { continue }
+            for (level, feats) in cls.levelFeatures {
                 let sanctioned = Set((manifestByLevel[level] ?? []).map { $0.lowercased() })
                 for feat in feats {
                     let raw = feat.name
@@ -297,8 +296,8 @@ struct ContentLintTests {
                 }
             }
         }
-        #expect(violations.isEmpty,
-                "class manifest compliance failures:\n" + violations.joined(separator: "\n"))
+        let classDetails = violations.joined(separator: "\n")
+        #expect(violations.isEmpty, "class manifest compliance failures:\n\(classDetails)")
     }
 
     @Test func subclassesMatchSRDManifest() throws {
@@ -317,8 +316,8 @@ struct ContentLintTests {
                 violations.append("\(cls.name) has non-SRD subclasses: \(extra.sorted())")
             }
         }
-        #expect(violations.isEmpty,
-                "subclass manifest compliance failures:\n" + violations.joined(separator: "\n"))
+        let subclassDetails = violations.joined(separator: "\n")
+        #expect(violations.isEmpty, "subclass manifest compliance failures:\n\(subclassDetails)")
     }
 
     // MARK: - Id uniqueness
@@ -686,10 +685,10 @@ struct ContentLintTests {
     private func diceStrings(in recipes: [ActionRecipe]) -> [String] {
         recipes.compactMap { recipe in
             switch recipe {
-            case .heal(let dice, _, _, _):      return dice
-            case .rawDamage(let dice, _, _, _): return dice
-            case .abilityRoll(let dice, _, _):  return dice
-            default:                            return nil
+            case .heal(let dice, _, _, _):        return dice
+            case .rawDamage(let dice, _, _, _):   return dice
+            case .abilityRoll(let dice, _, _, _): return dice
+            default:                              return nil
             }
         }
     }
@@ -734,6 +733,9 @@ struct ContentLintTests {
             // A buff that does nothing is a content error.
             #expect(dc != 0 || adv,
                     "\(context) effect \(effect.id) is a spellcastingBuff with no DC bonus or advantage")
+        case .recklessAttack:
+            // Toggle-only, no dice or numbers to lint.
+            break
         }
     }
 

@@ -1,5 +1,20 @@
 import Foundation
 
+/// Ability-scoped "the total is at least your ability score" floor
+/// (Barbarian Indomitable Might at L18: STR-based checks and saves floor at
+/// your STR score). Modeled as a `floorFromAbilityScore` flag rather than a
+/// fixed value because the floor is derived from the character's live
+/// ability score at query time; a future fixed-value variant would add a
+/// second field.
+struct AbilityCheckFloor: Codable, Equatable {
+    let ability: Ability
+    /// True when the effective d20 floor should be `ability score − ability
+    /// mod`, guaranteeing `d20 + mod ≥ ability score` after the roll. Always
+    /// true for the current SRD-authored features; kept explicit so a future
+    /// fixed-value shape can decode without breaking.
+    let floorFromAbilityScore: Bool
+}
+
 struct FeatureDefinition: Codable, Identifiable, Equatable {
     let id: String
     let name: String
@@ -75,12 +90,23 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
     /// Scaled by the owning class level. Nil for features that don't touch
     /// speed.
     let speedBonus: LevelScaledValue?
+    /// True when the feature grants Advantage on Initiative rolls (Barbarian
+    /// Feral Instinct at L7). Currently a Bool because every SRD initiative
+    /// advantage is unconditional; if a conditional variant lands later the
+    /// shape can widen without breaking JSON.
+    let initiativeAdvantage: Bool
+    /// Ability-scoped "if your total is less than your ability score, use
+    /// your ability score" floor (Barbarian Indomitable Might → STR at L18).
+    /// Applied at roll time by pre-flooring the d20 so `d20 + ability mod ≥
+    /// ability score` always holds. Nil for features that don't touch it.
+    let abilityCheckFloor: AbilityCheckFloor?
 
     private enum CodingKeys: String, CodingKey {
         case id, name, description, actionRecipes
         case attunementSlots, resource, grantsProficiencies, kind, selection, actionCost, triggeredEffect
         case skillCheckMinimum, surfacesAsAction, grantedActions, grantsSpells
         case unarmoredDefenseAbility, hitPointBonus, resourceCost, speedBonus
+        case initiativeAdvantage, abilityCheckFloor
     }
 
     init(
@@ -102,7 +128,9 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         unarmoredDefenseAbility: Ability? = nil,
         hitPointBonus: HitPointBonus? = nil,
         resourceCost: ResourceCost? = nil,
-        speedBonus: LevelScaledValue? = nil
+        speedBonus: LevelScaledValue? = nil,
+        initiativeAdvantage: Bool = false,
+        abilityCheckFloor: AbilityCheckFloor? = nil
     ) {
         self.id = id
         self.name = name
@@ -123,6 +151,8 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         self.hitPointBonus = hitPointBonus
         self.resourceCost = resourceCost
         self.speedBonus = speedBonus
+        self.initiativeAdvantage = initiativeAdvantage
+        self.abilityCheckFloor = abilityCheckFloor
     }
 
     init(from decoder: Decoder) throws {
@@ -144,6 +174,8 @@ struct FeatureDefinition: Codable, Identifiable, Equatable {
         hitPointBonus = try c.decodeIfPresent(HitPointBonus.self, forKey: .hitPointBonus)
         resourceCost = try c.decodeIfPresent(ResourceCost.self, forKey: .resourceCost)
         speedBonus = try c.decodeIfPresent(LevelScaledValue.self, forKey: .speedBonus)
+        initiativeAdvantage = try c.decodeIfPresent(Bool.self, forKey: .initiativeAdvantage) ?? false
+        abilityCheckFloor = try c.decodeIfPresent(AbilityCheckFloor.self, forKey: .abilityCheckFloor)
         // Explicit JSON wins; otherwise default to .action when the feature
         // surfaces a tappable recipe, and nil for pure passives.
         if let declared = try c.decodeIfPresent(ActionCost.self, forKey: .actionCost) {

@@ -202,7 +202,8 @@ struct DiceRollerTests {
         let f = formula([DiceGroup(kind: .d6, count: 3, modifier: .rerollOnceIfAtMost(2))])
         let result = roller.resultFrom(formula: f, values: [1, 3, 2])
 
-        #expect(result.dieRolls.allSatisfy(\.isKept))
+        let allKept = result.dieRolls.allSatisfy(\.isKept)
+        #expect(allKept)
         #expect(result.total == 6)
     }
 
@@ -211,8 +212,10 @@ struct DiceRollerTests {
         let f = formula([DiceGroup(kind: .d6, count: 5, modifier: .rerollOnceIfAtMost(1), minimumValue: 3)])
         for _ in 0..<200 {
             let result = roller.roll(f)
-            #expect(result.dieRolls.allSatisfy { (3...6).contains($0.value) })
-            #expect(result.dieRolls.allSatisfy(\.isKept))
+            let allInRange = result.dieRolls.allSatisfy { (3...6).contains($0.value) }
+            let allKept = result.dieRolls.allSatisfy(\.isKept)
+            #expect(allInRange)
+            #expect(allKept)
         }
     }
 

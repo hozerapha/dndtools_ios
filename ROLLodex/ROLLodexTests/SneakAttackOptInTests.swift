@@ -118,7 +118,7 @@ struct SneakAttackOptInTests {
             content: store
         )
         // Merged formula contains base 1d8 + 3d6 sneak attack at L5.
-        let riderGroup = chips.first?.formula?.groups.first { $0.kind == .d6 }
+        let riderGroup = chips.first?.formula.groups.first { $0.kind == .d6 }
         #expect(riderGroup?.count == 3)
     }
 

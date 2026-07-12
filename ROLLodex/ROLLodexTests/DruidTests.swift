@@ -25,7 +25,7 @@ struct DruidTests {
     @Test func loadsDruidAsPreparedWisdomFullCaster() {
         let store = ContentStore()
         let druid = store.classDefinition(id: "druid")
-        #expect(druid?.hitDie == 8)
+        #expect(druid?.hitDie == .d8)
         #expect(druid?.primaryAbility == .wisdom)
         #expect(druid?.savingThrows.contains(.wisdom) == true)
         #expect(druid?.savingThrows.contains(.intelligence) == true)

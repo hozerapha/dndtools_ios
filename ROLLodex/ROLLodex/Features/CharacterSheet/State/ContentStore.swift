@@ -157,6 +157,18 @@ final class ContentStore {
             let data = try Data(contentsOf: url)
             let items = try JSONDecoder().decode(type, from: data)
             return Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0) })
+        } catch let DecodingError.keyNotFound(key, ctx) {
+            loadErrors.append("\(filename).json: missing key \"\(key.stringValue)\" at [\(ctx.codingPath.map(\.stringValue).joined(separator: "."))]")
+            return [:]
+        } catch let DecodingError.typeMismatch(_, ctx) {
+            loadErrors.append("\(filename).json: type mismatch at [\(ctx.codingPath.map(\.stringValue).joined(separator: "."))] — \(ctx.debugDescription)")
+            return [:]
+        } catch let DecodingError.valueNotFound(_, ctx) {
+            loadErrors.append("\(filename).json: value missing at [\(ctx.codingPath.map(\.stringValue).joined(separator: "."))]")
+            return [:]
+        } catch let DecodingError.dataCorrupted(ctx) {
+            loadErrors.append("\(filename).json: corrupted at [\(ctx.codingPath.map(\.stringValue).joined(separator: "."))] — \(ctx.debugDescription)")
+            return [:]
         } catch {
             loadErrors.append("Couldn't read \(filename).json: \(error.localizedDescription)")
             return [:]

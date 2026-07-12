@@ -19,7 +19,8 @@ enum ActionInterpreter {
         spellcastingAbility: Ability? = nil,
         fightingStyle: FightingStyleEffects? = nil,
         skillCheckFloor: Int? = nil,
-        jackOfAllTrades: Bool = false
+        jackOfAllTrades: Bool = false,
+        abilityCheckFloor: Int? = nil
     ) -> ResolvedAction {
         switch recipe {
         case .weaponAttack(let abilityOverride, let finesse):
@@ -42,13 +43,13 @@ enum ActionInterpreter {
             )
 
         case .abilityCheck(let ability):
-            return resolveAbilityCheck(character: character, ability: ability)
+            return resolveAbilityCheck(character: character, ability: ability, abilityCheckFloor: abilityCheckFloor)
 
         case .skillCheck(let skill):
-            return resolveSkillCheck(character: character, skill: skill, skillCheckFloor: skillCheckFloor, jackOfAllTrades: jackOfAllTrades)
+            return resolveSkillCheck(character: character, skill: skill, skillCheckFloor: skillCheckFloor, abilityCheckFloor: abilityCheckFloor, jackOfAllTrades: jackOfAllTrades)
 
         case .savingThrow(let ability):
-            return resolveSavingThrow(character: character, ability: ability)
+            return resolveSavingThrow(character: character, ability: ability, abilityCheckFloor: abilityCheckFloor)
 
         case .saveDC(let ability):
             return resolveSaveDC(character: character, ability: ability)
@@ -384,20 +385,28 @@ enum ActionInterpreter {
 
     private static func resolveAbilityCheck(
         character: Character,
-        ability: Ability
+        ability: Ability,
+        abilityCheckFloor: Int? = nil
     ) -> ResolvedAction {
         let score = character.abilityScores[ability] ?? 10
         let mod = CharacterCalculator.abilityModifier(score: score)
 
         var formula = DiceFormula()
-        formula.add(.d20)
+        // Indomitable Might: pre-floor the d20 so the total is at least
+        // the character's ability score (see
+        // `CharacterCalculator.abilityCheckFloor`).
+        formula.groups.append(DiceGroup(kind: .d20, count: 1, minimumValue: abilityCheckFloor))
         formula.modifier = mod
 
+        var description = "1d20 + \(ability.abbreviation) (\(mod >= 0 ? "+" : "")\(mod))"
+        if let floor = abilityCheckFloor {
+            description += " — d20 floor \(floor) (Indomitable Might)"
+        }
         return ResolvedAction(
             id: "ability_\(ability.rawValue)",
             label: "\(ability.rawValue.capitalized) Check \(mod >= 0 ? "+" : "")\(mod)",
             formula: formula,
-            description: "1d20 + \(ability.abbreviation) (\(mod >= 0 ? "+" : "")\(mod))"
+            description: description
         )
     }
 
@@ -405,6 +414,7 @@ enum ActionInterpreter {
         character: Character,
         skill: Skill,
         skillCheckFloor: Int?,
+        abilityCheckFloor: Int? = nil,
         jackOfAllTrades: Bool
     ) -> ResolvedAction {
         let mod = CharacterCalculator.skillModifier(
@@ -418,7 +428,18 @@ enum ActionInterpreter {
         let isProficient = CharacterCalculator.skillProficiencyLevel(
             character: character, skill: skill
         ) != .none
-        let floor = isProficient ? skillCheckFloor : nil
+        let reliableTalentFloor = isProficient ? skillCheckFloor : nil
+        // Indomitable Might: applies to STR-based skill checks too (Athletics).
+        // Take the highest floor between it and Reliable Talent so the more
+        // generous rule wins if both would fire on the same roll.
+        let floor: Int? = {
+            switch (reliableTalentFloor, abilityCheckFloor) {
+            case (nil, nil):        return nil
+            case (let a?, nil):     return a
+            case (nil, let b?):     return b
+            case (let a?, let b?):  return max(a, b)
+            }
+        }()
 
         var formula = DiceFormula()
         formula.groups.append(DiceGroup(
@@ -449,19 +470,24 @@ enum ActionInterpreter {
 
     private static func resolveSavingThrow(
         character: Character,
-        ability: Ability
+        ability: Ability,
+        abilityCheckFloor: Int? = nil
     ) -> ResolvedAction {
         let bonus = CharacterCalculator.saveBonus(character: character, ability: ability)
 
         var formula = DiceFormula()
-        formula.add(.d20)
+        formula.groups.append(DiceGroup(kind: .d20, count: 1, minimumValue: abilityCheckFloor))
         formula.modifier = bonus
 
+        var description = "1d20 + \(ability.abbreviation) save"
+        if let floor = abilityCheckFloor {
+            description += " — d20 floor \(floor) (Indomitable Might)"
+        }
         return ResolvedAction(
             id: "save_\(ability.rawValue)",
             label: "\(ability.rawValue.capitalized) Save \(bonus >= 0 ? "+" : "")\(bonus)",
             formula: formula,
-            description: "1d20 + \(ability.abbreviation) save"
+            description: description
         )
     }
 

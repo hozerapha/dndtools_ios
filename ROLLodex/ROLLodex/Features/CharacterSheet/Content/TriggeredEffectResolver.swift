@@ -106,6 +106,12 @@ enum TriggeredEffectResolver {
                 // Not a damage rider — consumed by CharacterCalculator
                 // .spellcastingBuff, not here.
                 continue
+
+            case .recklessAttack:
+                // Advantage-on-attacks rider — not a damage effect. Consumed
+                // by CharacterCalculator.recklessAttackActive and folded
+                // into the attack-roll mode in handleWeaponAttack.
+                continue
             }
 
             firedNames.append(effect.name)
@@ -311,6 +317,11 @@ enum TriggeredEffectResolver {
 
         case .spellcastingBuff:
             // Not a damage rider; never an opt-in chip.
+            return nil
+
+        case .recklessAttack:
+            // Not a damage rider — folded into the attack-roll mode by the
+            // sheet's handleWeaponAttack path, not surfaced as a chip.
             return nil
         }
 

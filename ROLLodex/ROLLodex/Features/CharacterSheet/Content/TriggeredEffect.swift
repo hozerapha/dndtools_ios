@@ -317,6 +317,14 @@ enum TriggerEffect: Equatable {
     /// is true. Queried by `CharacterCalculator.spellcastingBuff`; the damage
     /// resolver ignores it.
     case spellcastingBuff(saveDCBonus: Int, attackAdvantage: Bool)
+    /// While active: grant Advantage on the character's weapon attack rolls
+    /// (Barbarian Reckless Attack at L2 — the SRD says only STR-based melee,
+    /// but the app has no reliable "is this a STR melee?" gate that fires
+    /// AFTER the recipe resolves, so we grant it on all weapon attacks and
+    /// note the SRD scope in the feature description). The "attackers gain
+    /// Advantage against you" downside stays honor-system since there's no
+    /// enemy sheet.
+    case recklessAttack
 }
 
 extension TriggerEffect: Codable {
@@ -352,6 +360,8 @@ extension TriggerEffect: Codable {
             let dc = try c.decodeIfPresent(Int.self, forKey: .saveDCBonus) ?? 0
             let adv = try c.decodeIfPresent(Bool.self, forKey: .attackAdvantage) ?? false
             self = .spellcastingBuff(saveDCBonus: dc, attackAdvantage: adv)
+        case "recklessAttack":
+            self = .recklessAttack
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .type, in: c,
@@ -385,6 +395,8 @@ extension TriggerEffect: Codable {
             try c.encode("spellcastingBuff", forKey: .type)
             try c.encode(dc, forKey: .saveDCBonus)
             try c.encode(adv, forKey: .attackAdvantage)
+        case .recklessAttack:
+            try c.encode("recklessAttack", forKey: .type)
         }
     }
 }
