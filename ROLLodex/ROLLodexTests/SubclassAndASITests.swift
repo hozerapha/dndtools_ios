@@ -21,6 +21,13 @@ struct SubclassAndASITests {
         #expect(decoded == source)
     }
 
+    @Test func featSelectionSourceRoundTrips() throws {
+        let source = SelectionSource.feat(category: .general)
+        let data = try JSONEncoder().encode(source)
+        let decoded = try JSONDecoder().decode(SelectionSource.self, from: data)
+        #expect(decoded == source)
+    }
+
     @Test func subclassDefinitionDecodes() throws {
         let json = """
         {
@@ -71,19 +78,19 @@ struct SubclassAndASITests {
         }
     }
 
-    @Test func bundledFighterL4HasASIPrompt() {
+    @Test func bundledFighterL4OffersGeneralFeatBranch() {
         let store = ContentStore()
         let feature = store.classDefinition(id: "fighter")?
             .levelFeatures[4]?
             .first { $0.id == "fighter_asi_4" }
         #expect(feature?.kind == .selection)
-        if case .abilityScoreIncrease(let max)? = feature?.selection?.optionsSource {
-            #expect(max == 2)
+        if case .feat(let category)? = feature?.selection?.optionsSource {
+            #expect(category == .general)
         } else {
-            Issue.record("Expected .abilityScoreIncrease source")
+            Issue.record("Expected .feat(.general) source — SRD folds ASI into the General feat category")
         }
-        // Two-point budget.
-        #expect(feature?.selection?.count.value(classLevel: 4, characterLevel: 4) == 2)
+        // Pick exactly one feat at this moment.
+        #expect(feature?.selection?.count.value(classLevel: 4, characterLevel: 4) == 1)
     }
 
     // MARK: - resolvedFeatures aggregation

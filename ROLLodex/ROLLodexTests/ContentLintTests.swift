@@ -14,13 +14,16 @@ import Foundation
 struct ContentLintTests {
 
     /// Ids referenced by bundled JSON that intentionally have no definition
-    /// yet. Feats await the feat catalog (roadmap item 11g); the equipment
-    /// entries are background flavor items awaiting the gear sweep (11d).
-    /// `allowListStaysHonest` fails when one of these gains a real
-    /// definition — remove it from this list at that point.
+    /// yet. The per-class Magic Initiate flavors that backgrounds carry
+    /// (`magic_initiate_wizard`, `magic_initiate_cleric`) are deferred until
+    /// the Origin-feat picker at Background lands and can lock the class list.
+    /// The equipment entries are background flavor items awaiting the gear
+    /// sweep (11d). `allowListStaysHonest` fails when one of these gains a
+    /// real definition — remove it from this list at that point.
     static let knownUnauthoredIDs: Set<String> = [
-        // Feats — no feat catalog exists yet.
-        "savage_attacker", "magic_initiate_wizard", "magic_initiate_cleric", "alert",
+        // Deferred per-class Magic Initiate variants — backgrounds carry the
+        // class-locked flavor; the general-picker feat is authored as `magic_initiate`.
+        "magic_initiate_wizard", "magic_initiate_cleric",
         // Background equipment flavor items.
         "common_clothes", "insignia_of_rank", "gaming_set",
         "bottle_of_ink", "small_knife", "letter_from_colleague",
@@ -191,6 +194,14 @@ struct ContentLintTests {
                                contentType: "gear", mode: .subset)
     }
 
+    @Test func featsMatchSRDManifest() throws {
+        let content = ContentStore()
+        let bundled = content.allFeats.map(\.name)
+        let manifest = try manifestNames("feats", key: \.feats)
+        expectManifestCoverage(bundledNames: bundled, manifestNames: manifest,
+                               contentType: "feats", mode: .strict)
+    }
+
     // MARK: - Classes / subclasses manifest compliance
 
     private struct ManifestClassFeature: Decodable {
@@ -307,7 +318,7 @@ struct ContentLintTests {
     // MARK: - Id uniqueness
 
     @Test func idsAreUniqueWithinEachFile() throws {
-        for file in ["classes", "species", "backgrounds", "weapons", "armor", "gear", "conditions"] {
+        for file in ["classes", "species", "backgrounds", "weapons", "armor", "gear", "conditions", "feats"] {
             let ids = try rawIDs(file)
             let dupes = Dictionary(grouping: ids, by: { $0 }).filter { $1.count > 1 }.keys
             #expect(dupes.isEmpty, "\(file).json has duplicate ids: \(dupes.sorted())")
@@ -356,10 +367,8 @@ struct ContentLintTests {
         let content = ContentStore()
         for bg in content.backgrounds.values {
             if let feat = bg.feat {
-                // No feat catalog exists yet, so every feat reference must be
-                // declared as known debt. When feats become real content,
-                // replace this with a lookup against the feat store.
-                #expect(Self.knownUnauthoredIDs.contains(feat),
+                let resolves = content.featDefinition(id: feat) != nil
+                #expect(resolves || Self.knownUnauthoredIDs.contains(feat),
                         "background \(bg.id) references feat \"\(feat)\" — author it or add it to knownUnauthoredIDs")
             }
             for itemID in bg.equipment {

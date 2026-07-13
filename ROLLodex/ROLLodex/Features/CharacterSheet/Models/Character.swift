@@ -422,6 +422,22 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         }
     }
 
+    /// Reset every ASI pick recorded under `selectionID`, rolling each pick's
+    /// +1 back off the character. Used when a feat picker changes its
+    /// selected feat (the previous feat's ability sub-picks must unwind
+    /// before the new feat gets its own budget).
+    mutating func resetASIPicks(selectionID: String) {
+        let picks = featureSelections[selectionID] ?? []
+        for raw in picks {
+            guard let ability = Ability(rawValue: raw) else { continue }
+            abilityScores[ability] = max(1, (abilityScores[ability] ?? 10) - 1)
+        }
+        featureSelections[selectionID] = []
+        if picks.contains(Ability.constitution.rawValue) {
+            recalculateHP()
+        }
+    }
+
     /// Reverse one ASI pick for `ability`. No-op when the ability has no
     /// picks recorded under `selectionID`.
     mutating func applyASIDecrement(

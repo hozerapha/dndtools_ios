@@ -79,13 +79,27 @@ enum SelectionSource: Codable, Equatable {
     /// (a class's level-1 "choose N skills" grant). Distinct from `.skills`,
     /// which picks from skills already proficient (Expertise).
     case skillsFrom(options: [Skill])
+    /// Pick a feat from the given category. Options come from
+    /// `ContentStore.feats(in:)`, filtered by prereqs against the character.
+    /// The picked feat's id lands at `featureSelections[selectionID]`. If the
+    /// feat has an `abilityScoreBonus`, ability sub-picks are recorded at
+    /// `featureSelections["<selectionID>__ability"]`, applied to the
+    /// character's ability scores via the existing ASI mutators. The L4/8/12/16
+    /// class ASI feature becomes `.feat(.general)` under this design (SRD
+    /// 5.2.1 folds ASI into the General feat category).
+    case feat(category: FeatCategory)
+
+    /// Convention for where a feat pick's ability sub-picks are stored.
+    static func abilitySubpickKey(for selectionID: String) -> String {
+        "\(selectionID)__ability"
+    }
 
     private enum CodingKeys: String, CodingKey {
-        case type, proficientOnly, options, parentClassID, perAbilityMax, skills
+        case type, proficientOnly, options, parentClassID, perAbilityMax, skills, category
     }
 
     private enum Kind: String, Codable {
-        case weapons, fixedOptions, subclasses, abilityScoreIncrease, skills, skillsFrom
+        case weapons, fixedOptions, subclasses, abilityScoreIncrease, skills, skillsFrom, feat
     }
 
     init(from decoder: Decoder) throws {
@@ -109,6 +123,9 @@ enum SelectionSource: Codable, Equatable {
         case .skillsFrom:
             let options = try c.decode([Skill].self, forKey: .skills)
             self = .skillsFrom(options: options)
+        case .feat:
+            let category = try c.decode(FeatCategory.self, forKey: .category)
+            self = .feat(category: category)
         }
     }
 
@@ -133,6 +150,9 @@ enum SelectionSource: Codable, Equatable {
         case .skillsFrom(let options):
             try c.encode(Kind.skillsFrom, forKey: .type)
             try c.encode(options, forKey: .skills)
+        case .feat(let category):
+            try c.encode(Kind.feat, forKey: .type)
+            try c.encode(category, forKey: .category)
         }
     }
 }

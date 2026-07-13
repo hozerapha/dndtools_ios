@@ -12,6 +12,7 @@ final class ContentStore {
     private(set) var gear: [String: ItemDefinition] = [:]
     private(set) var spells: [String: SpellDefinition] = [:]
     private(set) var conditions: [String: ConditionDefinition] = [:]
+    private(set) var feats: [String: FeatDefinition] = [:]
 
     /// Bundled-content load failures (missing or malformed `Content/*.json`).
     /// Populated by `reload()`; surfaced in Settings instead of crashing the app
@@ -44,6 +45,17 @@ final class ContentStore {
     func gearDefinition(id: String) -> ItemDefinition? { gear[id] }
     func spellDefinition(id: String) -> SpellDefinition? { spells[id] }
     func conditionDefinition(id: String) -> ConditionDefinition? { conditions[id] }
+    func featDefinition(id: String) -> FeatDefinition? { feats[id] }
+    /// All bundled + loaded feats, name-sorted within their category. Used by
+    /// the feat catalog browser and the feat picker.
+    var allFeats: [FeatDefinition] {
+        feats.values.sorted { $0.name < $1.name }
+    }
+    /// Feats in a given category, name-sorted — the picker groups by category
+    /// so this is the natural query shape.
+    func feats(in category: FeatCategory) -> [FeatDefinition] {
+        feats.values.filter { $0.category == category }.sorted { $0.name < $1.name }
+    }
     var allConditions: [ConditionDefinition] {
         conditions.values.sorted { $0.name < $1.name }
     }
@@ -123,6 +135,7 @@ final class ContentStore {
         gear        = merged(loadDictionary(from: "gear", decode: [ItemDefinition].self), packs.compactMap(\.gear))
         spells      = merged(loadDictionaryFromFilenamePattern(matches: { Self.isSRDSpellFilename($0) }, decode: [SpellDefinition].self), packs.compactMap(\.spells))
         conditions  = merged(loadDictionary(from: "conditions", decode: [ConditionDefinition].self), packs.compactMap(\.conditions))
+        feats       = merged(loadDictionary(from: "feats", decode: [FeatDefinition].self), packs.compactMap(\.feats))
     }
 
     private func merged<T: Identifiable>(

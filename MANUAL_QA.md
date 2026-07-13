@@ -847,6 +847,92 @@ Mostly unit-tested; two have an in-app surface worth a quick check:
   speed returns.
 - [ ] Shield + Shield of Faith together → **AC +7** (they stack).
 
+## Feats — content foundation (new 2026-07-13)
+
+Schema + bundled catalog land first; picker wiring (Origin at background,
+General at ASI L4/8/12/16, Epic Boon at L19) comes in the follow-up tasks
+and gets its own section then. For this pass, the surface area is invisible
+to the player — verify content loads cleanly.
+
+- [ ] ⌘U → **ContentLintTests** all green. Notably: `featsMatchSRDManifest`,
+  `idsAreUniqueWithinEachFile` (now includes `feats`), and
+  `backgroundReferencesResolveOrAreAllowListed`.
+- [ ] Launch the app → **Settings → Content diagnostics** shows **no new
+  errors** referencing `feats.json` (empty is the pass case).
+- [ ] Open a character that has a background referencing a feat (e.g.
+  a background whose `feat` is `alert` or `savage_attacker`) → no picker
+  yet, but the sheet loads and the feat's grant text is at worst a stub
+  in the Features tab (regression watch — the picker will populate later).
+
+### Features tab — sort by level (new 2026-07-13)
+
+- [ ] Open any character's Features tab → cards are ordered by unlock level
+  ascending (L1 first). Species traits ride at L1 alongside the class's
+  L1 features.
+- [ ] Small button at the top of the section reads **"Low → High"** with an
+  up-arrow icon. Tap it → toggles to **"High → Low"** with a down-arrow;
+  cards reverse order. Tap again → returns to ascending.
+- [ ] Quit + relaunch the app → the toggle direction persists (last-chosen
+  order is what's shown on the next launch).
+- [ ] Multiclass (e.g. Fighter 3 / Wizard 2) → within a given level, class
+  features stay grouped in derivation order (no jumbling of Fighter L1 and
+  Wizard L1 features).
+
+### ASI-vs-Feat branch at L4/8/12/16 (new 2026-07-13)
+
+Every class's Ability Score Improvement moments (Fighter also at L6/L14,
+Rogue at L10, etc.) now open the General-feat picker instead of jumping
+straight to point-buy. ASI is one of the General feats — picking it opens
+the same distribute-2-points UI that used to live at that level.
+
+- [ ] Create a **Level 4 Fighter** → Features tab shows the L4 "Ability
+  Score Improvement" feature card. Its selection prompt now reads
+  **"Choose a General feat"** with **0 / 1** picked.
+- [ ] Tap **Choose**. Picker lists **Ability Score Improvement** and
+  **Grappler** (only 2 General feats today) with their descriptions.
+- [ ] Tap **Ability Score Improvement** → an inline **"Distribute 2 points
+  across STR / DEX / CON / INT / WIS / CHA"** section appears. Increment
+  STR twice → the character's STR increases by 2 immediately on the sheet.
+  Close. Return to Features tab → the card is dimmed (satisfied) with
+  "Ability Score Improvement — +2 STR" summary.
+- [ ] Level up to **5** → the level-up sheet's pending banner is **0** at
+  the L5 sheet if all L4 selections were completed (no false-positive from
+  the outer "1 pick" being counted before ability sub-picks).
+- [ ] Undo: reopen the L4 feature → tap **Change feat** → confirm STR
+  drops back by 2 (the previous ASI's ability sub-picks rolled back).
+- [ ] Pick **Grappler** instead. Prereq line reads "Level 4+, Strength or
+  Dexterity 13+". Only offered when the character's STR **or** DEX ≥ 13.
+- [ ] After picking Grappler, the "+1" sub-picker shows **STR / DEX only**
+  (Grappler restricts the ability list). Choose STR → +1 applied. Card
+  dims to "Grappler — +1 STR".
+- [ ] **Character with STR 10, DEX 10** at L4 → Grappler doesn't appear in
+  the picker (fails the ability prereq).
+- [ ] Save the character, quit + relaunch → the picked feat + ability
+  bumps persist. STR/DEX still reflects the bump.
+- [ ] **Multiclass level-up into a class whose L4 is coming later** → no
+  General-feat branch appears yet (only its own L1 pickers).
+
+### Feat catalog browser (new 2026-07-13)
+
+- [ ] Settings tab → **About** → row **"Bundled feats"** shows a count of
+  **17** and has a chevron.
+- [ ] Tap it → **Feats** screen groups entries under **Origin**, **General**,
+  **Fighting Style**, **Epic Boon**. Each row shows the feat name (+
+  "Repeatable" chip where applicable) and, when present, a prerequisite
+  line under it.
+- [ ] Tap **Alert** → detail view shows a green **Origin** chip, full SRD
+  description, and a **Mechanical hooks** section listing "Adds Proficiency
+  Bonus to Initiative".
+- [ ] Tap **Grappler** → prerequisite reads "Level 4+, Strength or Dexterity 13+";
+  hooks include "+1 to one of STR / DEX (max 20)".
+- [ ] Tap **Boon of Truesight** → purple **Epic Boon** chip; hooks include
+  "+1 to one of STR / DEX / … (max 30)" and "Truesight 60 ft".
+- [ ] Tap **Magic Initiate** → hooks include "2 cantrips + 1 L1 spell from
+  Cleric / Druid / Wizard list" and "once-per-Long-Rest free cast". "Repeatable"
+  chip visible.
+- [ ] Tap **Defense** (Fighting Style) → hooks include "+1 AC while wearing armor".
+- [ ] Back → the browser reflects the same list on re-entry (no reload glitch).
+
 ## Backlog to backfill (older features, not yet itemized here)
 
 These shipped before this doc existed; add cases on demand when we next touch

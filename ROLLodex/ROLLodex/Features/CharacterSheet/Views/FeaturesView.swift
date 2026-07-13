@@ -10,6 +10,10 @@ struct FeaturesView: View {
     @Environment(ContentStore.self) private var content
     @State private var expanded: Bool = true
     @State private var editingSelection: PendingSelection?
+    /// Direction toggle for level-based sort. Persisted so it survives
+    /// re-launches. Default ascending — L1 traits and origin features up top
+    /// mirror how the level-up sheet reveals features chronologically.
+    @AppStorage("featuresSortDescending") private var sortDescending = false
 
     var body: some View {
         if rows.isEmpty {
@@ -17,7 +21,8 @@ struct FeaturesView: View {
         } else {
             DisclosureGroup(isExpanded: $expanded) {
                 VStack(spacing: 14) {
-                    ForEach(rows) { row in
+                    sortToggle
+                    ForEach(sortedRows) { row in
                         FeatureCard(
                             character: character,
                             row: row,
@@ -82,23 +87,62 @@ struct FeaturesView: View {
                     id: "\(idPrefix)_\(entry.classID)_\(resolved.feature.id)",
                     feature: resolved.feature,
                     sourceLabel: "\(sourceName) · L\(resolved.grantedAtLevel)",
-                    classLevel: entry.level
+                    classLevel: entry.level,
+                    grantedAtLevel: resolved.grantedAtLevel
                 ))
             }
         }
         if let species = content.speciesDefinition(id: character.speciesID) {
             // A trait IS a FeatureDefinition, so its picker (lineage / ancestry)
             // and resource pool render through the same card as class features.
+            // Species traits ride along at L1 so the sort keeps them anchored
+            // to the earliest slot.
             for trait in species.traits {
                 rows.append(FeatureRowModel(
                     id: "species_\(trait.id)",
                     feature: trait,
                     sourceLabel: species.name,
-                    classLevel: character.level
+                    classLevel: character.level,
+                    grantedAtLevel: 1
                 ))
             }
         }
         return rows
+    }
+
+    /// Stable sort by unlock level. Swift's `sorted(by:)` is stable, so ties
+    /// keep the source-derivation order (class L1 features before species
+    /// L1 traits, subclasses interleaved by grant level).
+    private var sortedRows: [FeatureRowModel] {
+        rows.sorted { lhs, rhs in
+            sortDescending
+                ? lhs.grantedAtLevel > rhs.grantedAtLevel
+                : lhs.grantedAtLevel < rhs.grantedAtLevel
+        }
+    }
+
+    private var sortToggle: some View {
+        HStack(spacing: 6) {
+            Text("Sorted by level")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button {
+                sortDescending.toggle()
+            } label: {
+                Label(
+                    sortDescending ? "High → Low" : "Low → High",
+                    systemImage: sortDescending
+                        ? "arrow.down.circle.fill"
+                        : "arrow.up.circle.fill"
+                )
+                .font(.caption.weight(.semibold))
+            }
+            .buttonStyle(.bordered)
+            .tint(.blue)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, 4)
     }
 
     private func resolvedPool(for feature: FeatureDefinition) -> ResolvedResource? {
@@ -108,7 +152,21 @@ struct FeaturesView: View {
     }
 
     private func picksCount(for selection: FeatureSelection) -> Int {
-        (character.featureSelections[selection.id] ?? []).count
+        let outer = (character.featureSelections[selection.id] ?? []).count
+        // Feat picks are 2-stage: outer picks the feat, inner distributes the
+        // ability bump. The outer pick doesn't count as satisfied until the
+        // inner budget is fully spent — otherwise the "1 pending" banner in
+        // the level-up sheet clears prematurely.
+        if case .feat = selection.optionsSource, outer > 0 {
+            let featID = character.featureSelections[selection.id]?.first ?? ""
+            if let feat = content.featDefinition(id: featID),
+               let bonus = feat.abilityScoreBonus {
+                let subKey = SelectionSource.abilitySubpickKey(for: selection.id)
+                let sub = (character.featureSelections[subKey] ?? []).count
+                return sub >= bonus.amount ? 1 : 0
+            }
+        }
+        return outer
     }
 }
 
@@ -119,6 +177,9 @@ private struct FeatureRowModel: Identifiable {
     let feature: FeatureDefinition
     let sourceLabel: String
     let classLevel: Int
+    /// The class-level (or species L1) at which the feature was granted —
+    /// used purely for the Features tab's sort ordering.
+    let grantedAtLevel: Int
 }
 
 /// Payload for the `.sheet(item:)` binding when the player opens a picker.
@@ -288,10 +349,33 @@ private struct FeatureCard: View {
                                     .subclasses.first(where: { $0.id == picked }) {
                     pickedOptionRow(name: sub.name, description: sub.description)
                 }
+            case .feat:
+                if let picked = pickedIDs.first,
+                   let feat = content.featDefinition(id: picked) {
+                    pickedOptionRow(name: feat.name, description: featSummary(feat, selectionID: selection.id))
+                }
             default:
                 EmptyView()
             }
         }
+    }
+
+    /// Compose a summary line for a picked feat that includes any ability
+    /// sub-picks (e.g. "Ability Score Improvement — +2 STR"). Falls back to
+    /// the feat description when the feat has no bump or no sub-picks yet.
+    private func featSummary(_ feat: FeatDefinition, selectionID: String) -> String {
+        guard feat.abilityScoreBonus != nil else { return feat.description }
+        let subKey = SelectionSource.abilitySubpickKey(for: selectionID)
+        let picks = character.featureSelections[subKey] ?? []
+        guard !picks.isEmpty else { return "Pick ability score bump →" }
+        let counts = Dictionary(grouping: picks, by: { $0 }).mapValues(\.count)
+        let parts = counts
+            .compactMap { key, count -> String? in
+                guard let ability = Ability(rawValue: key) else { return nil }
+                return "+\(count) \(ability.abbreviation)"
+            }
+            .sorted()
+        return parts.joined(separator: ", ")
     }
 
     private func pickedOptionRow(name: String, description: String) -> some View {
@@ -393,6 +477,13 @@ struct SelectionSheet: View {
                 max: maxPicks,
                 proficientOnly: false,
                 explicitOptions: options
+            )
+        case .feat(let category):
+            FeatSelectionList(
+                character: $character,
+                selectionID: selection.id,
+                category: category,
+                characterLevel: classLevel
             )
         }
     }
@@ -664,11 +755,14 @@ private struct AbilityScoreIncreaseList: View {
     let selectionID: String
     let totalPoints: Int
     let perAbilityMax: Int
+    /// Restrict the row list to a subset of abilities (Grappler → STR/DEX,
+    /// Boon of Spell Recall → INT/WIS/CHA). Nil = every ability (default ASI).
+    var allowedAbilities: [Ability]? = nil
 
     var body: some View {
         ScrollView {
             VStack(spacing: 8) {
-                ForEach(Ability.allCases, id: \.self) { ability in
+                ForEach(rowAbilities, id: \.self) { ability in
                     row(for: ability)
                 }
             }
@@ -682,6 +776,10 @@ private struct AbilityScoreIncreaseList: View {
                 .padding(.vertical, 6)
                 .background(Color(.systemGroupedBackground))
         }
+    }
+
+    private var rowAbilities: [Ability] {
+        allowedAbilities ?? Ability.allCases
     }
 
     private var picks: [String] {
@@ -758,6 +856,198 @@ private struct AbilityScoreIncreaseList: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+// MARK: - Feat Selection List
+
+/// Picker for `.feat(category)` selections. Renders the eligible feats
+/// (post-prereq filter) as tappable cards; on pick, the feat's id lands in
+/// `featureSelections[selectionID]`. If the picked feat has an
+/// `abilityScoreBonus`, a second step appears inline to distribute the
+/// bump — reusing the ASI point-buy list scoped to the feat's ability list.
+/// Switching feats first rolls back the previous feat's ability picks so
+/// the character's scores stay consistent with the persisted selection.
+private struct FeatSelectionList: View {
+    @Binding var character: Character
+    let selectionID: String
+    let category: FeatCategory
+    let characterLevel: Int
+
+    @Environment(ContentStore.self) private var content
+
+    private var pickedFeatID: String? {
+        character.featureSelections[selectionID]?.first
+    }
+
+    private var pickedFeat: FeatDefinition? {
+        pickedFeatID.flatMap { content.featDefinition(id: $0) }
+    }
+
+    private var abilitySubpickKey: String {
+        SelectionSource.abilitySubpickKey(for: selectionID)
+    }
+
+    private var eligibleFeats: [FeatDefinition] {
+        content.feats(in: category).filter { meetsPrerequisites($0) }
+    }
+
+    /// Structured prereq gate. Any-of ability scores means the character
+    /// meets the prereq if AT LEAST ONE listed score is at the threshold.
+    private func meetsPrerequisites(_ feat: FeatDefinition) -> Bool {
+        let p = feat.prerequisites
+        if let min = p.minLevel, characterLevel < min { return false }
+        if !p.minAbilityScoresAnyOf.isEmpty {
+            let anyMet = p.minAbilityScoresAnyOf.contains { key, threshold in
+                guard let ability = Ability(rawValue: key) else { return false }
+                return (character.abilityScores[ability] ?? 10) >= threshold
+            }
+            if !anyMet { return false }
+        }
+        if p.requiresFightingStyleFeature { return false }
+        if p.requiresSpellcastingFeature { return false }
+        return true
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                if let feat = pickedFeat {
+                    pickedFeatCard(feat)
+                    if let bonus = feat.abilityScoreBonus {
+                        abilityStep(feat: feat, bonus: bonus)
+                    }
+                    changeButton
+                } else {
+                    ForEach(eligibleFeats) { feat in
+                        featCard(feat)
+                    }
+                    if eligibleFeats.isEmpty {
+                        Text("No eligible \(category.displayName.lowercased()) feats.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 40)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+            .padding()
+        }
+    }
+
+    private func featCard(_ feat: FeatDefinition) -> some View {
+        Button {
+            selectFeat(feat)
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Text(feat.name).font(.headline)
+                    if feat.repeatable {
+                        Text("Repeatable")
+                            .font(.caption2)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.secondary.opacity(0.15), in: Capsule())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                if !feat.prerequisiteText.isEmpty {
+                    Text(feat.prerequisiteText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Text(feat.description)
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+                    .lineLimit(4)
+                    .multilineTextAlignment(.leading)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func pickedFeatCard(_ feat: FeatDefinition) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                Text(feat.name).font(.headline)
+            }
+            if !feat.prerequisiteText.isEmpty {
+                Text(feat.prerequisiteText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Text(feat.description)
+                .font(.caption)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.green.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    @ViewBuilder
+    private func abilityStep(feat: FeatDefinition, bonus: FeatAbilityBonus) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(abilityStepHeading(bonus))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            AbilityScoreIncreaseList(
+                character: $character,
+                selectionID: abilitySubpickKey,
+                totalPoints: bonus.amount,
+                perAbilityMax: perAbilityMax(for: bonus),
+                allowedAbilities: bonus.abilities
+            )
+            .frame(minHeight: CGFloat(bonus.abilities.count) * 68 + 40)
+        }
+    }
+
+    private func abilityStepHeading(_ bonus: FeatAbilityBonus) -> String {
+        let names = bonus.abilities.map(\.abbreviation).joined(separator: " / ")
+        switch bonus.distribute {
+        case .oneAbility:
+            return "+\(bonus.amount) to one of \(names)"
+        case .pointBuy:
+            return "Distribute \(bonus.amount) points across \(names)"
+        }
+    }
+
+    private func perAbilityMax(for bonus: FeatAbilityBonus) -> Int {
+        switch bonus.distribute {
+        case .oneAbility: return bonus.amount
+        case .pointBuy:   return bonus.amount
+        }
+    }
+
+    private var changeButton: some View {
+        Button {
+            clearFeat()
+        } label: {
+            Label("Change feat", systemImage: "arrow.triangle.2.circlepath")
+                .font(.caption)
+        }
+        .buttonStyle(.bordered)
+        .tint(.orange)
+    }
+
+    private func selectFeat(_ feat: FeatDefinition) {
+        var copy = character
+        // Clear any prior ability sub-picks from a previous feat before
+        // recording the new outer pick.
+        copy.resetASIPicks(selectionID: abilitySubpickKey)
+        copy.featureSelections[selectionID] = [feat.id]
+        character = copy
+    }
+
+    private func clearFeat() {
+        var copy = character
+        copy.resetASIPicks(selectionID: abilitySubpickKey)
+        copy.featureSelections[selectionID] = []
+        character = copy
     }
 }
 

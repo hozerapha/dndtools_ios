@@ -582,7 +582,18 @@ struct LevelUpSheet: View {
                 characterLevel: newCharacterLevel
             )
             let picks = (character.featureSelections[selection.id] ?? []).count
-            if picks < max { count += 1 }
+            if picks < max { count += 1; continue }
+            // Feat picks are 2-stage: outer picks the feat, inner distributes
+            // the ability bump. An outer pick with unfilled inner budget still
+            // counts as pending so the level-up banner keeps nudging.
+            if case .feat = selection.optionsSource,
+               let featID = character.featureSelections[selection.id]?.first,
+               let feat = content.featDefinition(id: featID),
+               let bonus = feat.abilityScoreBonus {
+                let subKey = SelectionSource.abilitySubpickKey(for: selection.id)
+                let sub = (character.featureSelections[subKey] ?? []).count
+                if sub < bonus.amount { count += 1 }
+            }
         }
         return count
     }

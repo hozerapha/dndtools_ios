@@ -217,6 +217,11 @@ struct SettingsView: View {
         Section("About") {
             LabeledContent("Bundled classes", value: "\(content.classes.count)")
             LabeledContent("Bundled spells", value: "\(content.spells.count)")
+            NavigationLink {
+                FeatCatalogView()
+            } label: {
+                LabeledContent("Bundled feats", value: "\(content.feats.count)")
+            }
         }
     }
 

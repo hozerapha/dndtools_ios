@@ -188,15 +188,15 @@
         {
           "id": "fighter_asi_4",
           "name": "Ability Score Improvement",
-          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "description": "Take a General feat: Ability Score Improvement, Grappler, or any General feat for which you qualify.",
           "kind": "selection",
           "selection": {
             "id": "fighter_asi_4",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -925,15 +925,15 @@
         {
           "id": "rogue_asi_4",
           "name": "Ability Score Improvement",
-          "description": "Gain the Ability Score Improvement feat or another feat for which you qualify. Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "description": "Take a General feat: Ability Score Improvement, Grappler, or any General feat for which you qualify.",
           "kind": "selection",
           "selection": {
             "id": "rogue_asi_4",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -1003,11 +1003,11 @@
           "kind": "selection",
           "selection": {
             "id": "rogue_asi_8",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -1021,11 +1021,11 @@
           "kind": "selection",
           "selection": {
             "id": "rogue_asi_10",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -1046,11 +1046,11 @@
           "kind": "selection",
           "selection": {
             "id": "rogue_asi_12",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -1084,11 +1084,11 @@
           "kind": "selection",
           "selection": {
             "id": "rogue_asi_16",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -1864,15 +1864,15 @@
         {
           "id": "paladin_asi_4",
           "name": "Ability Score Improvement",
-          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "description": "Take a General feat: Ability Score Improvement, Grappler, or any General feat for which you qualify.",
           "kind": "selection",
           "selection": {
             "id": "paladin_asi_4",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -1903,15 +1903,15 @@
         {
           "id": "paladin_asi_8",
           "name": "Ability Score Improvement",
-          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "description": "Take a General feat: Ability Score Improvement, Grappler, or any General feat for which you qualify.",
           "kind": "selection",
           "selection": {
             "id": "paladin_asi_8",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -1943,15 +1943,15 @@
         {
           "id": "paladin_asi_12",
           "name": "Ability Score Improvement",
-          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "description": "Take a General feat: Ability Score Improvement, Grappler, or any General feat for which you qualify.",
           "kind": "selection",
           "selection": {
             "id": "paladin_asi_12",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -1968,15 +1968,15 @@
         {
           "id": "paladin_asi_16",
           "name": "Ability Score Improvement",
-          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "description": "Take a General feat: Ability Score Improvement, Grappler, or any General feat for which you qualify.",
           "kind": "selection",
           "selection": {
             "id": "paladin_asi_16",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -2337,15 +2337,15 @@
         {
           "id": "cleric_asi_4",
           "name": "Ability Score Improvement",
-          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "description": "Take a General feat: Ability Score Improvement, Grappler, or any General feat for which you qualify.",
           "kind": "selection",
           "selection": {
             "id": "cleric_asi_4",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -2390,15 +2390,15 @@
         {
           "id": "cleric_asi_8",
           "name": "Ability Score Improvement",
-          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "description": "Take a General feat: Ability Score Improvement, Grappler, or any General feat for which you qualify.",
           "kind": "selection",
           "selection": {
             "id": "cleric_asi_8",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -2422,15 +2422,15 @@
         {
           "id": "cleric_asi_12",
           "name": "Ability Score Improvement",
-          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "description": "Take a General feat: Ability Score Improvement, Grappler, or any General feat for which you qualify.",
           "kind": "selection",
           "selection": {
             "id": "cleric_asi_12",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -2447,15 +2447,15 @@
         {
           "id": "cleric_asi_16",
           "name": "Ability Score Improvement",
-          "description": "Increase one ability score by 2, or two ability scores by 1 each. No score may exceed 20.",
+          "description": "Take a General feat: Ability Score Improvement, Grappler, or any General feat for which you qualify.",
           "kind": "selection",
           "selection": {
             "id": "cleric_asi_16",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -2828,11 +2828,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "bard_asi_4",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -2859,11 +2859,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "bard_asi_8",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -2898,11 +2898,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "bard_asi_12",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -2914,11 +2914,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "bard_asi_16",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -3405,11 +3405,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "sorcerer_asi_4",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -3435,11 +3435,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "sorcerer_asi_8",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -3458,11 +3458,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "sorcerer_asi_12",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -3474,11 +3474,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "sorcerer_asi_16",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -3925,11 +3925,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "druid_asi_4",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -3955,11 +3955,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "druid_asi_8",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -3971,11 +3971,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "druid_asi_12",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -3994,11 +3994,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "druid_asi_16",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -4460,11 +4460,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "warlock_asi_4",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -4476,11 +4476,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "warlock_asi_8",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -4507,11 +4507,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "warlock_asi_12",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -4537,11 +4537,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "warlock_asi_16",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -4856,11 +4856,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "monk_asi_4",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         },
@@ -4918,11 +4918,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "monk_asi_8",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -4956,11 +4956,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "monk_asi_12",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -4999,11 +4999,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "monk_asi_16",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -5382,11 +5382,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "ranger_asi_4",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -5442,11 +5442,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "ranger_asi_8",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -5508,11 +5508,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "ranger_asi_12",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }
@@ -5557,11 +5557,11 @@
           "description": "Increase one ability score by 2, or two ability scores by 1 each (max 20); or take a feat.",
           "selection": {
             "id": "ranger_asi_16",
-            "prompt": "Distribute 2 ability points",
-            "count": 2,
+            "prompt": "Choose a General feat",
+            "count": 1,
             "optionsSource": {
-              "type": "abilityScoreIncrease",
-              "perAbilityMax": 2
+              "type": "feat",
+              "category": "general"
             }
           }
         }

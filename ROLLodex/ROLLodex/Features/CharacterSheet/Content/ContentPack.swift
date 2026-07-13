@@ -28,6 +28,7 @@ struct ContentPack: Codable, Equatable {
     var gear: [ItemDefinition]?
     var spells: [SpellDefinition]?
     var conditions: [ConditionDefinition]?
+    var feats: [FeatDefinition]?
 
     /// Total entries across every section — used by the importer's summary
     /// ("Imported 1 class, 6 spells") and to reject an empty pack.
@@ -35,6 +36,7 @@ struct ContentPack: Codable, Equatable {
         (classes?.count ?? 0) + (species?.count ?? 0) + (backgrounds?.count ?? 0)
             + (weapons?.count ?? 0) + (armor?.count ?? 0) + (gear?.count ?? 0)
             + (spells?.count ?? 0) + (conditions?.count ?? 0)
+            + (feats?.count ?? 0)
     }
 
     /// Short per-category breakdown for the import-success message.
@@ -52,6 +54,7 @@ struct ContentPack: Codable, Equatable {
         add(gear?.count, "item", "items")
         add(spells?.count, "spell", "spells")
         add(conditions?.count, "condition", "conditions")
+        add(feats?.count, "feat", "feats")
         return parts.isEmpty ? "nothing" : parts.joined(separator: ", ")
     }
 }
