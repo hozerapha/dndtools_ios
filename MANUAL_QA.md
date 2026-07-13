@@ -7,6 +7,19 @@ relaunch. Several bugs we've shipped were invisible to unit tests and only
 showed up here (the Spells tab being hidden for non-casters, species choices
 not surfacing at creation), which is why this list exists.
 
+## Regression watches
+
+- [ ] **Legacy character roster survives (2026-07-13 backfill).** After
+  installing a build that includes this line, launch the app. Every
+  character you'd created before 2026-07-12 should still appear on the
+  roster, with correct ability scores, HP, class, etc. If the roster is
+  empty but `Documents/Characters/*.json` (on the sim, via the file browser)
+  still contains files, this test failed — the recovery scan should have
+  re-attached them; the fallback decoder should have accepted their legacy
+  `abilityScores` array shape. Once loaded, editing any field will re-save
+  in the current object shape; both shapes decode indefinitely, so no
+  further action needed.
+
 ## How to use
 - Each feature area has a list of concrete, step-by-step cases with a checkbox.
 - Status: `[ ]` not yet verified · `[x]` verified · `[~]` partial / known issue

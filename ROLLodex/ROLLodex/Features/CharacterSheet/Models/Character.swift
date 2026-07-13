@@ -159,7 +159,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         speciesID = try container.decode(String.self, forKey: .speciesID)
         backgroundID = try container.decode(String.self, forKey: .backgroundID)
         classEntries = try container.decode([ClassEntry].self, forKey: .classEntries)
-        abilityScores = try container.decode([Ability: Int].self, forKey: .abilityScores)
+        abilityScores = try Self.decodeAbilityScores(from: container)
         maxHP = try container.decode(Int.self, forKey: .maxHP)
         // Migrate saves that predate rolledHP: back-derive the die total so
         // the invariant rolledHP + level × CON mod == maxHP holds for them.
@@ -514,6 +514,32 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         // DC is the larger of 10 or half the damage taken (after temp HP).
         let dc = max(10, remaining / 2)
         return ConcentrationCheck(spellID: spellID, dc: dc, damageTaken: remaining)
+    }
+
+    /// Decode `abilityScores` from either the current object shape
+    /// (`{"strength": 10, "dexterity": 14, …}`) or the legacy alternating-array
+    /// shape (`["strength", 10, "dexterity", 14, …]`) Swift's default Codable
+    /// used before `Ability` conformed to `CodingKeyRepresentable`. Every
+    /// character saved to Documents/Characters/ before 2026-07-12 is in the
+    /// legacy shape; without this fallback they silently drop out of the roster
+    /// on next launch.
+    fileprivate static func decodeAbilityScores(
+        from container: KeyedDecodingContainer<CodingKeys>
+    ) throws -> [Ability: Int] {
+        // Try the current object shape first — Ability conforms to
+        // CodingKeyRepresentable, so this Just Works for new saves.
+        if let dict = try? container.decode([Ability: Int].self, forKey: .abilityScores) {
+            return dict
+        }
+        // Fall back to the pre-CodingKeyRepresentable alternating array.
+        var nested = try container.nestedUnkeyedContainer(forKey: .abilityScores)
+        var out: [Ability: Int] = [:]
+        while !nested.isAtEnd {
+            let ability = try nested.decode(Ability.self)
+            let value = try nested.decode(Int.self)
+            out[ability] = value
+        }
+        return out
     }
 }
 

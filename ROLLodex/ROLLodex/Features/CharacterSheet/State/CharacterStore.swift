@@ -161,20 +161,45 @@ final class CharacterStore {
         var manifest = readManifest()
         let entryCountBeforeCleanup = manifest.entries.count
         var loaded: [Character] = []
+        var loadedIDs: Set<UUID> = []
 
         // Load each character referenced in the manifest.
         // Remove manifest entries for missing files.
         manifest.entries = manifest.entries.filter { entry in
-            let url = fileURL(for: UUID(uuidString: entry.id) ?? UUID())
+            guard let uuid = UUID(uuidString: entry.id) else { return false }
+            let url = fileURL(for: uuid)
             guard let data = try? Data(contentsOf: url),
                   let character = try? decoder.decode(Character.self, from: data) else {
                 return false
             }
             loaded.append(character)
+            loadedIDs.insert(character.id)
             return true
         }
 
-        // If manifest entries were dropped (orphaned ids), rewrite it.
+        // Recovery scan: pick up any character JSON on disk that the manifest
+        // doesn't list (e.g. because a previous launch's decoder pruned it
+        // silently — the 2026-07-12 CodingKeyRepresentable shift broke old
+        // [Ability: Int] saves and left files orphaned from the manifest even
+        // after the fallback decoder started accepting them again). Any file
+        // whose id decodes and isn't already loaded gets re-attached.
+        if let files = try? FileManager.default.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: nil
+        ) {
+            for url in files where url.pathExtension.lowercased() == "json"
+                && url.lastPathComponent != "manifest.json" {
+                guard let data = try? Data(contentsOf: url),
+                      let character = try? decoder.decode(Character.self, from: data),
+                      !loadedIDs.contains(character.id) else { continue }
+                loaded.append(character)
+                loadedIDs.insert(character.id)
+                manifest.entries.append(
+                    CharacterManifest.Entry(id: character.id.uuidString, lastEdited: Date())
+                )
+            }
+        }
+
+        // If manifest entries were dropped or reattached, rewrite it.
         // (Comparing against `characters.count` here was wrong — that's
         // always 0 during init, so the manifest was rewritten every launch.)
         if manifest.entries.count != entryCountBeforeCleanup {
