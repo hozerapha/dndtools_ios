@@ -185,7 +185,7 @@ struct SneakAttackOptInTests {
           "classEntries": [{ "classID": "fighter", "level": 1 }],
           "abilityScores": { "strength": 16, "dexterity": 12, "constitution": 14, "intelligence": 10, "wisdom": 13, "charisma": 8 },
           "maxHP": 12, "currentHP": 12, "tempHP": 0,
-          "inventory": [], "currency": { "platinum": 0, "gold": 0, "electrum": 0, "silver": 0, "copper": 0 },
+          "inventory": [], "currency": { "cp": 0, "sp": 0, "ep": 0, "gp": 0, "pp": 0 },
           "notes": "", "resources": {},
           "spells": { "prepared": [], "known": [], "spellbook": [] },
           "featureSelections": {}, "conditions": [],

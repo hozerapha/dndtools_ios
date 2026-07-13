@@ -23,3 +23,27 @@ nonisolated enum Ability: String, Codable, CaseIterable, Identifiable, Hashable 
         }
     }
 }
+
+/// Lets `[Ability: Int]` encode/decode as a JSON object (`{"strength": 10, …}`)
+/// instead of Swift's default alternating-array shape. Without this,
+/// `Character.abilityScores` round-trips as a flat array of interleaved keys
+/// and values — technically valid JSON but hostile to hand-authored fixtures,
+/// tests, and any homebrew content pack a user might write.
+extension Ability: CodingKeyRepresentable {
+    var codingKey: some CodingKey { RawCodingKey(rawValue) }
+
+    init?<T: CodingKey>(codingKey: T) {
+        guard let ability = Ability(rawValue: codingKey.stringValue) else { return nil }
+        self = ability
+    }
+}
+
+/// Minimal `CodingKey` used only to bridge `Ability` into
+/// `CodingKeyRepresentable`. Int keys are never used for abilities.
+private struct RawCodingKey: CodingKey {
+    let stringValue: String
+    var intValue: Int? { nil }
+    init(_ s: String) { stringValue = s }
+    init?(stringValue: String) { self.stringValue = stringValue }
+    init?(intValue: Int) { nil }
+}

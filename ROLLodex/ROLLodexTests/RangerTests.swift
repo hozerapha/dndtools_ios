@@ -133,12 +133,13 @@ struct RangerTests {
     // MARK: - Roving (speed bonus)
 
     @Test func rovingBumpsSpeedByTen() {
+        // SRD 5.2.1 audit relocated Roving from L5 → L6 (the previous L5
+        // placement was 2014-PHB drift). The bundle now unlocks it at L6.
         let store = ContentStore()
         #expect(CharacterCalculator.featureSpeedBonus(
-            character: makeRanger(level: 4), content: store, unarmored: true) == 0)
-        // At L5 Roving fires.
+            character: makeRanger(level: 5), content: store, unarmored: true) == 0)
         #expect(CharacterCalculator.featureSpeedBonus(
-            character: makeRanger(level: 5), content: store, unarmored: true) == 10)
+            character: makeRanger(level: 6), content: store, unarmored: true) == 10)
     }
 
     // MARK: - Hunter: Colossus Slayer rider

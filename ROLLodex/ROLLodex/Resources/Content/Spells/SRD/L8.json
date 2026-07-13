@@ -262,7 +262,7 @@
     "actionRecipes": [
       {
         "type": "rawDamage",
-        "dice": "50d1",
+        "dice": "50",
         "damageType": "bludgeoning",
         "label": "Earthquake (structures)"
       }

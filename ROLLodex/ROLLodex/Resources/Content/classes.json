@@ -170,7 +170,7 @@
       "3": [
         {
           "id": "martial_archetype",
-          "name": "Martial Archetype",
+          "name": "Fighter Subclass",
           "description": "Choose a subclass that shapes your fighting style for the rest of your career.",
           "kind": "selection",
           "selection": {
@@ -5304,7 +5304,13 @@
         {
           "id": "roving",
           "name": "Roving",
-          "description": "Your Speed increases by 10 feet while you aren't wearing Heavy armor. You also have a Climb Speed and a Swim Speed equal to your Speed."
+          "description": "Your Speed increases by 10 feet while you aren't wearing Heavy armor. You also have a Climb Speed and a Swim Speed equal to your Speed.",
+          "speedBonus": {
+            "byClassLevel": {
+              "6": 10
+            }
+          },
+          "kind": "passive"
         }
       ],
       "7": [

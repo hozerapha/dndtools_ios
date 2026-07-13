@@ -122,7 +122,11 @@ struct ContentStoreEdgeCaseTests {
 
         #expect(store.spellDefinition(id: "fire_bolt")?.name == "Custom Bolt")
 
-        store.removeImportedPack(fileName: "custom.json")
+        // Filenames now carry a stable name-hash suffix (audit #4 —
+        // "custom-2cf74e.json"), so removing by hard-coded "custom.json"
+        // doesn't touch anything. Take the actual filename from importedPacks.
+        let importedFileName = store.importedPacks.first!.fileName
+        store.removeImportedPack(fileName: importedFileName)
 
         #expect(store.spellDefinition(id: "fire_bolt")?.name == "Fire Bolt")
         #expect(store.importedPacks.isEmpty)

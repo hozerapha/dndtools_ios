@@ -122,6 +122,10 @@ struct ModelCodableTests {
     }
 
     @Test func classDefinitionRoundTrip() throws {
+        // Passes actionCost explicitly: when a feature carries a recipe, the
+        // decoder auto-infers `.action` (the JSON-authoring convenience), so
+        // a memberwise-init copy with `actionCost: nil` doesn't round-trip
+        // to itself. Passing `.action` up front keeps encode/decode symmetric.
         let fighter = ClassDefinition(
             id: "fighter",
             name: "Fighter",
@@ -136,7 +140,8 @@ struct ModelCodableTests {
                         id: "second_wind",
                         name: "Second Wind",
                         description: "Regain HP.",
-                        actionRecipes: [.heal(dice: "1d10", addLevel: true, label: "Second Wind")]
+                        actionRecipes: [.heal(dice: "1d10", addLevel: true, label: "Second Wind")],
+                        actionCost: .action
                     )
                 ]
             ],

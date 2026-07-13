@@ -231,7 +231,12 @@ struct FightingStyleTests {
 
     @Test func withoutTwoWeaponFightingOffHandOmitsMod() {
         let store = ContentStore()
-        let character = makeFighter(style: "dueling", equipped: ["dagger"])
+        // No style: guarantees no damage-side fighting-style bonuses so the
+        // only source of +N here is the ability mod, which `addAbility: false`
+        // suppresses. The earlier dueling fixture accidentally passed off a
+        // single-dagger loadout as the off-hand, and dueling correctly added
+        // its +2 melee-single-hand damage, masking the actual thing under test.
+        let character = makeFighter(style: nil, equipped: ["dagger"])
         let fs = CharacterCalculator.fightingStyleEffects(character: character, content: store)
         let weapon = store.weaponDefinition(id: "dagger")!
         let resolved = ActionInterpreter.resolve(

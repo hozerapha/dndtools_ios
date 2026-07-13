@@ -100,9 +100,12 @@ struct MinimumValueTests {
     @Test func rollerFloorsAdvantageDiceBeforeKeep() {
         var formula = DiceFormula()
         formula.groups.append(DiceGroup(kind: .d20, count: 1, minimumValue: 10))
-        // adv: roll 3 and 15 → floor 3 to 10, keep 15.
+        // `resultFrom` doesn't inflate a formula for advantage on its own — the
+        // caller must expand the d20 count via `applyingAdvantage` (the same
+        // step `CharacterSheetView.dispatchRoll` does before dispatching).
+        let expanded = formula.applyingAdvantage(.advantage)
         let result = DiceRoller().resultFrom(
-            formula: formula,
+            formula: expanded,
             values: [3, 15],
             mode: .advantage
         )

@@ -24,7 +24,12 @@ struct ActionInterpreterTests {
                 .savingThrow(.strength): .proficient,
                 .savingThrow(.constitution): .proficient,
                 .weapon(.simple): .proficient,
-                .weapon(.martial): .proficient
+                .weapon(.martial): .proficient,
+                // Class skill picks used to be auto-granted; now they need an
+                // explicit entry in the proficiencies dict (or a
+                // featureSelections class_skills marker) so the skillCheck
+                // fixture actually has Athletics.
+                .skill(.athletics): .proficient,
             ]
         )
     }

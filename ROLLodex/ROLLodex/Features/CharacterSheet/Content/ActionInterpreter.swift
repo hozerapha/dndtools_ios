@@ -225,10 +225,18 @@ enum ActionInterpreter {
         let ability: Ability
         if let override = abilityOverride {
             ability = override
-        } else if finesse {
+        } else if finesse || weapon?.properties.contains(.finesse) == true {
+            // Finesse weapons (Rapier, Dagger, …) let the player pick the
+            // higher of STR / DEX; when the recipe passes finesse=true the
+            // choice is forced regardless of what the weapon carries.
             let strMod = CharacterCalculator.abilityModifier(score: character.abilityScores[.strength] ?? 10)
             let dexMod = CharacterCalculator.abilityModifier(score: character.abilityScores[.dexterity] ?? 10)
             ability = dexMod > strMod ? .dexterity : .strength
+        } else if let declared = weapon?.damageAbility {
+            // Ranged weapons (Shortbow, Longbow, Light Crossbow, …) carry an
+            // explicit `damageAbility: dexterity`; honor it so ranged attacks
+            // roll DEX instead of the STR default.
+            ability = declared
         } else {
             ability = .strength
         }
@@ -533,18 +541,14 @@ enum ActionInterpreter {
     // MARK: - Die string parser
 
     private static func parseDieString(_ dieString: String, modifier: Int) -> DiceFormula {
-        var formula = DiceFormula()
-
-        // Expect format like "1d8", "2d6", or just a number
-        let components = dieString.split(separator: "d")
-        if components.count == 2,
-           let count = Int(components[0]),
-           let sides = Int(components[1]),
-           let kind = DieKind(rawValue: sides) {
-            formula.groups.append(DiceGroup(kind: kind, count: count))
-        }
-
-        formula.modifier = modifier
+        // Delegate to the real parser so compound strings like "2d4+2d4+2d4"
+        // (produced by upcast-scaled recipes at higher slot levels) and
+        // "1d8+3" (flat-plus-dice) survive. The naive split-on-"d" that used
+        // to live here only handled a single "NdM" group and silently returned
+        // an empty formula for anything else, which is why healing-word upcast
+        // rolls came out as zero groups.
+        var formula = (try? DiceFormulaParser().parse(dieString)) ?? DiceFormula()
+        formula.modifier += modifier
         return formula
     }
 }

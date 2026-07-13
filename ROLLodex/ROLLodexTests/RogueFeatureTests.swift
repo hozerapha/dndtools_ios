@@ -145,9 +145,11 @@ struct RogueFeatureTests {
     }
 
     @Test func expertiseFromSelectionsRequiresBaseProficiency() {
-        // If the skill isn't proficient, the selection alone still grants
-        // expertise bonus (the player made an invalid pick, but the sheet
-        // honors the selection).
+        // Per SRD: expertise doubles Proficiency Bonus, but you must be
+        // proficient in the skill first. Without base proficiency, the
+        // expertise selection is a no-op and the modifier is just the ability
+        // mod. The picker enforces this at pick time; the calculator enforces
+        // it here as a defense-in-depth.
         let character = Character(
             name: "Lazlo", level: 1,
             speciesID: "human", backgroundID: "criminal",
@@ -158,8 +160,8 @@ struct RogueFeatureTests {
             featureSelections: ["expertise": ["stealth"]]
         )
         let mod = CharacterCalculator.skillModifier(character: character, skill: .stealth)
-        // +3 DEX + 4 expertise (prof bonus 2 × 2) even without base proficiency
-        #expect(mod == 7)
+        // +3 DEX only — no proficiency, so no PB, no doubled PB from expertise.
+        #expect(mod == 3)
     }
 
     @Test func expertise_6SelectionAlsoWorks() {

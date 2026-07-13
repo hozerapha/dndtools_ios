@@ -72,7 +72,7 @@ struct CharacterCalculatorTests {
             proficiencies: [.skill(.stealth): .expertise]
         )
         let mod = CharacterCalculator.skillModifier(character: character, skill: .stealth)
-        #expect(mod == 7) // +3 DEX + 6 expertise (prof bonus 3 * 2)
+        #expect(mod == 9) // +3 DEX + 6 expertise (prof bonus 3 * 2 at L5)
     }
 
     @Test func classSkillSelectionGrantsProficiencyLive() {
@@ -93,10 +93,12 @@ struct CharacterCalculatorTests {
     }
 
     @Test func jackOfAllTradesAddsHalfPBToNonProficientSkillsOnly() {
-        // Level 5 → PB 4, half-PB = 2. DEX 14 → +2.
+        // Level 9 → PB 4, half-PB = 2. DEX 14 → +2. (Fixture bumped from L5;
+        // at L5 PB is 3 and half-PB integer-divides to 1, which masked the
+        // "half-PB adds 2" intent.)
         let character = Character(
-            name: "Bard", level: 5, speciesID: "human", backgroundID: "sage",
-            classEntries: [ClassEntry(classID: "bard", level: 5)],
+            name: "Bard", level: 9, speciesID: "human", backgroundID: "sage",
+            classEntries: [ClassEntry(classID: "bard", level: 9)],
             abilityScores: [.dexterity: 14, .strength: 10], maxHP: 30,
             proficiencies: [.skill(.acrobatics): .proficient]
         )
@@ -217,12 +219,12 @@ struct CharacterCalculatorTests {
             weight: 55,
             armorCategory: .heavy,
             acBase: 16,
-            dexCap: nil,
+            dexCap: 0,   // heavy armor allows NO DEX contribution
             stealthDisadvantage: true,
             strengthRequirement: 13
         )
         let ac = CharacterCalculator.armorClass(dexMod: 1, armor: armor, hasShield: true)
-        #expect(ac == 18)
+        #expect(ac == 18) // 16 base + 0 dex + 2 shield
     }
 
     @Test func armorClassWithMediumArmorAndDexCap() {

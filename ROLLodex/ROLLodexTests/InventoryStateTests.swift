@@ -82,7 +82,11 @@ struct InventoryStateTests {
         let dir = makeTempDir()
         try writeAttunementPack(to: dir)
         let store = ContentStore(importedContentDirectory: dir)
-        let weakCharacter = makeCharacter()
+        // `makeCharacter()` gives STR 16, which passes the belt's STR 13
+        // requirement. Drop STR 10 explicitly so the "weak" character is
+        // actually weak enough to fail the restriction.
+        var weakCharacter = makeCharacter()
+        weakCharacter.abilityScores[.strength] = 10
         var strongCharacter = makeCharacter()
         strongCharacter.abilityScores[.strength] = 18
 

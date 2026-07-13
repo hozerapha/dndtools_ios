@@ -94,7 +94,7 @@ struct TriggeredEffectTests {
           "currentHP": 12,
           "tempHP": 0,
           "inventory": [],
-          "currency": { "platinum": 0, "gold": 0, "electrum": 0, "silver": 0, "copper": 0 },
+          "currency": { "cp": 0, "sp": 0, "ep": 0, "gp": 0, "pp": 0 },
           "notes": "",
           "resources": {},
           "spells": { "prepared": [], "known": [], "spellbook": [] },

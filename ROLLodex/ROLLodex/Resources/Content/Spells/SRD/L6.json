@@ -508,7 +508,7 @@
     "actionRecipes": [
       {
         "type": "heal",
-        "dice": "70d1",
+        "dice": "70",
         "addLevel": false,
         "addSpellcastingMod": false,
         "label": "Heal"
@@ -517,7 +517,7 @@
     "upcastEffect": {
       "type": "extraDicePerLevel",
       "recipeIndex": 0,
-      "dice": "10d1"
+      "dice": "10"
     }
   },
   {
