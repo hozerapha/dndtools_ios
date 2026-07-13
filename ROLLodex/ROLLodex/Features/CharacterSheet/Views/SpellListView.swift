@@ -245,30 +245,13 @@ private struct GrantedSpellsSection: View {
                 .foregroundStyle(.secondary)
             VStack(spacing: 4) {
                 ForEach(granted) { item in
-                    Button { onTap(item.spell) } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: item.spell.school.systemImage)
-                                .font(.caption)
-                                .frame(width: 18)
-                                .foregroundStyle(.purple)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(item.spell.name)
-                                    .font(.subheadline.weight(.semibold))
-                                Text("\(levelLabel(item.spell)) · \(item.sourceLabel)")
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                            }
-                            Spacer()
-                            Image(systemName: "wand.and.rays")
-                                .font(.subheadline)
-                                .foregroundStyle(canCast(item.spell) ? Color.accentColor : Color.secondary.opacity(0.4))
-                        }
-                        .padding(.vertical, 2)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(!canCast(item.spell))
-                    .opacity(canCast(item.spell) ? 1 : 0.55)
+                    GrantedSpellRow(
+                        spell: item.spell,
+                        sourceLabel: item.sourceLabel,
+                        canCast: canCast(item.spell),
+                        levelLabel: levelLabel(item.spell),
+                        onTap: { onTap(item.spell) }
+                    )
                 }
             }
         }
@@ -283,6 +266,50 @@ private struct GrantedSpellsSection: View {
         return slotResources.contains { resolved in
             guard case .spellSlot(let slotLevel) = resolved.definition.displayHint else { return false }
             return slotLevel >= spell.level && resolved.current > 0
+        }
+    }
+}
+
+/// Row inside `GrantedSpellsSection`. Split into its own view so it can own the
+/// `showDetail` sheet state per-row, mirroring `SpellRow`.
+private struct GrantedSpellRow: View {
+    let spell: SpellDefinition
+    let sourceLabel: String
+    let canCast: Bool
+    let levelLabel: String
+    let onTap: () -> Void
+    @State private var showDetail = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            SpellInfoButton(spell: spell, showDetail: $showDetail)
+            Button(action: onTap) {
+                HStack(spacing: 8) {
+                    Image(systemName: spell.school.systemImage)
+                        .font(.caption)
+                        .frame(width: 18)
+                        .foregroundStyle(.purple)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(spell.name)
+                            .font(.subheadline.weight(.semibold))
+                        Text("\(levelLabel) · \(sourceLabel)")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    Spacer()
+                    Image(systemName: "wand.and.rays")
+                        .font(.subheadline)
+                        .foregroundStyle(canCast ? Color.accentColor : Color.secondary.opacity(0.4))
+                }
+                .padding(.vertical, 2)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!canCast)
+            .opacity(canCast ? 1 : 0.55)
+        }
+        .sheet(isPresented: $showDetail) {
+            SpellDetailSheet(spell: spell)
         }
     }
 }
@@ -338,47 +365,79 @@ private struct SpellRow: View {
     let canCast: Bool
     let onTap: () -> Void
     let onForget: () -> Void
+    @State private var showDetail = false
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 8) {
-                Image(systemName: spell.school.systemImage)
-                    .font(.caption)
-                    .frame(width: 18)
-                    .foregroundStyle(.purple)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(spell.name)
-                        .font(.subheadline.weight(.semibold))
-                    HStack(spacing: 4) {
-                        Text(spell.castingTime.shortLabel)
-                        Text("·")
-                        Text(spell.range.shortLabel)
-                        if spell.duration.requiresConcentration {
-                            Text("· Conc")
-                                .foregroundStyle(.orange)
+        HStack(spacing: 8) {
+            // Info affordance. Separate button so it stays live even when the
+            // main row is disabled (no slot available) — the player still needs
+            // to look up what the spell does.
+            SpellInfoButton(spell: spell, showDetail: $showDetail)
+            Button(action: onTap) {
+                HStack(spacing: 8) {
+                    Image(systemName: spell.school.systemImage)
+                        .font(.caption)
+                        .frame(width: 18)
+                        .foregroundStyle(.purple)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(spell.name)
+                            .font(.subheadline.weight(.semibold))
+                        HStack(spacing: 4) {
+                            Text(spell.castingTime.shortLabel)
+                            Text("·")
+                            Text(spell.range.shortLabel)
+                            if spell.duration.requiresConcentration {
+                                Text("· Conc")
+                                    .foregroundStyle(.orange)
+                            }
                         }
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                     }
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    Spacer()
+                    Image(systemName: "wand.and.rays")
+                        .font(.subheadline)
+                        .foregroundStyle(canCast ? Color.accentColor : Color.secondary.opacity(0.4))
                 }
-                Spacer()
-                Image(systemName: "wand.and.rays")
-                    .font(.subheadline)
-                    .foregroundStyle(canCast ? Color.accentColor : Color.secondary.opacity(0.4))
+                .padding(.vertical, 2)
+                .contentShape(Rectangle())
             }
-            .padding(.vertical, 2)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .disabled(!canCast)
+            .opacity(canCast ? 1 : 0.55)
+            .contextMenu {
+                Button(role: .destructive) {
+                    onForget()
+                } label: {
+                    Label("Forget", systemImage: "minus.circle")
+                }
+            }
+        }
+        .sheet(isPresented: $showDetail) {
+            SpellDetailSheet(spell: spell)
+        }
+    }
+}
+
+/// Small "info" affordance that opens `SpellDetailSheet`. Extracted so the
+/// same button works from the row, the picker, and any future spell surface
+/// (SpellCastSheet header, follow-up chips, …) without duplication.
+struct SpellInfoButton: View {
+    let spell: SpellDefinition
+    @Binding var showDetail: Bool
+
+    var body: some View {
+        Button {
+            showDetail = true
+        } label: {
+            Image(systemName: "info.circle")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .padding(.trailing, 2)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(!canCast)
-        .opacity(canCast ? 1 : 0.55)
-        .contextMenu {
-            Button(role: .destructive) {
-                onForget()
-            } label: {
-                Label("Forget", systemImage: "minus.circle")
-            }
-        }
+        .accessibilityLabel("About \(spell.name)")
     }
 }
 
@@ -585,10 +644,12 @@ struct AddSpellSheet: View {
 
     @ViewBuilder
     private func row(for spell: SpellDefinition) -> some View {
-        switch mode {
-        case .prepare: prepareRow(for: spell)
-        case .learn:   learnRow(for: spell)
-        case .add:     addRow(for: spell)
+        PickerRowWithInfo(spell: spell) {
+            switch mode {
+            case .prepare: prepareRow(for: spell)
+            case .learn:   learnRow(for: spell)
+            case .add:     addRow(for: spell)
+            }
         }
     }
 
@@ -742,5 +803,150 @@ struct AddSpellSheet: View {
         case 3: return "3rd Level"
         default: return "\(level)th Level"
         }
+    }
+}
+
+/// Wraps any picker row with an info affordance on the leading edge and a
+/// SpellDetailSheet presenter. Keeps the picker's toggle/add logic in one
+/// place while every spell surface gets consistent "look up what this does"
+/// behavior.
+private struct PickerRowWithInfo<Content: View>: View {
+    let spell: SpellDefinition
+    @ViewBuilder let content: () -> Content
+    @State private var showDetail = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            SpellInfoButton(spell: spell, showDetail: $showDetail)
+            content()
+        }
+        .sheet(isPresented: $showDetail) {
+            SpellDetailSheet(spell: spell)
+        }
+    }
+}
+
+/// Full-text detail for a bundled spell — school, level, casting time, range,
+/// components (with material cost), duration, description, higher-level scaling,
+/// and the class list the SRD associates the spell with. Read-only; the only
+/// affordance is Dismiss. Presented from any of the picker / cast / granted-spell
+/// rows via the `ⓘ` button.
+struct SpellDetailSheet: View {
+    let spell: SpellDefinition
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    header
+                    metaBlock
+                    descriptionBlock
+                    if let higher = spell.higherLevel, !higher.isEmpty {
+                        higherLevelBlock(higher)
+                    }
+                    if !spell.classes.isEmpty {
+                        classesBlock
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle(spell.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private var header: some View {
+        HStack(spacing: 10) {
+            Image(systemName: spell.school.systemImage)
+                .font(.title2)
+                .foregroundStyle(.purple)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(spell.isCantrip ? "\(spell.school.displayName) Cantrip"
+                                     : "Level \(spell.level) \(spell.school.displayName)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                if spell.duration.requiresConcentration {
+                    Label("Concentration", systemImage: "bolt.circle")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.orange)
+                }
+            }
+        }
+    }
+
+    private var metaBlock: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            metaRow(icon: "clock",       label: "Casting Time", value: spell.castingTime.shortLabel)
+            metaRow(icon: "arrow.up.right", label: "Range",     value: spell.range.shortLabel)
+            metaRow(icon: "hourglass",   label: "Duration",     value: spell.duration.shortLabel)
+            metaRow(icon: "sparkles",    label: "Components",   value: componentsSummary)
+            if let material = spell.components.material, !material.isEmpty {
+                metaRow(icon: "cube",    label: "Material",     value: material)
+            }
+        }
+        .font(.subheadline)
+        .padding(10)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func metaRow(icon: String, label: String, value: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: icon)
+                .frame(width: 18)
+                .foregroundStyle(.secondary)
+            Text(label)
+                .foregroundStyle(.secondary)
+                .frame(width: 100, alignment: .leading)
+            Text(value)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var descriptionBlock: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Description")
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(.secondary)
+            Text(spell.description)
+                .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func higherLevelBlock(_ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("At Higher Levels")
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(.secondary)
+            Text(text)
+                .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var classesBlock: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Classes")
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(.secondary)
+            Text(spell.classes.map { $0.capitalized }.sorted().joined(separator: ", "))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var componentsSummary: String {
+        var parts: [String] = []
+        if spell.components.verbal   { parts.append("V") }
+        if spell.components.somatic  { parts.append("S") }
+        if spell.components.material != nil { parts.append("M") }
+        return parts.isEmpty ? "None" : parts.joined(separator: ", ")
     }
 }

@@ -523,7 +523,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
     /// character saved to Documents/Characters/ before 2026-07-12 is in the
     /// legacy shape; without this fallback they silently drop out of the roster
     /// on next launch.
-    fileprivate static func decodeAbilityScores(
+    private static func decodeAbilityScores(
         from container: KeyedDecodingContainer<CodingKeys>
     ) throws -> [Ability: Int] {
         // Try the current object shape first — Ability conforms to

@@ -96,6 +96,15 @@ not surfacing at creation), which is why this list exists.
 
 ## Spells & granted spells
 
+- [ ] **Spell info affordance (2026-07-13).** Every spell row has a small ⓘ
+  icon on the leading edge. Tap it — a **SpellDetailSheet** appears with the
+  spell's school + level, casting time, range, duration, components (and
+  material component text if any), full description, higher-level scaling
+  block, and the class list. The ⓘ works on: (a) prepared/known list rows in
+  the sheet, (b) Granted section rows, (c) Add Spell picker rows in every
+  mode (Learn / Prepare / Add). The ⓘ is tappable even when the row itself is
+  disabled (no slot available) — the player still needs to look up what the
+  spell does. Tapping the row body still casts / toggles as before.
 - [ ] **Non-caster sees granted spells.** An Infernal Tiefling **Fighter** has
   a **Spells** tab (it should NOT be hidden) with a "Granted" section showing
   **Fire Bolt** + **Thaumaturgy**.
