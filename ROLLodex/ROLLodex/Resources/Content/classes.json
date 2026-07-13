@@ -3839,7 +3839,7 @@
         {
           "id": "primal_order",
           "name": "Primal Order",
-          "description": "You have dedicated yourself to a sacred role. Magician: you know one extra Druid cantrip and add your Wisdom modifier to your Intelligence (Arcana/Nature) checks. Warden: you gain proficiency with Martial weapons and Medium armor. (Picks are recorded; the granted proficiencies/cantrip aren't auto-applied yet.)",
+          "description": "You have dedicated yourself to a sacred role. Magician: you know one extra Druid cantrip and add your Wisdom modifier to your Intelligence (Arcana / Nature) checks — the skill-check bonus is auto-applied on the sheet; the extra cantrip is still honor-system. Warden: you gain proficiency with Martial weapons and Medium armor (honor-system; the picks are recorded but proficiencies not yet auto-granted).",
           "kind": "selection",
           "selection": {
             "id": "primal_order",
@@ -3851,7 +3851,17 @@
                 {
                   "id": "magician",
                   "name": "Magician",
-                  "description": "One extra Druid cantrip; add WIS to Arcana and Nature checks."
+                  "description": "One extra Druid cantrip; add WIS to Arcana and Nature checks.",
+                  "skillCheckAbilityBonuses": [
+                    {
+                      "skill": "arcana",
+                      "ability": "wisdom"
+                    },
+                    {
+                      "skill": "nature",
+                      "ability": "wisdom"
+                    }
+                  ]
                 },
                 {
                   "id": "warden",
@@ -4028,7 +4038,7 @@
             {
               "id": "circle_of_the_land_type",
               "name": "Circle of the Land",
-              "description": "Choose a type of land. While in this Circle you always have its circle spells prepared at Druid levels 3/5/7/9 (the SRD per-land spell lists aren't all bundled yet — track your land's spells manually). You also learn one extra Druid cantrip.",
+              "description": "Choose a type of land at Druid L3. While in this Circle you always have that land's Circle Spells prepared at Druid levels 3 / 5 / 7 / 9 (all four lands' full spell lists are wired — Arid, Polar, Temperate, Tropical). You also learn one extra Druid cantrip (honor-system for now; add it from Add Spell).",
               "kind": "selection",
               "selection": {
                 "id": "circle_of_the_land_type",
@@ -4040,22 +4050,126 @@
                     {
                       "id": "arid",
                       "name": "Arid",
-                      "description": "Deserts and savannahs — fire and lightning magic."
+                      "description": "Deserts and savannahs — fire and lightning magic.",
+                      "grantsSpells": [
+                        {
+                          "spellID": "blur",
+                          "minCharacterLevel": 3
+                        },
+                        {
+                          "spellID": "burning_hands",
+                          "minCharacterLevel": 3
+                        },
+                        {
+                          "spellID": "fire_bolt",
+                          "minCharacterLevel": 3
+                        },
+                        {
+                          "spellID": "fireball",
+                          "minCharacterLevel": 5
+                        },
+                        {
+                          "spellID": "blight",
+                          "minCharacterLevel": 7
+                        },
+                        {
+                          "spellID": "wall_of_stone",
+                          "minCharacterLevel": 9
+                        }
+                      ]
                     },
                     {
                       "id": "polar",
                       "name": "Polar",
-                      "description": "Frozen lands — cold and control magic."
+                      "description": "Frozen lands — cold and control magic.",
+                      "grantsSpells": [
+                        {
+                          "spellID": "fog_cloud",
+                          "minCharacterLevel": 3
+                        },
+                        {
+                          "spellID": "hold_person",
+                          "minCharacterLevel": 3
+                        },
+                        {
+                          "spellID": "ray_of_frost",
+                          "minCharacterLevel": 3
+                        },
+                        {
+                          "spellID": "sleet_storm",
+                          "minCharacterLevel": 5
+                        },
+                        {
+                          "spellID": "ice_storm",
+                          "minCharacterLevel": 7
+                        },
+                        {
+                          "spellID": "cone_of_cold",
+                          "minCharacterLevel": 9
+                        }
+                      ]
                     },
                     {
                       "id": "temperate",
                       "name": "Temperate",
-                      "description": "Forests and grasslands — lightning and movement magic."
+                      "description": "Forests and grasslands — lightning and movement magic.",
+                      "grantsSpells": [
+                        {
+                          "spellID": "misty_step",
+                          "minCharacterLevel": 3
+                        },
+                        {
+                          "spellID": "shocking_grasp",
+                          "minCharacterLevel": 3
+                        },
+                        {
+                          "spellID": "sleep",
+                          "minCharacterLevel": 3
+                        },
+                        {
+                          "spellID": "lightning_bolt",
+                          "minCharacterLevel": 5
+                        },
+                        {
+                          "spellID": "freedom_of_movement",
+                          "minCharacterLevel": 7
+                        },
+                        {
+                          "spellID": "tree_stride",
+                          "minCharacterLevel": 9
+                        }
+                      ]
                     },
                     {
                       "id": "tropical",
                       "name": "Tropical",
-                      "description": "Jungles and swamps — poison, acid, and illusion magic."
+                      "description": "Jungles and swamps — poison, acid, and illusion magic.",
+                      "grantsSpells": [
+                        {
+                          "spellID": "acid_splash",
+                          "minCharacterLevel": 3
+                        },
+                        {
+                          "spellID": "ray_of_sickness",
+                          "minCharacterLevel": 3
+                        },
+                        {
+                          "spellID": "web",
+                          "minCharacterLevel": 3
+                        },
+                        {
+                          "spellID": "stinking_cloud",
+                          "minCharacterLevel": 5
+                        },
+                        {
+                          "spellID": "polymorph",
+                          "minCharacterLevel": 7
+                        },
+                        {
+                          "spellID": "insect_plague",
+                          "minCharacterLevel": 9
+                        }
+                      ]
                     }
                   ]
                 }

@@ -446,7 +446,11 @@ struct DiceRollerView: View {
         var label = parts.joined(separator: " + ")
         if crit { label += " (Critical)" }
 
-        pendingFollowUps = []
+        // Remove ONLY the chip we just fired. Ice Knife's cold explosion is a
+        // second follow-up that has to survive a piercing tap so the player
+        // can still roll it — the old blanket-clear here dropped it. Riders
+        // are one-shot for this attack chain, so they always clear.
+        pendingFollowUps.removeAll { $0.action.id == base.id }
         pendingRiders = []
         activeRiderIDs = []
         applyLabeled(formula: nextFormula, label: label)

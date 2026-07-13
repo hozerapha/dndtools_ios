@@ -97,11 +97,19 @@ enum CharacterSpellGrants {
     /// Stable resource id for a leveled grant's once-per-Long-Rest free cast.
     static func freeCastResourceID(spellID: String) -> String { "grant_\(spellID)" }
 
-    /// True when `spellID` is currently granted to the character as a *leveled*
-    /// spell — i.e. it has a once-per-Long-Rest free cast (cantrips are at-will
-    /// and need no pool).
+    /// True when `spellID` is currently granted to the character as a leveled
+    /// spell AND a free-cast pool exists for it. Species grants (Tiefling
+    /// Hellish Rebuke, Elven Lineage Faerie Fire) synthesize a
+    /// `grant_<spellID>` pool at level-up. Class/subclass grants like the
+    /// Druid Circle-of-the-Land Circle Spells do NOT — they're
+    /// always-prepared but consume normal slots. This gates the "Cast free
+    /// (Innate)" affordance to grants that actually have a pool.
     static func hasFreeCast(spellID: String, character: Character, content: ContentStore) -> Bool {
-        resolve(character: character, content: content)
-            .contains { $0.spell.id == spellID && !$0.spell.isCantrip }
+        guard resolve(character: character, content: content)
+            .contains(where: { $0.spell.id == spellID && !$0.spell.isCantrip })
+        else { return false }
+        let poolID = freeCastResourceID(spellID: spellID)
+        return ResourceCalculator.availableResources(character: character, content: content)
+            .contains { $0.definition.id == poolID }
     }
 }

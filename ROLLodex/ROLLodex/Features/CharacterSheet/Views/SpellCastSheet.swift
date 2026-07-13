@@ -31,10 +31,12 @@ struct SpellCastSheet: View {
     /// Rest free cast; the sheet shows a "Cast free" path that spends this pool
     /// instead of a slot.
     let freeCastResourceID: String?
-    /// Called for each roll tap. `followUp` is non-nil when the primary roll
-    /// has a natural next step (attack → damage); the dice tab parks it until
-    /// the primary lands.
-    let onRoll: (_ action: ResolvedAction, _ followUp: ResolvedAction?) -> Void
+    /// Called for each roll tap. `followUps` is the ordered list of damage /
+    /// heal rolls the primary should chain — the canonical case is a spell
+    /// attack whose damage lands as a follow-up chip in the dice tab; Ice
+    /// Knife adds a second chip for its always-fires cold explosion. Empty
+    /// when the primary is itself the only roll (Burning Hands, Cure Wounds).
+    let onRoll: (_ action: ResolvedAction, _ followUps: [ResolvedAction]) -> Void
 
     @Environment(ContentStore.self) private var content
     @Environment(\.dismiss) private var dismiss
@@ -57,7 +59,7 @@ struct SpellCastSheet: View {
         itemContext: ItemSpellCastContext? = nil,
         innateAbility: Ability? = nil,
         freeCastResourceID: String? = nil,
-        onRoll: @escaping (_ action: ResolvedAction, _ followUp: ResolvedAction?) -> Void
+        onRoll: @escaping (_ action: ResolvedAction, _ followUps: [ResolvedAction]) -> Void
     ) {
         self._character = character
         self.spell = spell
@@ -372,10 +374,10 @@ struct SpellCastSheet: View {
         guard ok else { return }
         slotConsumed = true
         commitCast()
-        // Fire the primary roll (attack or damage); a chained damage roll
-        // surfaces as a follow-up in the dice tab, same as a ritual cast.
+        // Fire the primary roll (attack or damage); chained damage rolls
+        // surface as follow-up chips in the dice tab, same as a ritual cast.
         if let primary = rollEntries.first {
-            onRoll(primary.action, followUp(for: primary))
+            onRoll(primary.action, followUps(for: primary))
         }
         dismiss()
     }
@@ -504,12 +506,72 @@ struct SpellCastSheet: View {
 
     private var descriptionCard: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(spell.description)
+            Text(scaledDescription)
                 .font(.subheadline)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    /// The spell's description with any base-recipe dice string swapped for
+    /// the version scaled to `selectedLevel` — so Fireball at L4 reads
+    /// "…**9d6** Fire damage…" instead of "…8d6 Fire damage…". Substituted
+    /// values are bolded via Markdown so the player can see at a glance
+    /// which numbers changed. Prose that references dice in a shape the base
+    /// recipes don't emit (Magic Missile's "1d4+1 per dart") is left alone —
+    /// the RollButton subtitle still shows the full scaled formula so the
+    /// player has the exact roll to make.
+    private var scaledDescription: AttributedString {
+        var text = spell.description
+        let scaled = spell.recipes(castAtLevel: selectedLevel)
+        for (base, upcast) in zip(spell.actionRecipes, scaled) {
+            guard let baseDice = Self.diceStringComponent(base),
+                  let scaledDice = Self.collapsedDiceString(upcast),
+                  baseDice != scaledDice,
+                  text.contains(baseDice) else { continue }
+            text = text.replacingOccurrences(of: baseDice, with: "**\(scaledDice)**")
+        }
+        // Markdown rendering. On parse failure, drop the ** so the user
+        // doesn't see raw asterisks in the description.
+        if let attributed = try? AttributedString(markdown: text) {
+            return attributed
+        }
+        return AttributedString(text.replacingOccurrences(of: "**", with: ""))
+    }
+
+    /// The dice string a recipe carries — nil for recipes with no dice to scale.
+    private static func diceStringComponent(_ recipe: ActionRecipe) -> String? {
+        switch recipe {
+        case .rawDamage(let d, _, _, _):    return d
+        case .heal(let d, _, _, _):         return d
+        case .abilityRoll(let d, _, _, _):  return d
+        default:                            return nil
+        }
+    }
+
+    /// Re-render a scaled dice string with same-kind groups summed, so
+    /// upcasted "8d6+1d6+1d6" becomes "10d6" instead of the raw compound.
+    /// Preserves any flat modifier. Returns nil when the recipe carries no
+    /// parseable dice.
+    private static func collapsedDiceString(_ recipe: ActionRecipe) -> String? {
+        guard let raw = diceStringComponent(recipe),
+              let parsed = try? DiceFormulaParser().parse(raw) else { return nil }
+        var byKind: [DieKind: Int] = [:]
+        for group in parsed.groups where group.count > 0 {
+            byKind[group.kind, default: 0] += group.count
+        }
+        let diceParts = DieKind.allCases.compactMap { kind -> String? in
+            guard let n = byKind[kind] else { return nil }
+            return "\(n)d\(kind.rawValue)"
+        }
+        var out = diceParts.joined(separator: "+")
+        if parsed.modifier > 0 {
+            out += "+\(parsed.modifier)"
+        } else if parsed.modifier < 0 {
+            out += "\(parsed.modifier)"
+        }
+        return out.isEmpty ? nil : out
     }
 
     private func higherLevelCard(_ text: String) -> some View {
@@ -558,9 +620,9 @@ struct SpellCastSheet: View {
             slotConsumed = true
         }
         commitCast()
-        onRoll(entry.action, followUp(for: entry))
-        // The dice tab takes it from here — chained damage rolls surface as a
-        // follow-up chip there, so there's nothing left for this sheet to do.
+        onRoll(entry.action, followUps(for: entry))
+        // The dice tab takes it from here — chained damage rolls surface as
+        // follow-up chips there, so there's nothing left for this sheet to do.
         dismiss()
     }
 
@@ -603,7 +665,7 @@ struct SpellCastSheet: View {
         // ritual with damage would still work). No slot consumption — that's
         // the whole point of casting as ritual.
         if let primary = rollEntries.first {
-            onRoll(primary.action, followUp(for: primary))
+            onRoll(primary.action, followUps(for: primary))
         }
         dismiss()
     }
@@ -679,17 +741,22 @@ struct SpellCastSheet: View {
         )
     }
 
-    /// If the primary is a spell attack, surface the first non-attack rollable
-    /// in the same spell as the chained damage roll. Other recipes have no
-    /// natural pairing (yet).
-    private func followUp(for entry: RollEntry) -> ResolvedAction? {
-        guard case .spellAttack = entry.recipe else { return nil }
-        return rollEntries.first { other in
+    /// Every non-attack damage / heal rollable that should chain off the
+    /// primary as a follow-up chip. Attack-primary case (Ice Knife: attack →
+    /// piercing damage + always-fires cold explosion) returns ALL such
+    /// recipes in the order the spell declares them, so the dice tab surfaces
+    /// one chip per additional roll. Other primaries (Burning Hands, Cure
+    /// Wounds, Magic Missile) have no natural pairing and return an empty
+    /// list. The player is on the honor system for "only on hit" for the
+    /// piercing chip since the sheet has no way to see the attack's outcome.
+    private func followUps(for entry: RollEntry) -> [ResolvedAction] {
+        guard case .spellAttack = entry.recipe else { return [] }
+        return rollEntries.compactMap { other in
             switch other.recipe {
-            case .rawDamage, .heal: return true
-            default: return false
+            case .rawDamage, .heal: return other.action
+            default:                return nil
             }
-        }?.action
+        }
     }
 
     // MARK: - Slot context

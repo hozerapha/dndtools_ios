@@ -242,7 +242,12 @@
       "poison",
       "thunder"
     ],
-    "higherLevel": "The damage increases by 1d8 for each spell slot level above 1; the orb can leap a number of times equal to the slot level."
+    "higherLevel": "The damage increases by 1d8 for each spell slot level above 1; the orb can leap a number of times equal to the slot level.",
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 1,
+      "dice": "1d8"
+    }
   },
   {
     "id": "color_spray",
@@ -1076,7 +1081,12 @@
         "label": "Hellish Rebuke Damage"
       }
     ],
-    "higherLevel": "The damage increases by 1d10 for each spell slot level above 1."
+    "higherLevel": "The damage increases by 1d10 for each spell slot level above 1.",
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "1d10"
+    }
   },
   {
     "id": "heroism",
@@ -1623,7 +1633,12 @@
         "type": "targetCondition",
         "condition": "poisoned"
       }
-    ]
+    ],
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 1,
+      "dice": "1d8"
+    }
   },
   {
     "id": "sanctuary",

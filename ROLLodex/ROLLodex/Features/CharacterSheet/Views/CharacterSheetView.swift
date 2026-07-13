@@ -228,8 +228,8 @@ struct CharacterSheetView: View {
                     itemContext: pending.itemContext,
                     innateAbility: pending.innateAbility,
                     freeCastResourceID: pending.freeCastResourceID
-                ) { action, followUp in
-                    handleSpellRoll(action, followUp: followUp)
+                ) { action, followUps in
+                    handleSpellRoll(action, followUps: followUps)
                 }
                 .presentationDetents([.large])
             }
@@ -713,14 +713,16 @@ struct CharacterSheetView: View {
         selectedTab = .dice
     }
 
-    /// Sheet hands us one roll at a time. `followUp` (typically the damage
-    /// for a spell attack) is parked on the store as a chained chip; the dice
-    /// tab pulls it out after the primary roll lands and offers it as a
-    /// "Roll damage?" chip.
-    private func handleSpellRoll(_ action: ResolvedAction, followUp: ResolvedAction?) {
+    /// Sheet hands us one roll at a time plus the list of chained damage /
+    /// heal follow-ups. Each follow-up lands on the store as a chip; the
+    /// dice tab pulls them out after the primary roll settles and surfaces
+    /// them as "Roll damage?" prompts. Ice Knife emits two chips
+    /// (piercing + cold explosion); Fire Bolt emits one; Detect Magic emits
+    /// none.
+    private func handleSpellRoll(_ action: ResolvedAction, followUps: [ResolvedAction]) {
         pendingRoll.pendingCharacterID = character.id
         pendingRoll.pending = action
-        pendingRoll.followUps = followUp.map { [.chainedDamage($0)] } ?? []
+        pendingRoll.followUps = followUps.map { .chainedDamage($0) }
         selectedTab = .dice
     }
 
@@ -752,6 +754,17 @@ struct CharacterSheetView: View {
                 return nil
             }
         }()
+        // Feature-selection option bonuses on skill checks (Druid Primal Order
+        // Magician → +WIS on Arcana/Nature). Only meaningful for skillCheck
+        // recipes; zero for everything else.
+        let optionSkillBonus: Int = {
+            if case .skillCheck(let s) = recipe {
+                return CharacterCalculator.optionSkillAbilityBonus(
+                    character: character, content: content, skill: s
+                )
+            }
+            return 0
+        }()
         let resolved = ActionInterpreter.resolve(
             recipe: recipe,
             character: character,
@@ -760,7 +773,8 @@ struct CharacterSheetView: View {
             skillCheckFloor: CharacterCalculator.skillCheckFloor(character: character, content: content),
             // Bard's Jack of All Trades — half PB on non-proficient checks.
             jackOfAllTrades: CharacterCalculator.hasJackOfAllTrades(character: character, content: content),
-            abilityCheckFloor: abilityFloor
+            abilityCheckFloor: abilityFloor,
+            optionSkillBonus: optionSkillBonus
         )
         // Fold the character's conditions into the roll mode (Poisoned →
         // disadvantage on attacks/checks, Restrained → DEX-save disadvantage,

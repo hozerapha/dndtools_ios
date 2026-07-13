@@ -482,7 +482,12 @@
       "lightning",
       "poison"
     ],
-    "higherLevel": "The damage increases by 1d6 for each spell slot level above 2."
+    "higherLevel": "The damage increases by 1d6 for each spell slot level above 2.",
+    "upcastEffect": {
+      "type": "extraDicePerLevel",
+      "recipeIndex": 0,
+      "dice": "1d6"
+    }
   },
   {
     "id": "enhance_ability",

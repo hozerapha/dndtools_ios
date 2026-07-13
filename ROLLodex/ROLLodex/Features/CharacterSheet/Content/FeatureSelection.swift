@@ -160,6 +160,12 @@ struct SelectionOption: Codable, Equatable, Identifiable {
     /// Frost's Chill). Surfaced as an opt-in chip on weapon attacks when the
     /// option is picked. Nil when the option carries no rider.
     let triggeredEffect: TriggeredEffect?
+    /// Extra ability modifier added to specific skill CHECKS when this option
+    /// is chosen (Druid Primal Order Magician → add WIS to Arcana and Nature).
+    /// Each entry names one skill and the ability whose modifier stacks on top
+    /// of that skill's default computation. Empty for options with no
+    /// skill-check payload.
+    let skillCheckAbilityBonuses: [SkillAbilityBonus]
 
     init(
         id: String,
@@ -168,7 +174,8 @@ struct SelectionOption: Codable, Equatable, Identifiable {
         grantsSpells: [SpellGrant] = [],
         damageType: DamageType? = nil,
         grantedActions: [GrantedAction] = [],
-        triggeredEffect: TriggeredEffect? = nil
+        triggeredEffect: TriggeredEffect? = nil,
+        skillCheckAbilityBonuses: [SkillAbilityBonus] = []
     ) {
         self.id = id
         self.name = name
@@ -177,10 +184,12 @@ struct SelectionOption: Codable, Equatable, Identifiable {
         self.damageType = damageType
         self.grantedActions = grantedActions
         self.triggeredEffect = triggeredEffect
+        self.skillCheckAbilityBonuses = skillCheckAbilityBonuses
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, name, description, grantsSpells, damageType, grantedActions, triggeredEffect
+        case skillCheckAbilityBonuses
     }
 
     init(from decoder: Decoder) throws {
@@ -192,5 +201,17 @@ struct SelectionOption: Codable, Equatable, Identifiable {
         damageType = try c.decodeIfPresent(DamageType.self, forKey: .damageType)
         grantedActions = try c.decodeIfPresent([GrantedAction].self, forKey: .grantedActions) ?? []
         triggeredEffect = try c.decodeIfPresent(TriggeredEffect.self, forKey: .triggeredEffect)
+        skillCheckAbilityBonuses = try c.decodeIfPresent(
+            [SkillAbilityBonus].self, forKey: .skillCheckAbilityBonuses
+        ) ?? []
     }
+}
+
+/// One "add this ability's modifier to that skill's check" bonus. Purely
+/// additive to the skill's normal formula; stacks with proficiency, expertise,
+/// Jack of All Trades, and Reliable-Talent-style floors. Druid Primal Order
+/// Magician emits `[.arcana → WIS, .nature → WIS]`.
+struct SkillAbilityBonus: Codable, Equatable {
+    let skill: Skill
+    let ability: Ability
 }

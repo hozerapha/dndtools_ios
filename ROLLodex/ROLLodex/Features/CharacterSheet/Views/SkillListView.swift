@@ -20,6 +20,11 @@ struct SkillListView: View {
                         character: character,
                         skill: skill,
                         jackOfAllTrades: jackOfAllTrades,
+                        // Feature-selection option bonuses (Druid Primal Order
+                        // Magician: +WIS on Arcana/Nature). Zero for most rows.
+                        optionSkillBonus: CharacterCalculator.optionSkillAbilityBonus(
+                            character: character, content: content, skill: skill
+                        ),
                         onRoll: onRoll
                     )
                 }
@@ -42,12 +47,16 @@ private struct SkillRow: View {
     let character: Character
     let skill: Skill
     let jackOfAllTrades: Bool
+    /// Extra ability modifier added by any selected feature options that
+    /// target THIS skill (Druid Primal Order Magician: +WIS to Arcana/Nature).
+    let optionSkillBonus: Int
     let onRoll: (Skill, RollMode) -> Void
 
     var body: some View {
-        let mod = CharacterCalculator.skillModifier(
+        let baseMod = CharacterCalculator.skillModifier(
             character: character, skill: skill, jackOfAllTrades: jackOfAllTrades
         )
+        let mod = baseMod + optionSkillBonus
         // Resolved level (background + class-skill grants + expertise), so the
         // dot reflects class skills picked at creation or in the Features tab.
         let level = CharacterCalculator.skillProficiencyLevel(character: character, skill: skill)
@@ -61,6 +70,11 @@ private struct SkillRow: View {
             Text("(\(skill.ability.abbreviation))")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
+            if optionSkillBonus != 0 {
+                Text(optionSkillBonus > 0 ? "+\(optionSkillBonus) feat" : "\(optionSkillBonus) feat")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.blue)
+            }
             Spacer()
             Text(mod.formattedModifier)
                 .font(.subheadline.monospacedDigit().weight(.semibold))

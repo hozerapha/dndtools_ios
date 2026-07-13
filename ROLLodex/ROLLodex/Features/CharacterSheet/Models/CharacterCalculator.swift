@@ -92,6 +92,38 @@ enum CharacterCalculator {
         }
     }
 
+    /// Extra ability modifiers a chosen `SelectionOption` adds to `skill`'s
+    /// check. Walks every resolved class/subclass feature; if the feature is
+    /// a `.fixedOptions` selection AND the player has picked an option whose
+    /// `skillCheckAbilityBonuses` targets this skill, the option's declared
+    /// ability's modifier is folded in (Druid Primal Order Magician: WIS to
+    /// Arcana + Nature). Stacks additively across multiple options / multiple
+    /// bonuses.
+    @MainActor
+    static func optionSkillAbilityBonus(
+        character: Character, content: ContentStore, skill: Skill
+    ) -> Int {
+        var total = 0
+        for entry in character.classEntries {
+            guard let cls = content.classDefinition(id: entry.classID) else { continue }
+            let subclassID = character.featureSelections[
+                ClassDefinition.subclassSelectionID(forClassID: entry.classID)
+            ]?.first
+            for resolved in cls.resolvedFeatures(throughClassLevel: entry.level, subclassID: subclassID) {
+                guard let selection = resolved.feature.selection,
+                      case .fixedOptions(let options) = selection.optionsSource else { continue }
+                let pickedIDs = character.featureSelections[selection.id] ?? []
+                for option in options where pickedIDs.contains(option.id) {
+                    for bonus in option.skillCheckAbilityBonuses where bonus.skill == skill {
+                        let score = character.abilityScores[bonus.ability] ?? 10
+                        total += abilityModifier(score: score)
+                    }
+                }
+            }
+        }
+        return total
+    }
+
     /// The highest skill-check floor any of the character's features impose
     /// (Reliable Talent → 10 from Rogue 7). Returns nil when none apply. The
     /// floor only takes effect on skills the character is proficient in — the

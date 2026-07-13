@@ -136,6 +136,7 @@ private struct FeatureCard: View {
     let resolvedPool: ResolvedResource?
     let picksCount: Int
     let onEditSelection: (FeatureSelection, Int) -> Void
+    @Environment(ContentStore.self) private var content
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -157,10 +158,17 @@ private struct FeatureCard: View {
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
-            Image(systemName: row.feature.kind.systemImage)
+        // A selection whose picks are complete gets the calmer secondary tint
+        // used by passive features — the eye-grabbing orange is reserved for
+        // "you still need to pick".
+        let calmDown = row.feature.kind == .selection && isSelectionSatisfied
+        let tint = calmDown ? Color.secondary : row.feature.kind.tint
+        let icon = calmDown ? "checkmark.seal.fill" : row.feature.kind.systemImage
+        let badge = calmDown ? "Selected" : row.feature.kind.displayName
+        return HStack(spacing: 8) {
+            Image(systemName: icon)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(row.feature.kind.tint)
+                .foregroundStyle(tint)
                 .frame(width: 18)
             VStack(alignment: .leading, spacing: 1) {
                 Text(row.feature.name)
@@ -170,13 +178,25 @@ private struct FeatureCard: View {
                     .foregroundStyle(.tertiary)
             }
             Spacer()
-            Text(row.feature.kind.displayName)
+            Text(badge)
                 .font(.caption2.weight(.bold))
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(row.feature.kind.tint.opacity(0.18), in: Capsule())
-                .foregroundStyle(row.feature.kind.tint)
+                .background(tint.opacity(0.18), in: Capsule())
+                .foregroundStyle(tint)
         }
+    }
+
+    /// True when the feature carries a selection AND every pick slot is
+    /// filled at the current class level. Used to dim the orange elements —
+    /// picked selections read as calmly as passive features.
+    private var isSelectionSatisfied: Bool {
+        guard let selection = row.feature.selection else { return false }
+        let max = selection.count.value(
+            classLevel: row.classLevel,
+            characterLevel: row.classLevel
+        )
+        return picksCount >= max
     }
 
     @ViewBuilder
@@ -198,31 +218,101 @@ private struct FeatureCard: View {
             classLevel: row.classLevel,
             characterLevel: row.classLevel
         )
-        Button {
-            onEditSelection(selection, row.classLevel)
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "checklist")
-                    .font(.caption)
-                Text(selection.prompt)
-                    .font(.caption.weight(.semibold))
-                    .lineLimit(2)
-                Spacer(minLength: 8)
-                Text("\(picksCount) / \(max)")
-                    .font(.caption2.monospacedDigit().weight(.bold))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(.background, in: Capsule())
-                    .foregroundStyle(.secondary)
-                Image(systemName: "chevron.right")
-                    .font(.caption2)
+        // Loud orange draws the eye to unfilled pickers. Once every pick is
+        // in, drop to a muted "Change" affordance so the card reads as a
+        // resolved feature (the picked options above already show what was
+        // chosen and what it does).
+        let satisfied = picksCount >= max
+        VStack(alignment: .leading, spacing: 6) {
+            // Show what the character has ALREADY picked (name + option
+            // description) so the player doesn't have to open Change to see
+            // what their choice does. Only the fixedOptions / subclass paths
+            // have a name+description to show; the other picker sources are
+            // handled elsewhere in the sheet (skills tab, ability card).
+            pickedOptionsSummary(for: selection)
+            Button {
+                onEditSelection(selection, row.classLevel)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: satisfied ? "pencil" : "checklist")
+                        .font(.caption)
+                    Text(picksCount == 0 ? selection.prompt : "Change")
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(2)
+                    Spacer(minLength: 8)
+                    Text("\(picksCount) / \(max)")
+                        .font(.caption2.monospacedDigit().weight(.bold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(.background, in: Capsule())
+                        .foregroundStyle(.secondary)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(
+                    satisfied
+                        ? Color.secondary.opacity(0.10)
+                        : Color.orange.opacity(0.16),
+                    in: RoundedRectangle(cornerRadius: 8)
+                )
+                .foregroundStyle(satisfied ? Color.secondary : Color.orange)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(Color.orange.opacity(0.16), in: RoundedRectangle(cornerRadius: 8))
-            .foregroundStyle(Color.orange)
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+    }
+
+    /// Inline "you picked …" line(s) for the selection. Shows the picked
+    /// option's name + description for `.fixedOptions` (Fighting Style,
+    /// Primal Order, Metamagic) and the picked subclass for `.subclasses`.
+    /// Renders nothing for `.weapons`, `.skills`, `.abilityScoreIncrease`
+    /// selections since the picks land elsewhere on the sheet (attacks,
+    /// skills table, ability card) — surfacing them here would duplicate.
+    @ViewBuilder
+    private func pickedOptionsSummary(for selection: FeatureSelection) -> some View {
+        let pickedIDs = character.featureSelections[selection.id] ?? []
+        if pickedIDs.isEmpty {
+            EmptyView()
+        } else {
+            switch selection.optionsSource {
+            case .fixedOptions(let options):
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(options.filter { pickedIDs.contains($0.id) }) { opt in
+                        pickedOptionRow(name: opt.name, description: opt.description)
+                    }
+                }
+            case .subclasses(let parentClassID):
+                if let picked = pickedIDs.first,
+                   let sub = content.classDefinition(id: parentClassID)?
+                                    .subclasses.first(where: { $0.id == picked }) {
+                    pickedOptionRow(name: sub.name, description: sub.description)
+                }
+            default:
+                EmptyView()
+            }
+        }
+    }
+
+    private func pickedOptionRow(name: String, description: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+                Text(name)
+                    .font(.caption.weight(.semibold))
+            }
+            Text(description)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.leading, 20)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.green.opacity(0.09), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 

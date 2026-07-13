@@ -96,15 +96,123 @@ not surfacing at creation), which is why this list exists.
 
 ## Spells & granted spells
 
-- [ ] **Spell info affordance (2026-07-13).** Every spell row has a small ⓘ
-  icon on the leading edge. Tap it — a **SpellDetailSheet** appears with the
-  spell's school + level, casting time, range, duration, components (and
-  material component text if any), full description, higher-level scaling
-  block, and the class list. The ⓘ works on: (a) prepared/known list rows in
-  the sheet, (b) Granted section rows, (c) Add Spell picker rows in every
-  mode (Learn / Prepare / Add). The ⓘ is tappable even when the row itself is
-  disabled (no slot available) — the player still needs to look up what the
-  spell does. Tapping the row body still casts / toggles as before.
+- [ ] **Class/subclass grants cast from normal slots, not a free-cast pool
+  (2026-07-13).** Cast a Druid Circle-of-the-Land Circle Spell (Burning Hands
+  under Arid at L3, say). The cast sheet should show only the slot picker —
+  **no "Cast free (Innate)"** card, since Circle Spells don't have a free-cast
+  pool. Picking L3 in the slot picker + tapping Roll Damage should scale to
+  5d6 fire and consume a L3 druid slot. Regression check: a Tiefling Fighter's
+  Hellish Rebuke at L3+ should still show its Cast free (Innate) card because
+  the species grant DOES have a per-Long-Rest pool.
+- [ ] **Level-up "pending picks" banner no longer flags unlocks-at-new-level
+  (2026-07-13).** L3 Druid with all Features-tab picks filled (skills,
+  Primal Order, Subclass, Circle Type). Open Level Up (going to L4). Banner
+  says **0 pending**, not "1 pending" — the L4 ASI, which unlocks AT L4,
+  isn't counted because the character couldn't have picked it yet. Same
+  Druid, L4 → L5 with the L4 ASI still partly distributed (say 1 of 2
+  points spent) → banner says **1 pending** (that's the leftover ASI point).
+  Multiclass-add exception: adding Fighter as a NEW class at L1 still
+  counts Fighting Style etc. as pending so the player is nudged toward it
+  after finishing.
+- [ ] **Filled selection features look calm (2026-07-13).** In the Features
+  tab, a Primal Order card with Magician picked now uses a **secondary /
+  gray** tint on the header badge ("Selected"), the check icon, and the
+  Change button — same visual weight as a passive feature like Druidcraft.
+  A brand-new selection with nothing picked still shows in **orange** with
+  the checklist icon so the eye lands on it. Same for Subclass, Fighting
+  Style, Metamagic, Weapon Mastery, ASI once distributed. The green picked-
+  option summary (option name + description) stays visible under the
+  header, and the Change button still opens the picker.
+- [ ] **Upcast damage now wired on 4 previously text-only spells
+  (2026-07-13).** Cast each at a higher-than-base slot and confirm the
+  damage scales:
+  - **Ray of Sickness** (L1 → +1d8 poison per slot above 1st) — recipeIndex
+    1 (the damage, not the attack)
+  - **Chromatic Orb** (L1 → +1d8 per slot above 1st)
+  - **Hellish Rebuke** (L1 → +1d10 per slot above 1st)
+  - **Dragon's Breath** (L2 → +1d6 per slot above 2nd)
+  Scorching Ray (adds an extra ray per slot), Geas (duration extends), and
+  Chain Lightning (extra bolt-targets) intentionally stay text-only —
+  those are engine-gap shapes we haven't wired.
+- [ ] **Follow-up chips PERSIST until each is fired (2026-07-13).** Cast
+  Ice Knife → attack → dice tab shows two chips (piercing 1d10, cold 2d6).
+  Tap **piercing** → roll — result is 1d10 piercing AND the cold chip
+  **stays visible** for the next roll. Now tap **cold** → 2d6 rolled → the
+  cold chip disappears. On a miss (Nat 1 or otherwise), the whole rail
+  suppresses per the existing Nat-1 behavior. Regression: single-follow-up
+  spells (Fire Bolt → damage chain) still hide the sole chip once fired.
+- [ ] **Ice Knife chains BOTH damage rolls after the attack (2026-07-13).**
+  Cast Ice Knife. Sheet shows three roll buttons: Roll Spell Attack, Roll
+  Damage (1d10 piercing, "Ice Knife (Piercing)"), Roll Damage (2d6 cold,
+  "Ice Knife (Explosion)"). Tap Roll Spell Attack — sheet dismisses to dice
+  tab, which shows the attack roll plus **two follow-up chips**: one for the
+  piercing, one for the cold explosion. Both remain tappable so the player
+  rolls piercing (if hit; honor-system) and cold (always). Cast at L2 slot
+  → cold chip scales to 3d6, piercing stays 1d10 (upcast recipeIndex 2 only).
+  Regression check: Fire Bolt (attack + 1 damage recipe) still emits exactly
+  one chip after the attack.
+- [ ] **Spell description updates dice for the selected slot level
+  (2026-07-13).** On a caster with Fireball prepared, open the cast sheet.
+  Base description reads "…**8d6** Fire damage on a failed save…" with 8d6
+  bolded (L3 base). Tap L4 in the slot picker — the description updates to
+  "…**9d6** Fire damage…" (still bolded). L5 → 10d6, etc. Same on Cure
+  Wounds: base "**2d8** Hit Points" (L1), scaled to "**4d8**" at L2, "6d8"
+  at L3, etc. Spells where the description text doesn't reference the
+  recipe's exact dice string (e.g. Magic Missile mentions "1d4+1 per dart"
+  but the recipe is a compound formula) leave the description alone — the
+  RollButton subtitle below still shows the full scaled formula so the
+  player has the exact roll.
+- [ ] **Granted spells merge into their level sections with a source tag
+  (2026-07-13).** The "Granted" section is gone. On the Druid from the
+  Circle-of-the-Land case: at L3 with Temperate, Misty Step and Shocking
+  Grasp show inside the **Cantrips / 1st Level / 2nd Level** groups the
+  same way prepared spells do, each carrying a small blue **Circle of the
+  Land** capsule at the right edge. Non-caster with grants still works: a
+  Tiefling Fighter shows Fire Bolt / Thaumaturgy under **Cantrips** with a
+  **Fiendish Legacy** tag. **Long-pressing a granted row does NOT show a
+  Forget option** — granted spells are always-prepared from the feature and
+  can only go away by changing the feature pick. A spell that is both
+  prepared AND granted (edge case) shows once, with the grant tag winning.
+- [ ] **Circle of the Land — Circle Spells granted per land (2026-07-13).**
+  Level a Druid to 3, pick Circle of the Land, pick **Temperate**. The
+  Spells tab should now show a **Granted** section with Misty Step, Shocking
+  Grasp, and Sleep (source: "Circle of the Land"). Level to 5 → Lightning
+  Bolt joins. L7 → Freedom of Movement. L9 → Tree Stride. Swapping the land
+  pick (e.g. to Arid) atomically swaps the whole granted list to Blur /
+  Burning Hands / Fire Bolt at L3, plus the level-gated adds (Fireball L5,
+  Blight L7, Wall of Stone L9). Every land's spell IDs already exist in the
+  bundle — no missing content. Known cosmetic gap: the SRD writeup says
+  "Druid levels 3/5/7/9" but the current gate uses CHARACTER level, so a
+  Druid 3 / Fighter 2 (character L5) would see Fireball prematurely.
+  Single-class Druid — the intended target — is correct.
+- [ ] **Primal Order Magician wires WIS → Arcana / Nature (2026-07-13).**
+  Create a Druid at L1, WIS 16 (mod +3), INT 10 (mod +0). Open Features tab,
+  Primal Order, pick **Magician**. Return to the Abilities tab. Arcana and
+  Nature rows should now show a small blue **+3 feat** tag beside the ability
+  abbreviation and the modifier itself should include the +3 (an INT-10
+  Druid with no Arcana proficiency previously read Arcana +0; now reads +3
+  with the "+3 feat" tag). Rolling from either row produces "1d20 + INT
+  (skill) — incl. +3 feature bonus". Other skills stay unchanged. Switching
+  the pick to **Warden** clears the tags; toggling back restores them.
+- [ ] **Selected feature option visible in the Features tab (2026-07-13).**
+  On the same Druid, open Features tab. The Primal Order card now shows a
+  green-tinted row under the description with **the picked option name and
+  description** (e.g. "Magician — One extra Druid cantrip; add WIS to
+  Arcana and Nature checks."), so you can read what your choice does without
+  opening the picker. The action button below now says **Change** once
+  something is picked (was: the full prompt). Same treatment for other
+  fixedOptions selections (Fighting Style, Metamagic) and for subclass
+  pickers (the picked subclass's name + description appears on the
+  subclass-picker feature).
+- [ ] **Spell info affordance in the picker (2026-07-13).** Open **Add Spell**
+  (Learn / Prepare / Manage). Every row has a small ⓘ on the leading edge —
+  tapping it opens a **SpellDetailSheet** with school + level, casting time,
+  range, duration, components (with material text if any), full description,
+  higher-level scaling block, and class list. Tapping the row body still
+  toggles prepared/known as before. **The main character-sheet spell list
+  intentionally does NOT get the ⓘ** — tapping a spell there already opens
+  the cast sheet which surfaces the same information; a duplicate button
+  would be noise.
 - [ ] **Non-caster sees granted spells.** An Infernal Tiefling **Fighter** has
   a **Spells** tab (it should NOT be hidden) with a "Granted" section showing
   **Fire Bolt** + **Thaumaturgy**.

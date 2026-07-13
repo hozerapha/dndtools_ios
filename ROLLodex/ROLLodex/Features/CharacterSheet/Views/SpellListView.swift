@@ -6,11 +6,15 @@ import SwiftUI
 ///   from the class's `slotTable` and routed through the same resources
 ///   plumbing). Shows current/max dots; the user can manually adjust via the
 ///   resources card if needed.
-/// - **Spells**: prepared / known list, grouped by level. Tapping a row opens
-///   `SpellCastSheet` to pick a slot level and cast.
+/// - **Spells**: every castable spell, grouped by level — prepared/known
+///   entries alongside always-prepared grants from a feature (Circle Spells,
+///   Draconic Spells, Fiendish Legacy, …). Granted rows carry a colored
+///   source tag naming the feature that conferred them; a prepared row that
+///   duplicates a grant is deduped in favor of the grant so the tag survives.
+///   Tapping a row opens `SpellCastSheet` to pick a slot level and cast.
 ///
-/// Returns an empty view if the character has no spellcasting class — the
-/// fighter / barbarian sheet just doesn't see it.
+/// Returns an empty view if the character has no spellcasting class AND no
+/// granted spells — the fighter / barbarian sheet just doesn't see it.
 struct SpellListView: View {
     @Binding var character: Character
     let onCast: (SpellDefinition, Int) -> Void
@@ -29,29 +33,22 @@ struct SpellListView: View {
                     if !slotResources.isEmpty {
                         SlotsRow(slots: slotResources)
                     }
-                    if !grantedSpells.isEmpty {
-                        GrantedSpellsSection(
-                            granted: grantedSpells,
-                            slotResources: slotResources,
-                            onTap: { spell in onCast(spell, spell.level) }
-                        )
+                    if displaySpellsByLevel.isEmpty {
+                        Text(hasAnySpellcasting ? "No spells prepared" : "No spells")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(displaySpellsByLevel, id: \.level) { group in
+                            SpellLevelSection(
+                                level: group.level,
+                                spells: group.spells,
+                                slotResources: slotResources,
+                                onTap: { spell in onCast(spell, spell.level) },
+                                onForget: { spell in forget(spell) }
+                            )
+                        }
                     }
                     if hasAnySpellcasting {
-                        if castableSpells.isEmpty {
-                            Text("No spells prepared")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            ForEach(spellsByLevel, id: \.level) { group in
-                                SpellLevelSection(
-                                    level: group.level,
-                                    spells: group.spells,
-                                    slotResources: slotResources,
-                                    onTap: { spell in onCast(spell, max(group.level, spell.level)) },
-                                    onForget: { spell in forget(spell) }
-                                )
-                            }
-                        }
                         // Prepared casters (druid, cleric, paladin, wizard):
                         // one "Prepared: X / N" line per prepared-caster class
                         // (each class preps separately in 5e multiclass).
@@ -162,23 +159,41 @@ struct SpellListView: View {
             }
     }
 
-    /// The list of spells the character can actually cast right now: the
-    /// union of every class's prepared bucket (+ the legacy flat list) and
-    /// the known list — a Druid/Sorcerer multiclass casts from both.
-    private var castableSpells: [SpellDefinition] {
-        let ids = Set(character.spells.allPreparedIDs).union(character.spells.knownIDs)
-        return ids.compactMap { content.spellDefinition(id: $0) }
-            .sorted { lhs, rhs in
-                if lhs.level != rhs.level { return lhs.level < rhs.level }
-                return lhs.name < rhs.name
-            }
+    /// Merged castable list = prepared/known ∪ granted, deduped by spell id.
+    /// When a spell is both prepared AND granted, the grant tag wins so the
+    /// player sees where it came from. Sorted by level, then name.
+    private var displaySpells: [DisplaySpell] {
+        var byID: [String: DisplaySpell] = [:]
+        // Prepared / known first, source-less.
+        for id in Set(character.spells.allPreparedIDs).union(character.spells.knownIDs) {
+            guard let spell = content.spellDefinition(id: id) else { continue }
+            byID[spell.id] = DisplaySpell(spell: spell, grantSource: nil)
+        }
+        // Grants overlay — either introduces the spell or upgrades a
+        // prepared-only row with a source label.
+        for item in grantedSpells {
+            byID[item.spell.id] = DisplaySpell(spell: item.spell, grantSource: item.sourceLabel)
+        }
+        return byID.values.sorted { lhs, rhs in
+            if lhs.spell.level != rhs.spell.level { return lhs.spell.level < rhs.spell.level }
+            return lhs.spell.name < rhs.spell.name
+        }
     }
 
-    private var spellsByLevel: [(level: Int, spells: [SpellDefinition])] {
-        Dictionary(grouping: castableSpells, by: \.level)
+    private var displaySpellsByLevel: [(level: Int, spells: [DisplaySpell])] {
+        Dictionary(grouping: displaySpells, by: \.spell.level)
             .map { (level: $0.key, spells: $0.value) }
             .sorted { $0.level < $1.level }
     }
+}
+
+/// One spell row payload for the merged list: the spell itself, plus the
+/// feature source when it comes from a grant (Circle Spells, Draconic Spells,
+/// Fiendish Legacy, …). Nil source = a plain prepared / known spell.
+struct DisplaySpell: Identifiable, Equatable {
+    let spell: SpellDefinition
+    let grantSource: String?
+    var id: String { spell.id }
 }
 
 /// Compact dots-per-slot-level row at the top of the card.
@@ -230,93 +245,9 @@ private struct SlotsRow: View {
     }
 }
 
-/// Always-prepared spells conferred by a species trait (Fiendish Legacy,
-/// Elven Lineage, …). Each row shows the source trait; cantrips are always
-/// castable, leveled grants need a slot like any other spell.
-private struct GrantedSpellsSection: View {
-    let granted: [CharacterSpellGrants.GrantedSpell]
-    let slotResources: [ResolvedResource]
-    let onTap: (SpellDefinition) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Granted")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
-            VStack(spacing: 4) {
-                ForEach(granted) { item in
-                    GrantedSpellRow(
-                        spell: item.spell,
-                        sourceLabel: item.sourceLabel,
-                        canCast: canCast(item.spell),
-                        levelLabel: levelLabel(item.spell),
-                        onTap: { onTap(item.spell) }
-                    )
-                }
-            }
-        }
-    }
-
-    private func levelLabel(_ spell: SpellDefinition) -> String {
-        spell.isCantrip ? "Cantrip" : "Level \(spell.level)"
-    }
-
-    private func canCast(_ spell: SpellDefinition) -> Bool {
-        if spell.isCantrip { return true }
-        return slotResources.contains { resolved in
-            guard case .spellSlot(let slotLevel) = resolved.definition.displayHint else { return false }
-            return slotLevel >= spell.level && resolved.current > 0
-        }
-    }
-}
-
-/// Row inside `GrantedSpellsSection`. Split into its own view so it can own the
-/// `showDetail` sheet state per-row, mirroring `SpellRow`.
-private struct GrantedSpellRow: View {
-    let spell: SpellDefinition
-    let sourceLabel: String
-    let canCast: Bool
-    let levelLabel: String
-    let onTap: () -> Void
-    @State private var showDetail = false
-
-    var body: some View {
-        HStack(spacing: 8) {
-            SpellInfoButton(spell: spell, showDetail: $showDetail)
-            Button(action: onTap) {
-                HStack(spacing: 8) {
-                    Image(systemName: spell.school.systemImage)
-                        .font(.caption)
-                        .frame(width: 18)
-                        .foregroundStyle(.purple)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(spell.name)
-                            .font(.subheadline.weight(.semibold))
-                        Text("\(levelLabel) · \(sourceLabel)")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                    Spacer()
-                    Image(systemName: "wand.and.rays")
-                        .font(.subheadline)
-                        .foregroundStyle(canCast ? Color.accentColor : Color.secondary.opacity(0.4))
-                }
-                .padding(.vertical, 2)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .disabled(!canCast)
-            .opacity(canCast ? 1 : 0.55)
-        }
-        .sheet(isPresented: $showDetail) {
-            SpellDetailSheet(spell: spell)
-        }
-    }
-}
-
 private struct SpellLevelSection: View {
     let level: Int
-    let spells: [SpellDefinition]
+    let spells: [DisplaySpell]
     let slotResources: [ResolvedResource]
     let onTap: (SpellDefinition) -> Void
     let onForget: (SpellDefinition) -> Void
@@ -327,12 +258,12 @@ private struct SpellLevelSection: View {
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.secondary)
             VStack(spacing: 4) {
-                ForEach(spells) { spell in
+                ForEach(spells) { item in
                     SpellRow(
-                        spell: spell,
-                        canCast: canCast(spell),
-                        onTap: { onTap(spell) },
-                        onForget: { onForget(spell) }
+                        item: item,
+                        canCast: canCast(item.spell),
+                        onTap: { onTap(item.spell) },
+                        onForget: { onForget(item.spell) }
                     )
                 }
             }
@@ -361,51 +292,55 @@ private struct SpellLevelSection: View {
 }
 
 private struct SpellRow: View {
-    let spell: SpellDefinition
+    let item: DisplaySpell
     let canCast: Bool
     let onTap: () -> Void
     let onForget: () -> Void
-    @State private var showDetail = false
+
+    private var spell: SpellDefinition { item.spell }
+    private var grantSource: String? { item.grantSource }
 
     var body: some View {
-        HStack(spacing: 8) {
-            // Info affordance. Separate button so it stays live even when the
-            // main row is disabled (no slot available) — the player still needs
-            // to look up what the spell does.
-            SpellInfoButton(spell: spell, showDetail: $showDetail)
-            Button(action: onTap) {
-                HStack(spacing: 8) {
-                    Image(systemName: spell.school.systemImage)
-                        .font(.caption)
-                        .frame(width: 18)
-                        .foregroundStyle(.purple)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(spell.name)
-                            .font(.subheadline.weight(.semibold))
-                        HStack(spacing: 4) {
-                            Text(spell.castingTime.shortLabel)
-                            Text("·")
-                            Text(spell.range.shortLabel)
-                            if spell.duration.requiresConcentration {
-                                Text("· Conc")
-                                    .foregroundStyle(.orange)
-                            }
+        Button(action: onTap) {
+            HStack(spacing: 8) {
+                Image(systemName: spell.school.systemImage)
+                    .font(.caption)
+                    .frame(width: 18)
+                    .foregroundStyle(.purple)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(spell.name)
+                        .font(.subheadline.weight(.semibold))
+                    HStack(spacing: 4) {
+                        Text(spell.castingTime.shortLabel)
+                        Text("·")
+                        Text(spell.range.shortLabel)
+                        if spell.duration.requiresConcentration {
+                            Text("· Conc")
+                                .foregroundStyle(.orange)
                         }
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
                     }
-                    Spacer()
-                    Image(systemName: "wand.and.rays")
-                        .font(.subheadline)
-                        .foregroundStyle(canCast ? Color.accentColor : Color.secondary.opacity(0.4))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
                 }
-                .padding(.vertical, 2)
-                .contentShape(Rectangle())
+                Spacer()
+                if let source = grantSource {
+                    grantTag(source)
+                }
+                Image(systemName: "wand.and.rays")
+                    .font(.subheadline)
+                    .foregroundStyle(canCast ? Color.accentColor : Color.secondary.opacity(0.4))
             }
-            .buttonStyle(.plain)
-            .disabled(!canCast)
-            .opacity(canCast ? 1 : 0.55)
-            .contextMenu {
+            .padding(.vertical, 2)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!canCast)
+        .opacity(canCast ? 1 : 0.55)
+        .contextMenu {
+            // Granted spells are always-prepared from a feature — the
+            // player can't Forget them from the sheet; changing the feature
+            // pick (or leveling out of it) is how those go away.
+            if grantSource == nil {
                 Button(role: .destructive) {
                     onForget()
                 } label: {
@@ -413,9 +348,22 @@ private struct SpellRow: View {
                 }
             }
         }
-        .sheet(isPresented: $showDetail) {
-            SpellDetailSheet(spell: spell)
-        }
+    }
+
+    /// Small colored capsule naming the feature that always-prepared this
+    /// spell. Truncates on tight widths; tap-and-hold on the row still opens
+    /// the context menu (which the grant hides Forget from).
+    @ViewBuilder
+    private func grantTag(_ source: String) -> some View {
+        Text(source)
+            .font(.caption2.weight(.semibold))
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Color.blue.opacity(0.18), in: Capsule())
+            .foregroundStyle(.blue)
+            .accessibilityLabel("Granted by \(source)")
     }
 }
 

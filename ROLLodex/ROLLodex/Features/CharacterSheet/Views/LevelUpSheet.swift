@@ -545,20 +545,38 @@ struct LevelUpSheet: View {
         return out
     }
 
-    /// Selection prompts the character hasn't filled to capacity, across all
-    /// levels through `newClassLevel`. Used for the "pending picks" banner.
-    /// For a class being multiclassed INTO, L1 skill choices don't apply
-    /// (the 5e multiclass rule) and are excluded.
+    /// Selection prompts the character SHOULD have filled by their **current**
+    /// class level but hasn't, plus prior-level selections whose caps grew
+    /// with the upcoming level (Eldritch Invocations 2 → 3, Weapon Mastery
+    /// 2 → 3). Used for the "pending picks" banner.
+    ///
+    /// Selections that unlock **at** the level being gained (a Druid's L4 ASI
+    /// during a L3 → L4 level-up) are intentionally NOT counted here: the
+    /// character legitimately hasn't been offered them yet, and warning about
+    /// them reads as "you're behind" when they're actually new. Those unlocks
+    /// are surfaced by `newFeaturesCard` instead.
+    ///
+    /// Multiclass exception: adding a new class starts at class-level 1 with
+    /// nothing yet resolved, so there's no "current level" to walk — count
+    /// against `newClassLevel` (i.e. L1 features of the new class) so the
+    /// player is nudged toward the Fighting Style / etc. pickers after
+    /// finishing. L1 skill choices don't apply on multiclass (5e rule).
     private var unresolvedPromptsCount: Int {
         guard let cls = classDef, let classID = resolvedClassID else { return 0 }
         let subclassID = character.featureSelections[
             ClassDefinition.subclassSelectionID(forClassID: classID)
         ]?.first
+        // Walk up to the CURRENT class level for same-class level-ups; up to
+        // the NEW class level for a multiclass add (there is no "current" for
+        // the class you're adding).
+        let walkThroughLevel = isAddingNewClass ? newClassLevel : max(0, newClassLevel - 1)
         var count = 0
-        for resolved in cls.resolvedFeatures(throughClassLevel: newClassLevel, subclassID: subclassID) {
+        for resolved in cls.resolvedFeatures(throughClassLevel: walkThroughLevel, subclassID: subclassID) {
             guard let selection = resolved.feature.selection else { continue }
             if isAddingNewClass, resolved.grantedAtLevel == 1,
                case .skillsFrom = selection.optionsSource { continue }
+            // Evaluate max at the NEW level so a scaling cap (invocations
+            // 2 → 3 on the level being gained) correctly surfaces as pending.
             let max = selection.count.value(
                 classLevel: newClassLevel,
                 characterLevel: newCharacterLevel

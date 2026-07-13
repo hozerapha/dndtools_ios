@@ -20,7 +20,8 @@ enum ActionInterpreter {
         fightingStyle: FightingStyleEffects? = nil,
         skillCheckFloor: Int? = nil,
         jackOfAllTrades: Bool = false,
-        abilityCheckFloor: Int? = nil
+        abilityCheckFloor: Int? = nil,
+        optionSkillBonus: Int = 0
     ) -> ResolvedAction {
         switch recipe {
         case .weaponAttack(let abilityOverride, let finesse):
@@ -46,7 +47,7 @@ enum ActionInterpreter {
             return resolveAbilityCheck(character: character, ability: ability, abilityCheckFloor: abilityCheckFloor)
 
         case .skillCheck(let skill):
-            return resolveSkillCheck(character: character, skill: skill, skillCheckFloor: skillCheckFloor, abilityCheckFloor: abilityCheckFloor, jackOfAllTrades: jackOfAllTrades)
+            return resolveSkillCheck(character: character, skill: skill, skillCheckFloor: skillCheckFloor, abilityCheckFloor: abilityCheckFloor, jackOfAllTrades: jackOfAllTrades, optionSkillBonus: optionSkillBonus)
 
         case .savingThrow(let ability):
             return resolveSavingThrow(character: character, ability: ability, abilityCheckFloor: abilityCheckFloor)
@@ -423,11 +424,16 @@ enum ActionInterpreter {
         skill: Skill,
         skillCheckFloor: Int?,
         abilityCheckFloor: Int? = nil,
-        jackOfAllTrades: Bool
+        jackOfAllTrades: Bool,
+        optionSkillBonus: Int = 0
     ) -> ResolvedAction {
-        let mod = CharacterCalculator.skillModifier(
+        let baseMod = CharacterCalculator.skillModifier(
             character: character, skill: skill, jackOfAllTrades: jackOfAllTrades
         )
+        // Feature-selection option bonuses (Druid Primal Order Magician: +WIS
+        // on Arcana/Nature). Content-derived by the sheet's dispatch layer and
+        // fed in here; nothing to look up.
+        let mod = baseMod + optionSkillBonus
 
         // The floor (Reliable Talent) only applies to skills you're proficient
         // in. Resolve via the calculator so proficiency from a class-skill
@@ -463,6 +469,9 @@ enum ActionInterpreter {
         var description = "1d20 + \(skill.ability.abbreviation) (skill)"
         if joatApplies {
             description += " — incl. Jack of All Trades"
+        }
+        if optionSkillBonus != 0 {
+            description += " — incl. +\(optionSkillBonus) feature bonus"
         }
         if let floor {
             description += " — floor \(floor)"
