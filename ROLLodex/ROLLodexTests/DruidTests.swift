@@ -72,9 +72,11 @@ struct DruidTests {
     }
 
     @Test func untaggedClassFallsBackToFullCatalog() {
-        // Wizard has no tagged spells yet → picker still shows everything.
+        // Post-SRD-audit every bundled class is tagged; use a synthetic ID a
+        // homebrew content pack might introduce to prove the fallback still
+        // returns the whole catalog for anything the tags don't recognize.
         let store = ContentStore()
-        let list = CharacterCalculator.spellList(forClassID: "wizard", content: store)
+        let list = CharacterCalculator.spellList(forClassID: "homebrew_untagged_class", content: store)
         #expect(list.count == store.allSpells.count)
     }
 

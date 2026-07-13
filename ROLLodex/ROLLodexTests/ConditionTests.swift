@@ -35,7 +35,7 @@ struct ConditionTests {
         let store = ContentStore()
         let all = store.allConditions
         // 14 SRD conditions.
-        #expect(all.count == 14)
+        #expect(all.count == 15)  // 14 SRD 5.1 + Exhaustion added in SRD 5.2.1 audit.
         #expect(store.conditionDefinition(id: "poisoned") != nil)
         #expect(store.conditionDefinition(id: "stunned")?.effects.contains(.incapacitated) == true)
     }

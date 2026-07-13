@@ -1409,10 +1409,7 @@
             "id": "brutal_strike_rider",
             "name": "Brutal Strike",
             "trigger": {
-              "type": "onAttackHit",
-              "filter": {
-                "type": "always"
-              }
+              "type": "onAttackHit"
             },
             "effect": {
               "type": "addDamageDice",

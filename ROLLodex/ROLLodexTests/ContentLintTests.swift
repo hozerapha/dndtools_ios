@@ -242,27 +242,11 @@ struct ContentLintTests {
         "skill proficiencies", "equipment",
     ]
 
-    /// Bundled features whose name is a per-class subclass-picker label; the
-    /// SRD calls this the class's "<Primal Path>" / "<Divine Domain>" etc.
-    /// Map generic bundle name -> SRD canonical name.
-    private static let subclassPickerNameMap: [String: String] = [
-        "Barbarian Subclass": "Primal Path",
-        "Bard Subclass":      "Bard College",
-        "Cleric Subclass":    "Divine Domain",
-        "Druid Subclass":     "Druid Circle",
-        "Fighter Subclass":   "Martial Archetype",
-        "Monk Subclass":      "Monastic Tradition",
-        "Paladin Subclass":   "Sacred Oath",
-        "Ranger Subclass":    "Ranger Archetype",
-        "Rogue Subclass":     "Roguish Origin",
-        "Sorcerer Subclass":  "Sorcerous Origin",
-        "Warlock Subclass":   "Otherworldly Patron",
-        "Wizard Subclass":    "Wizard Subclass",
-    ]
-
-    private func canonicalFeatureName(_ raw: String) -> String {
-        Self.subclassPickerNameMap[raw] ?? raw
-    }
+    /// The manifest extractor recorded subclass pickers under generic names
+    /// ("Barbarian Subclass", "Fighter Subclass"), matching what the bundle
+    /// already uses. Kept as an identity function so any future SRD-name /
+    /// bundle-name divergence has an obvious hook to add per-class aliasing.
+    private func canonicalFeatureName(_ raw: String) -> String { raw }
 
     @Test func classesMatchSRDManifest() throws {
         let data = try loadManifestData("classes")
