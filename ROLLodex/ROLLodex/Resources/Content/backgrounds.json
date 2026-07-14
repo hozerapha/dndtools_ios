@@ -31,7 +31,7 @@
       "arcana",
       "history"
     ],
-    "feat": "magic_initiate_wizard",
+    "feat": "magic_initiate",
     "toolProficiency": "calligraphers_supplies",
     "equipment": [
       "common_clothes",
@@ -52,7 +52,7 @@
       "insight",
       "religion"
     ],
-    "feat": "magic_initiate_cleric",
+    "feat": "magic_initiate",
     "toolProficiency": "calligraphers_supplies",
     "equipment": [
       "common_clothes",

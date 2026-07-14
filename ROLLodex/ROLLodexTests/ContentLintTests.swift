@@ -14,16 +14,10 @@ import Foundation
 struct ContentLintTests {
 
     /// Ids referenced by bundled JSON that intentionally have no definition
-    /// yet. The per-class Magic Initiate flavors that backgrounds carry
-    /// (`magic_initiate_wizard`, `magic_initiate_cleric`) are deferred until
-    /// the Origin-feat picker at Background lands and can lock the class list.
-    /// The equipment entries are background flavor items awaiting the gear
-    /// sweep (11d). `allowListStaysHonest` fails when one of these gains a
-    /// real definition — remove it from this list at that point.
+    /// yet. The equipment entries are background flavor items awaiting the
+    /// gear sweep (11d). `allowListStaysHonest` fails when one of these
+    /// gains a real definition — remove it from this list at that point.
     static let knownUnauthoredIDs: Set<String> = [
-        // Deferred per-class Magic Initiate variants — backgrounds carry the
-        // class-locked flavor; the general-picker feat is authored as `magic_initiate`.
-        "magic_initiate_wizard", "magic_initiate_cleric",
         // Background equipment flavor items.
         "common_clothes", "insignia_of_rank", "gaming_set",
         "bottle_of_ink", "small_knife", "letter_from_colleague",

@@ -107,6 +107,26 @@ struct FeaturesView: View {
                 ))
             }
         }
+        // Background-granted Origin feat (SRD 5.2.1: each background locks
+        // one Origin feat: Soldier → Savage Attacker, Sage/Acolyte → Magic
+        // Initiate, Criminal → Alert). Synthesize a passive feature card
+        // from the feat so it renders alongside class/species features.
+        if let bg = content.backgroundDefinition(id: character.backgroundID),
+           let featID = bg.feat,
+           let feat = content.featDefinition(id: featID) {
+            let feature = FeatureDefinition(
+                id: "background_feat_\(featID)",
+                name: feat.name,
+                description: feat.description
+            )
+            rows.append(FeatureRowModel(
+                id: "background_feat_\(featID)",
+                feature: feature,
+                sourceLabel: "\(bg.name) · Origin Feat",
+                classLevel: character.level,
+                grantedAtLevel: 1
+            ))
+        }
         return rows
     }
 
@@ -758,6 +778,8 @@ private struct AbilityScoreIncreaseList: View {
     /// Restrict the row list to a subset of abilities (Grappler → STR/DEX,
     /// Boon of Spell Recall → INT/WIS/CHA). Nil = every ability (default ASI).
     var allowedAbilities: [Ability]? = nil
+    /// Per-ability cap. Default 20 for General feats; Epic Boons raise to 30.
+    var scoreCeiling: Int = Character.abilityScoreCeiling
 
     var body: some View {
         ScrollView {
@@ -796,7 +818,8 @@ private struct AbilityScoreIncreaseList: View {
             ability: ability,
             selectionID: selectionID,
             totalPoints: totalPoints,
-            perAbilityMax: perAbilityMax
+            perAbilityMax: perAbilityMax,
+            ceiling: scoreCeiling
         )
         character = copy
     }
@@ -812,7 +835,7 @@ private struct AbilityScoreIncreaseList: View {
         let picksHere = picks(for: ability)
         let canIncrement = picks.count < totalPoints
             && picksHere < perAbilityMax
-            && score < Character.abilityScoreCeiling
+            && score < scoreCeiling
         let canDecrement = picksHere > 0
 
         return HStack(spacing: 10) {
@@ -894,6 +917,10 @@ private struct FeatSelectionList: View {
 
     /// Structured prereq gate. Any-of ability scores means the character
     /// meets the prereq if AT LEAST ONE listed score is at the threshold.
+    /// A feat that requires "the Fighting Style Feature" is considered met
+    /// when the picker itself is granting a Fighting Style feat — the
+    /// picker IS the feature. Spellcasting prereqs are deferred to the
+    /// Epic Boon picker (task #24) where they carry mechanical weight.
     private func meetsPrerequisites(_ feat: FeatDefinition) -> Bool {
         let p = feat.prerequisites
         if let min = p.minLevel, characterLevel < min { return false }
@@ -904,9 +931,19 @@ private struct FeatSelectionList: View {
             }
             if !anyMet { return false }
         }
-        if p.requiresFightingStyleFeature { return false }
-        if p.requiresSpellcastingFeature { return false }
+        if p.requiresFightingStyleFeature, category != .fightingStyle {
+            return false
+        }
+        if p.requiresSpellcastingFeature, !characterHasSpellcasting {
+            return false
+        }
         return true
+    }
+
+    private var characterHasSpellcasting: Bool {
+        character.classEntries.contains { entry in
+            content.classDefinition(id: entry.classID)?.spellcasting != nil
+        }
     }
 
     var body: some View {
@@ -1000,7 +1037,8 @@ private struct FeatSelectionList: View {
                 selectionID: abilitySubpickKey,
                 totalPoints: bonus.amount,
                 perAbilityMax: perAbilityMax(for: bonus),
-                allowedAbilities: bonus.abilities
+                allowedAbilities: bonus.abilities,
+                scoreCeiling: feat.abilityScoreCapOverride ?? Character.abilityScoreCeiling
             )
             .frame(minHeight: CGFloat(bonus.abilities.count) * 68 + 40)
         }

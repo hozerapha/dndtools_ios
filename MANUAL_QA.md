@@ -864,6 +864,90 @@ to the player — verify content loads cleanly.
   yet, but the sheet loads and the feat's grant text is at worst a stub
   in the Features tab (regression watch — the picker will populate later).
 
+### Epic Boon picker at L19 (new 2026-07-13)
+
+Every class's L19 Epic Boon feature now opens the Epic Boon feat picker.
+Epic Boons raise the ability-score cap on the bumped score to 30. Boon
+of Spell Recall requires an already-acquired Spellcasting feature.
+
+- [ ] Create or promote a character to **level 19** (any class) → the L19
+  Epic Boon feature card shows the picker with prompt **"Choose an Epic
+  Boon"** and count **0 / 1**.
+- [ ] Tap **Choose**. The picker lists **7 Epic Boons**: Combat Prowess,
+  Dimensional Travel, Fate, Irresistible Offense, Spell Recall, the
+  Night Spirit, Truesight. Each is tagged with **Level 19+**.
+- [ ] **Non-spellcaster at L19** (Barbarian, Fighter Champion, Rogue) →
+  **Boon of Spell Recall is hidden** (its "Spellcasting Feature" prereq
+  fails).
+- [ ] **Spellcaster at L19** (Wizard, Cleric, Druid, Bard, Sorcerer,
+  Warlock, Paladin, Ranger) → Boon of Spell Recall appears in the list.
+  Its allowed abilities in the sub-picker are **INT / WIS / CHA only**.
+- [ ] Pick **Boon of Truesight** → sub-picker offers all 6 abilities.
+  Character with CHA 20 → tap **+** on CHA → CHA becomes **21** (the
+  cap is 30 for this bump, not 20). The + button stays enabled up to 30.
+- [ ] Pick **Boon of Irresistible Offense** → sub-picker restricted to
+  **STR / DEX only** (matches SRD).
+- [ ] Change the Boon after picking → the previous ability bump rolls
+  back cleanly (CHA 21 → 20). The new Boon starts with a fresh sub-pick.
+- [ ] The Epic Boon card summary reads e.g. "Boon of Truesight — +1 CHA"
+  once the sub-pick is placed, and the card dims to satisfied state.
+- [ ] Save + relaunch → the picked Boon + ability bump persist. Score
+  above 20 stays above 20.
+
+### Fighting Style feats consolidation (new 2026-07-13)
+
+Fighter L1, Fighter L10 "Additional Fighting Style", Paladin L2, and
+Ranger L2 all pulled their options from inline `fixedOptions` lists. They
+now share the Fighting Style feat picker from `feats.json` — the same
+picker Fighter L10 uses for its second style.
+
+- [ ] Create a **Fighter L1** → Features tab shows a **Fighting Style**
+  card whose picker prompt is **"Choose a Fighting Style"** and count is
+  **0 / 1**. Tap **Choose**. The picker lists **Archery / Defense /
+  Great Weapon Fighting / Two-Weapon Fighting** — 4 SRD 5.2.1 feats.
+- [ ] **Dueling** is NOT offered (not in SRD 5.2.1). This is intentional.
+  Legacy characters who already picked Dueling keep the +2 damage bonus
+  in the interpreter — no regression on old saves.
+- [ ] Pick **Archery** → ranged attack rolls gain **+2** on the sheet's
+  attack chips. Card dims to satisfied state.
+- [ ] Level the same Fighter to L10 → the **Additional Fighting Style**
+  feature offers the same picker MINUS Archery (already picked)? *Not
+  yet — the picker doesn't dedupe against the primary FS. Repeat-picks
+  currently allowed; add a dedupe pass as its own task if surface-tested.*
+- [ ] Create a **Paladin L2** → same picker, same 4 options.
+- [ ] Create a **Ranger L2** → same picker, same 4 options.
+- [ ] Prereqs: `Archery` etc. carry a "Fighting Style Feature" prereq
+  that is auto-met when the picker's own category IS Fighting Style —
+  they show up normally in this picker but stay hidden from the L4
+  General-feat picker (only Ability Score Improvement and Grappler
+  should surface there).
+
+### Origin feats from Background (new 2026-07-13)
+
+Backgrounds lock one Origin feat each per SRD 5.2.1:
+
+- **Soldier** → Savage Attacker
+- **Sage** → Magic Initiate (Wizard flavor — spell picker deferred)
+- **Acolyte** → Magic Initiate (Cleric flavor — spell picker deferred)
+- **Criminal** → Alert
+
+Cases:
+
+- [ ] Create a **Criminal** character → Features tab shows a new card
+  **"Alert"** with source label **"Criminal · Origin Feat"**. Description
+  matches the SRD text (Initiative Proficiency + Initiative Swap).
+- [ ] On the same character, look at the **Initiative** value on the sheet
+  → it now includes **+PB** on top of DEX modifier. At L1: DEX-mod + 2.
+  At L5: DEX-mod + 3. At L9: DEX-mod + 4.
+- [ ] Create a **Soldier** → Features tab shows **Savage Attacker** card
+  under "Soldier · Origin Feat". Initiative is DEX-mod only (no PB bump).
+- [ ] Create a **Sage** or **Acolyte** → Features tab shows a **Magic
+  Initiate** card. Spell picker is NOT yet available (regression watch —
+  when the spell picker lands, this line's expectation flips).
+- [ ] The Origin Feat card is anchored to L1 in the level-sort ordering
+  (top of the list when sort is ascending).
+- [ ] Save + relaunch → the card persists across sessions.
+
 ### Features tab — sort by level (new 2026-07-13)
 
 - [ ] Open any character's Features tab → cards are ordered by unlock level

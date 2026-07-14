@@ -658,6 +658,19 @@ enum CharacterCalculator {
         return abilityModifier(score: dexScore)
     }
 
+    /// Initiative + optional PB bonus from the Alert feat (SRD 5.2.1
+    /// Origin feat: "you can add your Proficiency Bonus to the roll"). The
+    /// feat-aware variant is a separate method so tests and views without
+    /// a ContentStore can still call the plain DEX-only variant above.
+    @MainActor
+    static func initiativeBonus(character: Character, content: ContentStore) -> Int {
+        var total = initiativeBonus(character: character)
+        if character.hasFeat("alert", content: content) {
+            total += proficiencyBonus(level: character.level)
+        }
+        return total
+    }
+
     /// True when any class/subclass feature the character has grants Advantage
     /// on Initiative rolls (Barbarian Feral Instinct at L7). The Init chip
     /// surfaces the flag as an "(Adv)" suffix; there's no automatic dice-tab

@@ -62,34 +62,8 @@
             "prompt": "Choose a Fighting Style",
             "count": 1,
             "optionsSource": {
-              "type": "fixedOptions",
-              "options": [
-                {
-                  "id": "archery",
-                  "name": "Archery",
-                  "description": "You gain a +2 bonus to attack rolls you make with ranged weapons."
-                },
-                {
-                  "id": "defense",
-                  "name": "Defense",
-                  "description": "While you are wearing armor, you gain a +1 bonus to AC."
-                },
-                {
-                  "id": "dueling",
-                  "name": "Dueling",
-                  "description": "When you are wielding a melee weapon in one hand and no other weapons, you gain a +2 bonus to damage rolls with that weapon."
-                },
-                {
-                  "id": "great_weapon_fighting",
-                  "name": "Great Weapon Fighting",
-                  "description": "When you roll a 1 or 2 on a damage die for an attack you make with a melee weapon that you are wielding with two hands, you can reroll the die and must use the new roll. The weapon must have the two-handed or versatile property."
-                },
-                {
-                  "id": "two_weapon_fighting",
-                  "name": "Two-Weapon Fighting",
-                  "description": "When you engage in two-weapon fighting, you can add your ability modifier to the damage of the second attack."
-                }
-              ]
+              "type": "feat",
+              "category": "fighting_style"
             }
           }
         },
@@ -309,7 +283,17 @@
         {
           "id": "epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat of your choice."
+          "description": "Choose an Epic Boon feat. Each grants a +1 ability bump (raising the cap on that score to 30) plus a unique feature. Some Boons require the Spellcasting feature.",
+          "kind": "selection",
+          "selection": {
+            "id": "epic_boon",
+            "prompt": "Choose an Epic Boon",
+            "count": 1,
+            "optionsSource": {
+              "type": "feat",
+              "category": "epic_boon"
+            }
+          }
         }
       ],
       "20": [
@@ -354,34 +338,8 @@
                 "prompt": "Choose an additional Fighting Style",
                 "count": 1,
                 "optionsSource": {
-                  "type": "fixedOptions",
-                  "options": [
-                    {
-                      "id": "archery",
-                      "name": "Archery",
-                      "description": "+2 bonus to attack rolls with ranged weapons."
-                    },
-                    {
-                      "id": "defense",
-                      "name": "Defense",
-                      "description": "While wearing armor, +1 bonus to AC."
-                    },
-                    {
-                      "id": "dueling",
-                      "name": "Dueling",
-                      "description": "+2 damage when wielding a melee weapon in one hand with no other weapons."
-                    },
-                    {
-                      "id": "great_weapon_fighting",
-                      "name": "Great Weapon Fighting",
-                      "description": "Reroll 1s and 2s on damage dice with two-handed melee weapons."
-                    },
-                    {
-                      "id": "two_weapon_fighting",
-                      "name": "Two-Weapon Fighting",
-                      "description": "Add your ability modifier to the damage of the second attack when two-weapon fighting."
-                    }
-                  ]
+                  "type": "feat",
+                  "category": "fighting_style"
                 }
               }
             }
@@ -529,7 +487,17 @@
         {
           "id": "epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat of your choice."
+          "description": "Choose an Epic Boon feat. Each grants a +1 ability bump (raising the cap on that score to 30) plus a unique feature. Some Boons require the Spellcasting feature.",
+          "kind": "selection",
+          "selection": {
+            "id": "epic_boon",
+            "prompt": "Choose an Epic Boon",
+            "count": 1,
+            "optionsSource": {
+              "type": "feat",
+              "category": "epic_boon"
+            }
+          }
         }
       ],
       "20": [
@@ -1106,8 +1074,17 @@
         {
           "id": "epic_boon",
           "name": "Epic Boon",
-          "description": "Gain an Epic Boon feat or another feat for which you qualify.",
-          "kind": "passive"
+          "description": "Choose an Epic Boon feat. Each grants a +1 ability bump (raising the cap on that score to 30) plus a unique feature. Some Boons require the Spellcasting feature.",
+          "kind": "selection",
+          "selection": {
+            "id": "epic_boon",
+            "prompt": "Choose an Epic Boon",
+            "count": 1,
+            "optionsSource": {
+              "type": "feat",
+              "category": "epic_boon"
+            }
+          }
         }
       ],
       "20": [
@@ -1485,7 +1462,17 @@
         {
           "id": "epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat of your choice."
+          "description": "Choose an Epic Boon feat. Each grants a +1 ability bump (raising the cap on that score to 30) plus a unique feature. Some Boons require the Spellcasting feature.",
+          "kind": "selection",
+          "selection": {
+            "id": "epic_boon",
+            "prompt": "Choose an Epic Boon",
+            "count": 1,
+            "optionsSource": {
+              "type": "feat",
+              "category": "epic_boon"
+            }
+          }
         }
       ],
       "20": [
@@ -1768,24 +1755,8 @@
             "prompt": "Choose a Fighting Style",
             "count": 1,
             "optionsSource": {
-              "type": "fixedOptions",
-              "options": [
-                {
-                  "id": "defense",
-                  "name": "Defense",
-                  "description": "While you are wearing armor, you gain a +1 bonus to AC."
-                },
-                {
-                  "id": "dueling",
-                  "name": "Dueling",
-                  "description": "When you are wielding a melee weapon in one hand and no other weapons, you gain a +2 bonus to damage rolls with that weapon."
-                },
-                {
-                  "id": "great_weapon_fighting",
-                  "name": "Great Weapon Fighting",
-                  "description": "When you roll a 1 or 2 on a damage die for an attack you make with a melee weapon that you are wielding with two hands, you can reroll the die and must use the new roll. The weapon must have the two-handed or versatile property."
-                }
-              ]
+              "type": "feat",
+              "category": "fighting_style"
             }
           }
         },
@@ -1993,8 +1964,17 @@
         {
           "id": "paladin_epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat or another feat of your choice. (Feat catalog not yet authored — record your pick in notes.)",
-          "kind": "passive"
+          "description": "Choose an Epic Boon feat. Each grants a +1 ability bump (raising the cap on that score to 30) plus a unique feature. Some Boons require the Spellcasting feature.",
+          "kind": "selection",
+          "selection": {
+            "id": "epic_boon",
+            "prompt": "Choose an Epic Boon",
+            "count": 1,
+            "optionsSource": {
+              "type": "feat",
+              "category": "epic_boon"
+            }
+          }
         }
       ]
     },
@@ -2464,8 +2444,17 @@
         {
           "id": "cleric_epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat or another feat of your choice. (Feat catalog not yet authored — record your pick in notes.)",
-          "kind": "passive"
+          "description": "Choose an Epic Boon feat. Each grants a +1 ability bump (raising the cap on that score to 30) plus a unique feature. Some Boons require the Spellcasting feature.",
+          "kind": "selection",
+          "selection": {
+            "id": "epic_boon",
+            "prompt": "Choose an Epic Boon",
+            "count": 1,
+            "optionsSource": {
+              "type": "feat",
+              "category": "epic_boon"
+            }
+          }
         }
       ],
       "20": [
@@ -2934,7 +2923,17 @@
         {
           "id": "bard_epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat of your choice for which you qualify (Boon of Spell Recall recommended)."
+          "description": "Choose an Epic Boon feat. Each grants a +1 ability bump (raising the cap on that score to 30) plus a unique feature. Some Boons require the Spellcasting feature.",
+          "kind": "selection",
+          "selection": {
+            "id": "epic_boon",
+            "prompt": "Choose an Epic Boon",
+            "count": 1,
+            "optionsSource": {
+              "type": "feat",
+              "category": "epic_boon"
+            }
+          }
         }
       ],
       "20": [
@@ -3494,7 +3493,17 @@
         {
           "id": "sorcerer_epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat of your choice for which you qualify (Boon of Dimensional Travel recommended)."
+          "description": "Choose an Epic Boon feat. Each grants a +1 ability bump (raising the cap on that score to 30) plus a unique feature. Some Boons require the Spellcasting feature.",
+          "kind": "selection",
+          "selection": {
+            "id": "epic_boon",
+            "prompt": "Choose an Epic Boon",
+            "count": 1,
+            "optionsSource": {
+              "type": "feat",
+              "category": "epic_boon"
+            }
+          }
         }
       ],
       "20": [
@@ -4015,8 +4024,17 @@
         {
           "id": "druid_epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat of your choice for which you qualify (Boon of Spell Recall recommended).",
-          "kind": "passive"
+          "description": "Choose an Epic Boon feat. Each grants a +1 ability bump (raising the cap on that score to 30) plus a unique feature. Some Boons require the Spellcasting feature.",
+          "kind": "selection",
+          "selection": {
+            "id": "epic_boon",
+            "prompt": "Choose an Epic Boon",
+            "count": 1,
+            "optionsSource": {
+              "type": "feat",
+              "category": "epic_boon"
+            }
+          }
         }
       ],
       "20": [
@@ -4557,8 +4575,17 @@
         {
           "id": "warlock_epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat of your choice for which you qualify (Boon of Fate recommended).",
-          "kind": "passive"
+          "description": "Choose an Epic Boon feat. Each grants a +1 ability bump (raising the cap on that score to 30) plus a unique feature. Some Boons require the Spellcasting feature.",
+          "kind": "selection",
+          "selection": {
+            "id": "epic_boon",
+            "prompt": "Choose an Epic Boon",
+            "count": 1,
+            "optionsSource": {
+              "type": "feat",
+              "category": "epic_boon"
+            }
+          }
         }
       ],
       "20": [
@@ -5025,8 +5052,17 @@
         {
           "id": "monk_epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat of your choice (Boon of Irresistible Offense recommended).",
-          "kind": "passive"
+          "description": "Choose an Epic Boon feat. Each grants a +1 ability bump (raising the cap on that score to 30) plus a unique feature. Some Boons require the Spellcasting feature.",
+          "kind": "selection",
+          "selection": {
+            "id": "epic_boon",
+            "prompt": "Choose an Epic Boon",
+            "count": 1,
+            "optionsSource": {
+              "type": "feat",
+              "category": "epic_boon"
+            }
+          }
         }
       ],
       "20": [
@@ -5332,29 +5368,8 @@
             "prompt": "Choose a Fighting Style",
             "count": 1,
             "optionsSource": {
-              "type": "fixedOptions",
-              "options": [
-                {
-                  "id": "archery",
-                  "name": "Archery",
-                  "description": "You gain a +2 bonus to attack rolls you make with ranged weapons."
-                },
-                {
-                  "id": "defense",
-                  "name": "Defense",
-                  "description": "While you are wearing armor, you gain a +1 bonus to AC."
-                },
-                {
-                  "id": "dueling",
-                  "name": "Dueling",
-                  "description": "When you are wielding a melee weapon in one hand and no other weapons, you gain a +2 bonus to damage rolls with that weapon."
-                },
-                {
-                  "id": "two_weapon_fighting",
-                  "name": "Two-Weapon Fighting",
-                  "description": "When you engage in two-weapon fighting, you can add your ability modifier to the damage of the second attack."
-                }
-              ]
+              "type": "feat",
+              "category": "fighting_style"
             }
           }
         }
@@ -5586,8 +5601,17 @@
         {
           "id": "ranger_epic_boon",
           "name": "Epic Boon",
-          "description": "You gain an Epic Boon feat of your choice (Boon of Dimensional Travel recommended).",
-          "kind": "passive"
+          "description": "Choose an Epic Boon feat. Each grants a +1 ability bump (raising the cap on that score to 30) plus a unique feature. Some Boons require the Spellcasting feature.",
+          "kind": "selection",
+          "selection": {
+            "id": "epic_boon",
+            "prompt": "Choose an Epic Boon",
+            "count": 1,
+            "optionsSource": {
+              "type": "feat",
+              "category": "epic_boon"
+            }
+          }
         }
       ],
       "20": [

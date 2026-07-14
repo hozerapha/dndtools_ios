@@ -1064,7 +1064,7 @@ struct CharacterSheetView: View {
     }
 
     private var initiativeBonus: Int {
-        CharacterCalculator.initiativeBonus(character: character)
+        CharacterCalculator.initiativeBonus(character: character, content: content)
     }
 
     private var passivePerception: Int {

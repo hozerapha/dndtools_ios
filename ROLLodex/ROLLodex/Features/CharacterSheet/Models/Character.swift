@@ -397,19 +397,21 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
     /// `selectionID`. Refuses to act when:
     /// - the total budget (`totalPoints`) is exhausted,
     /// - the per-ability sub-cap (`perAbilityMax`) is reached, or
-    /// - the score is already at the SRD ceiling.
+    /// - the score is already at `ceiling` (default 20; Epic Boons raise
+    ///   the ceiling to 30 for the score they bumped).
     /// No-ops are silent so the picker UI can call this unguarded.
     mutating func applyASIIncrement(
         ability: Ability,
         selectionID: String,
         totalPoints: Int,
-        perAbilityMax: Int
+        perAbilityMax: Int,
+        ceiling: Int = Character.abilityScoreCeiling
     ) {
         let picks = featureSelections[selectionID] ?? []
         let picksForAbility = picks.filter { $0 == ability.rawValue }.count
         guard picks.count < totalPoints,
               picksForAbility < perAbilityMax,
-              (abilityScores[ability] ?? 10) < Self.abilityScoreCeiling
+              (abilityScores[ability] ?? 10) < ceiling
         else { return }
         var updated = picks
         updated.append(ability.rawValue)
@@ -420,6 +422,33 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         if ability == .constitution {
             recalculateHP()
         }
+    }
+
+    // MARK: - Feat lookups
+
+    /// True when this character carries `featID`, either as a background
+    /// grant OR as a pick under any `.feat` selection. Used by the
+    /// calculator to gate mechanical effects (Alert → init +PB, etc.)
+    /// without hard-coding call sites per feat.
+    @MainActor
+    func hasFeat(_ featID: String, content: ContentStore) -> Bool {
+        if let bg = content.backgroundDefinition(id: backgroundID),
+           bg.feat == featID {
+            return true
+        }
+        // Feat selections record the picked feat's id under the outer
+        // selection key. Walk every stored pick — a pick is a feat when it
+        // resolves against ContentStore.feats. The false-positive risk
+        // (an unrelated selection's string collides with a feat id) is nil
+        // in practice: feat ids are snake_case tokens like
+        // `ability_score_improvement` that no other selection uses.
+        for (_, picks) in featureSelections {
+            if picks.contains(featID),
+               content.featDefinition(id: featID) != nil {
+                return true
+            }
+        }
+        return false
     }
 
     /// Reset every ASI pick recorded under `selectionID`, rolling each pick's
