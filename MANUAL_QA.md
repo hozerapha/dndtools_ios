@@ -864,6 +864,66 @@ to the player — verify content loads cleanly.
   yet, but the sheet loads and the feat's grant text is at worst a stub
   in the Features tab (regression watch — the picker will populate later).
 
+### Per-turn gating relaxed (new 2026-07-14)
+
+Per-turn gating (Sneak Attack turn flag, Wild Resurgence slot → Wild
+Shape once-per-turn) is now off by default: `Character.inCombat` starts
+false, and `hasTurnFlag` / `setTurnFlag` both no-op while it's false.
+The visible combat toggle is deferred until we ship real-time turn
+tracking — this is a data-model unblock, not a UI feature yet.
+
+- [ ] Druid L5 Wild Resurgence: with Wild Shape at 0, trade a slot for a
+  Wild Shape use. Trade **again** immediately without tapping any "New
+  Turn" button → the second trade is legal (no "Already traded this turn"
+  block).
+- [ ] Round-ticking effects still work: cast Rage, the orange "This turn"
+  banner surfaces with a **Start New Turn** button; tapping it decrements
+  Rage's round counter as before.
+- [ ] With no active flags AND no round-ticking effects, the "This turn"
+  banner is hidden (Actions tab looks unchanged from pre-feats work).
+
+### Druid L5 Wild Resurgence exchange (new 2026-07-13)
+
+The Wild Resurgence feature now has a "Trade Available (LR)" resource
+chip (1/1 out of Long Rest) and an interactive **Exchange** button below
+the card. Two directions:
+
+1. **Spell slot → Wild Shape use** — legal only when Wild Shape uses
+   are at 0. Consumes the character's lowest-level slot (L1 preferred).
+   Once per turn (uses the same turn-flag system as Sneak Attack).
+2. **Wild Shape use → L1 slot** — consumes 1 Wild Shape use, refunds 1
+   L1 slot (up to max). Once per Long Rest, tracked by the trade pool.
+
+Cases:
+
+- [ ] Create a **Druid L5** → Features tab shows a **Wild Resurgence**
+  card. The card shows a resource chip "**Trade Available (LR) 1/1**".
+  Below the card is a green button "**Exchange Wild Shape ↔ Spell Slot**".
+- [ ] Tap the button → sheet opens with two exchange cards and a "Live
+  state" footer showing current pools (Wild Shape, Trade Available,
+  L1–L3 slots).
+- [ ] **Slot → Wild Shape** direction: character has Wild Shape 2/2 →
+  the card status reads "Wild Shape must be at 0 to trade" and the
+  trade button is disabled.
+- [ ] Drop Wild Shape to 0/2 (via the Actions tab minus, or manually) →
+  status flips to "Ready — trade eligible". Tap the button → L1 slot
+  drops by 1, Wild Shape goes to 1/2. Card now says "Already traded
+  this turn" and disables until the player taps "Start New Turn" on
+  the sheet's turn-flag banner.
+- [ ] **Wild Shape → L1** direction: character has Wild Shape 1/2 and
+  L1 slot at max → status reads "L1 slot is already full". Cast a L1
+  spell to burn a slot → status flips to "Ready". Tap the button →
+  Wild Shape drops to 0/2, L1 slot goes back to full, "Trade Available"
+  pool drops to 0/1.
+- [ ] Try again → both directions blocked appropriately: forward one
+  fires again after a New Turn (but requires 0/2 Wild Shape), reverse
+  one stays disabled "Already used this Long Rest".
+- [ ] Long Rest → Trade Available refreshes to 1/1. All slots and Wild
+  Shape refresh normally too.
+- [ ] **No Druid L5** → no button, no trade pool (feature card doesn't
+  exist below L5 anyway; the resource `byClassLevel` starts at 5).
+- [ ] Save + relaunch → live pool state persists.
+
 ### Magic Initiate spell picker (new 2026-07-13)
 
 Backgrounds that grant Magic Initiate (Sage → Wizard list, Acolyte →

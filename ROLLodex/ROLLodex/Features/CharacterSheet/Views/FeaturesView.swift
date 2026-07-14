@@ -13,6 +13,8 @@ struct FeaturesView: View {
     /// Payload for the Magic Initiate setup sheet — non-nil when the player
     /// tapped a Magic Initiate feat card's "Set up spells" button.
     @State private var editingMagicInitiate: MagicInitiatePendingSetup?
+    /// True when the Wild Resurgence exchange sheet is open.
+    @State private var showsWildResurgenceSheet = false
     /// Direction toggle for level-based sort. Persisted so it survives
     /// re-launches. Default ascending — L1 traits and origin features up top
     /// mirror how the level-up sheet reveals features chronologically.
@@ -44,6 +46,9 @@ struct FeaturesView: View {
                             if let mi = magicInitiateSetup(for: row) {
                                 magicInitiateButton(for: mi)
                             }
+                            if isWildResurgenceRow(row) {
+                                wildResurgenceButton
+                            }
                         }
                     }
                 }
@@ -72,6 +77,80 @@ struct FeaturesView: View {
                 )
                 .presentationDetents([.large])
             }
+            .sheet(isPresented: $showsWildResurgenceSheet) {
+                WildResurgenceSheet(character: $character)
+                    .presentationDetents([.medium, .large])
+            }
+        }
+    }
+
+    // MARK: - Wild Resurgence hookup
+
+    private func isWildResurgenceRow(_ row: FeatureRowModel) -> Bool {
+        row.feature.id == "wild_resurgence"
+    }
+
+    private var wildResurgenceButton: some View {
+        let status = wildResurgenceStatus()
+        return Button {
+            showsWildResurgenceSheet = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.left.arrow.right.circle.fill")
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Exchange Wild Shape ↔ Spell Slot")
+                        .font(.callout.weight(.semibold))
+                    Text(status.subtitle)
+                        .font(.caption2)
+                        .foregroundStyle(status.isReady ? Color.green : Color.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundStyle(status.isReady ? Color.green : Color.secondary)
+            .background(
+                (status.isReady ? Color.green : Color.secondary).opacity(0.14),
+                in: RoundedRectangle(cornerRadius: 10)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Compact eligibility summary rendered directly on the feature-tab
+    /// button. Duplicates the sheet's inner gating logic so the player
+    /// doesn't have to open the sheet to know whether either trade is
+    /// currently legal.
+    private func wildResurgenceStatus() -> (subtitle: String, isReady: Bool) {
+        let resources = ResourceCalculator.availableResources(character: character, content: content)
+        let ws = resources.first { $0.definition.id == WildResurgenceSheet.wildShapeResourceID }
+        let trade = resources.first { $0.definition.id == WildResurgenceSheet.tradeResourceID }
+        let slots = resources.filter {
+            if case .spellSlot = $0.definition.displayHint { return true }
+            return false
+        }
+        let l1Slot = slots.first {
+            if case .spellSlot(let l) = $0.definition.displayHint { return l == 1 }
+            return false
+        }
+        let anySlotAvailable = slots.contains { $0.current > 0 }
+        let alreadyTradedThisTurn = character.hasTurnFlag(WildResurgenceSheet.slotToWSTurnFlag)
+
+        let slotToWSReady = (ws?.current ?? 1) == 0
+            && anySlotAvailable
+            && !alreadyTradedThisTurn
+        let wsToSlotReady = (ws?.current ?? 0) > 0
+            && (trade?.current ?? 0) > 0
+            && (l1Slot.map { $0.current < $0.max } ?? false)
+
+        switch (slotToWSReady, wsToSlotReady) {
+        case (true, true):   return ("Both trades available", true)
+        case (true, false):  return ("Ready: spend a slot for a Wild Shape use", true)
+        case (false, true):  return ("Ready: spend a Wild Shape use for a L1 slot", true)
+        case (false, false): return ("No trade available right now", false)
         }
     }
 

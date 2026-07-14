@@ -72,6 +72,12 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
     /// fired this turn; the player clears it by tapping Start New Turn.
     /// MVP honor system — the app doesn't know whose turn it is yet.
     var turnFlags: Set<String>
+    /// Whether the character is currently in combat. When false, every
+    /// "once per turn" gate is bypassed — the player doesn't have to
+    /// paper-clip past a New Turn button during exploration or social
+    /// scenes just to re-use a per-turn effect like Wild Resurgence.
+    /// Persisted so combat state survives app restarts mid-encounter.
+    var inCombat: Bool
     var manifestVersion: Int
 
     init(
@@ -98,6 +104,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         concentratingSpellID: String? = nil,
         activeEffects: [ActiveEffect] = [],
         turnFlags: Set<String> = [],
+        inCombat: Bool = false,
         manifestVersion: Int = 1
     ) {
         self.id = id
@@ -134,6 +141,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         self.concentratingSpellID = concentratingSpellID
         self.activeEffects = activeEffects
         self.turnFlags = turnFlags
+        self.inCombat = inCombat
         self.manifestVersion = manifestVersion
     }
 
@@ -145,7 +153,7 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         case proficiencies, inventory, currency, notes
         case attunementSlotsOverride, resources, spells
         case featureSelections, conditions, concentratingSpellID
-        case activeEffects, turnFlags, manifestVersion
+        case activeEffects, turnFlags, inCombat, manifestVersion
         /// Legacy key from when masteries lived on the character directly.
         /// Migrated into `featureSelections["weapon_mastery"]` on decode.
         case chosenWeaponMasteries
@@ -199,6 +207,8 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         activeEffects = try container.decodeIfPresent([ActiveEffect].self, forKey: .activeEffects) ?? []
         // Pre-Slice-B characters predate `turnFlags`; decode as empty.
         turnFlags = try container.decodeIfPresent(Set<String>.self, forKey: .turnFlags) ?? []
+        // Combat toggle predates existing saves — default to out of combat.
+        inCombat = try container.decodeIfPresent(Bool.self, forKey: .inCombat) ?? false
         manifestVersion = try container.decodeIfPresent(Int.self, forKey: .manifestVersion) ?? 1
 
         let profDict = try container.decodeIfPresent([String: ProficiencyLevel].self, forKey: .proficiencies) ?? [:]
@@ -238,6 +248,9 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
         }
         if !turnFlags.isEmpty {
             try container.encode(turnFlags, forKey: .turnFlags)
+        }
+        if inCombat {
+            try container.encode(inCombat, forKey: .inCombat)
         }
         try container.encode(manifestVersion, forKey: .manifestVersion)
 
@@ -330,13 +343,21 @@ struct Character: Codable, Identifiable, Equatable, Hashable {
     // MARK: - Turn flags (once-per-turn opt-ins)
 
     /// True when the flag has already been set this turn — used to gray out
-    /// opt-in chips for effects already spent (Sneak Attack, etc.).
+    /// opt-in chips for effects already spent (Sneak Attack, etc.). Always
+    /// reads as false when `inCombat` is off, since "once per turn" outside
+    /// a combat is meaningless (the player would just re-tap "New Turn"
+    /// between uses). This flip unlocks Wild Resurgence, Sneak Attack, and
+    /// similar chips without ceremony during exploration / social play.
     func hasTurnFlag(_ flagID: String) -> Bool {
-        turnFlags.contains(flagID)
+        guard inCombat else { return false }
+        return turnFlags.contains(flagID)
     }
 
-    /// Record that an opt-in effect fired this turn. Idempotent.
+    /// Record that an opt-in effect fired this turn. Idempotent. Skipped
+    /// outside combat so `turnFlags` never accrues stale entries — when
+    /// combat later starts, the character begins fresh.
     mutating func setTurnFlag(_ flagID: String) {
+        guard inCombat else { return }
         turnFlags.insert(flagID)
     }
 

@@ -434,6 +434,11 @@ struct CharacterSheetView: View {
     /// round counters in one go — that's the natural "I just ended my turn"
     /// pulse the player needs to keep Rage's 10-round clock honest.
     /// Hidden when there's nothing to track so a casual fighter never sees it.
+    /// Shown only when there's something meaningful to advance — a spent
+    /// per-turn flag, or a round-ticking effect (Rage) that needs to
+    /// decrement. The combat-mode toggle that could gate these is
+    /// deferred (placement + real-time turn tracking belong to the
+    /// online / DM-shared flow, not the solo offline sheet).
     @ViewBuilder
     private var turnFlagsRow: some View {
         if !character.turnFlags.isEmpty || !timedEffectLabels.isEmpty {
