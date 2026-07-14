@@ -864,6 +864,45 @@ to the player — verify content loads cleanly.
   yet, but the sheet loads and the feat's grant text is at worst a stub
   in the Features tab (regression watch — the picker will populate later).
 
+### Magic Initiate spell picker (new 2026-07-13)
+
+Backgrounds that grant Magic Initiate (Sage → Wizard list, Acolyte →
+Cleric list) now surface a "Set up Magic Initiate spells" button under
+the Origin Feat card. The picker lets the player choose 2 cantrips + 1
+level-1 spell from the locked list, plus INT/WIS/CHA as this feat's
+spellcasting ability. The L1 spell gets a once-per-Long-Rest free cast
+via the standard granted-spell resource pool.
+
+- [ ] Create a **Sage** character → Features tab shows the **Magic
+  Initiate** card + an orange "Set up Magic Initiate spells" button
+  below it. Prior sessions' Magic Initiate stubs won't have a button
+  (they never got picks recorded — mark them for setup on next open).
+- [ ] Tap the button → sheet opens with "Class list: Wizard" header,
+  an ability selector (INT / WIS / CHA), and two sections: **Cantrips
+  (0 / 2)** and **Level-1 spell (0 / 1)**. Only Wizard-list spells
+  appear.
+- [ ] Pick an ability (e.g. **INT**) → chip highlights.
+- [ ] Pick 2 cantrips (e.g. Fire Bolt, Mage Hand) → **Cantrips (2 / 2)**
+  in green. Attempting a 3rd disables the un-picked rows until one is
+  unselected.
+- [ ] Pick 1 L1 spell (e.g. Magic Missile) → **Level-1 spell (1 / 1)**
+  in green. **Done** button in the toolbar becomes enabled.
+- [ ] Tap **Done** → back on the Features tab, the button now dims to
+  grey and reads e.g. "Fire Bolt · Mage Hand · Magic Missile — INT".
+- [ ] Switch to the **Spells tab** → the 3 picks appear in the granted
+  list with source label "Sage · Magic Initiate". The L1 spell has a
+  **once/Long Rest free-cast pool** ("Magic Missile (Innate) 1/1").
+- [ ] Long Rest → the free-cast pool refreshes to 1/1.
+- [ ] Cast Magic Missile via the free-cast affordance → pool drops to
+  0/1. Cantrips (Fire Bolt / Mage Hand) remain at-will.
+- [ ] Create an **Acolyte** → same flow but Cleric list. Sacred Flame,
+  Guidance, Cure Wounds etc. show.
+- [ ] Reopen the Magic Initiate setup sheet → previously picked ability
+  and spells are pre-selected. Change one → the new pick sticks.
+- [ ] Save + relaunch → picks persist.
+- [ ] Non-MI backgrounds (Soldier → Savage Attacker, Criminal → Alert)
+  do NOT show the setup button.
+
 ### Epic Boon picker at L19 (new 2026-07-13)
 
 Every class's L19 Epic Boon feature now opens the Epic Boon feat picker.

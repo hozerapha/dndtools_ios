@@ -32,6 +32,7 @@
       "history"
     ],
     "feat": "magic_initiate",
+    "featClassList": "wizard",
     "toolProficiency": "calligraphers_supplies",
     "equipment": [
       "common_clothes",
@@ -53,6 +54,7 @@
       "religion"
     ],
     "feat": "magic_initiate",
+    "featClassList": "cleric",
     "toolProficiency": "calligraphers_supplies",
     "equipment": [
       "common_clothes",

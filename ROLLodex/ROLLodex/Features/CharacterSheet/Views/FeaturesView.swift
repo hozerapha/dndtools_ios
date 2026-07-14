@@ -10,6 +10,9 @@ struct FeaturesView: View {
     @Environment(ContentStore.self) private var content
     @State private var expanded: Bool = true
     @State private var editingSelection: PendingSelection?
+    /// Payload for the Magic Initiate setup sheet — non-nil when the player
+    /// tapped a Magic Initiate feat card's "Set up spells" button.
+    @State private var editingMagicInitiate: MagicInitiatePendingSetup?
     /// Direction toggle for level-based sort. Persisted so it survives
     /// re-launches. Default ascending — L1 traits and origin features up top
     /// mirror how the level-up sheet reveals features chronologically.
@@ -23,20 +26,25 @@ struct FeaturesView: View {
                 VStack(spacing: 14) {
                     sortToggle
                     ForEach(sortedRows) { row in
-                        FeatureCard(
-                            character: character,
-                            row: row,
-                            resolvedPool: resolvedPool(for: row.feature),
-                            picksCount: row.feature.selection.map { picksCount(for: $0) } ?? 0,
-                            onEditSelection: { selection, classLevel in
-                                editingSelection = PendingSelection(
-                                    featureID: row.id,
-                                    selection: selection,
-                                    classLevel: classLevel,
-                                    sourceLabel: row.sourceLabel
-                                )
+                        VStack(spacing: 8) {
+                            FeatureCard(
+                                character: character,
+                                row: row,
+                                resolvedPool: resolvedPool(for: row.feature),
+                                picksCount: row.feature.selection.map { picksCount(for: $0) } ?? 0,
+                                onEditSelection: { selection, classLevel in
+                                    editingSelection = PendingSelection(
+                                        featureID: row.id,
+                                        selection: selection,
+                                        classLevel: classLevel,
+                                        sourceLabel: row.sourceLabel
+                                    )
+                                }
+                            )
+                            if let mi = magicInitiateSetup(for: row) {
+                                magicInitiateButton(for: mi)
                             }
-                        )
+                        }
                     }
                 }
                 .padding(.top, 10)
@@ -55,7 +63,78 @@ struct FeaturesView: View {
                 )
                 .presentationDetents([.large])
             }
+            .sheet(item: $editingMagicInitiate) { pending in
+                MagicInitiateSetupSheet(
+                    character: $character,
+                    storageKey: pending.storageKey,
+                    classList: pending.classList,
+                    sourceLabel: pending.sourceLabel
+                )
+                .presentationDetents([.large])
+            }
         }
+    }
+
+    // MARK: - Magic Initiate hookup
+
+    /// Returns the setup payload iff this row is the background-granted
+    /// Magic Initiate card. Nil for any other row.
+    private func magicInitiateSetup(for row: FeatureRowModel) -> MagicInitiatePendingSetup? {
+        guard row.id == "background_feat_magic_initiate",
+              let bg = content.backgroundDefinition(id: character.backgroundID),
+              bg.feat == "magic_initiate",
+              let classList = bg.featClassList
+        else { return nil }
+        return MagicInitiatePendingSetup(
+            storageKey: MagicInitiateSetupSheet.Keys.background,
+            classList: classList,
+            sourceLabel: "\(bg.name) · Origin Feat"
+        )
+    }
+
+    /// The "Set up spells" / "Change picks" affordance rendered below a
+    /// Magic Initiate feat card. Reads the picks state to switch between
+    /// call-to-action (orange) and satisfied (grey) styling — mirroring
+    /// how selection cards dim once filled.
+    private func magicInitiateButton(for setup: MagicInitiatePendingSetup) -> some View {
+        let spellsKey = MagicInitiateSetupSheet.Keys.spellsKey(for: setup.storageKey)
+        let abilityKey = MagicInitiateSetupSheet.Keys.abilityKey(for: setup.storageKey)
+        let picks = character.featureSelections[spellsKey] ?? []
+        let abilityPicked = character.featureSelections[abilityKey]?.first != nil
+        let cantripCount = picks.filter { content.spellDefinition(id: $0)?.isCantrip == true }.count
+        let leveledCount = picks.count - cantripCount
+        let done = abilityPicked && cantripCount == 2 && leveledCount == 1
+        return Button {
+            editingMagicInitiate = setup
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: done ? "checkmark.seal.fill" : "sparkles")
+                Text(done ? magicInitiateSummary(picks: picks, ability: character.featureSelections[abilityKey]?.first) : "Set up Magic Initiate spells")
+                    .font(.callout.weight(.semibold))
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundStyle(done ? Color.secondary : Color.orange)
+            .background(
+                (done ? Color.secondary : Color.orange).opacity(0.14),
+                in: RoundedRectangle(cornerRadius: 10)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Compact display of the picked spells + ability, e.g.
+    /// "Fire Bolt · Mage Hand · Magic Missile — INT".
+    private func magicInitiateSummary(picks: [String], ability: String?) -> String {
+        let names = picks
+            .compactMap { content.spellDefinition(id: $0)?.name }
+            .joined(separator: " · ")
+        let abilityLabel = (ability.flatMap { Ability(rawValue: $0) })?.abbreviation ?? "—"
+        return "\(names) — \(abilityLabel)"
     }
 
     // MARK: - Row derivation
@@ -208,6 +287,15 @@ private struct PendingSelection: Identifiable {
     let featureID: String
     let selection: FeatureSelection
     let classLevel: Int
+    let sourceLabel: String
+}
+
+/// Payload for the Magic Initiate setup sheet — carries the storage key,
+/// locked class list, and source label the sheet needs.
+private struct MagicInitiatePendingSetup: Identifiable {
+    let id = UUID()
+    let storageKey: String
+    let classList: String
     let sourceLabel: String
 }
 

@@ -63,6 +63,16 @@ enum CharacterSpellGrants {
             }
         }
 
+        // Background-granted Magic Initiate — the player-picked cantrips +
+        // leveled spell become always-prepared grants (leveled = free-cast
+        // pool synthesized via the usual SpellGrant path).
+        if let bg = content.backgroundDefinition(id: character.backgroundID),
+           bg.feat == "magic_initiate" {
+            let key = MagicInitiateSetupSheet.Keys.spellsKey(for: MagicInitiateSetupSheet.Keys.background)
+            let picked = character.featureSelections[key] ?? []
+            add(picked.map { SpellGrant(spellID: $0) }, source: "\(bg.name) · Magic Initiate")
+        }
+
         return out.sorted { lhs, rhs in
             if lhs.spell.level != rhs.spell.level { return lhs.spell.level < rhs.spell.level }
             return lhs.spell.name < rhs.spell.name
