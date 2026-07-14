@@ -78,5 +78,973 @@
         "upcastChoice": { "maxLevel": 3, "extraCostPerLevel": 1 }
       }
     ]
+  },
+  {
+    "id": "ball_bearings",
+    "name": "Ball Bearings",
+    "description": "A bag of 1,000 tiny metal balls that can be scattered to create hazardous, slippery terrain.",
+    "cost": 100,
+    "weight": 2,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "barrel",
+    "name": "Barrel",
+    "description": "A large wooden container for storing liquids or bulk goods.",
+    "cost": 200,
+    "weight": 70,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "basket",
+    "name": "Basket",
+    "description": "A woven container for carrying goods.",
+    "cost": 40,
+    "weight": 2,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "bell",
+    "name": "Bell",
+    "description": "A small metal bell that rings when shaken or struck.",
+    "cost": 100,
+    "weight": 0,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "blanket",
+    "name": "Blanket",
+    "description": "A thick woven blanket for warmth.",
+    "cost": 50,
+    "weight": 3,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "block_and_tackle",
+    "name": "Block and Tackle",
+    "description": "A set of pulleys with a cable threaded through them, used to lift heavy objects.",
+    "cost": 100,
+    "weight": 5,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "book",
+    "name": "Book",
+    "description": "A bound volume of pages, useful for research or as a spellbook.",
+    "cost": 2500,
+    "weight": 5,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "bottle_glass",
+    "name": "Bottle, Glass",
+    "description": "A stoppered glass bottle for holding liquids.",
+    "cost": 200,
+    "weight": 2,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "bucket",
+    "name": "Bucket",
+    "description": "A simple container for carrying water or other materials.",
+    "cost": 5,
+    "weight": 2,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "caltrops",
+    "name": "Caltrops",
+    "description": "A bag of 20 small spikes that can be scattered to injure those who step on them.",
+    "cost": 100,
+    "weight": 2,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "candle",
+    "name": "Candle",
+    "description": "A wax candle that sheds dim light for about 1 hour.",
+    "cost": 1,
+    "weight": 0,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "case_crossbow_bolt",
+    "name": "Case, Crossbow Bolt",
+    "description": "A leather case that holds up to 20 crossbow bolts.",
+    "cost": 100,
+    "weight": 1,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "case_map_scroll",
+    "name": "Case, Map or Scroll",
+    "description": "A cylindrical leather case that protects maps or scrolls from damage.",
+    "cost": 100,
+    "weight": 1,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "chain",
+    "name": "Chain",
+    "description": "A 10-foot length of sturdy metal chain.",
+    "cost": 500,
+    "weight": 10,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "chest",
+    "name": "Chest",
+    "description": "A sturdy wooden chest with a lock, used for storing valuables.",
+    "cost": 500,
+    "weight": 25,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "climbers_kit",
+    "name": "Climber's Kit",
+    "description": "A kit of pitons, boot tips, gloves, and a harness used to scale sheer surfaces.",
+    "cost": 2500,
+    "weight": 12,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "clothes_fine",
+    "name": "Clothes, Fine",
+    "description": "An expensive set of clothing suited to nobility or high society.",
+    "cost": 1500,
+    "weight": 6,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "clothes_travelers",
+    "name": "Clothes, Traveler's",
+    "description": "A sturdy set of clothing suited for travel.",
+    "cost": 200,
+    "weight": 4,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "component_pouch",
+    "name": "Component Pouch",
+    "description": "A small watertight pouch that holds the material components needed to cast spells.",
+    "cost": 2500,
+    "weight": 2,
+    "category": "focus"
+  },
+  {
+    "id": "costume",
+    "name": "Costume",
+    "description": "A set of garments meant to portray a different identity or persona.",
+    "cost": 500,
+    "weight": 4,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "crowbar",
+    "name": "Crowbar",
+    "description": "An iron bar useful for prying open doors, crates, and other stuck objects.",
+    "cost": 200,
+    "weight": 5,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "flask",
+    "name": "Flask",
+    "description": "A small metal flask for carrying liquid.",
+    "cost": 2,
+    "weight": 1,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "grappling_hook",
+    "name": "Grappling Hook",
+    "description": "A multi-pronged metal hook attached to a rope for scaling walls or securing lines.",
+    "cost": 200,
+    "weight": 4,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "healers_kit",
+    "name": "Healer's Kit",
+    "description": "A pouch of bandages, salves, and splints used to stabilize the dying and treat wounds.",
+    "cost": 500,
+    "weight": 3,
+    "category": "tool"
+  },
+  {
+    "id": "hunting_trap",
+    "name": "Hunting Trap",
+    "description": "A spring-loaded steel trap designed to catch and hold prey.",
+    "cost": 500,
+    "weight": 25,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "ink",
+    "name": "Ink",
+    "description": "A one-ounce bottle of ink used for writing.",
+    "cost": 1000,
+    "weight": 0,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "ink_pen",
+    "name": "Ink Pen",
+    "description": "A quill or metal pen used with ink for writing.",
+    "cost": 2,
+    "weight": 0,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "jug",
+    "name": "Jug",
+    "description": "A ceramic jug for carrying liquids.",
+    "cost": 2,
+    "weight": 4,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "ladder",
+    "name": "Ladder",
+    "description": "A 10-foot wooden ladder.",
+    "cost": 10,
+    "weight": 25,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "lamp",
+    "name": "Lamp",
+    "description": "An oil-burning lamp that casts bright light in a 15-foot radius.",
+    "cost": 50,
+    "weight": 1,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "lantern_bullseye",
+    "name": "Lantern, Bullseye",
+    "description": "A hooded lantern that casts a focused beam of bright light in a 60-foot cone.",
+    "cost": 1000,
+    "weight": 2,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "lantern_hooded",
+    "name": "Lantern, Hooded",
+    "description": "A lantern that casts bright light in a 30-foot radius and can be hooded to reduce its light.",
+    "cost": 500,
+    "weight": 2,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "lock",
+    "name": "Lock",
+    "description": "A metal lock that comes with a key, though it can be picked or broken.",
+    "cost": 1000,
+    "weight": 1,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "magnifying_glass",
+    "name": "Magnifying Glass",
+    "description": "A lens that magnifies small objects and can be used to start fires in sunlight.",
+    "cost": 10000,
+    "weight": 0,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "manacles",
+    "name": "Manacles",
+    "description": "A pair of iron restraints for binding a creature's wrists.",
+    "cost": 200,
+    "weight": 6,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "map",
+    "name": "Map",
+    "description": "A hand-drawn or printed map of a region.",
+    "cost": 100,
+    "weight": 0,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "mirror",
+    "name": "Mirror",
+    "description": "A small steel mirror for personal grooming or looking around corners.",
+    "cost": 500,
+    "weight": 0.5,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "oil",
+    "name": "Oil",
+    "description": "A flask of oil that can fuel a lamp or be thrown as an improvised weapon.",
+    "cost": 10,
+    "weight": 1,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "paper",
+    "name": "Paper",
+    "description": "A single sheet of paper suitable for writing.",
+    "cost": 20,
+    "weight": 0,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "parchment",
+    "name": "Parchment",
+    "description": "A single sheet of parchment suitable for writing.",
+    "cost": 10,
+    "weight": 0,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "perfume",
+    "name": "Perfume",
+    "description": "A small vial of fragrant perfume.",
+    "cost": 500,
+    "weight": 0,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "pole",
+    "name": "Pole",
+    "description": "A 10-foot wooden pole, useful for prodding or reaching.",
+    "cost": 5,
+    "weight": 7,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "pot_iron",
+    "name": "Pot, Iron",
+    "description": "A heavy iron pot for cooking over a fire.",
+    "cost": 200,
+    "weight": 10,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "pouch",
+    "name": "Pouch",
+    "description": "A small belt pouch for carrying coins or trinkets.",
+    "cost": 50,
+    "weight": 1,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "quiver",
+    "name": "Quiver",
+    "description": "A container that holds up to 20 arrows.",
+    "cost": 100,
+    "weight": 1,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "ram_portable",
+    "name": "Ram, Portable",
+    "description": "A heavy iron-headed ram used to break down doors.",
+    "cost": 400,
+    "weight": 35,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "robe",
+    "name": "Robe",
+    "description": "A loose-fitting garment, often worn by scholars and spellcasters.",
+    "cost": 100,
+    "weight": 4,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "sack",
+    "name": "Sack",
+    "description": "A simple cloth sack for carrying goods.",
+    "cost": 1,
+    "weight": 0.5,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "shovel",
+    "name": "Shovel",
+    "description": "A digging tool with a wooden handle and metal blade.",
+    "cost": 200,
+    "weight": 5,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "signal_whistle",
+    "name": "Signal Whistle",
+    "description": "A small whistle used to send signals over distance.",
+    "cost": 5,
+    "weight": 0,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "spikes_iron",
+    "name": "Spikes, Iron",
+    "description": "A set of 10 iron spikes useful for securing ropes or wedging doors shut.",
+    "cost": 100,
+    "weight": 5,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "spyglass",
+    "name": "Spyglass",
+    "description": "A collapsible telescope that magnifies distant objects.",
+    "cost": 100000,
+    "weight": 1,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "string",
+    "name": "String",
+    "description": "A 10-foot length of string.",
+    "cost": 10,
+    "weight": 0,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "tent",
+    "name": "Tent",
+    "description": "A two-person canvas tent that provides shelter from the elements.",
+    "cost": 200,
+    "weight": 20,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "tinderbox",
+    "name": "Tinderbox",
+    "description": "A small container of flint, fire steel, and tinder used to light fires.",
+    "cost": 50,
+    "weight": 1,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "vial",
+    "name": "Vial",
+    "description": "A small glass vial for holding liquids.",
+    "cost": 100,
+    "weight": 0,
+    "category": "adventuring_gear"
+  },
+  {
+    "id": "acid",
+    "name": "Acid",
+    "description": "A vial of corrosive acid that can be thrown to damage a creature or object.",
+    "cost": 2500,
+    "weight": 1,
+    "category": "consumable"
+  },
+  {
+    "id": "alchemists_fire",
+    "name": "Alchemist's Fire",
+    "description": "A sticky, adhesive substance that ignites when exposed to air.",
+    "cost": 5000,
+    "weight": 1,
+    "category": "consumable"
+  },
+  {
+    "id": "antitoxin",
+    "name": "Antitoxin",
+    "description": "A vial of liquid that grants resistance to poison for a short time when drunk.",
+    "cost": 5000,
+    "weight": 0,
+    "category": "consumable"
+  },
+  {
+    "id": "holy_water",
+    "name": "Holy Water",
+    "description": "A flask of water blessed by a priest, harmful to fiends and undead.",
+    "cost": 2500,
+    "weight": 1,
+    "category": "consumable"
+  },
+  {
+    "id": "poison_basic",
+    "name": "Poison, Basic",
+    "description": "A vial of toxin that can be applied to a weapon or slipped into food or drink.",
+    "cost": 10000,
+    "weight": 0,
+    "category": "consumable"
+  },
+  {
+    "id": "arrows",
+    "name": "Arrows",
+    "description": "A bundle of 20 arrows for use with a bow.",
+    "cost": 100,
+    "weight": 1,
+    "category": "ammunition"
+  },
+  {
+    "id": "bolts",
+    "name": "Bolts",
+    "description": "A case of 20 bolts for use with a crossbow.",
+    "cost": 100,
+    "weight": 1.5,
+    "category": "ammunition"
+  },
+  {
+    "id": "bullets_firearm",
+    "name": "Bullets, Firearm",
+    "description": "A set of 10 bullets for use with a firearm.",
+    "cost": 300,
+    "weight": 2,
+    "category": "ammunition"
+  },
+  {
+    "id": "bullets_sling",
+    "name": "Bullets, Sling",
+    "description": "A pouch of 20 shaped lead bullets for use with a sling.",
+    "cost": 4,
+    "weight": 1.5,
+    "category": "ammunition"
+  },
+  {
+    "id": "needles",
+    "name": "Needles",
+    "description": "A set of 50 needles for use with a blowgun.",
+    "cost": 100,
+    "weight": 1,
+    "category": "ammunition"
+  },
+  {
+    "id": "crystal_arcane_focus",
+    "name": "Crystal (Arcane Focus)",
+    "description": "A polished crystal that channels arcane magic in place of material components.",
+    "cost": 1000,
+    "weight": 1,
+    "category": "focus"
+  },
+  {
+    "id": "orb_arcane_focus",
+    "name": "Orb (Arcane Focus)",
+    "description": "A smooth sphere that channels arcane magic in place of material components.",
+    "cost": 2000,
+    "weight": 3,
+    "category": "focus"
+  },
+  {
+    "id": "rod_arcane_focus",
+    "name": "Rod (Arcane Focus)",
+    "description": "A short rod that channels arcane magic in place of material components.",
+    "cost": 1000,
+    "weight": 2,
+    "category": "focus"
+  },
+  {
+    "id": "staff_arcane_focus",
+    "name": "Staff (Arcane Focus)",
+    "description": "A wooden staff that channels arcane magic in place of material components.",
+    "cost": 500,
+    "weight": 4,
+    "category": "focus"
+  },
+  {
+    "id": "wand_arcane_focus",
+    "name": "Wand (Arcane Focus)",
+    "description": "A slender wand that channels arcane magic in place of material components.",
+    "cost": 1000,
+    "weight": 1,
+    "category": "focus"
+  },
+  {
+    "id": "amulet_holy_symbol",
+    "name": "Amulet (Holy Symbol)",
+    "description": "A holy symbol worn on a cord around the neck, used to channel divine magic.",
+    "cost": 500,
+    "weight": 1,
+    "category": "focus"
+  },
+  {
+    "id": "emblem_holy_symbol",
+    "name": "Emblem (Holy Symbol)",
+    "description": "A holy symbol emblazoned on a shield or other piece of equipment, used to channel divine magic.",
+    "cost": 500,
+    "weight": 0,
+    "category": "focus"
+  },
+  {
+    "id": "reliquary_holy_symbol",
+    "name": "Reliquary (Holy Symbol)",
+    "description": "A small box holding a sacred relic, used to channel divine magic.",
+    "cost": 500,
+    "weight": 2,
+    "category": "focus"
+  },
+  {
+    "id": "sprig_of_mistletoe",
+    "name": "Sprig of Mistletoe",
+    "description": "A sprig of dried mistletoe used to channel druidic magic.",
+    "cost": 100,
+    "weight": 0,
+    "category": "focus"
+  },
+  {
+    "id": "wooden_staff_druidic_focus",
+    "name": "Wooden Staff (Druidic Focus)",
+    "description": "A gnarled wooden staff used to channel druidic magic.",
+    "cost": 500,
+    "weight": 4,
+    "category": "focus"
+  },
+  {
+    "id": "yew_wand",
+    "name": "Yew Wand",
+    "description": "A wand carved from yew wood, used to channel druidic magic.",
+    "cost": 1000,
+    "weight": 1,
+    "category": "focus"
+  },
+  {
+    "id": "alchemists_supplies",
+    "name": "Alchemist's Supplies",
+    "description": "A set of tools and reagents used to create alchemical substances.",
+    "cost": 5000,
+    "weight": 8,
+    "category": "tool"
+  },
+  {
+    "id": "brewers_supplies",
+    "name": "Brewer's Supplies",
+    "description": "Tools used to brew beer, wine, and other beverages.",
+    "cost": 2000,
+    "weight": 9,
+    "category": "tool"
+  },
+  {
+    "id": "calligraphers_supplies",
+    "name": "Calligrapher's Supplies",
+    "description": "Fine pens, inks, and other tools for elegant handwriting.",
+    "cost": 1000,
+    "weight": 5,
+    "category": "tool"
+  },
+  {
+    "id": "carpenters_tools",
+    "name": "Carpenter's Tools",
+    "description": "Tools used to shape and join wood.",
+    "cost": 800,
+    "weight": 6,
+    "category": "tool"
+  },
+  {
+    "id": "cartographers_tools",
+    "name": "Cartographer's Tools",
+    "description": "Tools used to draw and read maps.",
+    "cost": 1500,
+    "weight": 6,
+    "category": "tool"
+  },
+  {
+    "id": "cobblers_tools",
+    "name": "Cobbler's Tools",
+    "description": "Tools used to make and repair footwear.",
+    "cost": 500,
+    "weight": 5,
+    "category": "tool"
+  },
+  {
+    "id": "cooks_utensils",
+    "name": "Cook's Utensils",
+    "description": "Pots, pans, and utensils used to prepare meals.",
+    "cost": 100,
+    "weight": 8,
+    "category": "tool"
+  },
+  {
+    "id": "disguise_kit",
+    "name": "Disguise Kit",
+    "description": "Cosmetics, hair dye, and props used to alter one's appearance.",
+    "cost": 2500,
+    "weight": 3,
+    "category": "tool"
+  },
+  {
+    "id": "forgery_kit",
+    "name": "Forgery Kit",
+    "description": "Ink, paper, seals, and tools used to duplicate documents and seals.",
+    "cost": 1500,
+    "weight": 5,
+    "category": "tool"
+  },
+  {
+    "id": "glassblowers_tools",
+    "name": "Glassblower's Tools",
+    "description": "Tools used to shape molten glass into vessels and ornaments.",
+    "cost": 3000,
+    "weight": 5,
+    "category": "tool"
+  },
+  {
+    "id": "herbalism_kit",
+    "name": "Herbalism Kit",
+    "description": "Tools and ingredients used to identify and create herbal remedies.",
+    "cost": 500,
+    "weight": 3,
+    "category": "tool"
+  },
+  {
+    "id": "jewelers_tools",
+    "name": "Jeweler's Tools",
+    "description": "Small tools used to cut, set, and polish gemstones.",
+    "cost": 2500,
+    "weight": 2,
+    "category": "tool"
+  },
+  {
+    "id": "leatherworkers_tools",
+    "name": "Leatherworker's Tools",
+    "description": "Tools used to cut and shape leather.",
+    "cost": 500,
+    "weight": 5,
+    "category": "tool"
+  },
+  {
+    "id": "masons_tools",
+    "name": "Mason's Tools",
+    "description": "Tools used to work stone and brick.",
+    "cost": 1000,
+    "weight": 8,
+    "category": "tool"
+  },
+  {
+    "id": "navigators_tools",
+    "name": "Navigator's Tools",
+    "description": "Instruments used to chart a ship's course.",
+    "cost": 2500,
+    "weight": 2,
+    "category": "tool"
+  },
+  {
+    "id": "painters_supplies",
+    "name": "Painter's Supplies",
+    "description": "Brushes, pigments, and other tools used to create paintings.",
+    "cost": 1000,
+    "weight": 5,
+    "category": "tool"
+  },
+  {
+    "id": "poisoners_kit",
+    "name": "Poisoner's Kit",
+    "description": "Vials and tools used to create and apply poisons.",
+    "cost": 5000,
+    "weight": 2,
+    "category": "tool"
+  },
+  {
+    "id": "potters_tools",
+    "name": "Potter's Tools",
+    "description": "Tools used to shape clay into pottery.",
+    "cost": 1000,
+    "weight": 3,
+    "category": "tool"
+  },
+  {
+    "id": "smiths_tools",
+    "name": "Smith's Tools",
+    "description": "Tools used to forge and shape metal.",
+    "cost": 2000,
+    "weight": 8,
+    "category": "tool"
+  },
+  {
+    "id": "thieves_tools",
+    "name": "Thieves' Tools",
+    "description": "Lockpicks and small tools used to disarm traps and pick locks.",
+    "cost": 2500,
+    "weight": 1,
+    "category": "tool"
+  },
+  {
+    "id": "tinkers_tools",
+    "name": "Tinker's Tools",
+    "description": "A small set of tools used to build and repair simple mechanisms.",
+    "cost": 5000,
+    "weight": 10,
+    "category": "tool"
+  },
+  {
+    "id": "weavers_tools",
+    "name": "Weaver's Tools",
+    "description": "Tools used to weave cloth from thread.",
+    "cost": 100,
+    "weight": 5,
+    "category": "tool"
+  },
+  {
+    "id": "woodcarvers_tools",
+    "name": "Woodcarver's Tools",
+    "description": "Small knives and tools used to carve wood.",
+    "cost": 100,
+    "weight": 5,
+    "category": "tool"
+  },
+  {
+    "id": "dice_set",
+    "name": "Dice Set",
+    "description": "A set of dice used to play games of chance.",
+    "cost": 10,
+    "weight": 0,
+    "category": "gaming_set"
+  },
+  {
+    "id": "dragonchess_set",
+    "name": "Dragonchess Set",
+    "description": "A three-dimensional strategy game played on tiered boards.",
+    "cost": 100,
+    "weight": 0,
+    "category": "gaming_set"
+  },
+  {
+    "id": "playing_card_set",
+    "name": "Playing Card Set",
+    "description": "A deck of cards used to play various games.",
+    "cost": 50,
+    "weight": 0,
+    "category": "gaming_set"
+  },
+  {
+    "id": "three_dragon_ante_set",
+    "name": "Three-Dragon Ante Set",
+    "description": "A card game favored by gamblers and adventurers alike.",
+    "cost": 100,
+    "weight": 0,
+    "category": "gaming_set"
+  },
+  {
+    "id": "bagpipes",
+    "name": "Bagpipes",
+    "description": "A wind instrument played by squeezing air through a bag into reed pipes.",
+    "cost": 3000,
+    "weight": 6,
+    "category": "instrument"
+  },
+  {
+    "id": "drum",
+    "name": "Drum",
+    "description": "A percussion instrument played by striking a stretched membrane.",
+    "cost": 600,
+    "weight": 3,
+    "category": "instrument"
+  },
+  {
+    "id": "dulcimer",
+    "name": "Dulcimer",
+    "description": "A stringed instrument played by striking the strings with small hammers.",
+    "cost": 2500,
+    "weight": 10,
+    "category": "instrument"
+  },
+  {
+    "id": "flute",
+    "name": "Flute",
+    "description": "A slender wind instrument played by blowing across a mouthpiece.",
+    "cost": 200,
+    "weight": 1,
+    "category": "instrument"
+  },
+  {
+    "id": "horn",
+    "name": "Horn",
+    "description": "A wind instrument played by buzzing the lips against a mouthpiece.",
+    "cost": 300,
+    "weight": 2,
+    "category": "instrument"
+  },
+  {
+    "id": "lute",
+    "name": "Lute",
+    "description": "A stringed instrument with a rounded body, plucked or strummed.",
+    "cost": 3500,
+    "weight": 2,
+    "category": "instrument"
+  },
+  {
+    "id": "lyre",
+    "name": "Lyre",
+    "description": "A small stringed instrument played by plucking.",
+    "cost": 3000,
+    "weight": 2,
+    "category": "instrument"
+  },
+  {
+    "id": "pan_flute",
+    "name": "Pan Flute",
+    "description": "A set of tuned pipes bound together and played by blowing across their open ends.",
+    "cost": 1200,
+    "weight": 2,
+    "category": "instrument"
+  },
+  {
+    "id": "shawm",
+    "name": "Shawm",
+    "description": "A double-reed wind instrument with a bright, piercing tone.",
+    "cost": 200,
+    "weight": 1,
+    "category": "instrument"
+  },
+  {
+    "id": "viol",
+    "name": "Viol",
+    "description": "A bowed stringed instrument held upright and played with a bow.",
+    "cost": 3000,
+    "weight": 1,
+    "category": "instrument"
+  },
+  {
+    "id": "burglars_pack",
+    "name": "Burglar's Pack",
+    "description": "A pack containing gear suited to stealthy break-ins, including a bag, rope, and tools.",
+    "cost": 1600,
+    "weight": 42,
+    "category": "pack"
+  },
+  {
+    "id": "diplomats_pack",
+    "name": "Diplomat's Pack",
+    "description": "A pack containing fine writing supplies and travel gear suited to formal envoys.",
+    "cost": 3900,
+    "weight": 39,
+    "category": "pack"
+  },
+  {
+    "id": "dungeoneers_pack",
+    "name": "Dungeoneer's Pack",
+    "description": "A pack containing gear suited to exploring dangerous ruins and dungeons.",
+    "cost": 1200,
+    "weight": 55,
+    "category": "pack"
+  },
+  {
+    "id": "entertainers_pack",
+    "name": "Entertainer's Pack",
+    "description": "A pack containing costumes and gear suited to performers.",
+    "cost": 4000,
+    "weight": 58.5,
+    "category": "pack"
+  },
+  {
+    "id": "explorers_pack",
+    "name": "Explorer's Pack",
+    "description": "A pack containing general gear suited to overland travel and camping.",
+    "cost": 1000,
+    "weight": 55,
+    "category": "pack"
+  },
+  {
+    "id": "priests_pack",
+    "name": "Priest's Pack",
+    "description": "A pack containing religious implements and gear suited to a traveling cleric.",
+    "cost": 3300,
+    "weight": 29,
+    "category": "pack"
+  },
+  {
+    "id": "scholars_pack",
+    "name": "Scholar's Pack",
+    "description": "A pack containing writing supplies and books suited to research.",
+    "cost": 4000,
+    "weight": 22,
+    "category": "pack"
   }
 ]

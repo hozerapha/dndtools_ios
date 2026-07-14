@@ -864,6 +864,27 @@ to the player — verify content loads cleanly.
   yet, but the sheet loads and the feat's grant text is at worst a stub
   in the Features tab (regression watch — the picker will populate later).
 
+### Weapons + gear sweep (new 2026-07-14)
+
+Content-only pass — no UI changes, but new items appear in the inventory
+picker.
+
+- [ ] Character sheet → Inventory → **Add item** → weapon picker now lists
+  **38 weapons** (was 10). Verify presence of Battleaxe, Greataxe,
+  Shortsword, Scimitar, Longbow, Hand Crossbow, Whip, etc.
+- [ ] Equip a Shortsword → damage rolls **1d6 piercing + DEX** (finesse
+  + light). Its Mastery property is **Vex**.
+- [ ] Equip a Warhammer → damage rolls **1d8 bludgeoning + STR**. Two-hand
+  it (versatile) → **1d10 bludgeoning + STR**. Mastery property **Push**.
+- [ ] Gear picker now shows **~129 entries** (was 8) grouped by category:
+  adventuring gear, tools, focuses, instruments, gaming sets, packs,
+  ammunition, consumables. Add a **Bagpipes** or **Thieves' Tools** →
+  weight and cost display correctly.
+- [ ] Magic items are NOT in the sweep — a follow-up batch (task #32).
+  Existing "Wand of Magic Missiles" still functions as before.
+- [ ] `⌘U` → all `ContentLintTests` pass; the weapon/gear vs-manifest
+  checks stay under `subset` mode so the bundle can grow at its own pace.
+
 ### Per-turn gating relaxed (new 2026-07-14)
 
 Per-turn gating (Sneak Attack turn flag, Wild Resurgence slot → Wild

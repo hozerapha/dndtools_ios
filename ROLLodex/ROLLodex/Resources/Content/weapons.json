@@ -200,5 +200,570 @@
       { "type": "weaponAttack", "finesse": false },
       { "type": "weaponDamage", "addAbility": true, "versatile": false }
     ]
+  },
+  {
+    "id": "battleaxe",
+    "name": "Battleaxe",
+    "description": "A one-handed axe balanced for both cutting and hooking strikes.",
+    "cost": 1000,
+    "weight": 4,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d8",
+    "damageType": "slashing",
+    "damageAbility": "strength",
+    "properties": ["versatile"],
+    "versatileDamage": "1d10",
+    "range": null,
+    "masteryProperty": "topple",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": true }
+    ]
+  },
+  {
+    "id": "blowgun",
+    "name": "Blowgun",
+    "description": "A slender tube that fires small needles with a sharp breath.",
+    "cost": 1000,
+    "weight": 1,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1",
+    "damageType": "piercing",
+    "damageAbility": "dexterity",
+    "properties": ["ammunition", "loading"],
+    "versatileDamage": null,
+    "range": "25/100",
+    "masteryProperty": "vex",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "dart",
+    "name": "Dart",
+    "description": "A small weighted spike meant to be thrown.",
+    "cost": 5,
+    "weight": 0.25,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d4",
+    "damageType": "piercing",
+    "damageAbility": "dexterity",
+    "properties": ["finesse", "thrown"],
+    "versatileDamage": null,
+    "range": "20/60",
+    "masteryProperty": "vex",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": true },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "flail",
+    "name": "Flail",
+    "description": "A spiked ball attached to a handle by a length of chain.",
+    "cost": 1000,
+    "weight": 2,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d8",
+    "damageType": "bludgeoning",
+    "damageAbility": "strength",
+    "properties": [],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "sap",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "glaive",
+    "name": "Glaive",
+    "description": "A long blade mounted on a pole for sweeping strikes.",
+    "cost": 2000,
+    "weight": 6,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d10",
+    "damageType": "slashing",
+    "damageAbility": "strength",
+    "properties": ["heavy", "reach", "two_handed"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "graze",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "greataxe",
+    "name": "Greataxe",
+    "description": "A massive axe wielded with both hands.",
+    "cost": 3000,
+    "weight": 7,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d12",
+    "damageType": "slashing",
+    "damageAbility": "strength",
+    "properties": ["heavy", "two_handed"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "cleave",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "greatclub",
+    "name": "Greatclub",
+    "description": "A crude, oversized wooden bludgeon.",
+    "cost": 20,
+    "weight": 10,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d8",
+    "damageType": "bludgeoning",
+    "damageAbility": "strength",
+    "properties": ["two_handed"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "push",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "halberd",
+    "name": "Halberd",
+    "description": "A polearm combining an axe blade with a piercing spike.",
+    "cost": 2000,
+    "weight": 6,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d10",
+    "damageType": "slashing",
+    "damageAbility": "strength",
+    "properties": ["heavy", "reach", "two_handed"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "cleave",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "hand_crossbow",
+    "name": "Hand Crossbow",
+    "description": "A compact crossbow that can be fired one-handed.",
+    "cost": 7500,
+    "weight": 3,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d6",
+    "damageType": "piercing",
+    "damageAbility": "dexterity",
+    "properties": ["ammunition", "light", "loading"],
+    "versatileDamage": null,
+    "range": "30/120",
+    "masteryProperty": "vex",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "handaxe",
+    "name": "Handaxe",
+    "description": "A small axe balanced for throwing or close combat.",
+    "cost": 500,
+    "weight": 2,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d6",
+    "damageType": "slashing",
+    "damageAbility": "strength",
+    "properties": ["light", "thrown"],
+    "versatileDamage": null,
+    "range": "20/60",
+    "masteryProperty": "vex",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "heavy_crossbow",
+    "name": "Heavy Crossbow",
+    "description": "A large crossbow that requires both hands to operate.",
+    "cost": 5000,
+    "weight": 18,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d10",
+    "damageType": "piercing",
+    "damageAbility": "dexterity",
+    "properties": ["ammunition", "heavy", "loading", "two_handed"],
+    "versatileDamage": null,
+    "range": "100/400",
+    "masteryProperty": "push",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "javelin",
+    "name": "Javelin",
+    "description": "A lightweight spear designed for throwing.",
+    "cost": 50,
+    "weight": 2,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d6",
+    "damageType": "piercing",
+    "damageAbility": "strength",
+    "properties": ["thrown"],
+    "versatileDamage": null,
+    "range": "30/120",
+    "masteryProperty": "slow",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "lance",
+    "name": "Lance",
+    "description": "A long, heavy spear designed for mounted charges.",
+    "cost": 1000,
+    "weight": 6,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d10",
+    "damageType": "piercing",
+    "damageAbility": "strength",
+    "properties": ["heavy", "reach", "two_handed"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "topple",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "light_hammer",
+    "name": "Light Hammer",
+    "description": "A small hammer suited to both melee and throwing.",
+    "cost": 200,
+    "weight": 2,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d4",
+    "damageType": "bludgeoning",
+    "damageAbility": "strength",
+    "properties": ["light", "thrown"],
+    "versatileDamage": null,
+    "range": "20/60",
+    "masteryProperty": "nick",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "maul",
+    "name": "Maul",
+    "description": "A massive two-handed hammer built to crush armor.",
+    "cost": 1000,
+    "weight": 10,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "2d6",
+    "damageType": "bludgeoning",
+    "damageAbility": "strength",
+    "properties": ["heavy", "two_handed"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "topple",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "morningstar",
+    "name": "Morningstar",
+    "description": "A spiked mace designed to punch through armor.",
+    "cost": 1500,
+    "weight": 4,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d8",
+    "damageType": "piercing",
+    "damageAbility": "strength",
+    "properties": [],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "sap",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "musket",
+    "name": "Musket",
+    "description": "A long-barreled firearm loaded with powder and shot.",
+    "cost": 50000,
+    "weight": 10,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d12",
+    "damageType": "piercing",
+    "damageAbility": "dexterity",
+    "properties": ["ammunition", "loading", "two_handed"],
+    "versatileDamage": null,
+    "range": "40/120",
+    "masteryProperty": "slow",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "pike",
+    "name": "Pike",
+    "description": "An immensely long spear wielded with both hands.",
+    "cost": 500,
+    "weight": 18,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d10",
+    "damageType": "piercing",
+    "damageAbility": "strength",
+    "properties": ["heavy", "reach", "two_handed"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "push",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "pistol",
+    "name": "Pistol",
+    "description": "A short-barreled firearm sized to be fired one-handed.",
+    "cost": 25000,
+    "weight": 3,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d10",
+    "damageType": "piercing",
+    "damageAbility": "dexterity",
+    "properties": ["ammunition", "loading"],
+    "versatileDamage": null,
+    "range": "30/90",
+    "masteryProperty": "vex",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "scimitar",
+    "name": "Scimitar",
+    "description": "A curved blade suited to quick, slashing strikes.",
+    "cost": 2500,
+    "weight": 3,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d6",
+    "damageType": "slashing",
+    "damageAbility": "dexterity",
+    "properties": ["finesse", "light"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "nick",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": true },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "shortsword",
+    "name": "Shortsword",
+    "description": "A short, quick blade suited to close combat.",
+    "cost": 1000,
+    "weight": 2,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d6",
+    "damageType": "piercing",
+    "damageAbility": "dexterity",
+    "properties": ["finesse", "light"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "vex",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": true },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "sickle",
+    "name": "Sickle",
+    "description": "A small curved blade used for hooking and slashing.",
+    "cost": 100,
+    "weight": 2,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d4",
+    "damageType": "slashing",
+    "damageAbility": "strength",
+    "properties": ["light"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "nick",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "sling",
+    "name": "Sling",
+    "description": "A simple leather strap used to hurl stones.",
+    "cost": 10,
+    "weight": 0,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d4",
+    "damageType": "bludgeoning",
+    "damageAbility": "dexterity",
+    "properties": ["ammunition"],
+    "versatileDamage": null,
+    "range": "30/120",
+    "masteryProperty": "slow",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
+  },
+  {
+    "id": "spear",
+    "name": "Spear",
+    "description": "A simple pointed shaft usable in one or two hands.",
+    "cost": 100,
+    "weight": 3,
+    "category": "weapon",
+    "weaponCategory": "simple",
+    "damage": "1d6",
+    "damageType": "piercing",
+    "damageAbility": "strength",
+    "properties": ["thrown", "versatile"],
+    "versatileDamage": "1d8",
+    "range": "20/60",
+    "masteryProperty": "sap",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": true }
+    ]
+  },
+  {
+    "id": "trident",
+    "name": "Trident",
+    "description": "A three-pronged spear favored by sea-faring warriors.",
+    "cost": 500,
+    "weight": 4,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d8",
+    "damageType": "piercing",
+    "damageAbility": "strength",
+    "properties": ["thrown", "versatile"],
+    "versatileDamage": "1d10",
+    "range": "20/60",
+    "masteryProperty": "topple",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": true }
+    ]
+  },
+  {
+    "id": "war_pick",
+    "name": "War Pick",
+    "description": "A pick-headed weapon designed to punch through armor.",
+    "cost": 500,
+    "weight": 2,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d8",
+    "damageType": "piercing",
+    "damageAbility": "strength",
+    "properties": ["versatile"],
+    "versatileDamage": "1d10",
+    "range": null,
+    "masteryProperty": "sap",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": true }
+    ]
+  },
+  {
+    "id": "warhammer",
+    "name": "Warhammer",
+    "description": "A heavy hammer capable of being wielded one- or two-handed.",
+    "cost": 1500,
+    "weight": 2,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d8",
+    "damageType": "bludgeoning",
+    "damageAbility": "strength",
+    "properties": ["versatile"],
+    "versatileDamage": "1d10",
+    "range": null,
+    "masteryProperty": "push",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false },
+      { "type": "weaponDamage", "addAbility": true, "versatile": true }
+    ]
+  },
+  {
+    "id": "whip",
+    "name": "Whip",
+    "description": "A long, flexible weapon that lashes at distant foes.",
+    "cost": 200,
+    "weight": 3,
+    "category": "weapon",
+    "weaponCategory": "martial",
+    "damage": "1d4",
+    "damageType": "slashing",
+    "damageAbility": "dexterity",
+    "properties": ["finesse", "reach"],
+    "versatileDamage": null,
+    "range": null,
+    "masteryProperty": "slow",
+    "actionRecipes": [
+      { "type": "weaponAttack", "finesse": true },
+      { "type": "weaponDamage", "addAbility": true, "versatile": false }
+    ]
   }
 ]
