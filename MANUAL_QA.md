@@ -864,6 +864,31 @@ to the player — verify content loads cleanly.
   yet, but the sheet loads and the feat's grant text is at worst a stub
   in the Features tab (regression watch — the picker will populate later).
 
+### Off-hand attack row for TWF (new 2026-07-14)
+
+The action deriver now emits a Bonus-Action off-hand row per equipped
+Light weapon whenever the character has ≥ 2 Light weapons equipped. The
+off-hand row uses `addAbility: false` for damage, so the ability mod
+only lands when the character has the Two-Weapon Fighting Style feat
+(the interpreter's existing TWF override does the restore).
+
+- [ ] Equip **two Shortswords** on a Fighter → Attacks section shows THREE
+  rows now: Shortsword (main), **Shortsword (Off-hand)**, and the second
+  Shortsword (main). The off-hand row's damage formula omits the DEX
+  modifier that the main-hand row includes.
+- [ ] Give that Fighter the **Two-Weapon Fighting** Fighting Style →
+  the off-hand row's damage formula now includes DEX (same as main-hand).
+- [ ] Unequip one Shortsword → only one Light weapon equipped → the
+  off-hand row disappears. Same for a Fighter equipped with a Longsword
+  + Shortsword (Longsword isn't Light so TWF isn't eligible).
+- [ ] Equip a **Shortsword + Handaxe** (two different Light weapons) →
+  the off-hand row appears for BOTH: one Shortsword (Off-hand) and one
+  Handaxe (Off-hand). The player picks whichever to bonus-action-attack.
+- [ ] Off-hand row does NOT display Mastery or opt-in rider chips —
+  those attach to the main-hand attack per SRD.
+- [ ] Versatile weapons (Longsword) never get an off-hand row (Longsword
+  isn't Light).
+
 ### Weapons + gear sweep (new 2026-07-14)
 
 Content-only pass — no UI changes, but new items appear in the inventory

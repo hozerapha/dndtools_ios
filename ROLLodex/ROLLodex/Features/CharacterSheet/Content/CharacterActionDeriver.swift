@@ -121,6 +121,12 @@ struct WeaponAttackRow: Identifiable, Equatable {
     /// Two-handed damage roll for versatile weapons (longsword, etc.). Nil
     /// when the weapon isn't versatile.
     let versatileDamage: ResolvedAction?
+    /// True when this is the Bonus-Action off-hand attack for a Two-Weapon
+    /// Fighting build. The `damage` recipe was resolved with `addAbility:
+    /// false`, so the ability modifier only lands via the TWF Fighting
+    /// Style override in `ActionInterpreter`. Riders + mastery are omitted
+    /// on off-hand rows (they belong to the main-hand attack).
+    let isOffHand: Bool
     /// Opt-in damage riders the character qualifies for on this attack —
     /// Sneak Attack (when the weapon has finesse/ranged), Divine Smite, etc.
     /// Already filtered by `AttackFilter` and once-per-turn flags. Each carries
@@ -179,6 +185,16 @@ enum CharacterActionDeriver {
     ) -> [WeaponAttackRow] {
         var rows: [WeaponAttackRow] = []
         let fsEffects = CharacterCalculator.fightingStyleEffects(character: character, content: content)
+        // Two-Weapon Fighting requires at least two Light weapons in the
+        // character's equipped inventory (SRD 5.2.1). When that's satisfied,
+        // each Light weapon also gets an off-hand row: same attack roll, but
+        // damage is resolved with `addAbility: false` — the TWF Fighting
+        // Style flips that back to include the mod via the interpreter.
+        let equippedLightWeapons: [WeaponDefinition] = character.inventory
+            .filter(\.equipped)
+            .compactMap { content.weaponDefinition(id: $0.itemID) }
+            .filter { $0.properties.contains(.light) }
+        let twoWeaponFightingEligible = equippedLightWeapons.count >= 2
         for inv in character.inventory where inv.equipped {
             guard let weapon = content.weaponDefinition(id: inv.itemID) else { continue }
 
@@ -268,6 +284,37 @@ enum CharacterActionDeriver {
                 content: content
             )
 
+            // Off-hand attack — bonus action, no ability mod on damage
+            // unless the TWF Fighting Style is active. Only emitted for
+            // Light weapons AND only when the TWF eligibility gate is met.
+            if twoWeaponFightingEligible, weapon.properties.contains(.light) {
+                let offHandDamageRecipe: ActionRecipe = .weaponDamage(
+                    dieOverride: nil, addAbility: false, versatile: false
+                )
+                let offHandDamage = ActionInterpreter.resolve(
+                    recipe: offHandDamageRecipe,
+                    character: character,
+                    weapon: weapon,
+                    fightingStyle: fsEffects
+                )
+                let offHandRow = WeaponAttackRow(
+                    id: "weapon_\(inv.id.uuidString)_offhand",
+                    weaponName: "\(weapon.name) (Off-hand)",
+                    mastery: nil,
+                    masteryMechanic: nil,
+                    attack: attack,
+                    damage: ResolvedAction(
+                        id: "\(offHandDamage.id)_offhand",
+                        label: "\(weapon.name) Damage (Off-hand)",
+                        formula: offHandDamage.formula,
+                        description: offHandDamage.description
+                    ),
+                    versatileDamage: nil,
+                    isOffHand: true,
+                    riders: []
+                )
+                rows.append(offHandRow)
+            }
             rows.append(WeaponAttackRow(
                 id: "weapon_\(inv.id.uuidString)",
                 weaponName: weapon.name,
@@ -276,6 +323,7 @@ enum CharacterActionDeriver {
                 attack: attack,
                 damage: damage,
                 versatileDamage: versatileEnriched,
+                isOffHand: false,
                 riders: riders
             ))
         }
