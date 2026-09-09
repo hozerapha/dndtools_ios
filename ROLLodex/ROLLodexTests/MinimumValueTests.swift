@@ -120,8 +120,9 @@ struct MinimumValueTests {
         var formula = DiceFormula()
         formula.groups.append(DiceGroup(kind: .d20, count: 1, minimumValue: 10))
         // dis: roll 3 and 15 → floor 3 to 10, keep 10 (lower of 10 and 15).
+        let expanded = formula.applyingAdvantage(.disadvantage)
         let result = DiceRoller().resultFrom(
-            formula: formula,
+            formula: expanded,
             values: [3, 15],
             mode: .disadvantage
         )
